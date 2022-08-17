@@ -2030,7 +2030,6 @@ __export(exports, {
   ScatterChart: () => ScatterChart,
   ScatterLineChart: () => ScatterLineChart,
   Search: () => Search,
-  Slot: () => Slot,
   Styles: () => src_exports,
   Switch: () => Switch,
   Tab: () => Tab,
@@ -5202,6 +5201,8 @@ var Control = class extends Component {
       this.style.gridRow = "span " + value.rowSpan;
     if (value.area)
       this.style.gridArea = value.area;
+    if (value.horizontalAlignment)
+      this.style.justifyContent = value.horizontalAlignment;
   }
   get background() {
     return this.style.background;
@@ -5578,10 +5579,6 @@ var Checkbox = class extends Control {
     super(parent, options, {
       height: 30
     });
-    if (options == null ? void 0 : options.onRender)
-      this.onRender = options.onRender;
-    if (options == null ? void 0 : options.onChanged)
-      this.onChanged = options.onChanged;
   }
   get caption() {
     return this._caption;
@@ -5607,9 +5604,7 @@ var Checkbox = class extends Control {
     return this.offsetHeight;
   }
   set height(value) {
-    if (typeof value == "string")
-      value = parseInt(value);
-    this._height = value;
+    this.setPosition("height", value);
   }
   get indeterminate() {
     return this._indeterminate;
@@ -5618,6 +5613,7 @@ var Checkbox = class extends Control {
     this._indeterminate = value;
     if (this.inputSpanElm)
       value ? this.inputSpanElm.classList.add("is-indeterminate") : this.inputSpanElm.classList.remove("is-indeterminate");
+    this.inputElm.indeterminate = value;
   }
   get checked() {
     return this._checked;
@@ -5667,14 +5663,7 @@ var Checkbox = class extends Control {
       this.caption = this.getAttribute("caption", true);
       this.value = this.caption;
       this.checked = this.getAttribute("checked", true, false);
-      this.indeterminate = this.getAttribute("indeterminate");
-      this.inputElm.indeterminate = this.indeterminate;
-      if (this.onRender && typeof this.onRender === "function") {
-        this.inputSpanElm.style.display = "none";
-        this.captionSpanElm.style.opacity = "0";
-        this.captionSpanElm.style.width = "0";
-        this.onRender(this.wrapperElm);
-      }
+      this.indeterminate = this.getAttribute("indeterminate", true);
       super.init();
     }
   }
@@ -6744,11 +6733,15 @@ var CodeDiffEditor = class extends Control {
       captionDiv.style.height = "100%";
       captionDiv.style.width = "100%";
       let options = {
+        theme: "vs-dark",
         originalEditable: false,
-        readOnly: true,
         automaticLayout: true
       };
       this._editor = monaco.editor.createDiffEditor(captionDiv, options);
+      this._editor.onDidUpdateDiff(() => {
+        if (typeof this.onChange === "function")
+          this.onChange(this);
+      });
     }
     if (!this._modifiedModel || !this._originalModel) {
       let model;
@@ -7393,18 +7386,16 @@ var Datepicker = class extends Control {
       RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
         let _moment = this._type === "time" ? moment(pickerValue, "HH:mm") : moment(pickerValue);
         if (_moment.isValid()) {
-          this.inputElm.value = _moment.format(this.dateFormat || this.defaultDateFormat);
+          this.inputElm.value = _moment.format(this.dateTimeFormat || this.defaultDateFormat);
         } else {
           this.inputElm.value = "";
           _datepicker.value = "";
         }
-        if (this.onSelect) {
-          this.onSelect(this.inputElm.value);
-        }
+        if (this.onChanged)
+          this.onChanged(this, event);
       });
-      if (this.callback) {
+      if (this.callback)
         this.callback(this.inputElm.value);
-      }
     };
     this._dateInputMask = (event) => {
       const key2 = event.key;
@@ -7433,9 +7424,9 @@ var Datepicker = class extends Control {
       this.inputElm.placeholder = this.defaultDateFormat;
       if (!this.inputElm.value)
         return;
-      if (this.dateFormat) {
+      if (this.dateTimeFormat) {
         RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
-          let _moment = moment(this.inputElm.value, this.dateFormat, true);
+          let _moment = moment(this.inputElm.value, this.dateTimeFormat, true);
           if (_moment.isValid()) {
             this.inputElm.value = _moment.format(this.defaultDateFormat);
           }
@@ -7456,8 +7447,8 @@ var Datepicker = class extends Control {
         let _moment = moment(this.inputElm.value, this.defaultDateFormat, true);
         let isValid = _moment.isValid();
         if (isValid) {
-          if (this.dateFormat) {
-            this.inputElm.value = _moment.format(this.dateFormat);
+          if (this.dateTimeFormat) {
+            this.inputElm.value = _moment.format(this.dateTimeFormat);
           }
           this.datepickerElm.value = _moment.format(this.datepickerFormat);
         } else {
@@ -7465,13 +7456,11 @@ var Datepicker = class extends Control {
           this.inputElm.value = "";
           this.datepickerElm.value = "";
         }
-        if (this.onSelect) {
-          this.onSelect(this.inputElm.value);
-        }
+        if (this.onChanged)
+          this.onChanged(this, this.inputElm.value);
       });
-      if (this.callback) {
+      if (this.callback)
         this.callback(this.inputElm.value);
-      }
     };
   }
   _handleClick(event) {
@@ -7494,8 +7483,8 @@ var Datepicker = class extends Control {
   set captionWidth(value) {
     this._captionWidth = value;
     this.setElementPosition(this.labelElm, "width", value);
-    const width = typeof this._width === "string" ? this._width : `${this._width}px`;
-    const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
+    const width = typeof this.width === "string" ? this.width : `${this.width}px`;
+    const captionWidth = typeof this.captionWidth === "string" ? this.captionWidth : `${this.captionWidth}px`;
     const iconWidth = `${this._iconWidth || 0}px`;
     this.inputElm.style.width = `calc(${width} - ${captionWidth} - ${iconWidth})`;
   }
@@ -7539,11 +7528,11 @@ var Datepicker = class extends Control {
         return "HH:mm";
     }
   }
-  get dateFormat() {
-    return this._dateFormat;
+  get dateTimeFormat() {
+    return this._dateTimeFormat;
   }
-  set dateFormat(format) {
-    this._dateFormat = format;
+  set dateTimeFormat(format) {
+    this._dateTimeFormat = format;
   }
   get datepickerFormat() {
     switch (this._type) {
@@ -7569,17 +7558,11 @@ var Datepicker = class extends Control {
     this.inputElm.disabled = !value;
     this.datepickerElm.disabled = !value;
   }
-  get onSelect() {
-    return this._onSelect;
-  }
-  set onSelect(callback) {
-    this._onSelect = callback;
-  }
   init() {
     if (!this.captionSpanElm) {
       this.callback = this.getAttribute("parentCallback", true);
       this._placeholder = this.getAttribute("placeholder", true) || "";
-      this.dateFormat = this.getAttribute("dateFormat", true) || "";
+      this.dateTimeFormat = this.getAttribute("dateTimeFormat", true) || "";
       this._type = this.getAttribute("type", true) || "date";
       this._iconWidth = this.getAttribute("height", true);
       this.captionSpanElm = this.createElement("span", this);
@@ -7593,7 +7576,7 @@ var Datepicker = class extends Control {
       this.inputElm.addEventListener("keypress", this._dateInputMask);
       this.inputElm.onfocus = this._onFocus;
       this.inputElm.onblur = this._isValidDateFormat;
-      this.inputElm.pattern = this.dateFormat || this.defaultDateFormat;
+      this.inputElm.pattern = this.dateTimeFormat || this.defaultDateFormat;
       this.toggleElm = this.createElement("span", this);
       this.toggleElm.classList.add("datepicker-toggle");
       this.toggleElm.style.width = this._iconWidth + "px";
@@ -7609,9 +7592,12 @@ var Datepicker = class extends Control {
       const inputType = this._type === "dateTime" ? "datetime-local" : this._type;
       this.datepickerElm.setAttribute("type", inputType);
       this.datepickerElm.classList.add("datepicker");
-      this.datepickerElm.addEventListener("change", this._onDatePickerChange);
+      this.datepickerElm.addEventListener("change", (event) => {
+        event.stopPropagation();
+        this._onDatePickerChange(event);
+      });
       this.toggleElm.appendChild(this.datepickerElm);
-      this.captionWidth = parseInt(this.getAttribute("captionWidth", true) || defaultCaptionWidth);
+      this.captionWidth = this.getAttribute("captionWidth", true, defaultCaptionWidth);
       this.caption = this.getAttribute("caption", true);
       super.init();
     }
@@ -8079,10 +8065,10 @@ var RadioGroup = class extends Control {
     this.name = new Date().getTime().toString();
     this.radioItems.forEach((item) => {
       const elm = new Radio(this, item);
-      this.appendIem(elm);
+      this.appendItem(elm);
     });
   }
-  appendIem(elm) {
+  appendItem(elm) {
     this.appendChild(elm);
     elm.onClick = this._handleChange.bind(this);
     const inputElm = elm.getElementsByTagName("input")[0];
@@ -8102,7 +8088,7 @@ var RadioGroup = class extends Control {
   }
   async add(options) {
     const elm = await Radio.create(options);
-    this.appendIem(elm);
+    this.appendItem(elm);
     this.selectedValue = elm.value;
     return elm;
   }
@@ -8313,6 +8299,13 @@ var Input = class extends Control {
     this._rows = value;
     this.inputElm.rows = value;
   }
+  get multiline() {
+    return this._multiline;
+  }
+  set multiline(value) {
+    this._multiline = value;
+    this.inputType = value ? "textarea" : "text";
+  }
   _createInputElement(type) {
     const value = this.getAttribute("value");
     const caption = this.getAttribute("caption");
@@ -8330,8 +8323,6 @@ var Input = class extends Control {
           caption,
           indeterminate: this.getAttribute("indeterminate", true)
         });
-        if (this.onRender)
-          this._inputControl.onRender = this.onRender;
         if (this.onChanged)
           this._inputControl.onChanged = this.onChanged;
         this.appendChild(this._inputControl);
@@ -8362,12 +8353,14 @@ var Input = class extends Control {
           value,
           placeholder: this._placeholder,
           type,
-          dateFormat: this.getAttribute("dateFormat", true),
+          dateTimeFormat: this.getAttribute("dateTimeFormat", true),
           width,
           height,
           enabled,
           parentCallback: this._inputCallback
         });
+        if (this.onChanged)
+          this._inputControl.onChanged = this.onChanged;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="text"]');
         break;
@@ -8399,11 +8392,8 @@ var Input = class extends Control {
           checked,
           enabled,
           caption,
-          id: id + "_radio",
-          name: this.getAttribute("name", true)
+          id: id + "_radio"
         });
-        if (this.onRender)
-          this._inputControl.onRender = this.onRender;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="radio"]');
         break;
@@ -8507,10 +8497,8 @@ var Input = class extends Control {
       this._createInputElement(this.inputType);
       this.caption = this.getAttribute("caption", true);
       this.captionWidth = parseInt(this.getAttribute("captionWidth", true));
-      this.value = this.attrs.value;
-      const readOnly = this.getAttribute("readOnly", true);
-      if (readOnly)
-        this.readOnly = readOnly;
+      this.value = this.getAttribute("value", true);
+      this.readOnly = this.getAttribute("readOnly", true, false);
       if (this.value && this.clearIconElm)
         this.clearIconElm.classList.add("active");
       this.onClearClick = this.getAttribute("onClearClick", true) || this.onClearClick;
@@ -9459,6 +9447,7 @@ var Link = class extends Control {
     this._linkElm.appendChild(children);
   }
   _handleClick(event, stopPropagation) {
+    event.preventDefault();
     window.open(this._linkElm.href, this._linkElm.target);
     return super._handleClick(event);
   }
@@ -10506,6 +10495,10 @@ var meunItemStyle = style({
 });
 var modalStyle2 = style({
   $nest: {
+    ".reverse-menu": {
+      display: "flex",
+      flexDirection: "column-reverse"
+    },
     "> div": {
       transform: "unset",
       transition: "background 0.2s cubic-bezier(0.4, 0, 1, 1), color 0.2s cubic-bezier(0.4, 0, 1, 1)",
@@ -10837,6 +10830,9 @@ var MenuItem = class extends Control {
     }
     if (!this.itemPanel) {
       this.itemPanel = await Panel.create();
+      if (this.className.includes("more-menu-item")) {
+        this.itemPanel.classList.add("reverse-menu");
+      }
     }
     this.itemPanel.innerHTML = "";
     if (this._items && this._items.length) {
@@ -11469,10 +11465,10 @@ var TreeView = class extends Control {
   }
   async add(parentNode, caption) {
     const childData = { caption, children: [] };
-    const childNode = await TreeNode.create(__spreadValues({}, childData));
+    const childNode = await TreeNode.create(__spreadValues({}, childData), this);
     await this.initNode(childNode);
     childNode.editable = this.editable;
-    if (this.onRenderNode && typeof this.onRenderNode === "function")
+    if (this.onRenderNode)
       this.onRenderNode(this, childNode);
     if (parentNode)
       parentNode.appendNode(childNode);
@@ -11520,7 +11516,7 @@ var TreeView = class extends Control {
     node.addEventListener("mouseenter", () => this.handleMouseEnter(node));
     node.addEventListener("mouseleave", () => this.handleMouseLeave(node));
     node.addEventListener("beforeExpand", (event) => this.handleLazyLoad(node));
-    if (this.onRenderNode && typeof this.onRenderNode === "function")
+    if (this.onRenderNode)
       this.onRenderNode(this, node);
   }
   async renderTreeNode(node, parent) {
@@ -11531,7 +11527,7 @@ var TreeView = class extends Control {
       for (const child2 of node.children) {
         const childWrapper = treeNode.querySelector(".i-tree-node_children");
         if (childWrapper) {
-          const childNode = await this.renderTreeNode(child2, void 0);
+          const childNode = await this.renderTreeNode(child2, parent);
           childWrapper && childWrapper.appendChild(childNode);
         }
       }
@@ -11684,10 +11680,8 @@ var TreeNode = class extends Control {
     return this._iconElm;
   }
   get rightIcon() {
-    if (!this._iconRightElm) {
+    if (!this._iconRightElm)
       this._iconRightElm = Icon.create(defaultIcon3);
-    }
-    ;
     return this._iconRightElm;
   }
   handleChange(target, oldValue, newValue) {
@@ -11695,9 +11689,7 @@ var TreeNode = class extends Control {
     if (fn && typeof fn === "function")
       fn(this.rootParent, target, oldValue, newValue);
   }
-  handleEdit(event) {
-    event.stopImmediatePropagation();
-    event.preventDefault();
+  renderEditMode() {
     const captionInput = this.createElement("input");
     captionInput.value = this.caption;
     captionInput.classList.add("text-input");
@@ -11705,16 +11697,21 @@ var TreeNode = class extends Control {
     this._captionElm.appendChild(captionInput);
     captionInput.focus();
     this.click();
-    captionInput.addEventListener("blur", (event2) => {
-      event2.preventDefault();
+    captionInput.addEventListener("blur", (event) => {
+      event.preventDefault();
       const newValue = captionInput.value;
       this.handleChange(this, this.caption, newValue);
-      this._captionElm.innerHTML = "";
-      this._captionElm.textContent = newValue;
+      this.caption = newValue;
     });
+  }
+  handleEdit(event) {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    this.renderEditMode();
   }
   edit() {
     this.editable = true;
+    this.renderEditMode();
   }
   appendNode(childNode) {
     if (!this._childNodeElm)
@@ -12067,19 +12064,6 @@ var Search = class extends Control {
 Search = __decorateClass([
   customElements2("i-search")
 ], Search);
-
-// packages/slot/src/slot.ts
-var Slot = class extends Control {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  init() {
-    super.init();
-  }
-};
-Slot = __decorateClass([
-  customElements2("i-slot")
-], Slot);
 
 // packages/switch/src/style/switch.css.ts
 var Theme23 = theme_exports.ThemeVars;
@@ -13067,9 +13051,8 @@ var Iframe = class extends Control {
   }
   set url(value) {
     this._url = value;
-    if (value) {
-      if (!this.iframeElm)
-        this.iframeElm = this.createElement("iframe", this);
+    if (value && !this.iframeElm) {
+      this.iframeElm = this.createElement("iframe", this);
     }
     if (this.iframeElm) {
       this.iframeElm.src = value;
@@ -13133,9 +13116,10 @@ cssRule("i-pagination", {
 // packages/pagination/src/pagination.ts
 var pagerCount = 7;
 var defaultCurrentPage = 1;
+var pageSize = 10;
 var Pagination = class extends Control {
   constructor(parent, options) {
-    super(parent, options);
+    super(parent, options, { pageSize });
     this._showPrevMore = false;
     this._showNextMore = false;
   }
@@ -13157,8 +13141,14 @@ var Pagination = class extends Control {
     this._curPage = value || defaultCurrentPage;
     const index = value - 1;
     this.pageItems[index] && this.onActiveItem(this.pageItems[index]);
-    if (this.onPageChanged && oldData !== value)
+    if (this.onPageChanged && oldData !== this._curPage)
       this.onPageChanged(this, oldData);
+  }
+  get pageSize() {
+    return this._pageSize || pageSize;
+  }
+  set pageSize(value) {
+    this._pageSize = value;
   }
   onActiveItem(item) {
     if (this.activeItem) {
@@ -13281,6 +13271,7 @@ var Pagination = class extends Control {
     this._showNextMore = showNextMore;
   }
   renderPageItem(size) {
+    this.visible = size !== 0;
     this._mainPagiElm.innerHTML = "";
     this.pageItems = [];
     if (size > 0) {
@@ -13329,8 +13320,9 @@ var Pagination = class extends Control {
       });
       this._mainPagiElm = this.createElement("div", this._paginationDiv);
       this._mainPagiElm.classList.add("pagination-main");
-      this.currentPage = +this.getAttribute("currentPage", true);
+      this.currentPage = +this.getAttribute("currentPage", true, defaultCurrentPage);
       this.totalPage = +this.getAttribute("totalPage", true, 0);
+      this.pageSize = +this.getAttribute("pageSize", true, pageSize);
       this._nextElm = this.createElement("a", this._paginationDiv);
       this._nextElm.setAttribute("href", "#");
       this._nextElm.innerHTML = "&raquo;";
@@ -13810,7 +13802,7 @@ Progress = __decorateClass([
 
 // packages/table/src/style/table.css.ts
 var Theme29 = theme_exports.ThemeVars;
-cssRule("i-table", {
+var tableStyle = style({
   fontFamily: Theme29.typography.fontFamily,
   fontSize: Theme29.typography.fontSize,
   color: Theme29.text.primary,
@@ -13885,6 +13877,7 @@ cssRule("i-table", {
     },
     ".i-table-pagi": {
       display: "flex",
+      width: "100%",
       $nest: {
         "&.is--left": {
           justifyContent: "flex-start"
@@ -13927,40 +13920,79 @@ cssRule("i-table", {
     }
   }
 });
+var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
+  let styleObj = {
+    $nest: {}
+  };
+  for (let mediaQuery of mediaQueries) {
+    let mediaQueryRule;
+    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
+    } else if (mediaQuery.minWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
+    } else if (mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
+    }
+    if (mediaQueryRule) {
+      styleObj["$nest"][mediaQueryRule] = {
+        $nest: {}
+      };
+      if (mediaQuery.properties.fieldNames) {
+        const fieldNames = mediaQuery.properties.fieldNames;
+        const filterColumns = columns.filter((column) => !fieldNames.includes(column.fieldName));
+        filterColumns.forEach((column) => {
+          const fieldName = column.fieldName || "action";
+          styleObj["$nest"][mediaQueryRule]["$nest"][`[data-fieldname="${fieldName}"]`] = {
+            display: "none"
+          };
+        });
+      }
+      if (mediaQuery.properties.expandable) {
+        const expandable = mediaQuery.properties.expandable;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".i-table-row--child"] = {
+          display: expandable.rowExpandable ? "none" : "none !important"
+        };
+      }
+    }
+  }
+  return style(styleObj);
+};
 
 // packages/table/src/tableColumn.ts
 var Theme30 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
-  get dataSource() {
-    return this._columnData;
+  constructor(parent, options) {
+    super(parent, options);
+    this.title = options.title;
+    this.fieldName = options.fieldName;
+    if (options.key)
+      this.key = options.key;
+    if (options.sortable)
+      this.sortable = options.sortable;
+    if (options.sorter)
+      this.sorter = options.sorter;
+    this.sortOrder = options.sortOrder;
+    if (this.options.onRenderCell)
+      this.onRenderCell = this.options.onRenderCell;
+    if (options.grid)
+      this.grid = options.grid;
+    if (options.display)
+      this.display = options.display;
+    if (options.textAlign)
+      this.textAlign = options.textAlign;
   }
-  set dataSource(value) {
-    this._columnData = value;
+  get data() {
+    return this._data;
+  }
+  set data(value) {
+    this._data = value;
     this.columnElm.innerHTML = `${value}`;
-  }
-  get column() {
-    return this._column;
-  }
-  set column(value) {
-    this._column = value;
   }
   get rowData() {
     return this._rowData;
   }
   set rowData(value) {
     this._rowData = value;
-  }
-  get sortable() {
-    return this._sortable;
-  }
-  set sortable(value) {
-    this._sortable = value;
-  }
-  get sorter() {
-    return this._sorter;
-  }
-  set sorter(value) {
-    this._sorter = value;
   }
   get sortOrder() {
     return this._sortOrder;
@@ -13978,7 +14010,14 @@ var TableColumn = class extends Control {
       this.descElm && this.descElm.classList.remove("sort-icon--active");
     }
     if (typeof this.onSortChange === "function")
-      this.onSortChange(this, this.column.dataIndex, value);
+      this.onSortChange(this, this.fieldName, value);
+  }
+  get textAlign() {
+    return this._textAlign;
+  }
+  set textAlign(value) {
+    this._textAlign = value || "left";
+    this.style.textAlign = value;
   }
   renderSort() {
     if (!this.sortable) {
@@ -13988,38 +14027,35 @@ var TableColumn = class extends Control {
     if (!this.sortElm) {
       this.sortElm = this.createElement("div", this);
       this.sortElm.classList.add("i-table-sort");
-      this.ascElm = new Icon(this, {
+      this.ascElm = new Icon(void 0, {
         name: "caret-up",
         width: 14,
         height: 14,
         fill: Theme30.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
-      this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? null : "asc";
-      this.descElm = new Icon(this, {
+      this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
+      this.descElm = new Icon(void 0, {
         name: "caret-down",
         width: 14,
         height: 14,
         fill: Theme30.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
-      this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? null : "desc";
+      this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
       this.sortElm.appendChild(this.ascElm);
       this.sortElm.appendChild(this.descElm);
     }
-    this.sortOrder = this.column.sortOrder || null;
     this.sortElm.style.display = "block";
   }
   async init() {
     if (!this.columnElm) {
-      if (this.options.column)
-        this.column = this.options.column;
       this.isHeader = this.options.header || false;
       this.columnElm = this.createElement("div", this);
-      this.dataSource = this.getAttribute("data", true);
+      this.data = this.getAttribute("data", true);
       this.rowData = this.getAttribute("rowData", true);
-      if (typeof this.column.render === "function" && !this.isHeader) {
-        const renderedElm = await this.column.render(this, this.dataSource, this.rowData);
+      if (typeof this.onRenderCell === "function" && !this.isHeader) {
+        const renderedElm = await this.onRenderCell(this, this.data, this.rowData);
         if (typeof renderedElm === "string") {
           this.columnElm.innerHTML = renderedElm;
         } else {
@@ -14028,17 +14064,11 @@ var TableColumn = class extends Control {
         }
       }
       if (this.isHeader) {
-        this.columnElm.innerHTML = this.column.title;
-        this.sortable = this.column.sortable || false;
+        this.columnElm.innerHTML = this.title;
+        this.sortable = this.sortable || false;
         this.renderSort();
       }
-      super.init();
     }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
   }
 };
 TableColumn = __decorateClass([
@@ -14049,12 +14079,8 @@ TableColumn = __decorateClass([
 var paginate = (array, pageSize2, pageNumber) => {
   return array.slice((pageNumber - 1) * pageSize2, pageNumber * pageSize2);
 };
-var getColumnKey = (columns, columnIdx) => {
-  const column = columns[columnIdx];
-  return column ? column.dataIndex : "";
-};
 var getSorter = (columns, key2) => {
-  const findedColumn = columns.find((column) => column.dataIndex === key2);
+  const findedColumn = columns.find((column) => column.fieldName === key2);
   return findedColumn ? findedColumn.sorter : null;
 };
 var getValueByPath = function(object, prop) {
@@ -14114,68 +14140,58 @@ var orderBy = (list, sortBy, sortValue, sorter) => {
   }).map((data) => data.value);
   return sortedList;
 };
-var filterBy = (list, value, columnKey) => {
-  let searchTerms = [];
-  if (value) {
-    if (Array.isArray(value) && value.length) {
-      searchTerms = value.map((val) => "^" + val + "$");
-    } else {
-      searchTerms.push("^" + value);
-    }
+
+// packages/table/src/tableRow.ts
+var TableRow = class {
+  constructor(cells) {
+    this.cells = cells;
   }
-  const searchRegex = new RegExp(searchTerms.join("|"), "g");
-  const dataList = [...list];
-  return dataList.filter((data) => {
-    return data[columnKey].match(searchRegex);
-  });
+  get cells() {
+    return this._cells;
+  }
+  set cells(value) {
+    this._cells = value;
+  }
+};
+
+// packages/table/src/tableCell.ts
+var TableCell = class {
+  constructor(options) {
+    this.rowSpan = options.rowSpan;
+    this.columnSpan = options.columnSpan;
+    this.value = options.value;
+  }
+  get rowSpan() {
+    return this._rowSpan;
+  }
+  set rowSpan(value) {
+    this._rowSpan = value;
+  }
+  get columnSpan() {
+    return this._columnSpan;
+  }
+  set columnSpan(value) {
+    this._columnSpan = value;
+  }
+  get value() {
+    return this._value;
+  }
+  set value(data) {
+    this._value = data;
+  }
 };
 
 // packages/table/src/table.ts
-var Theme31 = theme_exports.ThemeVars;
-var pageSize = 10;
 var Table = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
-      bordered: false,
-      heading: true,
-      tableLayout: "auto"
+      heading: true
     });
+    this._rows = [];
     this.firstLoad = true;
-    this._pagination = {
-      totalPage: 0,
-      currentPage: 1,
-      hideOnSinglePage: true,
-      position: "bottomLeft"
-    };
-    this.expandConfig = {
-      showExpandColumn: true,
-      expandIcon: (expanded) => {
-        return expanded ? `<i-icon name="minus" width=${12} height=${12} fill="#fff"></i-icon>` : `<i-icon name="plus" width=${12} height=${12} fill="#fff"></i-icon>`;
-      },
-      rowExpandable: true
-    };
     this.sortConfig = { key: "", value: null };
   }
-  updatePagination() {
-    let size = typeof this.paging === "object" && this.paging.pageSize || pageSize;
-    if (typeof size === "object") {
-      size = pageSize;
-    }
-    const total = this.dataSource ? Math.ceil(this.dataSource.length / size) : 0;
-    let totalPage = typeof this.paging === "object" && this.paging.totalPage || total;
-    if (typeof totalPage === "object") {
-      totalPage = total;
-    }
-    this._pagination.totalPage = totalPage;
-    if (this.pagingElm) {
-      this.pagingElm.totalPage = totalPage;
-      this.pagingElm.visible = totalPage > 1 || totalPage === 1 && !this._pagination.hideOnSinglePage;
-      if (this.pagingElm.currentPage > 1 && this.pagingElm.currentPage > totalPage) {
-        this.pagingElm.currentPage = totalPage;
-      }
-    }
-  }
-  get dataSource() {
+  get data() {
     var _a;
     if (this.sortConfig.key && this.sortConfig.value !== null) {
       const sorter = getSorter(this.columns, (_a = this.sortConfig) == null ? void 0 : _a.key);
@@ -14184,64 +14200,44 @@ var Table = class extends Control {
     }
     return this._data;
   }
-  set dataSource(value) {
+  set data(value) {
     this._data = value;
-    this.updatePagination();
+    this._filteredData = this.data;
+    if (this.pagination)
+      this.pagination.totalPage = Math.ceil(value.length / this.pagination.pageSize);
     this.renderBody();
   }
   get columns() {
-    return this._columns;
+    return this._columns || [];
   }
   set columns(value) {
     this._columns = value;
     this._heading && this.renderHeader();
+    !this.firstLoad && this.renderBody();
   }
-  get bordered() {
-    return this._bordered;
+  get rows() {
+    return this._rows;
   }
-  set bordered(value) {
-    this._bordered = value;
-    if (value)
-      this.classList.add("i-table--bordered");
-    else
-      this.classList.remove("i-table--bordered");
+  get pagination() {
+    return this._pagination;
   }
-  get paging() {
-    return this._paging;
-  }
-  set paging(value) {
-    this._paging = value === void 0 ? true : value;
-    if (value === false) {
-      this.pagingElm && (this.pagingElm.visible = false);
+  set pagination(value) {
+    if (typeof value === "string") {
+      const elm = document.querySelector(`#${value}`);
+      if (elm instanceof Pagination) {
+        this._pagination = elm;
+      }
+    } else if (value) {
+      this._pagination = value;
+      this.pagingElm.innerHTML = "";
+      this.pagingElm.appendChild(this.pagination);
+      this.renderBody();
+    }
+    if (this._pagination) {
+      this.pagingElm.style.display = "flex";
+      this._pagination.onPageChanged = this.onPageChange.bind(this);
     } else {
-      if (this.pagingElm) {
-        const pagingConfig2 = typeof value === "boolean" ? {} : value;
-        if (value && pagingConfig2.currentPage)
-          this.pagingElm.currentPage = pagingConfig2.currentPage;
-        return;
-      }
-      ;
-      const pagingConfig = typeof value === "boolean" ? {} : value;
-      this._pagination = __spreadValues(__spreadValues({}, this._pagination), pagingConfig);
-      const { totalPage, currentPage } = this._pagination;
-      this.pagingElm = new Pagination(this, {
-        marginTop: 20,
-        totalPage,
-        currentPage,
-        style: {
-          display: "flex"
-        }
-      });
-      if (this.onChange) {
-        this.pagingElm.onPageChanged = this.onChange;
-      } else {
-        this.pagingElm.onPageChanged = this.onPageChange.bind(this);
-      }
-      this.wrapperElm.appendChild(this.pagingElm);
-      const inTop = this._pagination.position.includes("top");
-      inTop && this.wrapperElm.insertBefore(this.pagingElm, this.tableElm);
-      const position = this._pagination.position.replace(/top|bottom/g, "").toLowerCase();
-      this.pagingElm.classList.add("i-table-pagi", `is--${position}`);
+      this.pagingElm.style.display = "none";
     }
   }
   get expandable() {
@@ -14249,70 +14245,30 @@ var Table = class extends Control {
   }
   set expandable(value) {
     this._expandable = value;
-    this.expandConfig = value && __spreadValues(__spreadValues({}, this.expandConfig), value);
   }
   get hasExpandColumn() {
-    return this.expandable && this.expandConfig.showExpandColumn !== false;
-  }
-  get mobileColumn() {
-    return this._mobileColumn;
-  }
-  set mobileColumn(value) {
-    this._mobileColumn = value || [];
-  }
-  updateExpandColumn() {
-    if (this.hasExpandColumn) {
-      const trHeader = this.tHeadElm.querySelector("tr");
-      const firstHeader = trHeader == null ? void 0 : trHeader.firstElementChild;
-      if (firstHeader && firstHeader.classList.contains("i-table-cell--expand"))
-        return;
-      const thElm = this.createElement("th");
-      thElm.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
-      if (firstHeader && firstHeader.parentNode)
-        firstHeader.parentNode.insertBefore(thElm, firstHeader);
-      const trBody = this.tBodyElm.querySelectorAll("tr");
-      trBody.forEach((trElm) => {
-        const tdElm = this.createElement("td");
-        tdElm.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
-        tdElm.innerHTML = this.expandConfig.expandIcon(false);
-        const tdFirst = trElm == null ? void 0 : trElm.firstChild;
-        if (tdFirst && tdFirst.parentNode)
-          tdFirst.parentNode.insertBefore(tdElm, tdFirst);
-      });
-    } else {
-      const expandedTd = this.querySelectorAll(".i-table-cell--expand");
-      expandedTd.forEach((td) => td.remove());
-    }
+    return this.expandable && !!this.expandable.onRenderExpandIcon;
   }
   get columnLength() {
     return this.columns.length;
   }
+  get mediaQueries() {
+    return this._mediaQueries;
+  }
+  set mediaQueries(value) {
+    this._mediaQueries = value;
+    const style2 = getTableMediaQueriesStyleClass(this.columns, this._mediaQueries);
+    this.classList.add(style2);
+  }
   onPageChange(source, value) {
-    this._pagination.currentPage = value;
     !this.firstLoad && this.renderBody();
   }
   onSortChange(source, key2, value) {
-    console.log(key2, value);
     this.sortConfig = { key: key2, value };
-    if (this.dataSource)
+    if (this._filteredData)
       this.renderBody();
-  }
-  filter(values, columnIdx) {
-    const columnKey = getColumnKey(this.columns, columnIdx);
-    if (!columnKey)
-      return;
-    this.dataSource = filterBy(this.dataSource, values, columnKey);
-  }
-  addClasses(parent, className) {
-    if (!className)
-      return;
-    const classes = className.split(" ");
-    classes.forEach((className2) => {
-      parent.classList.add(className2);
-    });
-  }
-  renderColGroup() {
-    const colgroupElm = this.createElement("colgroup", this.tableElm);
+    if (this.onColumnSort)
+      this.onColumnSort(this, key2, value);
   }
   renderHeader() {
     this.tHeadElm.innerHTML = "";
@@ -14321,25 +14277,14 @@ var Table = class extends Control {
       const thElm = this.createElement("th", rowElm);
       thElm.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
     }
-    var mobileColumn = this.mobileColumn;
     this.columns.forEach((column, colIndex) => {
-      let hiddenMobileClass = "";
-      if (mobileColumn.length) {
-        if (!mobileColumn.includes(colIndex))
-          hiddenMobileClass = "hidden-mobile";
-      }
       const thElm = this.createElement("th", rowElm);
       thElm.classList.add("i-table-cell");
-      hiddenMobileClass && thElm.classList.add(hiddenMobileClass);
-      if (column.width) {
+      thElm.setAttribute("data-fieldname", column.fieldName || "action");
+      if (column.width)
         thElm.style.width = typeof column.width === "number" ? `${column.width}px` : column.width;
-      }
-      const className = column.className || "";
-      className && this.addClasses(thElm, className);
-      const columnElm = new TableColumn(this, {
-        column,
-        header: true
-      });
+      column.textAlign && (thElm.style.textAlign = column.textAlign);
+      const columnElm = new TableColumn(void 0, __spreadProps(__spreadValues({}, column), { header: true }));
       columnElm.onSortChange = this.onSortChange.bind(this);
       thElm.appendChild(columnElm);
       rowElm.appendChild(thElm);
@@ -14350,99 +14295,101 @@ var Table = class extends Control {
     if (target) {
       const rowElm = target.closest(".i-table-row");
       let colElm = target.closest("i-table-column");
-      if (!colElm) {
+      if (!colElm)
         colElm = target.firstChild;
-      }
       const tdElm = target.closest("td");
       const rowData = colElm ? colElm.rowData : null;
-      if (typeof this.onRowClick === "function") {
-        this.onRowClick(rowElm, rowData, event);
-      }
-      if (typeof this.onCellClick === "function") {
-        this.onCellClick(tdElm, rowData, event);
+      const rowIndex = (rowElm == null ? void 0 : rowElm.getAttribute("data-index")) || -1;
+      const colIndex = (tdElm == null ? void 0 : tdElm.getAttribute("data-index")) || -1;
+      if (typeof this.onCellClick === "function")
+        this.onCellClick(this, +rowIndex, +colIndex, rowData);
+      if (this.expandable && rowElm) {
+        const expandTd = rowElm.querySelector(".i-table-cell--expand");
+        this.expandRow(rowElm, expandTd);
       }
     }
     return super._handleClick(event, true);
   }
-  renderRow(rowElm, rowData, rowIndex) {
-    if (this.hasExpandColumn) {
-      const expandTd = this.createElement("td", rowElm);
-      const expandIcon = this.expandConfig.expandIcon;
-      expandTd.innerHTML = expandIcon(false);
-      expandTd.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
-      expandTd.addEventListener("click", (event) => {
-        event.stopPropagation();
-        const expandElm = rowElm.nextElementSibling;
-        if (expandElm) {
-          const hidden = expandElm.style.display === "none";
-          expandTd.innerHTML = expandIcon(hidden);
-          expandElm.style.display = hidden ? "table-row" : "none";
-        }
-      });
-    }
-    var mobileColumn = this.mobileColumn;
-    this.columns.forEach((column, colIndex) => {
-      let hiddenMobileClass = "";
-      if (mobileColumn.length) {
-        if (!mobileColumn.includes(colIndex))
-          hiddenMobileClass = "hidden-mobile";
+  expandRow(rowElm, expandTd) {
+    rowElm.classList.toggle("is--expanded");
+    const expandElm = rowElm.nextElementSibling;
+    if (expandElm) {
+      const hidden = expandElm.style.display === "none";
+      if (expandTd && this.expandable.onRenderExpandIcon) {
+        expandTd.innerHTML = "";
+        expandTd.appendChild(this.expandable.onRenderExpandIcon(this, hidden));
       }
+      expandElm.style.display = hidden ? "table-row" : "none";
+    }
+  }
+  renderRow(rowElm, rowData, rowIndex) {
+    if (this.expandable) {
+      const expandIcon = this.expandable.onRenderExpandIcon;
+      if (expandIcon) {
+        const expandTd = this.createElement("td", rowElm);
+        expandTd.appendChild(expandIcon(this, false));
+        expandTd.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
+      }
+    }
+    let row = [];
+    this.columns.forEach((column, colIndex) => {
+      var _a;
       let spanData;
       if (typeof column.onCell === "function")
         spanData = column.onCell(rowData, rowIndex);
-      if ((spanData == null ? void 0 : spanData.rowSpan) === 0)
-        return;
-      if ((spanData == null ? void 0 : spanData.colSpan) === 0)
+      if ((spanData == null ? void 0 : spanData.rowSpan) === 0 || (spanData == null ? void 0 : spanData.columnSpan) === 0)
         return;
       const tdElm = this.createElement("td", rowElm);
       tdElm.classList.add("i-table-cell");
-      if (hiddenMobileClass)
-        tdElm.classList.add(hiddenMobileClass);
-      const className = column.className;
-      className && this.addClasses(tdElm, className);
-      const colSpan = this.getAttribute("colSpan", true) || 1;
-      tdElm.setAttribute("colspan", colSpan);
-      (spanData == null ? void 0 : spanData.colSpan) !== void 0 && tdElm.setAttribute("colspan", spanData == null ? void 0 : spanData.colSpan);
+      tdElm.setAttribute("data-index", colIndex.toString());
+      tdElm.setAttribute("data-fieldname", column.fieldName || "action");
+      (spanData == null ? void 0 : spanData.columnSpan) !== void 0 && tdElm.setAttribute("colspan", spanData == null ? void 0 : spanData.columnSpan);
       (spanData == null ? void 0 : spanData.rowSpan) !== void 0 && tdElm.setAttribute("rowspan", spanData == null ? void 0 : spanData.rowSpan);
-      if (column.width) {
+      if (column.width)
         tdElm.style.width = typeof column.width === "number" ? `${column.width}px` : column.width;
-      }
-      const columnData = rowData[column.dataIndex];
-      const columnElm = new TableColumn(this, {
-        column,
+      column.textAlign && (tdElm.style.textAlign = column.textAlign);
+      const columnData = rowData[column.fieldName];
+      const columnElm = new TableColumn(void 0, __spreadProps(__spreadValues({}, column), {
         data: columnData != null ? columnData : "--",
         rowData
-      });
+      }));
       tdElm.appendChild(columnElm);
+      row.push(new TableCell(__spreadProps(__spreadValues({}, spanData), {
+        value: (_a = rowData[column.fieldName]) != null ? _a : "--"
+      })));
     });
+    this._rows.push(new TableRow(row));
   }
   renderBody() {
+    var _a, _b;
     this.tBodyElm.innerHTML = "";
-    if (this.dataSource && this.dataSource.length) {
-      const size = typeof this.paging === "object" && this.paging.pageSize || pageSize;
-      const dataList = this.paging ? paginate(this.dataSource, size, this._pagination.currentPage) : this.dataSource;
+    this._rows = [];
+    if (this._filteredData && this._filteredData.length) {
+      const currentPage = ((_a = this.pagination) == null ? void 0 : _a.currentPage) || 1;
+      const pageSize2 = ((_b = this.pagination) == null ? void 0 : _b.pageSize) || 10;
+      const dataList = this.pagination ? paginate(this._filteredData, pageSize2, currentPage) : this._filteredData;
       dataList.forEach(async (row, rowIndex) => {
         const rowElm = this.createElement("tr", this.tBodyElm);
         rowElm.classList.add("i-table-row");
         const orderClass = (rowIndex + 1) % 2 === 0 ? "even" : "odd";
         rowElm.classList.add(orderClass);
+        const rIndex = rowIndex + (currentPage - 1) * pageSize2;
+        rowElm.setAttribute("data-index", rIndex.toString());
         this.renderRow(rowElm, row, rowIndex);
-        const hasExpanded = this.expandable && this.expandConfig.rowExpandable !== false;
-        if (hasExpanded) {
+        if (this.expandable && this.expandable.onRenderExpandedRow) {
           const childElm = this.createElement("tr", this.tBodyElm);
           childElm.classList.add("i-table-row--child");
           childElm.style.display = "none";
-          if (this.expandable.expandedReponsive) {
-            !this.expandable.expandedReponsive.desktop && childElm.classList.add("hidden-desktop");
-            !this.expandable.expandedReponsive.mobile && childElm.classList.add("hidden-mobile");
-          }
           const tdChild = this.createElement("td", childElm);
           tdChild.setAttribute("colspan", `${this.columnLength + (this.hasExpandColumn ? 1 : 0)}`);
-          const expandElm = await this.expandable.expandedRowRender(row);
+          const expandElm = await this.expandable.onRenderExpandedRow(row);
           if (typeof expandElm === "string")
             tdChild.innerHTML = expandElm;
           else
             tdChild.appendChild(expandElm);
+          const hideExpanded = this.expandable.rowExpandable === false;
+          if (hideExpanded)
+            childElm.classList.add("hidden-desktop");
         }
       });
     } else {
@@ -14450,8 +14397,8 @@ var Table = class extends Control {
       const tdElm = this.createElement("td", rowElm);
       tdElm.setAttribute("colspan", `${this.columnLength + (this.hasExpandColumn ? 1 : 0)}`);
       tdElm.classList.add("text-center");
-      if (this.onRenderEmptyData && typeof this.onRenderEmptyData === "function") {
-        this.onRenderEmptyData(tdElm);
+      if (this.onRenderEmptyTable) {
+        this.onRenderEmptyTable(this);
       } else {
         const label = this.createElement("span");
         label.textContent = "No data";
@@ -14461,40 +14408,46 @@ var Table = class extends Control {
     this.firstLoad = false;
   }
   createTable() {
-    const tableClasses = this.getAttribute("tableClasses", true);
     const tableID = "TTable_" + Date.now();
     this._tableID = tableID;
     this.tableElm = this.createElement("table", this.wrapperElm);
     this.tableElm.id = tableID;
     this.tableElm.style.width = "100%";
-    if (tableClasses)
-      this.addClasses(this.tableElm, tableClasses);
-    const tableLayout = this.getAttribute("tableLayout", true, "auto");
-    this.tableElm.style.tableLayout = tableLayout;
-    this.renderColGroup();
     if (this._heading) {
       this.tHeadElm = this.createElement("thead", this.tableElm);
       this.tHeadElm.classList.add("i-table-header");
     }
     this.tBodyElm = this.createElement("tbody", this.tableElm);
     this.tBodyElm.classList.add("i-table-body");
-    this.bordered = this.getAttribute("bordered", true) || "";
+  }
+  filter(predicate) {
+    const dataList = [...this.data];
+    this._filteredData = dataList.filter(predicate);
+    this.renderBody();
   }
   init() {
     var _a;
     if (!this.tableElm) {
-      if ((_a = this.options) == null ? void 0 : _a.onRenderEmptyData)
-        this.onRenderEmptyData = this.options.onRenderEmptyData;
+      this.classList.add(tableStyle);
+      if ((_a = this.options) == null ? void 0 : _a.onRenderEmptyTable)
+        this.onRenderEmptyTable = this.options.onRenderEmptyTable;
       this.classList.add("i-table");
       this.wrapperElm = this.createElement("div", this);
       this.wrapperElm.classList.add("i-table-container");
       this._heading = this.getAttribute("heading", true, false);
-      this.mobileColumn = this.attrs.mobileColumn || [];
       this.createTable();
-      this.expandable = this.attrs.expandable;
-      this.columns = this.attrs.columns || [];
-      this.paging = this.attrs.paging;
-      this.dataSource = this.attrs.dataSource || [];
+      this.expandable = this.getAttribute("expandable", true);
+      this.columns = this.getAttribute("columns", true, []);
+      this.pagingElm = this.createElement("div", this.wrapperElm);
+      this.pagingElm.classList.add("i-table-pagi");
+      this.pagingElm.style.display = "none";
+      const paginationAttr = this.getAttribute("pagination", true);
+      paginationAttr && (this.pagination = paginationAttr);
+      this.data = this.getAttribute("data", true, []);
+      this._filteredData = this.data;
+      const mediaQueries = this.getAttribute("mediaQueries", true);
+      if (mediaQueries)
+        this.mediaQueries = mediaQueries;
       this.firstLoad = false;
       super.init();
     }
@@ -14510,7 +14463,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -14533,23 +14486,29 @@ cssRule("i-carousel-slider", {
       alignItems: "center",
       marginTop: "1rem",
       listStyle: "none",
+      gap: "0.4rem",
       $nest: {
         ".--dot": {
           display: "flex",
-          margin: "0 0.4rem",
           cursor: "pointer"
         },
         ".--dot > span": {
           display: "inline-block",
-          width: "0.8rem",
-          height: "0.8rem",
+          minWidth: "0.8rem",
+          minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme32.colors.primary.main}`,
+          border: `2px solid ${Theme31.colors.primary.main}`,
           borderRadius: "50%",
-          transition: "background-color 0.35s ease-in-out"
+          transition: "background-color 0.35s ease-in-out",
+          textAlign: "center",
+          fontSize: ".75rem",
+          width: "auto",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme32.colors.primary.main
+          backgroundColor: Theme31.colors.primary.main
         }
       }
     }
@@ -14559,7 +14518,7 @@ cssRule("i-carousel-slider", {
 // packages/carousel/src/carousel.ts
 var CarouselSlider = class extends Control {
   constructor(parent, options) {
-    super(parent, options);
+    super(parent, options, { activeSlide: 0 });
   }
   get slidesToShow() {
     return this._slidesToShow;
@@ -14567,11 +14526,11 @@ var CarouselSlider = class extends Control {
   set slidesToShow(value) {
     this._slidesToShow = value;
   }
-  get speed() {
-    return this._speed;
+  get transitionSpeed() {
+    return this._transitionSpeed;
   }
-  set speed(value) {
-    this._speed = value;
+  set transitionSpeed(value) {
+    this._transitionSpeed = value;
     this.sliderListElm.style.transitionDuration = value + "ms";
   }
   get autoplay() {
@@ -14588,14 +14547,39 @@ var CarouselSlider = class extends Control {
     this._autoplaySpeed = value;
     this.setAutoplay();
   }
+  get activeSlide() {
+    return this._activeSlide || 0;
+  }
+  set activeSlide(value) {
+    this._activeSlide = value;
+    const currentActive = this.dotPagination.querySelector("li.--active");
+    const dot = this.dotsElm[value];
+    currentActive && currentActive.classList.remove("--active");
+    dot && dot.classList.add("--active");
+    const tx = -this.offsetWidth * value;
+    this.sliderListElm.style.transform = `translateX(${tx}px)`;
+  }
+  get items() {
+    return this._items;
+  }
   set items(nodes) {
-    this.sliderListElm.innerHTML = "";
-    for (let node of nodes) {
-      node.style.width = 100 / this.slidesToShow + "%";
-      this.sliderListElm.appendChild(node);
-    }
+    this.renderItems(nodes);
     this.renderDotPagination();
     this.setAutoplay();
+  }
+  renderItems(items) {
+    this._items = items;
+    this.sliderListElm.innerHTML = "";
+    if (!items)
+      return;
+    let list = [];
+    items.forEach((item, index) => {
+      const carouselItem = new CarouselItem(this, item);
+      carouselItem.style.width = 100 / this.slidesToShow + "%";
+      list.push(carouselItem);
+      this._slider = list;
+      this.sliderListElm.appendChild(carouselItem);
+    });
   }
   renderDotPagination() {
     this.dotPagination.innerHTML = "";
@@ -14606,11 +14590,9 @@ var CarouselSlider = class extends Control {
       for (let i = 0; i < totalDots; i++) {
         const dotElm = this.createElement("li", this.dotPagination);
         dotElm.classList.add("--dot");
-        if (i == 0) {
+        if (this.activeSlide === i)
           dotElm.classList.add("--active");
-          this._activeDotIndex = i;
-        }
-        this.createElement("span", dotElm);
+        const spanInner = this.createElement("span", dotElm);
         dotElm.addEventListener("click", () => {
           this.onDotClick(i);
           this.setAutoplay();
@@ -14620,15 +14602,7 @@ var CarouselSlider = class extends Control {
     }
   }
   onDotClick(index) {
-    const currentActive = this.dotPagination.querySelector("li.--active");
-    const dot = this.dotsElm[index];
-    if (currentActive) {
-      currentActive.classList.remove("--active");
-    }
-    dot.classList.add("--active");
-    this._activeDotIndex = index;
-    const tx = -this.offsetWidth * index;
-    this.sliderListElm.style.transform = `translateX(${tx}px)`;
+    this.activeSlide = index;
   }
   setAutoplay() {
     if (this.timer) {
@@ -14636,25 +14610,32 @@ var CarouselSlider = class extends Control {
     }
     if (this.autoplay && this.dotsElm.length > 1) {
       this.timer = setInterval(() => {
-        const index = this._activeDotIndex + 1 >= this.dotsElm.length ? 0 : this._activeDotIndex + 1;
+        const index = this.activeSlide + 1 >= this.dotsElm.length ? 0 : this.activeSlide + 1;
         this.onDotClick(index);
       }, this.autoplaySpeed);
     }
   }
+  prev() {
+    const index = this.activeSlide - 1 < 0 ? this._slider.length - 1 : this.activeSlide - 1;
+    this.onDotClick(index);
+  }
+  next() {
+    const index = this.activeSlide + 1 >= this._slider.length ? 0 : this.activeSlide + 1;
+    this.onDotClick(index);
+  }
   init() {
     super.init();
-    this.slidesToShow = this.getAttribute("slidesToShow", true) || 1;
+    this.slidesToShow = this.getAttribute("slidesToShow", true, 1);
     this.sliderListElm = this.createElement("div", this);
     this.sliderListElm.classList.add("slider-list");
-    const childNodes = this.querySelectorAll(":not(.slider-list)");
-    if (childNodes.length)
-      this.sliderListElm.append(...childNodes);
-    this.speed = this.getAttribute("speed", true) || 500;
+    this.transitionSpeed = this.getAttribute("transitionSpeed", true, 500);
     this.dotPagination = this.createElement("ul", this);
     this.dotPagination.classList.add("dots-pagination");
     this.renderDotPagination();
-    this.autoplaySpeed = this.getAttribute("autoplaySpeed", true) || 3e3;
+    this.autoplaySpeed = this.getAttribute("autoplaySpeed", true, 3e3);
     this.autoplay = this.getAttribute("autoplay", true);
+    this.items = this.getAttribute("items", true);
+    this.activeSlide = this.getAttribute("activeSlide", true, 0);
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -14665,5 +14646,35 @@ var CarouselSlider = class extends Control {
 CarouselSlider = __decorateClass([
   customElements2("i-carousel-slider")
 ], CarouselSlider);
+var CarouselItem = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get name() {
+    return this._name;
+  }
+  set name(value) {
+    this._name = value;
+  }
+  addChildControl(control) {
+    this.appendChild(control);
+  }
+  init() {
+    this.name = this.options.name;
+    this._controls = this.options.controls || [];
+    super.init();
+    this._controls.forEach((child2) => {
+      this.addChildControl(child2);
+    });
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+CarouselItem = __decorateClass([
+  customElements2("i-carousel-item")
+], CarouselItem);
   
 });

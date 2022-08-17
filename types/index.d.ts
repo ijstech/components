@@ -3333,7 +3333,6 @@ declare module "@ijstech/*checkbox/src/checkbox" {
         caption?: string;
         captionWidth?: number | string;
         onChanged?: notifyEventCallback;
-        onRender?: any;
     }
     global {
         namespace JSX {
@@ -3353,7 +3352,6 @@ declare module "@ijstech/*checkbox/src/checkbox" {
         private inputElm;
         private checkmarklElm;
         onChanged: notifyEventCallback;
-        onRender: any;
         constructor(parent?: Control, options?: any);
         get caption(): string;
         set caption(value: string);
@@ -6605,6 +6603,7 @@ declare module "@ijstech/*code-editor/src/diff-editor" {
         'original' = 1
     }
     export interface CodeDiffEditorElement extends CodeEditorElement {
+        onChange?: any;
     }
     global {
         namespace JSX {
@@ -6734,7 +6733,7 @@ declare module "@ijstech/*combo-box/@ijstech/components" {
 }
 declare module "@ijstech/*datepicker/src/style/datepicker.css" { }
 declare module "@ijstech/*datepicker/src/datepicker" {
-    import { ControlElement, Control } from "@ijstech/*base/@ijstech/components";
+    import { ControlElement, Control, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
     import "@ijstech/*datepicker/src/style/datepicker.css";
     type dateType = 'date' | 'dateTime' | 'time';
     export interface DatepickerElement extends ControlElement {
@@ -6743,7 +6742,7 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         value?: string;
         placeholder?: string;
         type?: dateType;
-        dateFormat?: string;
+        dateTimeFormat?: string;
     }
     global {
         namespace JSX {
@@ -6757,17 +6756,17 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         private _caption;
         private _captionWidth;
         private _iconWidth;
-        private _dateFormat;
+        private _dateTimeFormat;
         private _type;
         private _placeholder;
         private callback;
-        private _onSelect;
         private captionSpanElm;
         private labelElm;
         private inputElm;
         private toggleElm;
         private toggleIconElm;
         private datepickerElm;
+        onChanged: notifyEventCallback;
         constructor(parent?: Control, options?: any);
         _handleClick(event: Event): boolean;
         get caption(): string;
@@ -6781,17 +6780,15 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         get value(): any;
         set value(value: any);
         get defaultDateFormat(): string;
-        get dateFormat(): string;
-        set dateFormat(format: string);
+        get dateTimeFormat(): string;
+        set dateTimeFormat(format: string);
         get datepickerFormat(): string;
         get maxLength(): number;
         set enabled(value: boolean);
-        get onSelect(): any;
-        set onSelect(callback: any);
-        _onDatePickerChange: (event: Event) => void;
-        _dateInputMask: (event: KeyboardEvent) => void;
-        _onFocus: () => void;
-        _isValidDateFormat: () => void;
+        private _onDatePickerChange;
+        private _dateInputMask;
+        private _onFocus;
+        private _isValidDateFormat;
         protected init(): void;
         static create(options?: DatepickerElement, parent?: Control): Promise<Datepicker>;
     }
@@ -6891,7 +6888,6 @@ declare module "@ijstech/*radio/src/radio" {
         private labelElm;
         private inputElm;
         private captionSpanElm;
-        onRender: (source: Control) => void;
         constructor(parent?: Control, options?: any);
         get value(): string;
         set value(value: string);
@@ -6917,7 +6913,7 @@ declare module "@ijstech/*radio/src/radio" {
         get radioItems(): RadioElement[];
         set radioItems(value: RadioElement[]);
         private renderUI;
-        private appendIem;
+        private appendItem;
         private _handleChange;
         add(options: RadioElement): Promise<Radio>;
         delete(index: number): void;
@@ -6937,7 +6933,7 @@ declare module "@ijstech/*input/src/input" {
     import { Range, RangeElement } from "@ijstech/*range/@ijstech/components";
     import { Radio, RadioElement } from "@ijstech/*radio/@ijstech/components";
     import "@ijstech/*input/src/style/input.css";
-    export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea';
+    export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text';
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
     type actionCallback = (target: Input) => void;
     type changeCallback = (target: Input, val: string) => void;
@@ -6958,7 +6954,6 @@ declare module "@ijstech/*input/src/input" {
         onBlur?: actionCallback;
         onFocus?: actionCallback;
         onClearClick?: actionCallback;
-        onRender?: any;
     }
     global {
         namespace JSX {
@@ -6977,6 +6972,7 @@ declare module "@ijstech/*input/src/input" {
         private _showClearButton;
         private _clearBtnWidth;
         private _rows;
+        private _multiline;
         private onClearClick;
         private captionSpanElm;
         private labelElm;
@@ -6989,7 +6985,6 @@ declare module "@ijstech/*input/src/input" {
         onChanged: notifyEventCallback;
         onBlur: actionCallback;
         onFocus: actionCallback;
-        onRender: any;
         constructor(parent?: Control, options?: any);
         get caption(): string;
         set caption(value: string);
@@ -6997,8 +6992,8 @@ declare module "@ijstech/*input/src/input" {
         set captionWidth(value: number | string);
         get height(): number;
         set height(value: number);
-        get value(): any;
-        set value(value: any);
+        get value(): string;
+        set value(value: string);
         get width(): number | string;
         set width(value: number | string);
         get readOnly(): boolean;
@@ -7010,14 +7005,16 @@ declare module "@ijstech/*input/src/input" {
         set placeholder(value: string);
         get rows(): number;
         set rows(value: number);
-        _createInputElement(type: InputType): void;
-        _inputCallback: (value: any) => void;
-        _handleChange(event: Event): void;
-        _handleInputKeyDown(event: Event | KeyboardEvent): void;
-        _handleInputKeyUp(event: Event | KeyboardEvent): void;
-        _handleOnBlur(event: Event): void;
-        _handleOnFocus(event: Event): void;
-        _clearValue(): void;
+        get multiline(): boolean;
+        set multiline(value: boolean);
+        private _createInputElement;
+        private _inputCallback;
+        private _handleChange;
+        private _handleInputKeyDown;
+        private _handleInputKeyUp;
+        private _handleOnBlur;
+        private _handleOnFocus;
+        private _clearValue;
         protected init(): void;
         static create(options?: InputElement, parent?: Control): Promise<Input>;
     }
@@ -7804,6 +7801,7 @@ declare module "@ijstech/*tree-view/src/treeView" {
         get icon(): Icon;
         get rightIcon(): Icon;
         private handleChange;
+        private renderEditMode;
         private handleEdit;
         edit(): void;
         appendNode(childNode: TreeNode): void;
@@ -7852,26 +7850,6 @@ declare module "@ijstech/*search/src/search" {
 }
 declare module "@ijstech/*search/@ijstech/components" {
     export { Search, SearchElement } from "@ijstech/*search/src/search";
-}
-declare module "@ijstech/*slot/src/slot" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    export interface SlotElement extends ControlElement {
-        name?: string;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-slot']: SlotElement;
-            }
-        }
-    }
-    export class Slot extends Control {
-        constructor(parent?: Control, options?: any);
-        init(): void;
-    }
-}
-declare module "@ijstech/*slot/@ijstech/components" {
-    export { Slot, SlotElement } from "@ijstech/*slot/src/slot";
 }
 declare module "@ijstech/*switch/src/style/switch.css" { }
 declare module "@ijstech/*switch/src/switch" {
@@ -8239,8 +8217,6 @@ declare module "@ijstech/*iframe/src/iframe" {
     import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
     export interface IframeElement extends ControlElement {
         url?: string;
-        width?: string;
-        height?: string;
     }
     global {
         namespace JSX {
@@ -8271,6 +8247,7 @@ declare module "@ijstech/*pagination/src/pagination" {
     export interface PaginationElement extends ControlElement {
         totalPage?: number;
         currentPage?: number;
+        pageSize?: number;
         onPageChanged?: notifyCallback;
     }
     global {
@@ -8283,6 +8260,7 @@ declare module "@ijstech/*pagination/src/pagination" {
     export class Pagination extends Control {
         private _totalPage;
         private _curPage;
+        private _pageSize;
         private _showPrevMore;
         private _showNextMore;
         private pagers;
@@ -8298,6 +8276,8 @@ declare module "@ijstech/*pagination/src/pagination" {
         set totalPage(value: number);
         get currentPage(): number;
         set currentPage(value: number);
+        get pageSize(): number;
+        set pageSize(value: number);
         private onActiveItem;
         private onDisablePrevNext;
         protected _handleOnClickIndex(value: number, event: Event): void;
@@ -8395,120 +8375,127 @@ declare module "@ijstech/*progress/src/progress" {
 declare module "@ijstech/*progress/@ijstech/components" {
     export { Progress } from "@ijstech/*progress/src/progress";
 }
-declare module "@ijstech/*table/src/style/table.css" { }
+declare module "@ijstech/*table/src/style/table.css" {
+    import { TableColumnElement } from "@ijstech/*table/src/tableColumn";
+    import { ITableMediaQuery } from "@ijstech/*table/src/table";
+    export const tableStyle: string;
+    export const getTableMediaQueriesStyleClass: (columns: TableColumnElement[], mediaQueries: ITableMediaQuery[]) => string;
+}
 declare module "@ijstech/*table/src/tableColumn" {
     import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
     import "@ijstech/*table/src/style/table.css";
-    export type SortDirection = 'asc' | 'desc';
-    export interface IColumn {
-        title: string;
-        dataIndex: string;
-        key?: string | number;
-        className?: string;
-        width?: string | number;
-        sortable?: boolean | 'custom';
-        sorter?: Function | boolean;
-        sortOrder?: null | SortDirection;
-        filters?: {
-            text: string;
-            value: string;
-        }[];
-        onCell?: any;
-        render?: any;
-    }
+    export type SortDirection = 'asc' | 'desc' | 'none';
+    type renderCallback = (target: TableColumn, columnData: any, rowData: any) => any;
+    type TextAlign = 'left' | 'right' | 'center';
     export interface TableColumnElement extends ControlElement {
-        column?: IColumn;
-        data?: any;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-table-column']: TableColumnElement;
-            }
-        }
+        title: string;
+        fieldName: string;
+        key?: string | number;
+        sortable?: boolean;
+        sortOrder?: SortDirection;
+        textAlign?: TextAlign;
+        sorter?: (a: any, b: any) => boolean;
+        onCell?: any;
+        onRenderCell?: renderCallback;
     }
     export class TableColumn extends Control {
+        title: string;
+        fieldName: string;
+        key?: string | number;
+        sortable?: boolean;
         private columnElm;
         private sortElm;
         private ascElm;
         private descElm;
-        private _column;
-        private _rowData;
-        private _sortable;
-        private _sorter;
-        private _sortOrder;
         private isHeader;
-        onSortChange: any;
-        private _columnData;
-        get dataSource(): number | string;
-        set dataSource(value: number | string);
-        get column(): IColumn;
-        set column(value: IColumn);
+        private _sortOrder;
+        private _data;
+        private _rowData;
+        private _textAlign;
+        onSortChange: (source: Control, key: string, value: SortDirection) => void;
+        onRenderCell: renderCallback;
+        onCell: any;
+        sorter: (a: any, b: any) => boolean;
+        constructor(parent?: Control, options?: any);
+        get data(): number | string;
+        set data(value: number | string);
         get rowData(): any;
         set rowData(value: any);
-        get sortable(): boolean | 'custom';
-        set sortable(value: boolean | 'custom');
-        get sorter(): Function | boolean;
-        set sorter(value: Function | boolean);
-        get sortOrder(): null | SortDirection;
-        set sortOrder(value: null | SortDirection);
+        get sortOrder(): SortDirection;
+        set sortOrder(value: SortDirection);
+        get textAlign(): TextAlign;
+        set textAlign(value: TextAlign);
         renderSort(): void;
         init(): Promise<void>;
-        static create(options?: TableColumnElement, parent?: Control): Promise<TableColumn>;
     }
 }
 declare module "@ijstech/*table/src/utils" {
-    import { IColumn } from "@ijstech/*table/src/tableColumn";
+    import { TableColumnElement } from "@ijstech/*table/src/tableColumn";
     export const paginate: <Type>(array: Type[], pageSize: number, pageNumber: number) => Type[];
-    export const getColumnIndex: (columns: IColumn[], key: string) => number;
-    export const getColumnKey: (columns: IColumn[], columnIdx: number) => string;
-    export const getSorter: (columns: IColumn[], key: string) => boolean | Function | null | undefined;
+    export const getColumnIndex: (columns: TableColumnElement[], key: string) => number;
+    export const getColumnKey: (columns: TableColumnElement[], columnIdx: number) => string;
+    export const getSorter: (columns: TableColumnElement[], key: string) => ((a: any, b: any) => boolean) | null | undefined;
     export const getValueByPath: (object: any, prop: string) => any;
     export const orderBy: (list: any[], sortBy: string | string[], sortValue: null | string, sorter: any) => any[];
     export const filterBy: (list: any[], value: any, columnKey: string | number) => any[];
 }
-declare module "@ijstech/*table/src/table" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { IColumn, SortDirection } from "@ijstech/*table/src/tableColumn";
+declare module "@ijstech/*table/src/tableCell" {
     import "@ijstech/*table/src/style/table.css";
-    type TablePaginationPosition = 'topLeft' | 'topCenter' | 'topRight' | 'bottomLeft' | 'bottomCenter' | 'bottomRight';
-    interface IPagination {
-        position?: TablePaginationPosition;
-        totalPage?: number;
-        currentPage?: number;
-        pageSize?: number;
-        hideOnSinglePage?: boolean;
+    export class TableCell {
+        private _rowSpan;
+        private _columnSpan;
+        private _value;
+        private cellElm;
+        constructor(options: TableCell);
+        get rowSpan(): number;
+        set rowSpan(value: number);
+        get columnSpan(): number;
+        set columnSpan(value: number);
+        get value(): string;
+        set value(data: string);
     }
-    interface IExpandedConfig {
-        expandedRowRender: any;
-        rowExpandable?: boolean;
-        expandIcon?: any;
-        onExpand?: any;
-        showExpandColumn?: boolean;
-        expandedReponsive?: {
-            desktop: boolean;
-            mobile: boolean;
-        };
+}
+declare module "@ijstech/*table/src/tableRow" {
+    import "@ijstech/*table/src/style/table.css";
+    import { TableCell } from "@ijstech/*table/src/tableCell";
+    export class TableRow {
+        private _cells;
+        constructor(cells: TableCell[]);
+        get cells(): TableCell[];
+        set cells(value: TableCell[]);
     }
-    type TableLayout = 'fixed' | 'auto';
+}
+declare module "@ijstech/*table/src/table" {
+    import { Control, ControlElement, IMediaQuery } from "@ijstech/*base/@ijstech/components";
+    import { SortDirection, TableColumnElement } from "@ijstech/*table/src/tableColumn";
+    import { Pagination } from "@ijstech/*pagination/@ijstech/components";
+    import { TableRow } from "@ijstech/*table/src/tableRow";
+    import { Icon } from "@ijstech/*icon/@ijstech/components";
+    type renderCellCallback = (target: Table, columnIdx: number, rowIdx: number, rowData: any) => void;
+    type emptyCallback = (target: Table) => void;
+    type sortCallback = (target: Table, key: string, value: string) => void;
+    interface ITableExpandable {
+        onRenderExpandedRow: (record: any) => any;
+        rowExpandable: boolean;
+        onRenderExpandIcon?: (target: Table, expand: boolean) => Icon;
+    }
+    export interface ITableMediaQueryProps {
+        fieldNames?: string[];
+        expandable?: ITableExpandable;
+    }
+    export type ITableMediaQuery = IMediaQuery<ITableMediaQueryProps>;
     export interface TableElement extends ControlElement {
         heading?: boolean;
-        tableLayout?: TableLayout;
-        search?: boolean | string;
-        select?: boolean | string;
-        onRowClick?: any;
+        data?: any[];
+        columns?: TableColumnElement[];
+        rows?: TableRow[];
+        pagination?: string;
+        expandable?: ITableExpandable;
+        mediaQueries?: ITableMediaQuery[];
+        onRenderCell?: renderCellCallback;
+        onRenderEmptyTable?: emptyCallback;
         onCellClick?: any;
-        onRowSelected?: any;
-        language?: any;
-        tableClasses?: string;
-        dataSource?: any[];
-        columns?: IColumn[];
-        bordered?: boolean;
-        paging?: boolean | IPagination;
-        expandable?: IExpandedConfig;
-        onChange?: any;
-        mobileColumn?: any;
-        onRenderEmptyData?: any;
+        onColumnSort?: sortCallback;
     }
     global {
         namespace JSX {
@@ -8523,68 +8510,68 @@ declare module "@ijstech/*table/src/table" {
         private tHeadElm;
         private tBodyElm;
         private pagingElm;
-        onChange: any;
-        onRowClick: any;
         onCellClick: any;
-        onRowSelected: any;
-        onRenderEmptyData: any;
+        onRenderEmptyTable: emptyCallback;
+        onRenderCell: renderCellCallback;
+        onColumnSort: sortCallback;
         private _data;
+        private _filteredData;
         private _tableID;
         private _columns;
-        private _bordered;
-        private _paging;
-        private firstLoad;
+        private _rows;
         private _pagination;
-        private expandConfig;
+        private firstLoad;
+        private _mediaQueries;
         private _expandable;
         private sortConfig;
-        private filterConfig;
         private _heading;
-        private _mobileColumn;
         constructor(parent?: Control, options?: any);
-        updatePagination(): void;
-        get dataSource(): any[];
-        set dataSource(value: any[]);
-        get columns(): IColumn[];
-        set columns(value: IColumn[]);
-        get bordered(): boolean;
-        set bordered(value: boolean);
-        get paging(): boolean | IPagination;
-        set paging(value: boolean | IPagination);
-        get expandable(): IExpandedConfig;
-        set expandable(value: IExpandedConfig);
-        get hasExpandColumn(): boolean;
-        get mobileColumn(): any;
-        set mobileColumn(value: any);
-        updateExpandColumn(): void;
-        get columnLength(): number;
-        onPageChange(source: Control, value: number): void;
-        onSortChange(source: Control, key: string, value: null | SortDirection): void;
-        filter(values: any, columnIdx: number): void;
-        addClasses(parent: HTMLElement | Control, className: string): void;
-        private renderColGroup;
+        get data(): any[];
+        set data(value: any[]);
+        get columns(): TableColumnElement[];
+        set columns(value: TableColumnElement[]);
+        get rows(): TableRow[];
+        get pagination(): Pagination;
+        set pagination(value: string | Pagination);
+        get expandable(): ITableExpandable;
+        set expandable(value: ITableExpandable);
+        private get hasExpandColumn();
+        private get columnLength();
+        get mediaQueries(): ITableMediaQuery[];
+        set mediaQueries(value: ITableMediaQuery[]);
+        private onPageChange;
+        protected onSortChange(source: Control, key: string, value: SortDirection): void;
         private renderHeader;
         _handleClick(event: Event): boolean;
+        private expandRow;
         private renderRow;
         private renderBody;
         private createTable;
+        filter(predicate: (dataItem: any) => boolean): void;
         protected init(): void;
         static create(options?: TableElement, parent?: Control): Promise<Table>;
     }
 }
 declare module "@ijstech/*table/@ijstech/components" {
     export { Table, TableElement } from "@ijstech/*table/src/table";
-    export { TableColumn, TableColumnElement } from "@ijstech/*table/src/tableColumn";
+    export { TableColumn } from "@ijstech/*table/src/tableColumn";
+    export { TableRow } from "@ijstech/*table/src/tableRow";
+    export { TableCell } from "@ijstech/*table/src/tableCell";
 }
 declare module "@ijstech/*carousel/src/style/carousel.css" { }
 declare module "@ijstech/*carousel/src/carousel" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
+    import { Control, ControlElement, ContainerElement } from "@ijstech/*base/@ijstech/components";
     import "@ijstech/*carousel/src/style/carousel.css";
+    export interface CarouselItemElement extends ContainerElement {
+        name?: string;
+    }
     export interface CarouselSliderElement extends ControlElement {
         slidesToShow?: number;
-        speed?: number;
+        transitionSpeed?: number;
         autoplay?: boolean;
         autoplaySpeed?: number;
+        items?: CarouselItemElement[];
+        activeSlide?: number;
     }
     global {
         namespace JSX {
@@ -8595,27 +8582,35 @@ declare module "@ijstech/*carousel/src/carousel" {
     }
     export class CarouselSlider extends Control {
         private _slidesToShow;
-        private _speed;
+        private _transitionSpeed;
         private _autoplay;
         private _autoplaySpeed;
+        private _activeSlide;
+        private _items;
+        private _slider;
         private timer;
-        private _activeDotIndex;
         private sliderListElm;
         private dotPagination;
         private dotsElm;
         constructor(parent?: Control, options?: any);
         get slidesToShow(): number;
         set slidesToShow(value: number);
-        get speed(): number;
-        set speed(value: number);
+        get transitionSpeed(): number;
+        set transitionSpeed(value: number);
         get autoplay(): boolean;
         set autoplay(value: boolean);
         get autoplaySpeed(): number;
         set autoplaySpeed(value: number);
-        set items(nodes: Control[]);
-        renderDotPagination(): void;
-        onDotClick(index: number): void;
-        setAutoplay(): void;
+        get activeSlide(): number;
+        set activeSlide(value: number);
+        get items(): CarouselItemElement[];
+        set items(nodes: CarouselItemElement[]);
+        private renderItems;
+        private renderDotPagination;
+        private onDotClick;
+        private setAutoplay;
+        prev(): void;
+        next(): void;
         protected init(): void;
         static create(options?: CarouselSliderElement, parent?: Control): Promise<CarouselSlider>;
     }
@@ -8641,7 +8636,6 @@ declare module "@ijstech/components" {
     export { Tooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { TreeView, TreeNode } from "@ijstech/*tree-view/@ijstech/components";
     export { Search } from "@ijstech/*search/@ijstech/components";
-    export { Slot } from "@ijstech/*slot/@ijstech/components";
     export { Switch } from "@ijstech/*switch/@ijstech/components";
     export { Modal } from "@ijstech/*modal/@ijstech/components";
     export { Checkbox } from "@ijstech/*checkbox/@ijstech/components";
@@ -8677,7 +8671,6 @@ declare module "src/launcher" {
     export { Tooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { TreeView, TreeNode } from "@ijstech/*tree-view/@ijstech/components";
     export { Search } from "@ijstech/*search/@ijstech/components";
-    export { Slot } from "@ijstech/*slot/@ijstech/components";
     export { Switch } from "@ijstech/*switch/@ijstech/components";
     export { Modal } from "@ijstech/*modal/@ijstech/components";
     export { Checkbox } from "@ijstech/*checkbox/@ijstech/components";
