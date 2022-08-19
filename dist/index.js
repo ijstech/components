@@ -2029,7 +2029,6 @@ __export(exports, {
   RequireJS: () => RequireJS,
   ScatterChart: () => ScatterChart,
   ScatterLineChart: () => ScatterLineChart,
-  Search: () => Search,
   Styles: () => src_exports,
   Switch: () => Switch,
   Tab: () => Tab,
@@ -7143,7 +7142,7 @@ var ComboBox = class extends Control {
         liElm.setAttribute("data-key", item.value);
         liElm.addEventListener("click", (event) => {
           event.stopPropagation();
-          this.onItemClick(liElm, item);
+          this.onItemClick(event, liElm, item);
         });
         if (Array.isArray(this.selectedItem)) {
           const index = this.getItemIndex(this.selectedItem, item);
@@ -7174,7 +7173,7 @@ var ComboBox = class extends Control {
     liElm.setAttribute("data-key", item.value);
     liElm.addEventListener("click", (event) => {
       event.stopPropagation();
-      this.onItemClick(liElm, item);
+      this.onItemClick(event, liElm, item);
     });
     liElm.classList.add("matched");
     liElm.innerHTML = `<span class="highlight">${this.searchStr}</span>`;
@@ -7196,10 +7195,10 @@ var ComboBox = class extends Control {
     if (selectedIndex >= 0)
       selectedItem.splice(selectedIndex, 1);
     this.selectedItem = selectedItem;
-    if (this.onChanged && typeof this.onChanged === "function")
-      this.onChanged(this, this.selectedItem);
+    if (this.onChanged)
+      this.onChanged(this, event);
   }
-  onItemClick(liElm, item) {
+  onItemClick(event, liElm, item) {
     var _a;
     if (((_a = this.newItem) == null ? void 0 : _a.value) === item.value) {
       item = __spreadProps(__spreadValues({}, this.newItem), { isNew: true });
@@ -7221,8 +7220,8 @@ var ComboBox = class extends Control {
       this.selectedItem = item;
       this.closeList();
     }
-    if (this.onChanged && typeof this.onChanged === "function")
-      this.onChanged(this, this.selectedItem);
+    if (this.onChanged)
+      this.onChanged(this, event);
   }
   clear() {
     if (this.isMulti) {
@@ -7381,21 +7380,13 @@ var Datepicker = class extends Control {
       width: 100
     });
     this._onDatePickerChange = (event) => {
-      const _datepicker = event.target;
-      const pickerValue = _datepicker.value;
+      const pickerValue = this.datepickerElm.value;
       RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
         let _moment = this._type === "time" ? moment(pickerValue, "HH:mm") : moment(pickerValue);
-        if (_moment.isValid()) {
-          this.inputElm.value = _moment.format(this.dateTimeFormat || this.defaultDateFormat);
-        } else {
-          this.inputElm.value = "";
-          _datepicker.value = "";
-        }
+        this.updateValue(_moment);
         if (this.onChanged)
           this.onChanged(this, event);
       });
-      if (this.callback)
-        this.callback(this.inputElm.value);
     };
     this._dateInputMask = (event) => {
       const key2 = event.key;
@@ -7421,46 +7412,27 @@ var Datepicker = class extends Control {
       }
     };
     this._onFocus = () => {
-      this.inputElm.placeholder = this.defaultDateFormat;
+      this.inputElm.placeholder = this.formatString;
       if (!this.inputElm.value)
         return;
-      if (this.dateTimeFormat) {
-        RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
-          let _moment = moment(this.inputElm.value, this.dateTimeFormat, true);
-          if (_moment.isValid()) {
-            this.inputElm.value = _moment.format(this.defaultDateFormat);
-          }
-        });
+      if (this.value) {
+        this.inputElm.value = this.value.format(this.defaultDateTimeFormat);
       }
     };
-    this._isValidDateFormat = () => {
-      this.inputElm.placeholder = this._placeholder || "";
+    this._onBlur = (event) => {
       if (!this.inputElm.value) {
-        this.datepickerElm.value = "";
-        if (this.callback) {
-          this.callback("");
-        }
+        const oldVal = this.value;
+        this.clear();
+        const isChanged = oldVal !== this.value;
+        if (event && isChanged && this.onChanged)
+          this.onChanged(this, event);
         return;
       }
       ;
       RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
-        let _moment = moment(this.inputElm.value, this.defaultDateFormat, true);
-        let isValid = _moment.isValid();
-        if (isValid) {
-          if (this.dateTimeFormat) {
-            this.inputElm.value = _moment.format(this.dateTimeFormat);
-          }
-          this.datepickerElm.value = _moment.format(this.datepickerFormat);
-        } else {
-          this._value = "";
-          this.inputElm.value = "";
-          this.datepickerElm.value = "";
-        }
-        if (this.onChanged)
-          this.onChanged(this, this.inputElm.value);
+        let _moment = moment(this.inputElm.value, this.defaultDateTimeFormat, true);
+        this.updateValue(_moment, event);
       });
-      if (this.callback)
-        this.callback(this.inputElm.value);
     };
   }
   _handleClick(event) {
@@ -7512,13 +7484,12 @@ var Datepicker = class extends Control {
     return this._value;
   }
   set value(value) {
-    if (value == null)
-      value = "";
-    this._value = value;
-    this.inputElm.value = value;
-    this._isValidDateFormat();
+    if (value)
+      this.updateValue(value);
+    else
+      this.clear();
   }
-  get defaultDateFormat() {
+  get defaultDateTimeFormat() {
     switch (this._type) {
       case "date":
         return "DD/MM/YYYY";
@@ -7558,11 +7529,43 @@ var Datepicker = class extends Control {
     this.inputElm.disabled = !value;
     this.datepickerElm.disabled = !value;
   }
+  get placeholder() {
+    return this._placeholder;
+  }
+  set placeholder(value) {
+    this._placeholder = value;
+    if (this.inputElm)
+      this.inputElm.placeholder = this._placeholder;
+  }
+  get formatString() {
+    return this.dateTimeFormat || this.defaultDateTimeFormat;
+  }
+  updateValue(value, event) {
+    this.inputElm.placeholder = this._placeholder || "";
+    const oldVal = this.value;
+    if (value.isValid()) {
+      this._value = value;
+      this.inputElm.value = value.format(this.formatString);
+      this.datepickerElm.value = value.format(this.datepickerFormat);
+      if (this.callback)
+        this.callback(this.inputElm.value);
+    } else {
+      this.clear();
+    }
+    const isChanged = oldVal && this.value && !oldVal.isSame(this.value) || (!oldVal || !this.value);
+    if (event && isChanged && this.onChanged)
+      this.onChanged(this, event);
+  }
+  clear() {
+    this._value = void 0;
+    this.inputElm.value = "";
+    this.datepickerElm.value = "";
+    this.callback && this.callback("");
+  }
   init() {
     if (!this.captionSpanElm) {
       this.callback = this.getAttribute("parentCallback", true);
-      this._placeholder = this.getAttribute("placeholder", true) || "";
-      this.dateTimeFormat = this.getAttribute("dateTimeFormat", true) || "";
+      this.dateTimeFormat = this.getAttribute("dateTimeFormat", true, "");
       this._type = this.getAttribute("type", true) || "date";
       this._iconWidth = this.getAttribute("height", true);
       this.captionSpanElm = this.createElement("span", this);
@@ -7571,12 +7574,12 @@ var Datepicker = class extends Control {
       this.inputElm.setAttribute("type", "text");
       this.inputElm.setAttribute("autocomplete", "disabled");
       this.inputElm.style.height = this.height + "px";
-      this.inputElm.placeholder = this._placeholder;
       this.inputElm.maxLength = this.maxLength;
       this.inputElm.addEventListener("keypress", this._dateInputMask);
       this.inputElm.onfocus = this._onFocus;
-      this.inputElm.onblur = this._isValidDateFormat;
-      this.inputElm.pattern = this.dateTimeFormat || this.defaultDateFormat;
+      this.inputElm.onblur = this._onBlur;
+      this.inputElm.pattern = this.formatString;
+      this.placeholder = this.getAttribute("placeholder", true, "");
       this.toggleElm = this.createElement("span", this);
       this.toggleElm.classList.add("datepicker-toggle");
       this.toggleElm.style.width = this._iconWidth + "px";
@@ -7608,9 +7611,6 @@ var Datepicker = class extends Control {
     return self;
   }
 };
-__decorateClass([
-  observable("value")
-], Datepicker.prototype, "_value", 2);
 Datepicker = __decorateClass([
   customElements2("i-datepicker")
 ], Datepicker);
@@ -7846,13 +7846,13 @@ var Range = class extends Control {
     this._tooltipVisible = value;
     this.tooltipElm.style.display = value ? "block" : "none";
   }
-  onSliderChange() {
+  onSliderChange(event) {
     this.value = this.inputElm.value;
     const min = Number(this.inputElm.min);
     const max = Number(this.inputElm.max);
     this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
     if (this.onChanged)
-      this.onChanged(this, this.value);
+      this.onChanged(this, event);
     this.onUpdateTooltip(false);
   }
   onUpdateTooltip(init) {
@@ -8455,7 +8455,7 @@ var Input = class extends Control {
     }
     this._value = this.inputElm.value;
     if (this.onChanged)
-      this.onChanged(this, this.value);
+      this.onChanged(this, event);
   }
   _handleInputKeyDown(event) {
     if (this.onKeyDown)
@@ -11697,11 +11697,28 @@ var TreeNode = class extends Control {
     this._captionElm.appendChild(captionInput);
     captionInput.focus();
     this.click();
+    let isUpdating = false;
+    const updateCaption = () => {
+      const newValue = captionInput.value;
+      if (newValue !== this.caption) {
+        this.handleChange(this, this.caption, newValue);
+        this.caption = newValue;
+        console.log(this.caption);
+      }
+    };
     captionInput.addEventListener("blur", (event) => {
       event.preventDefault();
-      const newValue = captionInput.value;
-      this.handleChange(this, this.caption, newValue);
-      this.caption = newValue;
+      if (isUpdating)
+        return;
+      updateCaption();
+    });
+    captionInput.addEventListener("keyup", (event) => {
+      event.preventDefault();
+      if (event.key === "Enter" || event.keyCode === 13) {
+        isUpdating = true;
+        updateCaption();
+        isUpdating = false;
+      }
     });
   }
   handleEdit(event) {
@@ -11816,261 +11833,12 @@ TreeNode = __decorateClass([
   customElements2("i-tree-node")
 ], TreeNode);
 
-// packages/search/src/style/search.css.ts
-var Theme22 = theme_exports.ThemeVars;
-cssRule("i-search", {
-  fontFamily: Theme22.typography.fontFamily,
-  fontSize: Theme22.typography.fontSize,
-  position: "relative",
-  $nest: {
-    ".search": {
-      position: "relative",
-      display: "inline-block",
-      direction: "ltr"
-    },
-    "i-icon": {
-      position: "absolute",
-      top: "50%",
-      left: "10px",
-      display: "inline-block",
-      width: "18px",
-      height: "18px",
-      transform: "translateY(-50%)"
-    },
-    input: {
-      position: "relative",
-      verticalAlign: "top",
-      height: "2.5rem",
-      background: "none",
-      border: "1px solid #c5d1db",
-      color: "#28333d",
-      fontWeight: 400,
-      fontSize: "15px",
-      borderRadius: "20px",
-      lineHeight: "20px",
-      outline: "none",
-      transition: "width .5s ease",
-      width: "170px",
-      padding: "12px 8px 8px 38px",
-      $nest: {
-        "&::placeholder": {
-          color: "#28333d",
-          opacity: 1
-        },
-        "&:focus": {
-          width: "220px"
-        }
-      }
-    },
-    ".dropdown": {
-      display: "none",
-      position: "absolute",
-      top: "100%",
-      left: "auto",
-      right: 0,
-      zIndex: 100,
-      fontSize: "14px",
-      lineHeight: "1.2em",
-      minWidth: "600px",
-      padding: "1rem",
-      margin: "6px 0 0",
-      border: "none",
-      borderRadius: "1rem",
-      boxShadow: "0 4px 16px rgb(0 0 0 / 25%)",
-      background: "#fff",
-      $nest: {
-        "&.show": {
-          display: "block"
-        }
-      }
-    },
-    ".suggestion": {
-      display: "table",
-      width: "100%",
-      whiteSpace: "normal",
-      border: "none",
-      color: "#333",
-      cursor: "pointer",
-      overflow: "hidden",
-      $nest: {
-        ".header": {
-          display: "block",
-          fontSize: "14px",
-          fontWeight: 400,
-          background: "#ebeff3",
-          color: "#28333d",
-          borderRadius: "1rem",
-          padding: "5px 10px"
-        },
-        ".column": {
-          display: "table-cell",
-          borderRight: "1px solid rgba(57,57,57,.3)",
-          color: "#555",
-          overflow: "hidden",
-          padding: "5px 7px 5px 5px",
-          textAlign: "right",
-          textOverflow: "ellipsis",
-          verticalAlign: "top",
-          width: "135px",
-          maxWidth: "135px",
-          minWidth: "135px"
-        },
-        ".content": {
-          display: "table-cell",
-          padding: "5px 10px",
-          width: "100%"
-        },
-        ".content-text": {
-          display: "block",
-          fontWeight: 600
-        },
-        ".content-paragraph-text": {
-          display: "-webkit-box",
-          "-webkit-line-clamp": 3,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden"
-        },
-        ".highlight": {
-          color: "#55f",
-          padding: 0,
-          background: "none",
-          fontWeight: 600
-        }
-      }
-    }
-  }
-});
-
-// packages/search/src/search.ts
-var Search = class extends Control {
-  constructor() {
-    super(...arguments);
-    this.isDropdownShown = false;
-    this._keyword = "";
-  }
-  get keyword() {
-    return this._keyword;
-  }
-  set keyword(value) {
-    this._keyword = value;
-  }
-  buildIndex(documents, fields, storeFields) {
-    this.miniSearch = new this.MiniSearch({
-      fields,
-      storeFields,
-      searchOptions: {
-        fuzzy: 0.2
-      }
-    });
-    this.miniSearch.addAll(documents);
-  }
-  search(keyword) {
-    return this.miniSearch.search(keyword).slice(0, 5);
-  }
-  autoSuggest(keyword) {
-    return this.miniSearch.autoSuggest(keyword);
-  }
-  renderSuggestion(data) {
-    if (data.length) {
-      if (!this.dropdownElm) {
-        this.dropdownElm = this.createElement("span", this.wrapperElm);
-        this.dropdownElm.classList.add("dropdown", "dataset");
-      }
-      this.dropdownElm.innerHTML = "";
-      const suggestionElm = this.createElement("div", this.dropdownElm);
-      suggestionElm.classList.add("suggestion");
-      data.map((row) => {
-        const suggestionHeader = this.createElement("div", suggestionElm);
-        suggestionHeader.classList.add("header");
-        suggestionHeader.innerText = row[0].title;
-        row.map((item) => {
-          const suggestionWrapper = this.createElement("div", suggestionElm);
-          suggestionWrapper.classList.add("wrapper");
-          suggestionWrapper.addEventListener("click", () => {
-            window.location.hash = item.slug;
-            this.dropdownElm.classList.remove("show");
-          });
-          const suggestionColumn = this.createElement("div", suggestionWrapper);
-          suggestionColumn.classList.add("column");
-          const suggestionColumnText = this.createElement("span", suggestionColumn);
-          suggestionColumnText.classList.add("column-text");
-          suggestionColumnText.innerHTML = item.subTitle;
-          const suggestionContent = this.createElement("div", suggestionWrapper);
-          suggestionContent.classList.add("content");
-          const suggestionContentText = this.createElement("span", suggestionContent);
-          suggestionContentText.classList.add("content-text");
-          suggestionContentText.innerHTML = item.subTitle;
-          const suggestionParagraphText = this.createElement("span", suggestionContent);
-          suggestionParagraphText.classList.add("content-paragraph-text");
-          const rgxp = new RegExp("(\\S*.{0,10})?(" + Object.keys(item.match)[0] + ")(.{0,10}\\S*)?", "ig");
-          const results = [];
-          item.paragraph.replace(rgxp, function(match, $1, $2, $3) {
-            results.push(($1 ? "\u2026" + $1 : "") + "<b class='highlight'>" + $2 + "</b>" + ($3 ? $3 + "\u2026" : ""));
-          });
-          suggestionParagraphText.innerHTML = results.join(" ");
-        });
-      });
-      this.dropdownElm.classList.add("show");
-    }
-  }
-  async initMiniSearch() {
-    return new Promise((resolve, reject) => {
-      try {
-        RequireJS.require([`${LibPath}lib/minisearch/index.min.js`], (minisearch) => {
-          this.MiniSearch = minisearch;
-          resolve();
-        });
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-  async init() {
-    if (!this.wrapperElm) {
-      this.wrapperElm = this.createElement("span", this);
-      this.wrapperElm.classList.add("search", "autocomplete");
-      const icon = new Icon(this, { name: "search", fill: "#55f" });
-      this.wrapperElm.appendChild(icon);
-      this.inputElm = this.createElement("input", this.wrapperElm);
-      this.inputElm.setAttribute("placeholder", "Search");
-      this.inputElm.setAttribute("autocomplete", "off");
-      this.inputElm.addEventListener("input", () => {
-        const input = document.querySelector("i-search input");
-        const results = this.search(input.value);
-        const groupResult = Object.values(results.reduce((acc, result) => {
-          acc[result.id] = acc[result.id] || [];
-          acc[result.id].push(result);
-          return acc;
-        }, Object.create(null)));
-        this.renderSuggestion(groupResult);
-      });
-      await this.initMiniSearch();
-      document.addEventListener("click", (e) => {
-        if (!this._enabled)
-          return false;
-        if (!this.contains(e.target)) {
-          if (this.dropdownElm)
-            this.dropdownElm.classList.remove("show");
-        }
-      });
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Search = __decorateClass([
-  customElements2("i-search")
-], Search);
-
 // packages/switch/src/style/switch.css.ts
-var Theme23 = theme_exports.ThemeVars;
+var Theme22 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme23.typography.fontFamily,
-  fontSize: Theme23.typography.fontSize,
+  fontFamily: Theme22.typography.fontFamily,
+  fontSize: Theme22.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -12491,7 +12259,7 @@ ScatterLineChart = __decorateClass([
 ], ScatterLineChart);
 
 // packages/upload/src/style/upload.css.ts
-var Theme24 = theme_exports.ThemeVars;
+var Theme23 = theme_exports.ThemeVars;
 cssRule("i-upload", {
   margin: "1rem 0",
   listStyle: "none",
@@ -12504,7 +12272,7 @@ cssRule("i-upload", {
   $nest: {
     ".i-upload-wrapper": {
       position: "relative",
-      border: `2px dashed ${Theme24.divider}`,
+      border: `2px dashed ${Theme23.divider}`,
       width: "100%",
       display: "flex",
       flexDirection: "column",
@@ -12524,8 +12292,8 @@ cssRule("i-upload", {
       marginTop: "4rem"
     },
     ".i-upload-dragger_active": {
-      border: `2px dashed ${Theme24.colors.primary.main}`,
-      backgroundColor: Theme24.colors.info.light,
+      border: `2px dashed ${Theme23.colors.primary.main}`,
+      backgroundColor: Theme23.colors.info.light,
       opacity: "0.8"
     },
     'input[type="file"]': {
@@ -12550,7 +12318,7 @@ cssRule("i-upload", {
     },
     ".i-upload_preview-crop": {
       position: "absolute",
-      border: `1px dashed ${Theme24.background.paper}`,
+      border: `1px dashed ${Theme23.background.paper}`,
       width: 150,
       height: 150,
       left: "50%",
@@ -12636,7 +12404,7 @@ cssRule("i-upload", {
 });
 
 // packages/upload/src/upload.ts
-var Theme25 = theme_exports.ThemeVars;
+var Theme24 = theme_exports.ThemeVars;
 var fileId = 1;
 var genFileId = () => Date.now() + fileId++;
 var UploadDrag = class extends Control {
@@ -12720,7 +12488,7 @@ var UploadDrag = class extends Control {
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-drag_area");
       this._labelElm = this.createElement("span", this._wrapperElm);
-      this._labelElm.style.color = Theme25.text.primary;
+      this._labelElm.style.color = Theme24.text.primary;
       this.caption = this.getAttribute("caption", true);
       this.disabled = this.getAttribute("disabled", true);
       this.addEventListener("dragenter", this.handleOnDragEnter.bind(this));
@@ -12893,7 +12661,7 @@ var Upload = class extends Control {
         const removeIcon = new Icon(void 0, {
           width: 12,
           height: 12,
-          fill: Theme25.action.active,
+          fill: Theme24.action.active,
           name: "trash"
         });
         itemElm.appendChild(removeIcon);
@@ -13076,22 +12844,22 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme25 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme26.typography.fontFamily,
-  fontSize: Theme26.typography.fontSize,
+  fontFamily: Theme25.typography.fontFamily,
+  fontSize: Theme25.typography.fontSize,
   lineHeight: "25px",
-  color: Theme26.text.primary,
+  color: Theme25.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex"
     },
     ".pagination a": {
-      color: Theme26.text.primary,
+      color: Theme25.text.primary,
       float: "left",
       padding: "8px 16px",
       textDecoration: "none",
@@ -13104,7 +12872,7 @@ cssRule("i-pagination", {
       border: "1px solid #4CAF50"
     },
     ".pagination a.disabled": {
-      color: Theme26.text.disabled,
+      color: Theme25.text.disabled,
       pointerEvents: "none"
     },
     ".pagination-main": {
@@ -13347,7 +13115,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -13360,9 +13128,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme27.typography.fontFamily,
-  fontSize: Theme27.typography.fontSize,
-  color: Theme27.text.primary,
+  fontFamily: Theme26.typography.fontFamily,
+  fontSize: Theme26.typography.fontSize,
+  color: Theme26.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -13385,13 +13153,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme27.colors.error.light
+          backgroundColor: Theme26.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme27.colors.error.light
+          backgroundColor: Theme26.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme27.colors.error.light
+          borderColor: Theme26.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -13399,13 +13167,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme27.colors.success.light
+          backgroundColor: Theme26.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme27.colors.success.light
+          backgroundColor: Theme26.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme27.colors.success.light
+          borderColor: Theme26.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -13413,13 +13181,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme27.colors.warning.light
+          backgroundColor: Theme26.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme27.colors.warning.light
+          backgroundColor: Theme26.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme27.colors.warning.light
+          borderColor: Theme26.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -13427,14 +13195,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme27.colors.primary.light
+          backgroundColor: Theme26.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme27.colors.primary.light
+          backgroundColor: Theme26.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme27.colors.primary.light
+          borderColor: Theme26.colors.primary.light
         }
       }
     },
@@ -13456,11 +13224,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme27.divider
+              backgroundColor: Theme26.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme27.divider
+              backgroundColor: Theme26.divider
             }
           }
         },
@@ -13485,7 +13253,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme27.divider,
+          borderColor: Theme26.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -13541,7 +13309,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -13583,7 +13351,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme28.colors.primary.main;
+    return this._strokeColor || Theme27.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -13714,11 +13482,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme28.colors.success.main;
+      ret = Theme27.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme28.divider;
+    return Theme27.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -13801,11 +13569,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme29.typography.fontFamily,
-  fontSize: Theme29.typography.fontSize,
-  color: Theme29.text.primary,
+  fontFamily: Theme28.typography.fontFamily,
+  fontSize: Theme28.typography.fontSize,
+  color: Theme28.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -13828,26 +13596,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme29.divider}`
+      borderBottom: `1px solid ${Theme28.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme29.divider}`,
+      borderBottom: `1px solid ${Theme28.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme29.background.paper,
-      color: Theme29.text.secondary
+      background: Theme28.background.paper,
+      color: Theme28.text.secondary
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme29.divider}`,
-          borderLeft: `1px solid ${Theme29.divider}`,
+          borderTop: `1px solid ${Theme28.divider}`,
+          borderLeft: `1px solid ${Theme28.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme29.divider} !important`,
-          borderBottom: `1px solid ${Theme29.divider}`
+          borderRight: `1px solid ${Theme28.divider} !important`,
+          borderBottom: `1px solid ${Theme28.divider}`
         }
       }
     },
@@ -13868,7 +13636,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme29.colors.primary.main
+          fill: Theme28.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -13897,12 +13665,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme29.text.primary
+          fill: Theme28.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme29.divider}`
+      borderRight: `1px solid ${Theme28.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -13959,7 +13727,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -14031,7 +13799,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme30.text.primary
+        fill: Theme29.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -14039,7 +13807,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme30.text.primary
+        fill: Theme29.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -14463,7 +14231,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme30 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -14497,7 +14265,7 @@ cssRule("i-carousel-slider", {
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme31.colors.primary.main}`,
+          border: `2px solid ${Theme30.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -14508,7 +14276,7 @@ cssRule("i-carousel-slider", {
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme31.colors.primary.main
+          backgroundColor: Theme30.colors.primary.main
         }
       }
     }

@@ -6723,7 +6723,7 @@ declare module "@ijstech/*combo-box/src/combo-box" {
         private handleRemove;
         private onItemClick;
         clear(): void;
-        init(): void;
+        protected init(): void;
         disconnectCallback(): void;
         static create(options?: ComboBoxElement, parent?: Control): Promise<ComboBox>;
     }
@@ -6735,14 +6735,16 @@ declare module "@ijstech/*datepicker/src/style/datepicker.css" { }
 declare module "@ijstech/*datepicker/src/datepicker" {
     import { ControlElement, Control, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
     import "@ijstech/*datepicker/src/style/datepicker.css";
+    import Moment from 'moment';
     type dateType = 'date' | 'dateTime' | 'time';
     export interface DatepickerElement extends ControlElement {
         caption?: string;
         captionWidth?: number | string;
-        value?: string;
+        value?: Moment.Moment;
         placeholder?: string;
         type?: dateType;
         dateTimeFormat?: string;
+        onChanged?: notifyEventCallback;
     }
     global {
         namespace JSX {
@@ -6752,7 +6754,7 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         }
     }
     export class Datepicker extends Control {
-        private _value;
+        private _value?;
         private _caption;
         private _captionWidth;
         private _iconWidth;
@@ -6777,18 +6779,23 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         set height(value: number);
         get width(): number;
         set width(value: number);
-        get value(): any;
-        set value(value: any);
-        get defaultDateFormat(): string;
+        get value(): Moment.Moment | undefined;
+        set value(value: Moment.Moment | undefined);
+        get defaultDateTimeFormat(): string;
         get dateTimeFormat(): string;
         set dateTimeFormat(format: string);
         get datepickerFormat(): string;
         get maxLength(): number;
         set enabled(value: boolean);
+        get placeholder(): string;
+        set placeholder(value: string);
+        private get formatString();
         private _onDatePickerChange;
         private _dateInputMask;
         private _onFocus;
-        private _isValidDateFormat;
+        private _onBlur;
+        private updateValue;
+        private clear;
         protected init(): void;
         static create(options?: DatepickerElement, parent?: Control): Promise<Datepicker>;
     }
@@ -6849,7 +6856,7 @@ declare module "@ijstech/*range/src/range" {
         set enabled(value: boolean);
         get tooltipVisible(): boolean;
         set tooltipVisible(value: boolean);
-        onSliderChange(): void;
+        onSliderChange(event: Event): void;
         onUpdateTooltip(init: boolean): void;
         protected init(): void;
         static create(options?: RangeElement, parent?: Control): Promise<Range>;
@@ -6941,7 +6948,7 @@ declare module "@ijstech/*input/src/input" {
         caption?: string;
         captionWidth?: number | string;
         inputType?: InputType;
-        value?: string;
+        value?: any;
         placeholder?: string;
         readOnly?: boolean;
         showClearButton?: boolean;
@@ -6992,8 +6999,8 @@ declare module "@ijstech/*input/src/input" {
         set captionWidth(value: number | string);
         get height(): number;
         set height(value: number);
-        get value(): string;
-        set value(value: string);
+        get value(): any;
+        set value(value: any);
         get width(): number | string;
         set width(value: number | string);
         get readOnly(): boolean;
@@ -7815,42 +7822,6 @@ declare module "@ijstech/*tree-view/src/treeView" {
 declare module "@ijstech/*tree-view/@ijstech/components" {
     export { TreeView, TreeViewElement, TreeNode, TreeNodeElement } from "@ijstech/*tree-view/src/treeView";
 }
-declare module "@ijstech/*search/src/style/search.css" { }
-declare module "@ijstech/*search/src/search" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*search/src/style/search.css";
-    export interface SearchElement extends ControlElement {
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ["i-search"]: SearchElement;
-            }
-        }
-    }
-    export class Search extends Control {
-        private wrapperElm;
-        private inputElm;
-        private dropdownElm;
-        private suggestionsElm;
-        private MiniSearch;
-        private miniSearch;
-        private isDropdownShown;
-        private _keyword;
-        get keyword(): string;
-        set keyword(value: string);
-        buildIndex(documents: any[], fields: string[], storeFields?: string[]): void;
-        search(keyword: string): any;
-        autoSuggest(keyword: string): any;
-        private renderSuggestion;
-        private initMiniSearch;
-        init(): Promise<void>;
-        static create(options?: SearchElement, parent?: Control): Promise<Search>;
-    }
-}
-declare module "@ijstech/*search/@ijstech/components" {
-    export { Search, SearchElement } from "@ijstech/*search/src/search";
-}
 declare module "@ijstech/*switch/src/style/switch.css" { }
 declare module "@ijstech/*switch/src/switch" {
     import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
@@ -8635,7 +8606,6 @@ declare module "@ijstech/components" {
     export { Label } from "@ijstech/*label/@ijstech/components";
     export { Tooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { TreeView, TreeNode } from "@ijstech/*tree-view/@ijstech/components";
-    export { Search } from "@ijstech/*search/@ijstech/components";
     export { Switch } from "@ijstech/*switch/@ijstech/components";
     export { Modal } from "@ijstech/*modal/@ijstech/components";
     export { Checkbox } from "@ijstech/*checkbox/@ijstech/components";
@@ -8670,7 +8640,6 @@ declare module "src/launcher" {
     export { Label } from "@ijstech/*label/@ijstech/components";
     export { Tooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { TreeView, TreeNode } from "@ijstech/*tree-view/@ijstech/components";
-    export { Search } from "@ijstech/*search/@ijstech/components";
     export { Switch } from "@ijstech/*switch/@ijstech/components";
     export { Modal } from "@ijstech/*modal/@ijstech/components";
     export { Checkbox } from "@ijstech/*checkbox/@ijstech/components";
