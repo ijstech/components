@@ -6334,6 +6334,8 @@ var Button = class extends Control {
       this.captionElm = this.createElement("span", this);
       let caption = this.getAttribute("caption", true, "");
       this.captionElm.innerHTML = caption;
+      if (this.height)
+        defaultIcon.width = defaultIcon.height = Math.floor(+this.height / 2);
       let iconAttr = this.getAttribute("icon", true);
       if (iconAttr) {
         iconAttr = __spreadValues(__spreadValues({}, defaultIcon), iconAttr);
@@ -7809,10 +7811,10 @@ var Range = class extends Control {
     return this._value;
   }
   set value(value) {
-    if (value == null)
-      value = this.inputElm.min;
+    if (value === null)
+      value = +this.inputElm.min;
     this._value = value;
-    this.inputElm.value = value;
+    this.inputElm.value = value.toString();
     const min = Number(this.inputElm.min);
     const max = Number(this.inputElm.max);
     this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
@@ -7847,7 +7849,7 @@ var Range = class extends Control {
     this.tooltipElm.style.display = value ? "block" : "none";
   }
   onSliderChange(event) {
-    this.value = this.inputElm.value;
+    this.value = +this.inputElm.value;
     const min = Number(this.inputElm.min);
     const max = Number(this.inputElm.max);
     this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
@@ -7920,7 +7922,7 @@ var Range = class extends Control {
       }
       this.captionWidth = this.getAttribute("captionWidth", true) || defaultCaptionWidth2;
       this.caption = this.getAttribute("caption", true);
-      this.value = this.getAttribute("value", true);
+      this.value = this.getAttribute("value", true, 0);
       if (this._value > 0) {
         this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
       }
@@ -7988,18 +7990,13 @@ var Radio = class extends Control {
     this._captionWidth = value;
     this.setElementPosition(this.captionSpanElm, "width", value);
   }
-  addClass(value) {
-    if (value)
+  _handleClick(event) {
+    const checked = this.inputElm.checked || false;
+    if (checked)
       this.classList.add("is-checked");
     else
       this.classList.remove("is-checked");
-  }
-  get checked() {
-    return this.inputElm.checked;
-  }
-  set checked(value) {
-    this.inputElm.checked = value;
-    this.addClass(value);
+    return super._handleClick(event);
   }
   init() {
     if (!this.initialized) {
@@ -8009,9 +8006,6 @@ var Radio = class extends Control {
       this.labelElm.classList.add("i-radio");
       this.inputElm = this.createElement("input", this.labelElm);
       this.inputElm.type = "radio";
-      const checkAttr = this.getAttribute("checked", true, false);
-      this.inputElm.checked = checkAttr;
-      this.addClass(checkAttr);
       const disabled = this.getAttribute("enabled") === false;
       this.inputElm.disabled = disabled;
       this.value = this.getAttribute("value");
@@ -8046,9 +8040,12 @@ var RadioGroup = class extends Control {
     this._group.forEach((item) => {
       if (item.value === value) {
         this._selectedValue = value;
-        item.checked = true;
+        const inputElm = item.querySelector("input");
+        if (inputElm)
+          inputElm.checked = true;
+        item.classList.add("is-checked");
       } else {
-        item.checked = false;
+        item.classList.remove("is-checked");
       }
     });
   }
@@ -8081,7 +8078,7 @@ var RadioGroup = class extends Control {
     this._selectedValue = value;
     const radioElm = this.querySelector("i-radio.is-checked");
     if (radioElm && !radioElm.isSameNode(source))
-      radioElm.checked = false;
+      radioElm.classList.remove("is-checked");
     source.classList.add("is-checked");
     if (this.onChanged && selectedValue !== value)
       this.onChanged(this, event);
@@ -8164,7 +8161,6 @@ cssRule("i-input", {
       }
     },
     "textarea": {
-      resize: "vertical",
       width: "100%",
       lineHeight: 1.5
     }
@@ -8304,7 +8300,24 @@ var Input = class extends Control {
   }
   set multiline(value) {
     this._multiline = value;
-    this.inputType = value ? "textarea" : "text";
+    if (value) {
+      this.inputType = "textarea";
+      this.clearInnerHTML();
+      this._createInputElement(this.inputType);
+    }
+  }
+  get resize() {
+    return this._resize;
+  }
+  set resize(value) {
+    this._resize = value;
+    if (this.inputType === "textarea" && value && this.inputElm) {
+      this.inputElm.style.resize = value;
+      if (value === "auto") {
+        this.inputElm.style.height = "auto";
+        this.inputElm.style.height = this.inputElm.scrollHeight + "px";
+      }
+    }
   }
   _createInputElement(type) {
     const value = this.getAttribute("value");
@@ -8407,6 +8420,7 @@ var Input = class extends Control {
         if (this._placeholder) {
           this.inputElm.placeholder = this._placeholder;
         }
+        this.inputElm.style.resize = this.resize;
         this.inputElm.disabled = enabled === false;
         this.inputElm.addEventListener("input", this._handleChange.bind(this));
         this.inputElm.addEventListener("keydown", this._handleInputKeyDown.bind(this));
@@ -8422,9 +8436,8 @@ var Input = class extends Control {
         this.inputElm.setAttribute("autocomplete", "disabled");
         this.inputElm.style.height = this.height + "px";
         this.inputElm.type = inputType;
-        if (this._placeholder) {
+        if (this._placeholder)
           this.inputElm.placeholder = this._placeholder;
-        }
         this.inputElm.disabled = enabled === false;
         this.inputElm.addEventListener("input", this._handleChange.bind(this));
         this.inputElm.addEventListener("keydown", this._handleInputKeyDown.bind(this));
@@ -8453,17 +8466,21 @@ var Input = class extends Control {
       this.inputElm.value = this._value;
       return;
     }
+    if (this.inputType === "textarea" && this.resize === "auto") {
+      this.inputElm.style.height = "auto";
+      this.inputElm.style.height = this.inputElm.scrollHeight + "px";
+    }
     this._value = this.inputElm.value;
     if (this.onChanged)
       this.onChanged(this, event);
   }
   _handleInputKeyDown(event) {
     if (this.onKeyDown)
-      this.onKeyDown(this, this.value);
+      this.onKeyDown(this, event);
   }
   _handleInputKeyUp(event) {
     if (this.onKeyUp)
-      this.onKeyUp(this, this.value);
+      this.onKeyUp(this, event);
     if (this.clearIconElm) {
       if (this.value) {
         this.clearIconElm.classList.add("active");
@@ -8495,13 +8512,14 @@ var Input = class extends Control {
       this._placeholder = this.getAttribute("placeholder", true);
       this.inputType = this.getAttribute("inputType", true);
       this._createInputElement(this.inputType);
+      this.multiline = this.getAttribute("multiline", true);
       this.caption = this.getAttribute("caption", true);
       this.captionWidth = parseInt(this.getAttribute("captionWidth", true));
       this.value = this.getAttribute("value", true);
       this.readOnly = this.getAttribute("readOnly", true, false);
+      this.resize = this.getAttribute("resize", true, "none");
       if (this.value && this.clearIconElm)
         this.clearIconElm.classList.add("active");
-      this.onClearClick = this.getAttribute("onClearClick", true) || this.onClearClick;
       super.init();
     }
   }
@@ -9834,8 +9852,9 @@ var Modal = class extends Container {
           this.visible = false;
         }
       });
-      if (this.attrs["item"])
-        this.item = this.attrs["item"];
+      const itemAttr = this.getAttribute("item", true);
+      if (itemAttr)
+        this.item = itemAttr;
       super.init();
       this.maxWidth && (this.modalDiv.style.maxWidth = this.maxWidth);
       this.minHeight && this.updateModal("minHeight", this.minHeight);
@@ -11570,8 +11589,11 @@ var TreeView = class extends Control {
     });
   }
   init() {
+    var _a;
     if (!this.initialized) {
       super.init();
+      if ((_a = this.options) == null ? void 0 : _a.onRenderCell)
+        this.onRenderNode = this.options.onRenderCell;
       this.classList.add("i-tree-view");
       this.editable = this.getAttribute("editable", true);
       this.actionButtons = this.getAttribute("actionButtons", true);
@@ -11700,11 +11722,9 @@ var TreeNode = class extends Control {
     let isUpdating = false;
     const updateCaption = () => {
       const newValue = captionInput.value;
-      if (newValue !== this.caption) {
+      if (newValue !== this.caption)
         this.handleChange(this, this.caption, newValue);
-        this.caption = newValue;
-        console.log(this.caption);
-      }
+      this.caption = newValue;
     };
     captionInput.addEventListener("blur", (event) => {
       event.preventDefault();
@@ -12891,14 +12911,14 @@ var Pagination = class extends Control {
     this._showPrevMore = false;
     this._showNextMore = false;
   }
-  get totalPage() {
-    return this._totalPage;
+  get totalPages() {
+    return this._totalPages;
   }
-  set totalPage(value) {
-    if (this._totalPage === value)
+  set totalPages(value) {
+    if (this._totalPages === value)
       return;
-    this._totalPage = value;
-    this.hideNexPrev();
+    this._totalPages = value;
+    this.onDisablePrevNext();
     this.renderPageItem(value);
   }
   get currentPage() {
@@ -12931,7 +12951,7 @@ var Pagination = class extends Control {
     if (this._prevElm)
       this.currentPage <= 1 ? this._prevElm.classList.add("disabled") : this._prevElm.classList.remove("disabled");
     if (this._nextElm)
-      this.currentPage >= this.totalPage ? this._nextElm.classList.add("disabled") : this._nextElm.classList.remove("disabled");
+      this.currentPage >= this.totalPages ? this._nextElm.classList.add("disabled") : this._nextElm.classList.remove("disabled");
   }
   _handleOnClickIndex(value, event) {
     if (!this.enabled)
@@ -12942,14 +12962,14 @@ var Pagination = class extends Control {
   }
   _handleOnClickMore(value, event) {
     this.currentPage = this.currentPage + value * (pagerCount - 2);
-    this.renderPageItem(this.totalPage);
+    this.renderPageItem(this.totalPages);
   }
   _handleOnNext(event) {
-    if (!this.enabled || this.currentPage >= this.totalPage)
+    if (!this.enabled || this.currentPage >= this.totalPages)
       return;
     const nextPage = Number(this._curPage) <= 0 ? 1 : Number(this._curPage) + 1;
     this.currentPage = nextPage;
-    this.renderPageItem(this.totalPage);
+    this.renderPageItem(this.totalPages);
     this.onDisablePrevNext();
   }
   _handleOnPrev(event) {
@@ -12957,7 +12977,7 @@ var Pagination = class extends Control {
       return;
     const prevPage = Number(this._curPage) - 1;
     this.currentPage = prevPage;
-    this.renderPageItem(this.totalPage);
+    this.renderPageItem(this.totalPages);
     this.onDisablePrevNext();
   }
   onMouseenter(direction, event) {
@@ -13003,7 +13023,7 @@ var Pagination = class extends Control {
   updatePagers() {
     const halfPagerCount = (pagerCount - 1) / 2;
     const currentPage = Number(this.currentPage);
-    const pageCount = Number(this.totalPage);
+    const pageCount = Number(this.totalPages);
     let showPrevMore = false;
     let showNextMore = false;
     if (pageCount > pagerCount) {
@@ -13065,13 +13085,6 @@ var Pagination = class extends Control {
       }
     }
   }
-  hideNexPrev() {
-    if (this.totalPage >= 1) {
-      this._prevElm && this._prevElm.classList.remove("hidden");
-      this._nextElm && this._nextElm.classList.remove("hidden");
-      this.onDisablePrevNext();
-    }
-  }
   init() {
     if (!this._paginationDiv) {
       this.pageItems = [];
@@ -13080,7 +13093,7 @@ var Pagination = class extends Control {
       this._prevElm = this.createElement("a", this._paginationDiv);
       this._prevElm.setAttribute("href", "#");
       this._prevElm.innerHTML = "&laquo;";
-      this._prevElm.classList.add("paginate_button", "previous", "hidden");
+      this._prevElm.classList.add("paginate_button", "previous");
       this._prevElm.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -13089,12 +13102,12 @@ var Pagination = class extends Control {
       this._mainPagiElm = this.createElement("div", this._paginationDiv);
       this._mainPagiElm.classList.add("pagination-main");
       this.currentPage = +this.getAttribute("currentPage", true, defaultCurrentPage);
-      this.totalPage = +this.getAttribute("totalPage", true, 0);
+      this.totalPages = +this.getAttribute("totalPages", true, 0);
       this.pageSize = +this.getAttribute("pageSize", true, pageSize);
       this._nextElm = this.createElement("a", this._paginationDiv);
       this._nextElm.setAttribute("href", "#");
       this._nextElm.innerHTML = "&raquo;";
-      this._nextElm.classList.add("paginate_button", "next", "hidden");
+      this._nextElm.classList.add("paginate_button", "next");
       this._nextElm.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -13530,8 +13543,13 @@ var Progress = class extends Control {
     }
   }
   init() {
+    var _a, _b;
     if (!this.initialized) {
       super.init();
+      if ((_a = this.options) == null ? void 0 : _a.onRenderStart)
+        this.onRenderStart = this.options.onRenderStart;
+      if ((_b = this.options) == null ? void 0 : _b.onRenderEnd)
+        this.onRenderEnd = this.options.onRenderEnd;
       this.loading = this.getAttribute("loading", true);
       this.strokeColor = this.getAttribute("strokeColor", true);
       this._wrapperElm = this.createElement("div", this);
@@ -13957,23 +13975,33 @@ var Table = class extends Control {
     });
     this._rows = [];
     this.firstLoad = true;
-    this.sortConfig = { key: "", value: null };
+    this.sortConfig = { key: "", value: "none" };
   }
   get data() {
-    var _a;
-    if (this.sortConfig.key && this.sortConfig.value !== null) {
-      const sorter = getSorter(this.columns, (_a = this.sortConfig) == null ? void 0 : _a.key);
-      const orderList = orderBy([...this._data], this.sortConfig.key, this.sortConfig.value, sorter);
-      return orderList;
-    }
     return this._data;
   }
   set data(value) {
     this._data = value;
-    this._filteredData = this.data;
+    this.filteredData = value;
     if (this.pagination)
-      this.pagination.totalPage = Math.ceil(value.length / this.pagination.pageSize);
+      this.pagination.totalPages = Math.ceil(value.length / this.pagination.pageSize);
     this.renderBody();
+  }
+  get filteredData() {
+    return this.sortFn(this._filteredData);
+  }
+  set filteredData(value) {
+    this._filteredData = value;
+  }
+  sortFn(list) {
+    var _a, _b, _c;
+    if (!list)
+      return [];
+    if (((_a = this.sortConfig) == null ? void 0 : _a.key) && ((_b = this.sortConfig) == null ? void 0 : _b.value) !== null) {
+      const sorter = getSorter(this.columns, (_c = this.sortConfig) == null ? void 0 : _c.key);
+      return orderBy([...list], this.sortConfig.key, this.sortConfig.value, sorter);
+    }
+    return list;
   }
   get columns() {
     return this._columns || [];
@@ -13992,9 +14020,8 @@ var Table = class extends Control {
   set pagination(value) {
     if (typeof value === "string") {
       const elm = document.querySelector(`#${value}`);
-      if (elm instanceof Pagination) {
+      if (elm instanceof Pagination)
         this._pagination = elm;
-      }
     } else if (value) {
       this._pagination = value;
       this.pagingElm.innerHTML = "";
@@ -14003,7 +14030,7 @@ var Table = class extends Control {
     }
     if (this._pagination) {
       this.pagingElm.style.display = "flex";
-      this._pagination.onPageChanged = this.onPageChange.bind(this);
+      this._pagination.onPageChanged = this.onPageChanged.bind(this);
     } else {
       this.pagingElm.style.display = "none";
     }
@@ -14028,12 +14055,12 @@ var Table = class extends Control {
     const style2 = getTableMediaQueriesStyleClass(this.columns, this._mediaQueries);
     this.classList.add(style2);
   }
-  onPageChange(source, value) {
-    !this.firstLoad && this.renderBody();
+  onPageChanged(source, value) {
+    this.renderBody();
   }
   onSortChange(source, key2, value) {
     this.sortConfig = { key: key2, value };
-    if (this._filteredData)
+    if (this.filteredData)
       this.renderBody();
     if (this.onColumnSort)
       this.onColumnSort(this, key2, value);
@@ -14069,7 +14096,7 @@ var Table = class extends Control {
       const rowData = colElm ? colElm.rowData : null;
       const rowIndex = (rowElm == null ? void 0 : rowElm.getAttribute("data-index")) || -1;
       const colIndex = (tdElm == null ? void 0 : tdElm.getAttribute("data-index")) || -1;
-      if (typeof this.onCellClick === "function")
+      if (this.onCellClick)
         this.onCellClick(this, +rowIndex, +colIndex, rowData);
       if (this.expandable && rowElm) {
         const expandTd = rowElm.querySelector(".i-table-cell--expand");
@@ -14132,10 +14159,10 @@ var Table = class extends Control {
     var _a, _b;
     this.tBodyElm.innerHTML = "";
     this._rows = [];
-    if (this._filteredData && this._filteredData.length) {
+    if (this.filteredData && this.filteredData.length) {
       const currentPage = ((_a = this.pagination) == null ? void 0 : _a.currentPage) || 1;
       const pageSize2 = ((_b = this.pagination) == null ? void 0 : _b.pageSize) || 10;
-      const dataList = this.pagination ? paginate(this._filteredData, pageSize2, currentPage) : this._filteredData;
+      const dataList = this.pagination ? paginate(this.filteredData, pageSize2, currentPage) : this.filteredData;
       dataList.forEach(async (row, rowIndex) => {
         const rowElm = this.createElement("tr", this.tBodyElm);
         rowElm.classList.add("i-table-row");
@@ -14190,33 +14217,32 @@ var Table = class extends Control {
   }
   filter(predicate) {
     const dataList = [...this.data];
-    this._filteredData = dataList.filter(predicate);
+    this.filteredData = dataList.filter(predicate);
     this.renderBody();
   }
   init() {
     var _a;
     if (!this.tableElm) {
-      this.classList.add(tableStyle);
+      this.classList.add("i-table", tableStyle);
       if ((_a = this.options) == null ? void 0 : _a.onRenderEmptyTable)
         this.onRenderEmptyTable = this.options.onRenderEmptyTable;
-      this.classList.add("i-table");
       this.wrapperElm = this.createElement("div", this);
       this.wrapperElm.classList.add("i-table-container");
       this._heading = this.getAttribute("heading", true, false);
       this.createTable();
       this.expandable = this.getAttribute("expandable", true);
-      this.columns = this.getAttribute("columns", true, []);
+      const columnsAttr = this.getAttribute("columns", true);
+      columnsAttr && (this.columns = columnsAttr);
       this.pagingElm = this.createElement("div", this.wrapperElm);
       this.pagingElm.classList.add("i-table-pagi");
       this.pagingElm.style.display = "none";
       const paginationAttr = this.getAttribute("pagination", true);
       paginationAttr && (this.pagination = paginationAttr);
-      this.data = this.getAttribute("data", true, []);
-      this._filteredData = this.data;
+      const dataAttr = this.getAttribute("data", true);
+      dataAttr && (this.data = dataAttr);
       const mediaQueries = this.getAttribute("mediaQueries", true);
       if (mediaQueries)
         this.mediaQueries = mediaQueries;
-      this.firstLoad = false;
       super.init();
     }
   }

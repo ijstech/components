@@ -6810,7 +6810,7 @@ declare module "@ijstech/*range/src/range" {
     export interface RangeElement extends ControlElement {
         caption?: string;
         captionWidth?: number | string;
-        value?: string;
+        value?: number;
         min?: number;
         max?: number;
         step?: number;
@@ -6848,8 +6848,8 @@ declare module "@ijstech/*range/src/range" {
         set captionWidth(value: number | string);
         get height(): number;
         set height(value: number);
-        get value(): any;
-        set value(value: any);
+        get value(): number;
+        set value(value: number);
         get width(): number;
         set width(value: number);
         get _ratio(): number;
@@ -6874,7 +6874,6 @@ declare module "@ijstech/*radio/src/radio" {
         caption?: string;
         captionWidth?: number | string;
         value?: string;
-        checked?: boolean;
     }
     export interface RadioGroupElement extends ControlElement {
         selectedValue?: string;
@@ -6902,9 +6901,7 @@ declare module "@ijstech/*radio/src/radio" {
         set caption(value: string);
         get captionWidth(): number | string;
         set captionWidth(value: number | string);
-        private addClass;
-        get checked(): boolean;
-        set checked(value: boolean);
+        _handleClick(event: Event): boolean;
         protected init(): void;
         static create(options?: RadioElement, parent?: Control): Promise<Radio>;
     }
@@ -6944,6 +6941,7 @@ declare module "@ijstech/*input/src/input" {
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
     type actionCallback = (target: Input) => void;
     type changeCallback = (target: Input, val: string) => void;
+    type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit";
     export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
         caption?: string;
         captionWidth?: number | string;
@@ -6954,9 +6952,10 @@ declare module "@ijstech/*input/src/input" {
         showClearButton?: boolean;
         rows?: number;
         multiline?: boolean;
+        resize?: resizeType;
         onChanged?: notifyEventCallback;
-        onKeyDown?: changeCallback;
-        onKeyUp?: changeCallback;
+        onKeyDown?: notifyEventCallback;
+        onKeyUp?: notifyEventCallback;
         onMouseUp?: changeCallback;
         onBlur?: actionCallback;
         onFocus?: actionCallback;
@@ -6980,18 +6979,19 @@ declare module "@ijstech/*input/src/input" {
         private _clearBtnWidth;
         private _rows;
         private _multiline;
-        private onClearClick;
+        private _resize;
         private captionSpanElm;
         private labelElm;
         private inputElm;
         private _inputControl;
         private clearIconElm;
         onMouseUp: changeCallback;
-        onKeyDown: changeCallback;
-        onKeyUp: changeCallback;
+        onKeyDown: notifyEventCallback;
+        onKeyUp: notifyEventCallback;
         onChanged: notifyEventCallback;
         onBlur: actionCallback;
         onFocus: actionCallback;
+        onClearClick: actionCallback;
         constructor(parent?: Control, options?: any);
         get caption(): string;
         set caption(value: string);
@@ -7014,6 +7014,8 @@ declare module "@ijstech/*input/src/input" {
         set rows(value: number);
         get multiline(): boolean;
         set multiline(value: boolean);
+        get resize(): resizeType;
+        set resize(value: resizeType);
         private _createInputElement;
         private _inputCallback;
         private _handleChange;
@@ -8216,7 +8218,7 @@ declare module "@ijstech/*pagination/src/pagination" {
     import "@ijstech/*pagination/src/style/pagination.css";
     type notifyCallback = (target: Pagination, lastActivePage: number) => void;
     export interface PaginationElement extends ControlElement {
-        totalPage?: number;
+        totalPages?: number;
         currentPage?: number;
         pageSize?: number;
         onPageChanged?: notifyCallback;
@@ -8229,7 +8231,7 @@ declare module "@ijstech/*pagination/src/pagination" {
         }
     }
     export class Pagination extends Control {
-        private _totalPage;
+        private _totalPages;
         private _curPage;
         private _pageSize;
         private _showPrevMore;
@@ -8243,8 +8245,8 @@ declare module "@ijstech/*pagination/src/pagination" {
         private _nextElm;
         onPageChanged: notifyCallback;
         constructor(parent?: Control, options?: any);
-        get totalPage(): number;
-        set totalPage(value: number);
+        get totalPages(): number;
+        set totalPages(value: number);
         get currentPage(): number;
         set currentPage(value: number);
         get pageSize(): number;
@@ -8260,7 +8262,6 @@ declare module "@ijstech/*pagination/src/pagination" {
         private renderPage;
         private updatePagers;
         private renderPageItem;
-        private hideNexPrev;
         protected init(): void;
         static create(options?: PaginationElement, parent?: Control): Promise<Pagination>;
     }
@@ -8442,6 +8443,7 @@ declare module "@ijstech/*table/src/table" {
     import { Pagination } from "@ijstech/*pagination/@ijstech/components";
     import { TableRow } from "@ijstech/*table/src/tableRow";
     import { Icon } from "@ijstech/*icon/@ijstech/components";
+    type cellClickCallback = (target: Table, rowIndex: number, columnIdx: number, record: any) => void;
     type renderCellCallback = (target: Table, columnIdx: number, rowIdx: number, rowData: any) => void;
     type emptyCallback = (target: Table) => void;
     type sortCallback = (target: Table, key: string, value: string) => void;
@@ -8457,7 +8459,7 @@ declare module "@ijstech/*table/src/table" {
     export type ITableMediaQuery = IMediaQuery<ITableMediaQueryProps>;
     export interface TableElement extends ControlElement {
         heading?: boolean;
-        data?: any[];
+        data?: any;
         columns?: TableColumnElement[];
         rows?: TableRow[];
         pagination?: string;
@@ -8465,7 +8467,7 @@ declare module "@ijstech/*table/src/table" {
         mediaQueries?: ITableMediaQuery[];
         onRenderCell?: renderCellCallback;
         onRenderEmptyTable?: emptyCallback;
-        onCellClick?: any;
+        onCellClick?: cellClickCallback;
         onColumnSort?: sortCallback;
     }
     global {
@@ -8481,7 +8483,7 @@ declare module "@ijstech/*table/src/table" {
         private tHeadElm;
         private tBodyElm;
         private pagingElm;
-        onCellClick: any;
+        onCellClick: cellClickCallback;
         onRenderEmptyTable: emptyCallback;
         onRenderCell: renderCellCallback;
         onColumnSort: sortCallback;
@@ -8497,8 +8499,11 @@ declare module "@ijstech/*table/src/table" {
         private sortConfig;
         private _heading;
         constructor(parent?: Control, options?: any);
-        get data(): any[];
-        set data(value: any[]);
+        get data(): any;
+        set data(value: any);
+        get filteredData(): any;
+        set filteredData(value: any);
+        private sortFn;
         get columns(): TableColumnElement[];
         set columns(value: TableColumnElement[]);
         get rows(): TableRow[];
@@ -8510,7 +8515,7 @@ declare module "@ijstech/*table/src/table" {
         private get columnLength();
         get mediaQueries(): ITableMediaQuery[];
         set mediaQueries(value: ITableMediaQuery[]);
-        private onPageChange;
+        private onPageChanged;
         protected onSortChange(source: Control, key: string, value: SortDirection): void;
         private renderHeader;
         _handleClick(event: Event): boolean;
