@@ -10539,8 +10539,8 @@ cssRule("i-combo-box", {
       $nest: {
         ".selection-item": {
           border: `1px solid ${Theme7.divider}`,
-          backgroundColor: Theme7.action.selected,
-          color: Theme7.divider,
+          backgroundColor: "rgba(0, 0, 0, 0.12)",
+          color: "#000",
           borderRadius: 3,
           display: "inline-flex",
           alignItems: "center",
@@ -11080,7 +11080,8 @@ var Datepicker = class extends Control {
       }
       ;
       RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
-        let _moment = moment(this.inputElm.value, this.defaultDateTimeFormat, true);
+        const temp = moment(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
+        const _moment = moment(temp, this.datepickerFormat, true);
         this.updateValue(_moment, event);
       });
     };
@@ -11199,8 +11200,9 @@ var Datepicker = class extends Control {
       this.datepickerElm.value = value.format(this.datepickerFormat);
       if (this.callback)
         this.callback(this.inputElm.value);
-    } else {
-      this.clear();
+    } else if (this.value) {
+      this.inputElm.value = this.value.format(this.formatString);
+      this.datepickerElm.value = this.value.format(this.datepickerFormat);
     }
     const isChanged = oldVal && this.value && !oldVal.isSame(this.value) || (!oldVal || !this.value);
     if (event && isChanged && this.onChanged)
@@ -11224,9 +11226,6 @@ var Datepicker = class extends Control {
       this.inputElm.setAttribute("type", "text");
       this.inputElm.setAttribute("autocomplete", "disabled");
       this.inputElm.style.height = this.height + "px";
-      this.inputElm.maxLength = this.maxLength;
-      this.inputElm.addEventListener("keypress", this._dateInputMask);
-      this.inputElm.onfocus = this._onFocus;
       this.inputElm.onblur = this._onBlur;
       this.inputElm.pattern = this.formatString;
       this.placeholder = this.getAttribute("placeholder", true, "");
@@ -11721,6 +11720,7 @@ var RadioGroup = class extends Control {
     this._group.push(elm);
   }
   _handleChange(source, event) {
+    event.stopPropagation();
     const selectedValue = this.selectedValue;
     const value = source.value;
     this._selectedValue = value;
@@ -11734,24 +11734,29 @@ var RadioGroup = class extends Control {
   async add(options) {
     const elm = await Radio.create(options);
     this.appendItem(elm);
-    this.selectedValue = elm.value;
+    this._radioItems.push(options);
     return elm;
   }
   delete(index) {
     if (index >= 0) {
       const radio = this._group[index];
-      this._group.splice(index, 1);
-      radio.remove();
+      if (radio) {
+        this._group.splice(index, 1);
+        this._radioItems.splice(index, 1);
+        radio.remove();
+      }
     }
   }
   init() {
+    var _a;
     if (!this.initialized) {
       this.classList.add("i-radio-group");
       this.setAttribute("role", "radiogroup");
+      if ((_a = this.options) == null ? void 0 : _a.onChanged)
+        this.onChanged = this.options.onChanged;
       const radioItems = this.getAttribute("radioItems", true);
       radioItems && (this.radioItems = radioItems);
-      const selectedValue = this.getAttribute("selectedValue", true);
-      this.selectedValue = selectedValue;
+      this.selectedValue = this.getAttribute("selectedValue", true);
       super.init();
     }
   }
@@ -13229,6 +13234,7 @@ var Modal = class extends Container {
     return this.wrapperDiv.classList.contains(visibleStyle);
   }
   set visible(value) {
+    var _a;
     if (value) {
       this.wrapperDiv.classList.add(visibleStyle);
       this.dispatchEvent(showEvent);
@@ -13236,6 +13242,9 @@ var Modal = class extends Container {
     } else {
       this.wrapperDiv.classList.remove(visibleStyle);
       this.showBackdrop && (document.body.style.overflow = "hidden auto");
+      const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
+      if (parentModal)
+        parentModal.wrapperDiv.style.overflow = "auto";
       this.onClose && this.onClose(this);
     }
   }
@@ -13263,26 +13272,18 @@ var Modal = class extends Container {
   set popupPlacement(value) {
     this._placement = value;
   }
-  get icon() {
-    if (!this._icon) {
-      this._icon = Icon.create({
-        name: "times",
-        fill: Theme17.colors.primary.main,
-        width: 16,
-        height: 16
-      }, this);
-      this._icon.classList.add("i-modal-close");
-      this._icon._handleClick = () => this.visible = false;
-    }
-    ;
-    return this._icon;
+  get closeIcon() {
+    return this._closeIcon;
   }
-  set icon(elm) {
-    if (this._icon)
-      this.titleSpan.removeChild(this._icon);
-    this._icon = elm;
-    if (this._icon)
-      this.titleSpan.appendChild(this._icon);
+  set closeIcon(elm) {
+    if (this._closeIcon && this.titleSpan.contains(this._closeIcon))
+      this.titleSpan.removeChild(this._closeIcon);
+    this._closeIcon = elm;
+    if (this._closeIcon) {
+      this._closeIcon.classList.add("i-modal-close");
+      this._closeIcon.onClick = () => this.visible = false;
+      this.titleSpan.appendChild(this._closeIcon);
+    }
   }
   get closeOnBackdropClick() {
     return this._closeOnBackdropClick;
@@ -13329,15 +13330,20 @@ var Modal = class extends Container {
   }
   positionAtFix(placement) {
     var _a;
-    const inModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
-    if (inModal) {
-      this.wrapperDiv.style.top = "-50%";
-      return;
-    }
     let parent = document.body;
     let coords = this.getWrapperFixCoords(parent, placement);
+    this.wrapperDiv.style.width = "100%";
+    this.wrapperDiv.style.height = "100%";
     this.wrapperDiv.style.paddingLeft = coords.left + "px";
     this.wrapperDiv.style.paddingTop = coords.top + "px";
+    const innerModal = this.querySelector("i-modal");
+    if (innerModal) {
+      innerModal.wrapperDiv.style.width = "0px";
+      innerModal.wrapperDiv.style.height = "0px";
+    }
+    const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
+    if (parentModal)
+      parentModal.wrapperDiv.style.overflow = "hidden";
   }
   positionAtAbsolute(placement) {
     let parent = this._parent || this.linkTo || this.parentElement || document.body;
@@ -13354,35 +13360,35 @@ var Modal = class extends Container {
     const parentCoords = parent.getBoundingClientRect();
     let left = 0;
     let top = 0;
-    const pageY = 0;
+    const parentHeight = parentCoords.height || window.innerHeight;
     switch (placement) {
       case "center":
-        top = parentCoords.height / 2 - this.modalDiv.offsetHeight / 2;
-        left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2;
+        top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
+        left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2 - 1;
         break;
       case "top":
-        top = pageY - this.modalDiv.offsetHeight - parentCoords.height;
-        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2;
+        top = parentCoords.top;
+        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "topLeft":
-        top = pageY - this.modalDiv.offsetHeight - parentCoords.height;
+        top = parentCoords.top;
         left = parentCoords.left;
         break;
       case "topRight":
-        top = pageY - this.modalDiv.offsetHeight - parentCoords.height;
-        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth;
+        top = parentCoords.top;
+        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "bottom":
-        top = pageY + parentCoords.top + parentCoords.height;
-        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2;
+        top = parentCoords.top + parentHeight - this.modalDiv.offsetHeight - 1;
+        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "bottomLeft":
-        top = pageY + parentCoords.top + parentCoords.height;
+        top = parentCoords.top + parentHeight - this.modalDiv.offsetHeight - 1;
         left = parentCoords.left;
         break;
       case "bottomRight":
-        top = pageY + parentCoords.top + parentCoords.height;
-        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth;
+        top = parentCoords.top + parentHeight - this.modalDiv.offsetHeight - 1;
+        left = parentCoords.left + parentCoords.width - this.modalDiv.offsetWidth - 1;
         break;
       case "rightTop":
         top = parentCoords.top;
@@ -13464,17 +13470,14 @@ var Modal = class extends Container {
       this.modalDiv = this.createElement("div", this.wrapperDiv);
       this.titleSpan = this.createElement("div", this.modalDiv);
       this.titleSpan.classList.add(titleStyle, "i-modal_header");
-      const titleElm = this.createElement("span", this.titleSpan);
+      this.createElement("span", this.titleSpan);
       this.title = this.getAttribute("title", true);
       const closeIconAttr = this.getAttribute("closeIcon", true);
       if (closeIconAttr) {
         closeIconAttr.height = closeIconAttr.height || "16px";
         closeIconAttr.width = closeIconAttr.width || "16px";
         closeIconAttr.fill = closeIconAttr.fill || Theme17.colors.primary.main;
-        this._icon = new Icon(void 0, closeIconAttr);
-        this._icon.classList.add("i-modal-close");
-        this._icon._handleClick = () => this.visible = false;
-        this.titleSpan.appendChild(this._icon);
+        this.closeIcon = new Icon(void 0, closeIconAttr);
       }
       while (this.childNodes.length > 1) {
         this.modalDiv.appendChild(this.childNodes[0]);
@@ -13507,6 +13510,9 @@ var Modal = class extends Container {
       this.maxWidth && (this.modalDiv.style.maxWidth = this.maxWidth);
       this.minHeight && this.updateModal("minHeight", this.minHeight);
       this.width && this.updateModal("width", this.width);
+      if (this.popupPlacement && this.enabled) {
+        this.positionAt(this.popupPlacement);
+      }
     }
   }
   static async create(options, parent) {
@@ -15091,6 +15097,7 @@ var TreeView = class extends Control {
       editable: false
     });
     this._items = [];
+    this.tag = {};
   }
   get activeItem() {
     return this._activeItem;
@@ -15131,16 +15138,22 @@ var TreeView = class extends Control {
     }
   }
   async add(parentNode, caption) {
+    var _a;
     const childData = { caption, children: [] };
     const childNode = await TreeNode.create(__spreadValues({}, childData), this);
     await this.initNode(childNode);
     childNode.editable = this.editable;
     if (this.onRenderNode)
       this.onRenderNode(this, childNode);
-    if (parentNode)
+    const name = caption || "";
+    if (parentNode) {
       parentNode.appendNode(childNode);
-    else
+      const paths = ((_a = parentNode.tag) == null ? void 0 : _a.paths) || [];
+      childNode.tag = { paths: [...paths, { name }] };
+    } else {
       this.appendChild(childNode);
+      childNode.tag = { paths: [{ name }] };
+    }
     return childNode;
   }
   delete(node) {
@@ -15183,22 +15196,29 @@ var TreeView = class extends Control {
     node.addEventListener("mouseenter", () => this.handleMouseEnter(node));
     node.addEventListener("mouseleave", () => this.handleMouseLeave(node));
     node.addEventListener("beforeExpand", (event) => this.handleLazyLoad(node));
-    if (this.onRenderNode)
-      this.onRenderNode(this, node);
+    this.onRenderNode && this.onRenderNode(this, node);
   }
-  async renderTreeNode(node, parent) {
+  async renderTreeNode(node, parent, paths = []) {
     const treeNode = await TreeNode.create(node, parent);
     treeNode.editable = this.editable;
     await this.initNode(treeNode);
-    if (node.children && !node.isLazyLoad) {
-      for (const child2 of node.children) {
-        const childWrapper = treeNode.querySelector(".i-tree-node_children");
-        if (childWrapper) {
-          const childNode = await this.renderTreeNode(child2, parent);
-          childWrapper && childWrapper.appendChild(childNode);
+    const name = node.caption || "";
+    if (node.children) {
+      paths.push({ name });
+      treeNode.tag = { paths: [...paths] };
+      if (!node.isLazyLoad) {
+        for (const child2 of node.children) {
+          const childWrapper = treeNode.querySelector(".i-tree-node_children");
+          if (childWrapper) {
+            const childNode = await this.renderTreeNode(child2, parent, paths);
+            childWrapper && childWrapper.appendChild(childNode);
+          }
         }
       }
+    } else {
+      treeNode.tag = { paths: [...paths, { name }] };
     }
+    console.log(treeNode.tag);
     return treeNode;
   }
   async renderTree(value) {
@@ -15240,13 +15260,13 @@ var TreeView = class extends Control {
     var _a;
     if (!this.initialized) {
       super.init();
-      if ((_a = this.options) == null ? void 0 : _a.onRenderCell)
-        this.onRenderNode = this.options.onRenderCell;
       this.classList.add("i-tree-view");
-      this.editable = this.getAttribute("editable", true);
+      if ((_a = this.options) == null ? void 0 : _a.onRenderNode)
+        this.onRenderNode = this.options.onRenderNode;
+      this.editable = this.getAttribute("editable", true, false);
       this.actionButtons = this.getAttribute("actionButtons", true);
-      this.data = this.attrs["data"];
-      const activeAttr = this.attrs["activeItem"];
+      this.data = this.getAttribute("data", true);
+      const activeAttr = this.getAttribute("activeItem", true);
       activeAttr && (this.activeItem = activeAttr);
     }
   }
@@ -15326,12 +15346,6 @@ var TreeNode = class extends Control {
   }
   set isLazyLoad(value) {
     this._isLazyLoad = value;
-  }
-  get order() {
-    return this._order;
-  }
-  set order(value) {
-    this._order = value;
   }
   get editable() {
     return this._editable;
@@ -15435,16 +15449,30 @@ var TreeNode = class extends Control {
       if (parent.onClick)
         parent.onClick(parent, event);
     }
+    if (this.isLazyLoad) {
+      this.dispatchEvent(beforeExpandEvent);
+    }
     return super._handleClick(event, true);
   }
   _handleDblClick(event) {
+    const target = event.target;
+    const parent = this._parent || target.closest("i-tree-view");
     if (this.editable) {
       this.handleEdit(event);
-    } else if (this._parent instanceof TreeView) {
-      if (this._parent.onDblClick)
-        this._parent.onDblClick(this._parent, event);
+    } else if (parent instanceof TreeView) {
+      if (parent.onDblClick)
+        parent.onDblClick(parent, event);
     }
     ;
+    return super._handleClick(event, true);
+  }
+  _handleContextMenu(event) {
+    const target = event.target;
+    const parent = this._parent || target.closest("i-tree-view");
+    if (parent instanceof TreeView) {
+      if (parent.onContextMenu)
+        parent.onContextMenu(parent, event);
+    }
     return super._handleClick(event, true);
   }
   init() {
@@ -15452,13 +15480,13 @@ var TreeNode = class extends Control {
     if (!this._captionElm) {
       this.classList.add("i-tree-node");
       this.data = this.options;
-      let caption = this.getAttribute("caption", true);
+      let caption = this.getAttribute("caption", true, "");
       let iconAttr = this.getAttribute("icon", true);
       let rightIcon = this.getAttribute("rightIcon", true);
       let collapsible = this.getAttribute("collapsible", true);
       let expanded = this.getAttribute("expanded", true);
-      let active = this.getAttribute("active", true);
-      let isLazyLoad = this.getAttribute("isLazyLoad", true);
+      let active = this.getAttribute("active", true, false);
+      let isLazyLoad = this.getAttribute("isLazyLoad", true, false);
       this.collapsible = collapsible;
       this.expanded = expanded;
       this.active = active;
@@ -16707,7 +16735,7 @@ var Pagination = class extends Control {
     this._showNextMore = showNextMore;
   }
   renderPageItem(size) {
-    this.visible = size !== 0;
+    this.visible = size > 0;
     this._mainPagiElm.innerHTML = "";
     this.pageItems = [];
     if (size > 0) {
@@ -17536,7 +17564,6 @@ var getValueByPath = function(object, prop) {
 };
 var orderBy = (list, sortBy, sortValue, sorter) => {
   const getKey = sorter ? null : (value, key2) => {
-    console.log(sortBy);
     if (sortBy) {
       if (!Array.isArray(sortBy)) {
         sortBy = [sortBy];
@@ -17633,7 +17660,7 @@ var Table = class extends Control {
     this.filteredData = value;
     if (this.pagination)
       this.pagination.totalPages = Math.ceil(value.length / this.pagination.pageSize);
-    this.renderBody();
+    this.renderBody && this.renderBody();
   }
   get filteredData() {
     return this.sortFn(this._filteredData);
@@ -17645,7 +17672,7 @@ var Table = class extends Control {
     var _a, _b, _c;
     if (!list)
       return [];
-    if (((_a = this.sortConfig) == null ? void 0 : _a.key) && ((_b = this.sortConfig) == null ? void 0 : _b.value) !== null) {
+    if (((_a = this.sortConfig) == null ? void 0 : _a.key) && ((_b = this.sortConfig) == null ? void 0 : _b.value) !== "none") {
       const sorter = getSorter(this.columns, (_c = this.sortConfig) == null ? void 0 : _c.key);
       return orderBy([...list], this.sortConfig.key, this.sortConfig.value, sorter);
     }
@@ -17657,7 +17684,7 @@ var Table = class extends Control {
   set columns(value) {
     this._columns = value;
     this._heading && this.renderHeader();
-    !this.firstLoad && this.renderBody();
+    !this.firstLoad && this.renderBody && this.renderBody();
   }
   get rows() {
     return this._rows;
@@ -17674,11 +17701,13 @@ var Table = class extends Control {
       this._pagination = value;
       this.pagingElm.innerHTML = "";
       this.pagingElm.appendChild(this.pagination);
-      this.renderBody();
     }
     if (this._pagination) {
       this.pagingElm.style.display = "flex";
+      if (this.data)
+        this._pagination.totalPages = Math.ceil(this.data.length / this._pagination.pageSize);
       this._pagination.onPageChanged = this.onPageChanged.bind(this);
+      this.renderBody();
     } else {
       this.pagingElm.style.display = "none";
     }
@@ -17884,7 +17913,7 @@ var Table = class extends Control {
       this.pagingElm = this.createElement("div", this.wrapperElm);
       this.pagingElm.classList.add("i-table-pagi");
       this.pagingElm.style.display = "none";
-      const paginationAttr = this.getAttribute("pagination", true);
+      const paginationAttr = this.getAttribute("pagination");
       paginationAttr && (this.pagination = paginationAttr);
       const dataAttr = this.getAttribute("data", true);
       dataAttr && (this.data = dataAttr);
@@ -17892,6 +17921,13 @@ var Table = class extends Control {
       if (mediaQueries)
         this.mediaQueries = mediaQueries;
       super.init();
+    }
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    if (!this.pagination) {
+      const pagination = this.getAttribute("pagination");
+      pagination && (this.pagination = pagination);
     }
   }
   static async create(options, parent) {
@@ -17926,6 +17962,8 @@ cssRule("i-carousel-slider", {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
+      margin: 0,
+      padding: 0,
       marginTop: "1rem",
       listStyle: "none",
       gap: "0.4rem",
@@ -17993,12 +18031,13 @@ var CarouselSlider = class extends Control {
     return this._activeSlide || 0;
   }
   set activeSlide(value) {
-    this._activeSlide = value;
+    const validValue = value >= 0 && value < this.dotsElm.length ? value : 0;
+    this._activeSlide = validValue;
     const currentActive = this.dotPagination.querySelector("li.--active");
-    const dot = this.dotsElm[value];
+    const dot = this.dotsElm[this._activeSlide];
     currentActive && currentActive.classList.remove("--active");
     dot && dot.classList.add("--active");
-    const tx = -this.offsetWidth * value;
+    const tx = -this.offsetWidth * this._activeSlide;
     this.sliderListElm.style.transform = `translateX(${tx}px)`;
   }
   get items() {
@@ -18034,7 +18073,7 @@ var CarouselSlider = class extends Control {
         dotElm.classList.add("--dot");
         if (this.activeSlide === i)
           dotElm.classList.add("--active");
-        const spanInner = this.createElement("span", dotElm);
+        this.createElement("span", dotElm);
         dotElm.addEventListener("click", () => {
           this.onDotClick(i);
           this.setAutoplay();
@@ -18076,7 +18115,7 @@ var CarouselSlider = class extends Control {
     this.renderDotPagination();
     this.autoplaySpeed = this.getAttribute("autoplaySpeed", true, 3e3);
     this.autoplay = this.getAttribute("autoplay", true);
-    this.items = this.getAttribute("items", true);
+    this.items = this.getAttribute("items", true, []);
     this.activeSlide = this.getAttribute("activeSlide", true, 0);
   }
   static async create(options, parent) {

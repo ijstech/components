@@ -7251,7 +7251,7 @@ declare module "@ijstech/*modal/src/modal" {
         private wrapperDiv;
         private titleSpan;
         private modalDiv;
-        private _icon;
+        private _closeIcon;
         private _placement;
         private _closeOnBackdropClick;
         private _showBackdrop;
@@ -7268,8 +7268,8 @@ declare module "@ijstech/*modal/src/modal" {
         set width(value: number | string);
         get popupPlacement(): modalPopupPlacementType;
         set popupPlacement(value: modalPopupPlacementType);
-        get icon(): Icon;
-        set icon(elm: Icon);
+        get closeIcon(): Icon | null;
+        set closeIcon(elm: Icon | null);
         get closeOnBackdropClick(): boolean;
         set closeOnBackdropClick(value: boolean);
         get showBackdrop(): boolean;
@@ -7707,7 +7707,7 @@ declare module "@ijstech/*tree-view/src/treeView" {
         children?: ITreeNode[];
     }
     export interface TreeViewElement extends ControlElement {
-        activeItem?: TreeNode | undefined;
+        activeItem?: TreeNode;
         data?: ITreeNode[];
         editable?: boolean;
         actionButtons?: ButtonElement[];
@@ -7749,6 +7749,12 @@ declare module "@ijstech/*tree-view/src/treeView" {
         onMouseLeaveNode: mouseLeaveCallback;
         onLazyLoad: lazyLoadCallback;
         onActionButtonClick: actionButtonCallback;
+        tag: {
+            [key: string]: {
+                name: string;
+                paths: any[];
+            };
+        };
         constructor(parent?: Control, options?: any);
         get activeItem(): TreeNode | undefined;
         set activeItem(value: TreeNode | undefined);
@@ -7782,13 +7788,15 @@ declare module "@ijstech/*tree-view/src/treeView" {
         private _isLazyLoad;
         private _editable;
         private _data;
-        private _order;
         private _wrapperElm;
         private _expandElm;
         private _captionElm;
         private _childNodeElm;
         private _iconElm;
         private _iconRightElm;
+        tag: {
+            paths: any[];
+        };
         constructor(parent?: Control, options?: any);
         get data(): ITreeNode;
         set data(value: ITreeNode);
@@ -7802,8 +7810,6 @@ declare module "@ijstech/*tree-view/src/treeView" {
         set active(value: any);
         get isLazyLoad(): boolean;
         set isLazyLoad(value: boolean);
-        get order(): string;
-        set order(value: string);
         get editable(): boolean;
         set editable(value: boolean);
         get rootParent(): TreeView;
@@ -7817,6 +7823,7 @@ declare module "@ijstech/*tree-view/src/treeView" {
         private initChildNodeElm;
         _handleClick(event: Event): boolean;
         _handleDblClick(event: Event): boolean;
+        _handleContextMenu(event: Event): boolean;
         protected init(): void;
         static create(options?: TreeNodeElement, parent?: Control): Promise<TreeNode>;
     }
@@ -8408,7 +8415,7 @@ declare module "@ijstech/*table/src/utils" {
     export const getColumnKey: (columns: TableColumnElement[], columnIdx: number) => string;
     export const getSorter: (columns: TableColumnElement[], key: string) => ((a: any, b: any) => boolean) | null | undefined;
     export const getValueByPath: (object: any, prop: string) => any;
-    export const orderBy: (list: any[], sortBy: string | string[], sortValue: null | string, sorter: any) => any[];
+    export const orderBy: (list: any[], sortBy: string | string[], sortValue: string, sorter: any) => any[];
     export const filterBy: (list: any[], value: any, columnKey: string | number) => any[];
 }
 declare module "@ijstech/*table/src/tableCell" {
@@ -8525,6 +8532,7 @@ declare module "@ijstech/*table/src/table" {
         private createTable;
         filter(predicate: (dataItem: any) => boolean): void;
         protected init(): void;
+        connectedCallback(): void;
         static create(options?: TableElement, parent?: Control): Promise<Table>;
     }
 }
