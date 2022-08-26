@@ -2884,6 +2884,11 @@ declare module "@ijstech/*base/src/component" {
     }
     export type FontStyle = 'normal' | 'italic' | 'oblique' | 'initial' | 'inherit';
     export type WrapType = 'nowrap' | 'wrap' | 'wrap-reverse' | 'initial' | 'inherit';
+    export type OverflowType = 'visible' | 'hidden' | 'clip' | 'scroll' | 'auto' | 'initial' | 'inherit' | 'unset';
+    export interface IOverflow {
+        x?: OverflowType;
+        y?: OverflowType;
+    }
     export class Component extends HTMLElement {
         protected connected: boolean;
         protected _parent: Component | undefined;
@@ -2913,11 +2918,12 @@ declare module "@ijstech/*base/src/component" {
     }
 }
 declare module "@ijstech/*base/src/style/base.css" {
-    import { BorderStylesSideType, IBorder, IBorderSideStyles } from "@ijstech/*base/@ijstech/components";
+    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow } from "@ijstech/*base/@ijstech/components";
     export const disabledStyle: string;
     export const containerStyle: string;
     export const getBorderSideStyleClass: (side: BorderStylesSideType, value: IBorderSideStyles) => string;
     export const getBorderStyleClass: (value: IBorder) => string;
+    export const getOverflowStyleClass: (value: IOverflow) => string;
 }
 declare module "@ijstech/*tooltip/src/style/tooltip.css" { }
 declare module "@ijstech/*tooltip/src/tooltip" {
@@ -2968,7 +2974,7 @@ declare module "@ijstech/*tooltip/@ijstech/components" {
     export { Tooltip, ITooltip } from "@ijstech/*tooltip/src/tooltip";
 }
 declare module "@ijstech/*base/src/control" {
-    import { Component, IStack, IFont, ISpace } from "@ijstech/*base/src/component";
+    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType } from "@ijstech/*base/src/component";
     import { notifyEventCallback } from "@ijstech/*base/@ijstech/components";
     export type DockStyle = 'none' | 'bottom' | 'center' | 'fill' | 'left' | 'right' | 'top';
     export type LineHeightType = string | number | 'normal' | 'initial' | 'inherit';
@@ -3061,6 +3067,18 @@ declare module "@ijstech/*base/src/control" {
         verticalAlignment?: "stretch" | "start" | "end" | "center";
         area?: string;
     }
+    class Overflow {
+        private _target;
+        private _value;
+        private _style;
+        constructor(target: Control, value?: IOverflow | OverflowType);
+        get x(): OverflowType;
+        set x(value: OverflowType);
+        get y(): OverflowType;
+        set y(value: OverflowType);
+        private updateValue;
+        setOverflowStyle(value?: IOverflow | OverflowType): void;
+    }
     export class Control extends Component {
         protected _controls: Control[];
         protected _enabled: boolean;
@@ -3089,6 +3107,7 @@ declare module "@ijstech/*base/src/control" {
         protected _dock: DockStyle;
         protected _linkTo: Control;
         protected _border: Border;
+        protected _overflow: Overflow;
         protected _resizer: ContainerResizer;
         private _tooltip;
         protected _font: IFont;
@@ -3170,6 +3189,8 @@ declare module "@ijstech/*base/src/control" {
         set minHeight(value: string | number);
         get border(): Border;
         set border(value: IBorder);
+        get overflow(): Overflow;
+        set overflow(value: OverflowType | IOverflow);
         get tooltip(): any;
         get font(): IFont;
         set font(value: IFont);
@@ -3209,9 +3230,9 @@ declare module "@ijstech/*base/src/types" {
 }
 declare module "@ijstech/*base/@ijstech/components" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/*base/src/observable";
-    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle } from "@ijstech/*base/src/component";
+    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow } from "@ijstech/*base/src/component";
     export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType } from "@ijstech/*base/src/control";
-    import { IStack, IFont, ISpace } from "@ijstech/*base/src/component";
+    import { IStack, IFont, ISpace, IOverflow, OverflowType } from "@ijstech/*base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "@ijstech/*base/src/control";
     import { ITooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { Control, Container };
@@ -3257,6 +3278,7 @@ declare module "@ijstech/*base/@ijstech/components" {
         position?: PositionType;
         linkTo?: Control;
         border?: IBorder;
+        overflow?: IOverflow | OverflowType;
         font?: IFont;
         display?: DisplayType;
         tooltip?: ITooltip | string;
@@ -3434,6 +3456,22 @@ declare module "@ijstech/*application/@ijstech/components" {
         menuItems?: IModuleMenuItem[];
         env?: string;
     }
+    export enum IpfsDataType {
+        Raw = 0,
+        Directory = 1,
+        File = 2,
+        Metadata = 3,
+        Symlink = 4,
+        HAMTShard = 5
+    }
+    export type IIPFSDirectoryInfo = IIPFSDirectoryFileInfo[];
+    export interface IIPFSDirectoryFileInfo {
+        Hash: string;
+        Name: string;
+        Size: number;
+        Target: string;
+        Type: IpfsDataType;
+    }
     class Application {
         private static _instance;
         private modules;
@@ -3451,6 +3489,7 @@ declare module "@ijstech/*application/@ijstech/components" {
         private getScript;
         loadScript(modulePath: string, script: string): Promise<boolean>;
         getContent(modulePath: string): Promise<string>;
+        fetchDirectoryInfoByCID(ipfsCid: string): Promise<IIPFSDirectoryInfo>;
         getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
         loadPackage(packageName: string, modulePath: string, options?: IModuleOptions): Promise<boolean>;
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
@@ -8595,6 +8634,7 @@ declare module "@ijstech/*carousel/src/carousel" {
         private setAutoplay;
         prev(): void;
         next(): void;
+        refresh(): void;
         protected init(): void;
         static create(options?: CarouselSliderElement, parent?: Control): Promise<CarouselSlider>;
     }

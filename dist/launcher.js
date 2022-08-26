@@ -7591,7 +7591,7 @@ cssRule("body", {
     },
     ".i-loading-overlay": {
       position: "absolute",
-      zIndex: 2e3,
+      zIndex: 9,
       margin: 0,
       top: 0,
       right: 0,
@@ -7715,6 +7715,20 @@ var getBorderStyleClass = (value) => {
   }
   if (value.radius) {
     styleObj["borderRadius"] = typeof value.radius == "number" ? value.radius + "px" : value.radius;
+  }
+  return style(styleObj);
+};
+var getOverflowStyleClass = (value) => {
+  let styleObj = {};
+  if (value.x === value.y) {
+    styleObj.overflow = value.x;
+  } else {
+    if (value.x) {
+      styleObj.overflowX = value.x;
+    }
+    if (value.y) {
+      styleObj.overflowY = value.y;
+    }
   }
   return style(styleObj);
 };
@@ -8319,6 +8333,57 @@ var Border = class {
     }
   }
 };
+var Overflow = class {
+  constructor(target, value) {
+    this._target = target;
+    if (value) {
+      this.updateValue(value);
+      this.setOverflowStyle();
+    }
+  }
+  get x() {
+    var _a;
+    return (_a = this._value.x) != null ? _a : "visible";
+  }
+  set x(value) {
+    if (!this._value) {
+      this._value = { x: value };
+    } else {
+      this._value.x = value;
+    }
+    this.setOverflowStyle();
+  }
+  get y() {
+    var _a;
+    return (_a = this._value.y) != null ? _a : "visible";
+  }
+  set y(value) {
+    if (!this._value) {
+      this._value = { x: value };
+    } else {
+      this._value.y = value;
+    }
+    this.setOverflowStyle();
+  }
+  updateValue(value) {
+    if (typeof value === "string") {
+      this._value = { x: value, y: value };
+    } else {
+      this._value = value;
+    }
+  }
+  setOverflowStyle(value) {
+    if (value) {
+      this.updateValue(value);
+    }
+    let style2 = getOverflowStyleClass(this._value);
+    if (this._style) {
+      this._target.classList.remove(this._style);
+    }
+    this._style = style2;
+    this._target.classList.add(style2);
+  }
+};
 var Control = class extends Component {
   constructor(parent, options, defaults) {
     super(parent, options, defaults);
@@ -8756,6 +8821,7 @@ var Control = class extends Component {
     if (border) {
       this._border = new Border(this, border);
     }
+    this.setAttributeToProperty("overflow");
     this.setAttributeToProperty("display");
   }
   setElementPosition(elm, prop, value) {
@@ -8900,6 +8966,19 @@ var Control = class extends Component {
   }
   set border(value) {
     this._border = new Border(this, value);
+  }
+  get overflow() {
+    if (!this._overflow) {
+      this._overflow = new Overflow(this);
+    }
+    return this._overflow;
+  }
+  set overflow(value) {
+    if (!this._overflow) {
+      this._overflow = new Overflow(this, value);
+    } else {
+      this._overflow.setOverflowStyle(value);
+    }
   }
   get tooltip() {
     if (!this._tooltip) {
@@ -9422,6 +9501,15 @@ var applicationStyle = style({
 });
 
 // packages/application/src/index.ts
+var IpfsDataType;
+(function(IpfsDataType2) {
+  IpfsDataType2[IpfsDataType2["Raw"] = 0] = "Raw";
+  IpfsDataType2[IpfsDataType2["Directory"] = 1] = "Directory";
+  IpfsDataType2[IpfsDataType2["File"] = 2] = "File";
+  IpfsDataType2[IpfsDataType2["Metadata"] = 3] = "Metadata";
+  IpfsDataType2[IpfsDataType2["Symlink"] = 4] = "Symlink";
+  IpfsDataType2[IpfsDataType2["HAMTShard"] = 5] = "HAMTShard";
+})(IpfsDataType || (IpfsDataType = {}));
 var Application = class {
   constructor() {
     this.modules = {};
@@ -9478,6 +9566,20 @@ var Application = class {
     } catch (err) {
     }
     return "";
+  }
+  async fetchDirectoryInfoByCID(ipfsCid) {
+    let directoryInfo = [];
+    try {
+      const IPFS_API = `https://dweb.link/api/v0/ls?arg=${ipfsCid}`;
+      let result = await fetch(IPFS_API);
+      let jsonContent = await result.json();
+      if (jsonContent.Objects && jsonContent.Objects[0] && jsonContent.Objects[0].Links) {
+        directoryInfo = jsonContent.Objects[0].Links;
+      }
+    } catch (err) {
+      console.log(err);
+    }
+    return directoryInfo;
   }
   async getModule(modulePath, options) {
     if (this.modules[modulePath])
@@ -13178,7 +13280,7 @@ var noBackdropStyle = style({
   transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
   zIndex: 10,
   overflow: "auto",
-  width: "inherit",
+  width: "100%",
   maxWidth: "inherit",
   $nest: {
     ".modal": {
@@ -13200,7 +13302,8 @@ var modalStyle = style({
   position: "relative",
   borderRadius: "2px",
   minWidth: "300px",
-  width: "inherit"
+  width: "inherit",
+  maxWidth: "100%"
 });
 var titleStyle = style({
   fontSize: "18px",
@@ -13238,13 +13341,16 @@ var Modal = class extends Container {
     if (value) {
       this.wrapperDiv.classList.add(visibleStyle);
       this.dispatchEvent(showEvent);
-      this.showBackdrop && (document.body.style.overflow = "hidden");
+      if (this.showBackdrop) {
+        document.body.style.overflow = "hidden";
+        const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
+        parentModal && (parentModal.wrapperDiv.style.overflow = "hidden");
+        this.wrapperDiv.style.overflow = "hidden auto";
+      }
     } else {
       this.wrapperDiv.classList.remove(visibleStyle);
-      this.showBackdrop && (document.body.style.overflow = "hidden auto");
-      const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
-      if (parentModal)
-        parentModal.wrapperDiv.style.overflow = "auto";
+      if (this.showBackdrop)
+        document.body.style.overflow = "hidden auto";
       this.onClose && this.onClose(this);
     }
   }
@@ -13329,7 +13435,6 @@ var Modal = class extends Container {
     }
   }
   positionAtFix(placement) {
-    var _a;
     let parent = document.body;
     let coords = this.getWrapperFixCoords(parent, placement);
     this.wrapperDiv.style.width = "100%";
@@ -13341,9 +13446,6 @@ var Modal = class extends Container {
       innerModal.wrapperDiv.style.width = "0px";
       innerModal.wrapperDiv.style.height = "0px";
     }
-    const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
-    if (parentModal)
-      parentModal.wrapperDiv.style.overflow = "hidden";
   }
   positionAtAbsolute(placement) {
     let parent = this._parent || this.linkTo || this.parentElement || document.body;
@@ -13353,6 +13455,7 @@ var Modal = class extends Container {
     } else {
       coords = this.getWrapperAbsoluteCoords(parent, placement);
     }
+    this.wrapperDiv.style.width = "inherit";
     this.wrapperDiv.style.left = coords.left + "px";
     this.wrapperDiv.style.top = coords.top + "px";
   }
@@ -13360,35 +13463,41 @@ var Modal = class extends Container {
     const parentCoords = parent.getBoundingClientRect();
     let left = 0;
     let top = 0;
-    const parentHeight = parentCoords.height || window.innerHeight;
+    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parentCoords.height;
     switch (placement) {
       case "center":
         top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
         left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2 - 1;
         break;
       case "top":
-        top = parentCoords.top;
+        top = this.showBackdrop ? this.modalDiv.offsetHeight - parentHeight : parentCoords.top;
         left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "topLeft":
-        top = parentCoords.top;
+        top = this.showBackdrop ? this.modalDiv.offsetHeight - parentHeight : parentCoords.top;
         left = parentCoords.left;
         break;
       case "topRight":
-        top = parentCoords.top;
+        top = this.showBackdrop ? this.modalDiv.offsetHeight - parentHeight : parentCoords.top;
         left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "bottom":
-        top = parentCoords.top + parentHeight - this.modalDiv.offsetHeight - 1;
+        top = parentCoords.top + parentHeight;
+        if (this.showBackdrop)
+          top = top - this.modalDiv.offsetHeight - 1;
         left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "bottomLeft":
-        top = parentCoords.top + parentHeight - this.modalDiv.offsetHeight - 1;
+        top = parentCoords.top + parentHeight;
+        if (this.showBackdrop)
+          top = top - this.modalDiv.offsetHeight;
         left = parentCoords.left;
         break;
       case "bottomRight":
-        top = parentCoords.top + parentHeight - this.modalDiv.offsetHeight - 1;
-        left = parentCoords.left + parentCoords.width - this.modalDiv.offsetWidth - 1;
+        top = parentCoords.top + parentHeight;
+        if (this.showBackdrop)
+          top = top - this.modalDiv.offsetHeight;
+        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "rightTop":
         top = parentCoords.top;
@@ -13510,9 +13619,6 @@ var Modal = class extends Container {
       this.maxWidth && (this.modalDiv.style.maxWidth = this.maxWidth);
       this.minHeight && this.updateModal("minHeight", this.minHeight);
       this.width && this.updateModal("width", this.width);
-      if (this.popupPlacement && this.enabled) {
-        this.positionAt(this.popupPlacement);
-      }
     }
   }
   static async create(options, parent) {
@@ -15218,7 +15324,6 @@ var TreeView = class extends Control {
     } else {
       treeNode.tag = { paths: [...paths, { name }] };
     }
-    console.log(treeNode.tag);
     return treeNode;
   }
   async renderTree(value) {
@@ -15369,6 +15474,12 @@ var TreeNode = class extends Control {
     return this._iconRightElm;
   }
   handleChange(target, oldValue, newValue) {
+    var _a;
+    const paths = (_a = target.tag) == null ? void 0 : _a.paths;
+    if (paths) {
+      paths[paths.length - 1] = { name: newValue };
+      target.tag = { paths };
+    }
     const fn = this.rootParent.onChange;
     if (fn && typeof fn === "function")
       fn(this.rootParent, target, oldValue, newValue);
@@ -18037,6 +18148,16 @@ var CarouselSlider = class extends Control {
     const dot = this.dotsElm[this._activeSlide];
     currentActive && currentActive.classList.remove("--active");
     dot && dot.classList.add("--active");
+    if (this._slider && this._slider.length) {
+      const min = this.slidesToShow * validValue;
+      const max = this.slidesToShow * (validValue + 1);
+      for (let i = 0; i < this._slider.length; i++) {
+        if (i >= min && i < max)
+          this._slider[i].classList.add("is-actived");
+        else
+          this._slider[i].classList.remove("is-actived");
+      }
+    }
     const tx = -this.offsetWidth * this._activeSlide;
     this.sliderListElm.style.transform = `translateX(${tx}px)`;
   }
@@ -18054,9 +18175,13 @@ var CarouselSlider = class extends Control {
     if (!items)
       return;
     let list = [];
+    const min = this.slidesToShow * this.activeSlide;
+    const max = this.slidesToShow * (this.activeSlide + 1);
     items.forEach((item, index) => {
       const carouselItem = new CarouselItem(this, item);
       carouselItem.style.width = 100 / this.slidesToShow + "%";
+      if (index >= min && index < max)
+        carouselItem.classList.add("is-actived");
       list.push(carouselItem);
       this._slider = list;
       this.sliderListElm.appendChild(carouselItem);
@@ -18103,6 +18228,13 @@ var CarouselSlider = class extends Control {
   next() {
     const index = this.activeSlide + 1 >= this._slider.length ? 0 : this.activeSlide + 1;
     this.onDotClick(index);
+  }
+  refresh() {
+    super.refresh();
+    if (this._slider && this._slider.length) {
+      const tx = -this.offsetWidth * this._activeSlide;
+      this.sliderListElm.style.transform = `translateX(${tx}px)`;
+    }
   }
   init() {
     super.init();
@@ -18173,6 +18305,12 @@ var Networks = {
     owner: "0x2Ce2eaa52c49C66f07366689b41bD21c70ae1059",
     domainRegistry: "0xB7E4A1107E37cDadB7BA83Afe0b81d59CC474449",
     rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545"]
+  },
+  43113: {
+    name: "Avax Testnet",
+    owner: "0xb15E094957c31D6b0d08714015fF85Bec7842635",
+    domainRegistry: "0xbc7ef3eccbF3BAAFBbCac420BdDC10FFeBb0cb97",
+    rpcUrls: ["https://api.avax-test.network/ext/bc/C/rpc"]
   }
 };
 var DefaultNetwork = 97;
@@ -18290,6 +18428,32 @@ async function loadModule(cid, moduleType, options) {
   }
   ;
 }
+async function fetchFileJsonContentByCID(ipfsCid) {
+  const IPFS_Gateway = "https://{CID}.ipfs.dweb.link/";
+  let result = await fetch(IPFS_Gateway.replace("{CID}", ipfsCid));
+  let content = await result.json();
+  return content;
+}
+async function loadDomainModule(cid, moduleType) {
+  const IPFS_Gateway = "https://{CID}.ipfs.dweb.link/";
+  let moduleFileContent = await fetchFileJsonContentByCID(cid);
+  if (moduleFileContent.codeCID) {
+    let scconfigFileContentStr;
+    let codeDirectory = await application.fetchDirectoryInfoByCID(moduleFileContent.codeCID);
+    let scconfigFileInfo = codeDirectory.find((link) => link.Name === "scconfig.json" && link.Type === IpfsDataType.File);
+    if (scconfigFileInfo) {
+      let moduleFilePath = IPFS_Gateway.replace("{CID}", moduleFileContent.codeCID);
+      scconfigFileContentStr = await application.getContent(`${moduleFilePath}/scconfig.json`) || "";
+      scconfigFileContentStr = scconfigFileContentStr.replace(/{root}\//g, moduleFilePath);
+    }
+    if (scconfigFileContentStr) {
+      let domainScconfig = JSON.parse(scconfigFileContentStr);
+      domainScconfig.domainModuleInfo = moduleFileContent.contractConfig || {};
+      let mainPath = domainScconfig.main;
+      loadModule(mainPath, 1, domainScconfig);
+    }
+  }
+}
 async function main() {
   addEventListener("hashchange", (event) => {
     const hash = location.hash.split("?")[0];
@@ -18315,8 +18479,9 @@ async function main() {
       let owner = await getDomainOwner(hostname);
       let chain = parseInt(await getDomainChain(hostname));
       let config = await getDomainConfig(hostname, owner, chain);
-      if (config.module)
-        loadModule(config.module, config.moduleType);
+      if (config.module) {
+        loadDomainModule(config.module, config.moduleType);
+      }
     }
   }
 }
