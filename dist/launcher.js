@@ -8175,6 +8175,7 @@ var DefaultBorderSideStyles = {
   style: void 0,
   color: void 0
 };
+var DefaultAnchor = { top: true, left: true, right: false, bottom: false };
 var Border = class {
   constructor(target, options) {
     this._styleClassMap = {};
@@ -8389,18 +8390,6 @@ var Control = class extends Component {
     super(parent, options, defaults);
     this._controls = [];
     this._enabled = true;
-    this._paddingLeft = 0;
-    this._paddingTop = 0;
-    this._paddingRight = 0;
-    this._paddingBottom = 0;
-    this._marginLeft = 0;
-    this._marginTop = 0;
-    this._marginRight = 0;
-    this._marginBottom = 0;
-    this._anchorLeft = true;
-    this._anchorTop = true;
-    this._anchorRight = false;
-    this._anchorBottom = false;
     this._visible = true;
     this.parent = parent;
   }
@@ -8438,11 +8427,9 @@ var Control = class extends Component {
       this._margin.update(value);
     const { top = 0, right = 0, bottom = 0, left = 0 } = value;
     this.style.margin = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
-    const margin = this.getMarginStyle();
-    this._marginLeft = margin.left;
-    this._marginTop = margin.top;
-    this._marginRight = margin.right;
-    this._marginBottom = margin.bottom;
+  }
+  get marginStyle() {
+    return (side) => this.getMarginStyle()[side];
   }
   get padding() {
     return this._padding;
@@ -8454,11 +8441,9 @@ var Control = class extends Component {
       this._padding.update(value);
     const { top = 0, right = 0, bottom = 0, left = 0 } = value;
     this.style.padding = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
-    const padding = this.getPaddingStyle();
-    this._paddingLeft = padding.left;
-    this._paddingTop = padding.top;
-    this._paddingRight = padding.right;
-    this._paddingBottom = padding.bottom;
+  }
+  get paddingStyle() {
+    return (side) => this.getPaddingStyle()[side];
   }
   addChildControl(control) {
     if (!control.parentNode)
@@ -8530,14 +8515,14 @@ var Control = class extends Component {
     if (!this._parent)
       return 0;
     else {
-      let result = this._parent._paddingLeft;
+      let result = this._parent.paddingStyle("left");
       for (let i = 0; i < this._parent._controls.length; i++) {
         let control = this._parent._controls[i];
         if (control === this) {
           if (this.dock == "left")
             return result;
         } else if (control.visible && control.dock == "left") {
-          result += control.offsetWidth + control._marginLeft;
+          result += control.offsetWidth + control.marginStyle("left");
         }
       }
       ;
@@ -8549,14 +8534,14 @@ var Control = class extends Component {
     if (!this._parent)
       return 0;
     else {
-      let result = this._parent._paddingRight;
+      let result = this._parent.paddingStyle("right");
       for (let i = 0; i < this._parent._controls.length; i++) {
         let control = this._parent._controls[i];
         if (control === this) {
           if (this.dock == "right")
             return result;
         } else if (control.dock == "right") {
-          result += control.offsetWidth + control._marginRight;
+          result += control.offsetWidth + control.marginStyle("right");
         }
       }
       ;
@@ -8568,14 +8553,14 @@ var Control = class extends Component {
     if (!this._parent)
       return 0;
     else {
-      let result = this._parent._paddingBottom;
+      let result = this._parent.paddingStyle("bottom");
       for (let i = 0; i < this._parent._controls.length; i++) {
         let control = this._parent._controls[i];
         if (control === this) {
           if (this.dock == "bottom")
             return result;
         } else if (control.visible && control.dock == "bottom") {
-          result += control.offsetHeight + control._marginBottom;
+          result += control.offsetHeight + control.marginStyle("bottom");
         }
       }
       ;
@@ -8587,14 +8572,14 @@ var Control = class extends Component {
     if (!this._parent)
       return 0;
     else {
-      let result = this._parent._paddingTop;
+      let result = this._parent.paddingStyle("top");
       for (let i = 0; i < this._parent._controls.length; i++) {
         let control = this._parent._controls[i];
         if (control === this) {
           if (this.dock == "top")
             return result;
         } else if (control.visible && control.dock == "top") {
-          result += control.offsetHeight + control._marginTop;
+          result += control.offsetHeight + control.marginStyle("top");
         }
       }
       ;
@@ -8674,7 +8659,21 @@ var Control = class extends Component {
     return this.style.maxWidth;
   }
   set maxWidth(value) {
-    this.style.maxWidth = value;
+    if (!isNaN(Number(value))) {
+      this.style.maxWidth = value + "px";
+    } else {
+      this.style.maxWidth = value + "";
+    }
+  }
+  get minWidth() {
+    return this.style.minWidth;
+  }
+  set minWidth(value) {
+    if (!isNaN(Number(value))) {
+      this.style.minWidth = value + "px";
+    } else {
+      this.style.minWidth = value + "";
+    }
   }
   observables(propName) {
     let self = this;
@@ -8707,23 +8706,23 @@ var Control = class extends Component {
       this.style.position = "absolute";
       switch (this.dock) {
         case "none": {
-          if (this._anchorTop == false)
+          if (this.anchor.top === false)
             this.top = (this.getParentHeight() - this.offsetHeight) / 2;
-          if (this._anchorLeft == false)
+          if (this.anchor.left === false)
             this.left = (this.getParentWidth() - this.offsetWidth) / 2;
           break;
         }
         case "left": {
           let top = this.getParentOccupiedTop();
-          this.top = top + this._marginTop;
+          this.top = top + this.marginStyle("top");
           this.left = this.getParentOccupiedLeft();
-          this.height = this.getParentHeight() - top - this.getParentOccupiedBottom() - this._marginTop - this._marginBottom;
+          this.height = this.getParentHeight() - top - this.getParentOccupiedBottom() - this.marginStyle("top") - this.marginStyle("bottom");
           break;
         }
         case "top": {
           this.top = this.getParentOccupiedTop();
           this.width = this.getParentWidth();
-          if (this._anchorLeft)
+          if (this.anchor.left)
             this.left = 0;
           else
             this.left = (this.getParentWidth() - this.offsetWidth) / 2;
@@ -8788,15 +8787,9 @@ var Control = class extends Component {
     this.setAttributeToProperty("margin");
     this.setAttributeToProperty("padding");
     this.setAttributeToProperty("tag");
-    this._marginLeft = this.getPositionAttribute("marginLeft", true, 0);
-    this._marginTop = this.getPositionAttribute("marginTop", true, 0);
-    this._marginRight = this.getPositionAttribute("marginRight", true, 0);
-    this._marginBottom = this.getPositionAttribute("marginBottom", true, 0);
-    this._paddingLeft = this.getPositionAttribute("paddingLeft", true, 0);
-    this._paddingTop = this.getPositionAttribute("paddingTop", true, 0);
-    this._paddingRight = this.getPositionAttribute("paddingRight", true, 0);
-    this._paddingBottom = this.getPositionAttribute("paddingBottom", true, 0);
+    this.setAttributeToProperty("anchor");
     this.setAttributeToProperty("maxWidth");
+    this.setAttributeToProperty("minWidth");
     this.setAttributeToProperty("stack");
     this.setAttributeToProperty("grid");
     if (this._left != null || this._top != null)
@@ -8812,6 +8805,7 @@ var Control = class extends Component {
     this.setAttributeToProperty("zIndex");
     this.setAttributeToProperty("lineHeight");
     this.setAttributeToProperty("linkTo");
+    this.setAttributeToProperty("maxHeight");
     this.setAttributeToProperty("minHeight");
     const tooltip = this.getAttribute("tooltip", true);
     tooltip && (this._tooltip = new Tooltip(this));
@@ -8948,6 +8942,16 @@ var Control = class extends Component {
   set position(value) {
     this.style.position = value;
   }
+  get maxHeight() {
+    return this.style.maxHeight;
+  }
+  set maxHeight(value) {
+    if (!isNaN(Number(value))) {
+      this.style.maxHeight = value + "px";
+    } else {
+      this.style.maxHeight = value + "";
+    }
+  }
   get minHeight() {
     return this.style.minHeight;
   }
@@ -9008,6 +9012,13 @@ var Control = class extends Component {
   set display(value) {
     this._display = value;
     this.style.display = value;
+  }
+  get anchor() {
+    return this._anchor || DefaultAnchor;
+  }
+  set anchor(value) {
+    const data = __spreadValues(__spreadValues({}, DefaultAnchor), value);
+    this._anchor = data;
   }
 };
 var ContainerResizer = class {
@@ -9838,7 +9849,6 @@ Image2 = __decorateClass([
 ], Image2);
 
 // packages/icon/src/style/icon.css.ts
-var Theme5 = theme_exports.ThemeVars;
 var spinnerAnim2 = keyframes({
   "0%": {
     transform: "rotate(0deg)"
@@ -9958,42 +9968,42 @@ Icon = __decorateClass([
 ], Icon);
 
 // packages/button/src/style/button.css.ts
-var Theme6 = theme_exports.ThemeVars;
+var Theme5 = theme_exports.ThemeVars;
 cssRule("i-button", {
-  background: Theme6.colors.primary.main,
-  boxShadow: Theme6.shadows[2],
-  color: Theme6.text.primary,
+  background: Theme5.colors.primary.main,
+  boxShadow: Theme5.shadows[2],
+  color: Theme5.text.primary,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   borderRadius: 4,
-  fontFamily: Theme6.typography.fontFamily,
-  fontSize: Theme6.typography.fontSize,
+  fontFamily: Theme5.typography.fontFamily,
+  fontSize: Theme5.typography.fontSize,
   gap: 5,
   $nest: {
     "&:not(.disabled):hover": {
       cursor: "pointer",
-      backgroundColor: Theme6.colors.primary.dark,
-      boxShadow: Theme6.shadows[4],
-      background: Theme6.colors.primary.main
+      backgroundColor: Theme5.colors.primary.dark,
+      boxShadow: Theme5.shadows[4],
+      background: Theme5.colors.primary.main
     },
     "&.disabled": {
-      color: Theme6.text.disabled,
-      boxShadow: Theme6.shadows[0],
-      background: Theme6.action.disabledBackground
+      color: Theme5.text.disabled,
+      boxShadow: Theme5.shadows[0],
+      background: Theme5.action.disabledBackground
     },
     "i-icon": {
       display: "inline-block",
-      fill: Theme6.text.primary,
+      fill: Theme5.text.primary,
       verticalAlign: "middle"
     },
     ".caption": {
       paddingRight: ".5rem"
     },
     "&.is-spinning, &.is-spinning:not(.disabled):hover, &.is-spinning:not(.disabled):focus": {
-      color: Theme6.text.disabled,
-      boxShadow: Theme6.shadows[0],
-      background: Theme6.action.disabledBackground,
+      color: Theme5.text.disabled,
+      boxShadow: Theme5.shadows[0],
+      background: Theme5.action.disabledBackground,
       cursor: "default"
     }
   }
@@ -10084,8 +10094,6 @@ var Button = class extends Control {
       this.captionElm = this.createElement("span", this);
       let caption = this.getAttribute("caption", true, "");
       this.captionElm.innerHTML = caption;
-      if (this.height)
-        defaultIcon.width = defaultIcon.height = Math.floor(+this.height / 2);
       let iconAttr = this.getAttribute("icon", true);
       if (iconAttr) {
         iconAttr = __spreadValues(__spreadValues({}, defaultIcon), iconAttr);
@@ -10554,7 +10562,7 @@ CodeDiffEditor = __decorateClass([
 ], CodeDiffEditor);
 
 // packages/combo-box/src/style/combo-box.css.ts
-var Theme7 = theme_exports.ThemeVars;
+var Theme6 = theme_exports.ThemeVars;
 var ItemListStyle = style({
   display: "none",
   position: "absolute",
@@ -10582,22 +10590,22 @@ var ItemListStyle = style({
       cursor: "pointer"
     },
     "> ul > li .highlight": {
-      backgroundColor: Theme7.colors.warning.light
+      backgroundColor: Theme6.colors.warning.light
     },
     "> ul > li.matched": {
-      backgroundColor: Theme7.colors.primary.light
+      backgroundColor: Theme6.colors.primary.light
     },
     "> ul > li:hover": {
-      backgroundColor: Theme7.colors.primary.light
+      backgroundColor: Theme6.colors.primary.light
     }
   }
 });
 cssRule("i-combo-box", {
   position: "relative",
   display: "flex",
-  fontFamily: Theme7.typography.fontFamily,
-  fontSize: Theme7.typography.fontSize,
-  color: Theme7.text.primary,
+  fontFamily: Theme6.typography.fontFamily,
+  fontSize: Theme6.typography.fontSize,
+  color: Theme6.text.primary,
   alignItems: "center",
   $nest: {
     "&.i-combo-box-multi": {
@@ -10607,7 +10615,7 @@ cssRule("i-combo-box", {
       display: "inline-flex",
       flexWrap: "nowrap",
       whiteSpace: "nowrap",
-      backgroundColor: Theme7.action.focus,
+      backgroundColor: Theme6.action.focus,
       padding: "8px",
       marginLeft: "-1px",
       borderRadius: "0 3px 3px 0",
@@ -10618,7 +10626,7 @@ cssRule("i-combo-box", {
       right: 0
     },
     "> .icon-btn:hover": {
-      backgroundColor: Theme7.action.hover
+      backgroundColor: Theme6.action.hover
     },
     "> .icon-btn i-icon": {
       display: "inline-block",
@@ -10631,7 +10639,7 @@ cssRule("i-combo-box", {
       flexWrap: "wrap",
       maxWidth: "calc(100% - 32px)",
       height: "100%",
-      border: `1px solid ${Theme7.divider}`,
+      border: `1px solid ${Theme6.divider}`,
       backgroundColor: "#fff",
       borderRadius: "3px 0 0 3px",
       padding: "2px 4px",
@@ -10640,7 +10648,7 @@ cssRule("i-combo-box", {
       flexGrow: 1,
       $nest: {
         ".selection-item": {
-          border: `1px solid ${Theme7.divider}`,
+          border: `1px solid ${Theme6.divider}`,
           backgroundColor: "rgba(0, 0, 0, 0.12)",
           color: "#000",
           borderRadius: 3,
@@ -11049,11 +11057,11 @@ ComboBox = __decorateClass([
 ], ComboBox);
 
 // packages/datepicker/src/style/datepicker.css.ts
-var Theme8 = theme_exports.ThemeVars;
+var Theme7 = theme_exports.ThemeVars;
 cssRule("i-datepicker", {
   display: "inline-block",
-  fontFamily: Theme8.typography.fontFamily,
-  fontSize: Theme8.typography.fontSize,
+  fontFamily: Theme7.typography.fontFamily,
+  fontSize: Theme7.typography.fontSize,
   "$nest": {
     "*": {
       boxSizing: "border-box"
@@ -11063,7 +11071,7 @@ cssRule("i-datepicker", {
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme8.text.primary,
+      color: Theme7.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -11074,15 +11082,15 @@ cssRule("i-datepicker", {
     },
     "> input": {
       padding: "1px 0.5rem",
-      border: `0.5px solid ${Theme8.divider}`,
+      border: `0.5px solid ${Theme7.divider}`,
       boxSizing: "border-box",
       outline: "none"
     },
     "> input[type=text]:focus": {
-      borderColor: Theme8.colors.info.main
+      borderColor: Theme7.colors.info.main
     },
     "i-icon": {
-      fill: Theme8.colors.primary.contrastText
+      fill: Theme7.colors.primary.contrastText
     },
     ".datepicker-toggle": {
       display: "inline-block",
@@ -11328,7 +11336,11 @@ var Datepicker = class extends Control {
       this.inputElm.setAttribute("type", "text");
       this.inputElm.setAttribute("autocomplete", "disabled");
       this.inputElm.style.height = this.height + "px";
-      this.inputElm.onblur = this._onBlur;
+      this.inputElm.onblur = (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        this._onBlur(event);
+      };
       this.inputElm.pattern = this.formatString;
       this.placeholder = this.getAttribute("placeholder", true, "");
       this.toggleElm = this.createElement("span", this);
@@ -11367,12 +11379,12 @@ Datepicker = __decorateClass([
 ], Datepicker);
 
 // packages/range/src/style/range.css.ts
-var Theme9 = theme_exports.ThemeVars;
+var Theme8 = theme_exports.ThemeVars;
 cssRule("i-range", {
   position: "relative",
   display: "inline-block",
-  fontFamily: Theme9.typography.fontFamily,
-  fontSize: Theme9.typography.fontSize,
+  fontFamily: Theme8.typography.fontFamily,
+  fontSize: Theme8.typography.fontSize,
   "$nest": {
     "*": {
       boxSizing: "border-box"
@@ -11382,7 +11394,7 @@ cssRule("i-range", {
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme9.text.primary,
+      color: Theme8.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -11399,7 +11411,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       background: "#d3d3d3",
-      backgroundImage: `linear-gradient(${Theme9.colors.info.main}, ${Theme9.colors.info.main})`,
+      backgroundImage: `linear-gradient(${Theme8.colors.info.main}, ${Theme8.colors.info.main})`,
       backgroundSize: "0% 100%",
       backgroundRepeat: "no-repeat !important",
       borderRadius: "0.5rem",
@@ -11434,7 +11446,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       marginTop: "-5px",
-      backgroundColor: Theme9.colors.info.main,
+      backgroundColor: Theme8.colors.info.main,
       borderRadius: "0.5rem",
       height: "1rem",
       width: "1rem"
@@ -11693,13 +11705,13 @@ Range = __decorateClass([
 ], Range);
 
 // packages/radio/src/radio.css.ts
-var Theme10 = theme_exports.ThemeVars;
+var Theme9 = theme_exports.ThemeVars;
 var captionStyle = style({
-  fontFamily: Theme10.typography.fontFamily,
-  fontSize: Theme10.typography.fontSize,
+  fontFamily: Theme9.typography.fontFamily,
+  fontSize: Theme9.typography.fontSize,
   "$nest": {
     "span": {
-      color: Theme10.text.primary
+      color: Theme9.text.primary
     }
   }
 });
@@ -11876,18 +11888,18 @@ RadioGroup = __decorateClass([
 ], RadioGroup);
 
 // packages/input/src/style/input.css.ts
-var Theme11 = theme_exports.ThemeVars;
+var Theme10 = theme_exports.ThemeVars;
 cssRule("i-input", {
   display: "inline-block",
-  fontFamily: Theme11.typography.fontFamily,
-  fontSize: Theme11.typography.fontSize,
+  fontFamily: Theme10.typography.fontFamily,
+  fontSize: Theme10.typography.fontSize,
   "$nest": {
     "> span": {
       overflow: "hidden"
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme11.text.primary,
+      color: Theme10.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -11897,7 +11909,7 @@ cssRule("i-input", {
       height: "100%"
     },
     "> input": {
-      border: `0.5px solid ${Theme11.divider}`,
+      border: `0.5px solid ${Theme10.divider}`,
       boxSizing: "border-box",
       outline: "none"
     },
@@ -11905,7 +11917,7 @@ cssRule("i-input", {
       display: "none",
       verticalAlign: "middle",
       padding: "6px",
-      backgroundColor: Theme11.action.focus,
+      backgroundColor: Theme10.action.focus,
       $nest: {
         "&.active": {
           display: "inline-flex",
@@ -12292,12 +12304,12 @@ Input = __decorateClass([
 ], Input);
 
 // packages/markdown/src/style/markdown.css.ts
-var Theme12 = theme_exports.ThemeVars;
+var Theme11 = theme_exports.ThemeVars;
 cssRule("i-markdown", {
   display: "inline-block",
-  color: Theme12.text.primary,
-  fontFamily: Theme12.typography.fontFamily,
-  fontSize: Theme12.typography.fontSize,
+  color: Theme11.text.primary,
+  fontFamily: Theme11.typography.fontFamily,
+  fontSize: Theme11.typography.fontSize,
   $nest: {
     h1: {
       fontSize: "48px",
@@ -12530,7 +12542,7 @@ Markdown = __decorateClass([
 ], Markdown);
 
 // packages/tab/src/style/tab.css.ts
-var Theme13 = theme_exports.ThemeVars;
+var Theme12 = theme_exports.ThemeVars;
 cssRule("i-tabs", {
   display: "block",
   $nest: {
@@ -12601,7 +12613,7 @@ cssRule("i-tabs", {
           color: "#fff"
         },
         "&:not(.disabled).active.border": {
-          borderColor: `${Theme13.divider} ${Theme13.divider} #fff`,
+          borderColor: `${Theme12.divider} ${Theme12.divider} #fff`,
           borderBottomWidth: "1.5px"
         },
         ".tab-item": {
@@ -12684,12 +12696,6 @@ var Tabs = class extends Container {
   get activeTab() {
     return this._tabs[this.activeTabIndex];
   }
-  set activeTab(item) {
-    const index = item.index;
-    if (index < 0 || this.activeTabIndex === index)
-      return;
-    this.activeTabIndex = item.index;
-  }
   get activeTabIndex() {
     return this._activeTabIndex;
   }
@@ -12757,7 +12763,7 @@ var Tabs = class extends Container {
       this.handleTagDrag([tab]);
     }
     this.appendTab(tab);
-    this.activeTab = tab;
+    this.activeTabIndex = tab.index;
     return tab;
   }
   delete(tab) {
@@ -12842,7 +12848,7 @@ var Tabs = class extends Container {
       } else {
         dropTab.after(this.curDragTab);
       }
-      this.activeTab = curActiveTab;
+      this.activeTabIndex = curActiveTab.index;
       if (this.onChanged)
         this.onChanged(this, this.activeTab);
     }
@@ -12886,9 +12892,6 @@ var Tabs = class extends Container {
       for (const tab of _tabs) {
         this.appendTab(tab);
       }
-      const activeTab = this.getAttribute("activeTab", true);
-      if (activeTab)
-        this.activeTab = activeTab;
       this.draggable = this.getAttribute("draggable", true) || false;
       const activeTabIndex = this.getAttribute("activeTabIndex", true);
       if (this._tabs.length)
@@ -12906,7 +12909,7 @@ Tabs = __decorateClass([
 ], Tabs);
 var Tab = class extends Container {
   active() {
-    this._parent.activeTab = this;
+    this._parent.activeTabIndex = this.index;
   }
   addChildControl(control) {
     if (this._contentElm)
@@ -12974,7 +12977,7 @@ var Tab = class extends Container {
       return false;
     if (this._parent) {
       if (this._parent.activeTab != this)
-        this._parent.activeTab = this;
+        this._parent.activeTabIndex = this.index;
       if (this._parent.onChanged)
         this._parent.onChanged(this._parent, this._parent.activeTab);
     }
@@ -13001,6 +13004,9 @@ var Tab = class extends Container {
       this.tabContainer.classList.add("tab-item");
       this.captionElm = this.createElement("div", this.tabContainer);
       this.caption = this.getAttribute("caption", true) || "";
+      const font = this.getAttribute("font", true);
+      if (font)
+        this.font = font;
       const icon = this.getAttribute("icon", true);
       if (icon) {
         icon.height = icon.height || "16px";
@@ -13025,7 +13031,7 @@ Tab = __decorateClass([
 ], Tab);
 
 // packages/markdown-editor/src/style/markdown-editor.css.ts
-var Theme14 = theme_exports.ThemeVars;
+var Theme13 = theme_exports.ThemeVars;
 cssRule("i-markdown-editor", {
   display: "block",
   $nest: {
@@ -13036,12 +13042,12 @@ cssRule("i-markdown-editor", {
     ".editor-tabs": {
       display: "block",
       position: "relative",
-      border: `1px solid ${Theme14.divider}`,
+      border: `1px solid ${Theme13.divider}`,
       borderRadius: "6px",
       $nest: {
         ".tabs": {
-          backgroundColor: Theme14.background.paper,
-          borderBottom: `1px solid ${Theme14.divider}`,
+          backgroundColor: Theme13.background.paper,
+          borderBottom: `1px solid ${Theme13.divider}`,
           borderTopLeftRadius: "6px",
           borderTopRightRadius: "6px",
           marginBottom: 0,
@@ -13067,32 +13073,32 @@ cssRule("i-markdown-editor", {
                 "i-icon": {
                   display: "inline-block",
                   verticalAlign: "middle",
-                  fill: Theme14.text.secondary
+                  fill: Theme13.text.secondary
                 },
                 "span": {
                   marginLeft: "6px",
                   fontSize: "14px",
                   lineHeight: "23px",
-                  color: Theme14.text.secondary,
+                  color: Theme13.text.secondary,
                   verticalAlign: "middle"
                 },
                 "&.active": {
                   borderTopLeftRadius: "6px",
                   borderTopRightRadius: "6px",
-                  backgroundColor: Theme14.colors.primary.main,
-                  borderColor: Theme14.divider,
+                  backgroundColor: Theme13.colors.primary.main,
+                  borderColor: Theme13.divider,
                   $nest: {
                     "&:first-of-type": {
                       borderColor: "transparent",
                       borderTopRightRadius: 0,
-                      borderRightColor: Theme14.divider
+                      borderRightColor: Theme13.divider
                     },
                     "i-icon": {
-                      fill: Theme14.text.primary
+                      fill: Theme13.text.primary
                     },
                     "span": {
                       fontWeight: 600,
-                      color: Theme14.text.primary
+                      color: Theme13.text.primary
                     }
                   }
                 }
@@ -13171,13 +13177,13 @@ MarkdownEditor = __decorateClass([
 ], MarkdownEditor);
 
 // packages/link/src/style/link.css.ts
-var Theme15 = theme_exports.ThemeVars;
+var Theme14 = theme_exports.ThemeVars;
 cssRule("i-link", {
   display: "block",
   cursor: "pointer",
   $nest: {
     "&:hover *": {
-      color: Theme15.colors.primary.dark
+      color: Theme14.colors.primary.dark
     },
     "> a": {
       transition: "all .3s",
@@ -13255,7 +13261,7 @@ Link = __decorateClass([
 ], Link);
 
 // packages/modal/src/style/modal.css.ts
-var Theme16 = theme_exports.ThemeVars;
+var Theme15 = theme_exports.ThemeVars;
 var wrapperStyle = style({
   position: "fixed",
   left: 0,
@@ -13298,7 +13304,7 @@ var modalStyle = style({
   fontFamily: "Helvetica",
   fontSize: "14px",
   padding: "10px 10px 5px 10px",
-  backgroundColor: Theme16.background.modal,
+  backgroundColor: Theme15.background.modal,
   position: "relative",
   borderRadius: "2px",
   minWidth: "300px",
@@ -13312,7 +13318,7 @@ var titleStyle = style({
   alignItems: "center",
   $nest: {
     "span": {
-      color: Theme16.colors.primary.main
+      color: Theme15.colors.primary.main
     },
     "i-icon": {
       display: "inline-block",
@@ -13322,7 +13328,7 @@ var titleStyle = style({
 });
 
 // packages/modal/src/modal.ts
-var Theme17 = theme_exports.ThemeVars;
+var Theme16 = theme_exports.ThemeVars;
 var showEvent = new Event("show");
 var Modal = class extends Container {
   constructor(parent, options) {
@@ -13585,7 +13591,7 @@ var Modal = class extends Container {
       if (closeIconAttr) {
         closeIconAttr.height = closeIconAttr.height || "16px";
         closeIconAttr.width = closeIconAttr.width || "16px";
-        closeIconAttr.fill = closeIconAttr.fill || Theme17.colors.primary.main;
+        closeIconAttr.fill = closeIconAttr.fill || Theme16.colors.primary.main;
         this.closeIcon = new Icon(void 0, closeIconAttr);
       }
       while (this.childNodes.length > 1) {
@@ -13616,8 +13622,10 @@ var Modal = class extends Container {
       if (itemAttr)
         this.item = itemAttr;
       super.init();
-      this.maxWidth && (this.modalDiv.style.maxWidth = this.maxWidth);
+      this.maxWidth && this.updateModal("maxWidth", this.maxWidth);
+      this.minWidth && this.updateModal("minWidth", this.minWidth);
       this.minHeight && this.updateModal("minHeight", this.minHeight);
+      this.maxHeight && this.updateModal("maxHeight", this.maxHeight);
       this.width && this.updateModal("width", this.width);
     }
   }
@@ -14171,7 +14179,7 @@ CardLayout = __decorateClass([
 ], CardLayout);
 
 // packages/menu/src/style/menu.css.ts
-var Theme18 = theme_exports.ThemeVars;
+var Theme17 = theme_exports.ThemeVars;
 var fadeInRight = keyframes({
   "0%": {
     opacity: 0,
@@ -14183,8 +14191,8 @@ var fadeInRight = keyframes({
   }
 });
 var menuStyle = style({
-  fontFamily: Theme18.typography.fontFamily,
-  fontSize: Theme18.typography.fontSize,
+  fontFamily: Theme17.typography.fontFamily,
+  fontSize: Theme17.typography.fontSize,
   position: "relative",
   display: "block",
   overflow: "hidden",
@@ -14210,7 +14218,7 @@ var menuStyle = style({
 var meunItemStyle = style({
   position: "relative",
   display: "block",
-  color: Theme18.text.secondary,
+  color: Theme17.text.secondary,
   $nest: {
     ".menu-item": {
       position: "relative",
@@ -14230,8 +14238,8 @@ var meunItemStyle = style({
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme18.action.hover,
-      color: Theme18.text.primary
+      background: Theme17.action.hover,
+      color: Theme17.text.primary
     },
     ".menu-item.menu-active > .menu-item-arrow, .menu-item.menu-selected > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -14881,12 +14889,12 @@ Module = __decorateClass([
 ], Module);
 
 // packages/label/src/style/label.css.ts
-var Theme19 = theme_exports.ThemeVars;
+var Theme18 = theme_exports.ThemeVars;
 var captionStyle2 = style({
   display: "inline-block",
-  color: Theme19.text.primary,
-  fontFamily: Theme19.typography.fontFamily,
-  fontSize: Theme19.typography.fontSize
+  color: Theme18.text.primary,
+  fontFamily: Theme18.typography.fontFamily,
+  fontSize: Theme18.typography.fontSize
 });
 
 // packages/label/src/label.ts
@@ -14931,6 +14939,12 @@ var Label = class extends Control {
     if (this.captionSpan)
       this.captionSpan.style.width = value + "px";
   }
+  get wordBreak() {
+    return this.style.wordBreak;
+  }
+  set wordBreak(value) {
+    this.style.wordBreak = value;
+  }
   init() {
     if (!this.captionSpan) {
       let childNodes = [];
@@ -14952,6 +14966,9 @@ var Label = class extends Control {
         }));
         this.link = link;
       }
+      const wordBreak = this.getAttribute("wordBreak", true);
+      if (wordBreak)
+        this.wordBreak = wordBreak;
       super.init();
     }
   }
@@ -14966,13 +14983,13 @@ Label = __decorateClass([
 ], Label);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme20 = theme_exports.ThemeVars;
+var Theme19 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme20.typography.fontFamily,
-  fontSize: Theme20.typography.fontSize,
+  fontFamily: Theme19.typography.fontFamily,
+  fontSize: Theme19.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -14987,7 +15004,7 @@ cssRule("i-tree-view", {
       display: "block",
       position: "relative"
     },
-    "> i-tree-node:not(.has-children) .i-tree-node_icon": {
+    "> i-tree-node:not(.has-children) .i-tree-node_icon:not(.custom-icon)": {
       display: "none"
     },
     "i-tree-node.is-checked > .i-tree-node_children": {
@@ -15006,14 +15023,13 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme20.text.primary,
+      color: Theme19.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
     ".i-tree-node_icon": {
       display: "inline-block",
       transition: "all ease 0.4s",
-      visibility: "hidden",
       $nest: {
         "svg": {
           width: 14,
@@ -15021,10 +15037,13 @@ cssRule("i-tree-view", {
         },
         "i-image": {
           display: "flex"
+        },
+        "&:not(.custom-icon)": {
+          visibility: "hidden"
         }
       }
     },
-    "input ~ .i-tree-node_icon, input ~ .is-right > .i-tree-node_icon": {
+    "input ~ .i-tree-node_icon:not(.custom-icon), input ~ .is-right > .i-tree-node_icon:not(.custom-icon)": {
       visibility: "visible"
     },
     "input ~ .i-tree-node_label": {
@@ -15035,7 +15054,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme20.divider}`,
+          borderLeft: `1px solid ${Theme19.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -15044,12 +15063,12 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme20.action.selected,
-          border: `1px solid ${Theme20.colors.info.dark}`,
-          color: Theme20.text.primary
+          backgroundColor: Theme19.action.selected,
+          border: `1px solid ${Theme19.colors.info.dark}`,
+          color: Theme19.text.primary
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme20.action.hover,
+          backgroundColor: Theme19.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -15077,8 +15096,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme20.colors.primary.main,
-          color: Theme20.colors.primary.contrastText,
+          background: Theme19.colors.primary.main,
+          color: Theme19.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -15119,10 +15138,10 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme20.divider}`,
+          borderLeft: `1px solid ${Theme19.divider}`,
           content: "''"
         },
-        ".i-tree-node_icon": {
+        ".i-tree-node_icon:not(.custom-icon)": {
           display: "none"
         },
         ".i-tree-node_content": {
@@ -15135,15 +15154,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme20.divider}`,
-          borderLeft: `1px solid ${Theme20.divider}`,
+          borderBottom: `1px solid ${Theme19.divider}`,
+          borderLeft: `1px solid ${Theme19.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme20.divider}`,
-          borderRight: `0.5px solid ${Theme20.divider}`,
+          borderTop: `1px solid ${Theme19.divider}`,
+          borderRight: `0.5px solid ${Theme19.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -15162,7 +15181,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme20.colors.primary.main}`
+          borderBottom: `2px solid ${Theme19.colors.primary.main}`
         }
       }
     },
@@ -15189,11 +15208,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme21 = theme_exports.ThemeVars;
+var Theme20 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme21.text.secondary,
+  fill: Theme20.text.secondary,
   width: 12,
   height: 12
 };
@@ -15243,11 +15262,11 @@ var TreeView = class extends Control {
       });
     }
   }
-  async add(parentNode, caption) {
+  add(parentNode, caption) {
     var _a;
     const childData = { caption, children: [] };
-    const childNode = await TreeNode.create(__spreadValues({}, childData), this);
-    await this.initNode(childNode);
+    const childNode = new TreeNode(this, __spreadValues({}, childData));
+    this.initNode(childNode);
     childNode.editable = this.editable;
     if (this.onRenderNode)
       this.onRenderNode(this, childNode);
@@ -15292,11 +15311,11 @@ var TreeView = class extends Control {
     if (fn && typeof fn === "function")
       fn(this, node);
   }
-  async initNode(node) {
+  initNode(node) {
     this.registerEvents(node);
     const groupElm = node.querySelector(".button-group");
     if (this.actionButtons)
-      await this.renderActions(groupElm);
+      this.renderActions(groupElm);
   }
   registerEvents(node) {
     node.addEventListener("mouseenter", () => this.handleMouseEnter(node));
@@ -15304,10 +15323,10 @@ var TreeView = class extends Control {
     node.addEventListener("beforeExpand", (event) => this.handleLazyLoad(node));
     this.onRenderNode && this.onRenderNode(this, node);
   }
-  async renderTreeNode(node, parent, paths = []) {
-    const treeNode = await TreeNode.create(node, parent);
+  renderTreeNode(node, parent, paths = []) {
+    const treeNode = new TreeNode(parent, node);
     treeNode.editable = this.editable;
-    await this.initNode(treeNode);
+    this.initNode(treeNode);
     const name = node.caption || "";
     if (node.children) {
       paths.push({ name });
@@ -15316,7 +15335,7 @@ var TreeView = class extends Control {
         for (const child2 of node.children) {
           const childWrapper = treeNode.querySelector(".i-tree-node_children");
           if (childWrapper) {
-            const childNode = await this.renderTreeNode(child2, parent, paths);
+            const childNode = this.renderTreeNode(child2, parent, paths);
             childWrapper && childWrapper.appendChild(childNode);
           }
         }
@@ -15326,11 +15345,11 @@ var TreeView = class extends Control {
     }
     return treeNode;
   }
-  async renderTree(value) {
+  renderTree(value) {
     if (!value || !value.length)
       return;
     for (const node of value) {
-      let treeNode = await this.renderTreeNode(node, this);
+      let treeNode = this.renderTreeNode(node, this);
       this.appendChild(treeNode);
       const activedNode = treeNode.querySelector(".active");
       if (activedNode) {
@@ -15342,12 +15361,12 @@ var TreeView = class extends Control {
       this._items.push(treeNode);
     }
   }
-  async renderActions(group) {
+  renderActions(group) {
     if (!group)
       return;
     group.innerHTML = "";
-    this.actionButtons.forEach(async (button) => {
-      const buttonElm = await Button.create(button);
+    this.actionButtons.forEach((button) => {
+      const buttonElm = new Button(void 0, button);
       if (this.onActionButtonClick && typeof this.onActionButtonClick === "function")
         buttonElm.onClick = (source, event) => {
           var _a;
@@ -15592,7 +15611,7 @@ var TreeNode = class extends Control {
       this.classList.add("i-tree-node");
       this.data = this.options;
       let caption = this.getAttribute("caption", true, "");
-      let iconAttr = this.getAttribute("icon", true);
+      let icon = this.getAttribute("icon", true);
       let rightIcon = this.getAttribute("rightIcon", true);
       let collapsible = this.getAttribute("collapsible", true);
       let expanded = this.getAttribute("expanded", true);
@@ -15604,11 +15623,12 @@ var TreeNode = class extends Control {
       this.isLazyLoad = isLazyLoad;
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-tree-node_content");
-      const iconData = iconAttr || defaultIcon3;
+      const iconData = icon || defaultIcon3;
       iconData.height = iconData.height || "12px";
       iconData.width = iconData.width || "12px";
       this._iconElm = new Icon(void 0, iconData);
       this._iconElm.classList.add("i-tree-node_icon");
+      icon && this._iconElm.classList.add("custom-icon");
       this._wrapperElm.appendChild(this._iconElm);
       this._captionElm = this.createElement("label", this._wrapperElm);
       this._captionElm.classList.add("i-tree-node_label");
@@ -15622,6 +15642,7 @@ var TreeNode = class extends Control {
         rightIcon.width = rightIcon.width || "12px";
         this._iconRightElm = new Icon(void 0, rightIcon);
         this._iconRightElm.classList.add("i-tree-node_icon");
+        rightIcon && this._iconRightElm.classList.add("custom-icon");
         rightWrap.appendChild(this._iconRightElm);
         rightWrap.insertBefore(this._iconRightElm, actionGroup);
       }
@@ -15641,11 +15662,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme22 = theme_exports.ThemeVars;
+var Theme21 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme22.typography.fontFamily,
-  fontSize: Theme22.typography.fontSize,
+  fontFamily: Theme21.typography.fontFamily,
+  fontSize: Theme21.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -16066,7 +16087,7 @@ ScatterLineChart = __decorateClass([
 ], ScatterLineChart);
 
 // packages/upload/src/style/upload.css.ts
-var Theme23 = theme_exports.ThemeVars;
+var Theme22 = theme_exports.ThemeVars;
 cssRule("i-upload", {
   margin: "1rem 0",
   listStyle: "none",
@@ -16079,7 +16100,7 @@ cssRule("i-upload", {
   $nest: {
     ".i-upload-wrapper": {
       position: "relative",
-      border: `2px dashed ${Theme23.divider}`,
+      border: `2px dashed ${Theme22.divider}`,
       width: "100%",
       display: "flex",
       flexDirection: "column",
@@ -16099,8 +16120,8 @@ cssRule("i-upload", {
       marginTop: "4rem"
     },
     ".i-upload-dragger_active": {
-      border: `2px dashed ${Theme23.colors.primary.main}`,
-      backgroundColor: Theme23.colors.info.light,
+      border: `2px dashed ${Theme22.colors.primary.main}`,
+      backgroundColor: Theme22.colors.info.light,
       opacity: "0.8"
     },
     'input[type="file"]': {
@@ -16125,7 +16146,7 @@ cssRule("i-upload", {
     },
     ".i-upload_preview-crop": {
       position: "absolute",
-      border: `1px dashed ${Theme23.background.paper}`,
+      border: `1px dashed ${Theme22.background.paper}`,
       width: 150,
       height: 150,
       left: "50%",
@@ -16211,7 +16232,7 @@ cssRule("i-upload", {
 });
 
 // packages/upload/src/upload.ts
-var Theme24 = theme_exports.ThemeVars;
+var Theme23 = theme_exports.ThemeVars;
 var fileId = 1;
 var genFileId = () => Date.now() + fileId++;
 var UploadDrag = class extends Control {
@@ -16295,7 +16316,7 @@ var UploadDrag = class extends Control {
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-drag_area");
       this._labelElm = this.createElement("span", this._wrapperElm);
-      this._labelElm.style.color = Theme24.text.primary;
+      this._labelElm.style.color = Theme23.text.primary;
       this.caption = this.getAttribute("caption", true);
       this.disabled = this.getAttribute("disabled", true);
       this.addEventListener("dragenter", this.handleOnDragEnter.bind(this));
@@ -16468,7 +16489,7 @@ var Upload = class extends Control {
         const removeIcon = new Icon(void 0, {
           width: 12,
           height: 12,
-          fill: Theme24.action.active,
+          fill: Theme23.action.active,
           name: "trash"
         });
         itemElm.appendChild(removeIcon);
@@ -16651,22 +16672,22 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme25 = theme_exports.ThemeVars;
+var Theme24 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme25.typography.fontFamily,
-  fontSize: Theme25.typography.fontSize,
+  fontFamily: Theme24.typography.fontFamily,
+  fontSize: Theme24.typography.fontSize,
   lineHeight: "25px",
-  color: Theme25.text.primary,
+  color: Theme24.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex"
     },
     ".pagination a": {
-      color: Theme25.text.primary,
+      color: Theme24.text.primary,
       float: "left",
       padding: "8px 16px",
       textDecoration: "none",
@@ -16679,7 +16700,7 @@ cssRule("i-pagination", {
       border: "1px solid #4CAF50"
     },
     ".pagination a.disabled": {
-      color: Theme25.text.disabled,
+      color: Theme24.text.disabled,
       pointerEvents: "none"
     },
     ".pagination-main": {
@@ -16690,6 +16711,7 @@ cssRule("i-pagination", {
 
 // packages/pagination/src/pagination.ts
 var pagerCount = 7;
+var pagerCountMobile = 3;
 var defaultCurrentPage = 1;
 var pageSize = 10;
 var Pagination = class extends Control {
@@ -16697,6 +16719,7 @@ var Pagination = class extends Control {
     super(parent, options, { pageSize });
     this._showPrevMore = false;
     this._showNextMore = false;
+    this.pagerCount = pagerCount;
   }
   get totalPages() {
     return this._totalPages;
@@ -16748,7 +16771,7 @@ var Pagination = class extends Control {
     this.onDisablePrevNext();
   }
   _handleOnClickMore(value, event) {
-    this.currentPage = this.currentPage + value * (pagerCount - 2);
+    this.currentPage = this.currentPage + value * (this.pagerCount - 2);
     this.renderPageItem(this.totalPages);
   }
   _handleOnNext(event) {
@@ -16808,13 +16831,13 @@ var Pagination = class extends Control {
       this.onActiveItem(item);
   }
   updatePagers() {
-    const halfPagerCount = (pagerCount - 1) / 2;
+    const halfPagerCount = (this.pagerCount - 1) / 2;
     const currentPage = Number(this.currentPage);
     const pageCount = Number(this.totalPages);
     let showPrevMore = false;
     let showNextMore = false;
-    if (pageCount > pagerCount) {
-      if (currentPage > pagerCount - halfPagerCount) {
+    if (pageCount > this.pagerCount) {
+      if (currentPage > this.pagerCount - halfPagerCount) {
         showPrevMore = true;
       }
       if (currentPage < pageCount - halfPagerCount) {
@@ -16823,16 +16846,16 @@ var Pagination = class extends Control {
     }
     const array = [];
     if (showPrevMore && !showNextMore) {
-      const startPage = pageCount - (pagerCount - 2);
+      const startPage = pageCount - (this.pagerCount - 2);
       for (let i = startPage; i < pageCount; i++) {
         array.push(i);
       }
     } else if (!showPrevMore && showNextMore) {
-      for (let i = 2; i < pagerCount; i++) {
+      for (let i = 2; i < this.pagerCount; i++) {
         array.push(i);
       }
     } else if (showPrevMore && showNextMore) {
-      const offset = Math.floor(pagerCount / 2) - 1;
+      const offset = Math.floor(this.pagerCount / 2) - 1;
       for (let i = currentPage - offset; i <= currentPage + offset; i++) {
         array.push(i);
       }
@@ -16850,7 +16873,7 @@ var Pagination = class extends Control {
     this._mainPagiElm.innerHTML = "";
     this.pageItems = [];
     if (size > 0) {
-      if (size > pagerCount) {
+      if (size > this.pagerCount) {
         this.updatePagers();
         this.renderPage(1);
         this._showPrevMore && this.renderEllipsis(-1);
@@ -16873,6 +16896,7 @@ var Pagination = class extends Control {
     }
   }
   init() {
+    this.pagerCount = window.innerWidth > 767 ? pagerCount : pagerCountMobile;
     if (!this._paginationDiv) {
       this.pageItems = [];
       this._paginationDiv = this.createElement("div", this);
@@ -16915,7 +16939,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme25 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -16928,9 +16952,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme26.typography.fontFamily,
-  fontSize: Theme26.typography.fontSize,
-  color: Theme26.text.primary,
+  fontFamily: Theme25.typography.fontFamily,
+  fontSize: Theme25.typography.fontSize,
+  color: Theme25.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -16953,13 +16977,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme26.colors.error.light
+          backgroundColor: Theme25.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme26.colors.error.light
+          backgroundColor: Theme25.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme26.colors.error.light
+          borderColor: Theme25.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -16967,13 +16991,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme26.colors.success.light
+          backgroundColor: Theme25.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme26.colors.success.light
+          backgroundColor: Theme25.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme26.colors.success.light
+          borderColor: Theme25.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -16981,13 +17005,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme26.colors.warning.light
+          backgroundColor: Theme25.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme26.colors.warning.light
+          backgroundColor: Theme25.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme26.colors.warning.light
+          borderColor: Theme25.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -16995,14 +17019,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme26.colors.primary.light
+          backgroundColor: Theme25.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme26.colors.primary.light
+          backgroundColor: Theme25.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme26.colors.primary.light
+          borderColor: Theme25.colors.primary.light
         }
       }
     },
@@ -17024,11 +17048,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme26.divider
+              backgroundColor: Theme25.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme26.divider
+              backgroundColor: Theme25.divider
             }
           }
         },
@@ -17053,7 +17077,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme26.divider,
+          borderColor: Theme25.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -17109,7 +17133,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -17151,7 +17175,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme27.colors.primary.main;
+    return this._strokeColor || Theme26.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -17282,11 +17306,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme27.colors.success.main;
+      ret = Theme26.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme27.divider;
+    return Theme26.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -17374,11 +17398,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme28.typography.fontFamily,
-  fontSize: Theme28.typography.fontSize,
-  color: Theme28.text.primary,
+  fontFamily: Theme27.typography.fontFamily,
+  fontSize: Theme27.typography.fontSize,
+  color: Theme27.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -17401,26 +17425,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme28.divider}`
+      borderBottom: `1px solid ${Theme27.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme28.divider}`,
+      borderBottom: `1px solid ${Theme27.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme28.background.paper,
-      color: Theme28.text.secondary
+      background: Theme27.background.paper,
+      color: Theme27.text.secondary
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme28.divider}`,
-          borderLeft: `1px solid ${Theme28.divider}`,
+          borderTop: `1px solid ${Theme27.divider}`,
+          borderLeft: `1px solid ${Theme27.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme28.divider} !important`,
-          borderBottom: `1px solid ${Theme28.divider}`
+          borderRight: `1px solid ${Theme27.divider} !important`,
+          borderBottom: `1px solid ${Theme27.divider}`
         }
       }
     },
@@ -17441,7 +17465,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme28.colors.primary.main
+          fill: Theme27.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -17470,12 +17494,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme28.text.primary
+          fill: Theme27.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme28.divider}`
+      borderRight: `1px solid ${Theme27.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -17532,7 +17556,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -17604,7 +17628,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme29.text.primary
+        fill: Theme28.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -17612,7 +17636,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme29.text.primary
+        fill: Theme28.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -18052,7 +18076,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -18088,7 +18112,7 @@ cssRule("i-carousel-slider", {
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme30.colors.primary.main}`,
+          border: `2px solid ${Theme29.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -18099,7 +18123,7 @@ cssRule("i-carousel-slider", {
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme30.colors.primary.main
+          backgroundColor: Theme29.colors.primary.main
         }
       }
     }

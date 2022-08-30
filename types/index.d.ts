@@ -2889,6 +2889,12 @@ declare module "@ijstech/*base/src/component" {
         x?: OverflowType;
         y?: OverflowType;
     }
+    export interface IAnchor {
+        top?: boolean;
+        right?: boolean;
+        bottom?: boolean;
+        left?: boolean;
+    }
     export class Component extends HTMLElement {
         protected connected: boolean;
         protected _parent: Component | undefined;
@@ -2974,7 +2980,7 @@ declare module "@ijstech/*tooltip/@ijstech/components" {
     export { Tooltip, ITooltip } from "@ijstech/*tooltip/src/tooltip";
 }
 declare module "@ijstech/*base/src/control" {
-    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType } from "@ijstech/*base/src/component";
+    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor } from "@ijstech/*base/src/component";
     import { notifyEventCallback } from "@ijstech/*base/@ijstech/components";
     export type DockStyle = 'none' | 'bottom' | 'center' | 'fill' | 'left' | 'right' | 'top';
     export type LineHeightType = string | number | 'normal' | 'initial' | 'inherit';
@@ -3085,18 +3091,6 @@ declare module "@ijstech/*base/src/control" {
         protected _onClick: notifyEventCallback;
         protected _onDblClick: notifyEventCallback;
         protected _onContextMenu: notifyEventCallback;
-        protected _paddingLeft: number;
-        protected _paddingTop: number;
-        protected _paddingRight: number;
-        protected _paddingBottom: number;
-        protected _marginLeft: number;
-        protected _marginTop: number;
-        protected _marginRight: number;
-        protected _marginBottom: number;
-        protected _anchorLeft: boolean;
-        protected _anchorTop: boolean;
-        protected _anchorRight: boolean;
-        protected _anchorBottom: boolean;
         protected _visible: boolean;
         protected _margin: SpaceValue;
         protected _padding: SpaceValue;
@@ -3108,6 +3102,7 @@ declare module "@ijstech/*base/src/control" {
         protected _linkTo: Control;
         protected _border: Border;
         protected _overflow: Overflow;
+        protected _anchor: IAnchor;
         protected _resizer: ContainerResizer;
         private _tooltip;
         protected _font: IFont;
@@ -3120,8 +3115,10 @@ declare module "@ijstech/*base/src/control" {
         private getPaddingStyle;
         get margin(): ISpace;
         set margin(value: ISpace);
+        protected get marginStyle(): (side: BorderStylesSideType) => number;
         get padding(): ISpace;
         set padding(value: ISpace);
+        protected get paddingStyle(): (side: BorderStylesSideType) => number;
         protected addChildControl(control: Control): void;
         protected removeChildControl(control: Control): void;
         get parent(): Control | undefined;
@@ -3142,8 +3139,10 @@ declare module "@ijstech/*base/src/control" {
         _handleClick(event: Event, stopPropagation?: boolean): boolean;
         _handleContextMenu(event: Event, stopPropagation?: boolean): boolean;
         _handleDblClick(event: Event, stopPropagation?: boolean): boolean;
-        get maxWidth(): string;
-        set maxWidth(value: string);
+        get maxWidth(): number | string;
+        set maxWidth(value: number | string);
+        get minWidth(): string | number;
+        set minWidth(value: string | number);
         observables(propName: string): any;
         get onClick(): notifyEventCallback;
         set onClick(callback: notifyEventCallback);
@@ -3185,6 +3184,8 @@ declare module "@ijstech/*base/src/control" {
         set linkTo(value: Control);
         get position(): PositionType;
         set position(value: PositionType);
+        get maxHeight(): string | number;
+        set maxHeight(value: string | number);
         get minHeight(): string | number;
         set minHeight(value: string | number);
         get border(): Border;
@@ -3196,6 +3197,8 @@ declare module "@ijstech/*base/src/control" {
         set font(value: IFont);
         get display(): DisplayType;
         set display(value: DisplayType);
+        get anchor(): IAnchor;
+        set anchor(value: IAnchor);
     }
     export class ContainerResizer {
         private target;
@@ -3232,7 +3235,7 @@ declare module "@ijstech/*base/@ijstech/components" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/*base/src/observable";
     export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow } from "@ijstech/*base/src/component";
     export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType } from "@ijstech/*base/src/control";
-    import { IStack, IFont, ISpace, IOverflow, OverflowType } from "@ijstech/*base/src/component";
+    import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor } from "@ijstech/*base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "@ijstech/*base/src/control";
     import { ITooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { Control, Container };
@@ -3253,17 +3256,10 @@ declare module "@ijstech/*base/@ijstech/components" {
         height?: number | string;
         id?: string;
         left?: number | string;
-        maxWidth?: string;
-        minWidth?: string;
+        maxWidth?: number | string;
+        minWidth?: number | string;
+        maxHeight?: number | string;
         minHeight?: number | string;
-        marginBottom?: number;
-        marginLeft?: number;
-        marginRight?: number;
-        marginTop?: number;
-        paddingBottom?: number;
-        paddingLeft?: number;
-        paddingRight?: number;
-        paddingTop?: number;
         right?: number | string;
         top?: number | string;
         visible?: boolean;
@@ -3282,6 +3278,7 @@ declare module "@ijstech/*base/@ijstech/components" {
         font?: IFont;
         display?: DisplayType;
         tooltip?: ITooltip | string;
+        anchor?: IAnchor;
         onClick?: notifyEventCallback;
         onDblClick?: notifyEventCallback;
         onContextMenu?: notifyEventCallback;
@@ -7110,7 +7107,6 @@ declare module "@ijstech/*tab/src/tab" {
     type TabsEventCallback = (target: Tabs, activeTab: Tab) => void;
     type TabCloseEventCallback = (target: Tabs, tab: Tab) => void;
     export interface TabsElement extends ContainerElement {
-        activeTab?: Tab;
         activeTabIndex?: number;
         closable?: boolean;
         draggable?: boolean;
@@ -7148,7 +7144,6 @@ declare module "@ijstech/*tab/src/tab" {
         onCloseTab: TabCloseEventCallback;
         constructor(parent?: Container, options?: any);
         get activeTab(): Tab;
-        set activeTab(item: Tab);
         get activeTabIndex(): number;
         set activeTabIndex(index: number);
         get items(): Tab[];
@@ -7694,9 +7689,11 @@ declare module "@ijstech/*label/src/style/label.css" {
 declare module "@ijstech/*label/src/label" {
     import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
     import { Link, LinkElement } from "@ijstech/*link/@ijstech/components";
+    type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
     export interface LabelElement extends ControlElement {
         caption?: string;
         link?: LinkElement;
+        wordBreak?: WordBreakType;
     }
     global {
         namespace JSX {
@@ -7715,6 +7712,8 @@ declare module "@ijstech/*label/src/label" {
         set link(value: Link);
         set height(value: number);
         set width(value: number);
+        get wordBreak(): WordBreakType;
+        set wordBreak(value: WordBreakType);
         protected init(): void;
         static create(options?: LabelElement, parent?: Control): Promise<Label>;
     }
@@ -7804,7 +7803,7 @@ declare module "@ijstech/*tree-view/src/treeView" {
         set editable(value: boolean);
         get actionButtons(): ButtonElement[];
         set actionButtons(value: ButtonElement[]);
-        add(parentNode?: TreeNode | null, caption?: string): Promise<TreeNode>;
+        add(parentNode?: TreeNode | null, caption?: string): TreeNode;
         delete(node: TreeNode): void;
         clear(): void;
         _setActiveItem(node: TreeNode, event?: Event): void;
@@ -8289,6 +8288,7 @@ declare module "@ijstech/*pagination/src/pagination" {
         private _mainPagiElm;
         private _prevElm;
         private _nextElm;
+        private pagerCount;
         onPageChanged: notifyCallback;
         constructor(parent?: Control, options?: any);
         get totalPages(): number;
