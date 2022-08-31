@@ -2033,6 +2033,7 @@ __export(exports, {
   Switch: () => Switch,
   Tab: () => Tab,
   Table: () => Table,
+  TableCell: () => TableCell,
   TableColumn: () => TableColumn,
   Tabs: () => Tabs,
   Tooltip: () => Tooltip,
@@ -4084,6 +4085,14 @@ var getOverflowStyleClass = (value) => {
   }
   return style(styleObj);
 };
+var getBackgroundStyleClass = (value) => {
+  let styleObj = {};
+  let bg = "";
+  value.image && (bg += `url(${value.image})`);
+  value.color && (bg += `${value.color}`);
+  styleObj.background = bg;
+  return style(styleObj);
+};
 
 // packages/tooltip/src/style/tooltip.css.ts
 var Theme = theme_exports.ThemeVars;
@@ -4737,6 +4746,44 @@ var Overflow = class {
     this._target.classList.add(style2);
   }
 };
+var Background = class {
+  constructor(target, value) {
+    this._target = target;
+    value && this.setBackgroundStyle(value);
+  }
+  get color() {
+    return this._value.color || "";
+  }
+  set color(value) {
+    if (!this._value) {
+      this._value = { color: value };
+    } else {
+      this._value.color = value;
+    }
+    this.setBackgroundStyle();
+  }
+  get image() {
+    return this._value.image || "";
+  }
+  set image(value) {
+    if (!this._value) {
+      this._value = { image: value };
+    } else {
+      this._value.image = value;
+    }
+    this.setBackgroundStyle();
+  }
+  updateValue(value) {
+    this._value = value;
+  }
+  setBackgroundStyle(value) {
+    value && this.updateValue(value);
+    let style2 = getBackgroundStyleClass(this._value);
+    this._style && this._target.classList.remove(this._style);
+    this._style = style2;
+    this._target.classList.add(style2);
+  }
+};
 var Control = class extends Component {
   constructor(parent, options, defaults) {
     super(parent, options, defaults);
@@ -4759,9 +4806,6 @@ var Control = class extends Component {
     return { top, right, bottom, left };
   }
   getPaddingStyle() {
-    const toNumber = (value) => {
-      return parseFloat(value.replace("px", ""));
-    };
     const computedStyle = window.getComputedStyle(this);
     const left = toNumberValue(computedStyle.paddingLeft);
     const right = toNumberValue(computedStyle.paddingRight);
@@ -5264,10 +5308,17 @@ var Control = class extends Component {
       this.style.justifyContent = value.horizontalAlignment;
   }
   get background() {
-    return this.style.background;
+    if (!this._background) {
+      this._background = new Background(this);
+    }
+    return this._background;
   }
   set background(value) {
-    this.style.background = value;
+    if (!this._background) {
+      this._background = new Background(this, value);
+    } else {
+      this._background.setBackgroundStyle(value);
+    }
   }
   get zIndex() {
     return this.style.zIndex;
@@ -9928,6 +9979,12 @@ var Modal = class extends Container {
     else
       this.modalDiv.style[name] = value;
   }
+  refresh() {
+    super.refresh(true);
+    if (this.visible && this.popupPlacement) {
+      this.positionAt(this.popupPlacement);
+    }
+  }
   init() {
     if (!this.wrapperDiv) {
       this.popupPlacement = this.getAttribute("popupPlacement", true);
@@ -13912,7 +13969,7 @@ var Theme28 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
-    this.title = options.title;
+    this.caption = options.title;
     this.fieldName = options.fieldName;
     if (options.key)
       this.key = options.key;
@@ -13936,12 +13993,6 @@ var TableColumn = class extends Control {
   set data(value) {
     this._data = value;
     this.columnElm.innerHTML = `${value}`;
-  }
-  get rowData() {
-    return this._rowData;
-  }
-  set rowData(value) {
-    this._rowData = value;
   }
   get sortOrder() {
     return this._sortOrder;
@@ -13997,23 +14048,23 @@ var TableColumn = class extends Control {
     }
     this.sortElm.style.display = "block";
   }
-  async init() {
+  appendNode(node) {
+    if (!this.columnElm)
+      return;
+    if (typeof node === "string" || typeof node === "number") {
+      this.columnElm.innerHTML = node;
+    } else {
+      this.columnElm.innerHTML = "";
+      this.columnElm.appendChild(node);
+    }
+  }
+  init() {
     if (!this.columnElm) {
       this.isHeader = this.options.header || false;
       this.columnElm = this.createElement("div", this);
       this.data = this.getAttribute("data", true);
-      this.rowData = this.getAttribute("rowData", true);
-      if (typeof this.onRenderCell === "function" && !this.isHeader) {
-        const renderedElm = await this.onRenderCell(this, this.data, this.rowData);
-        if (typeof renderedElm === "string") {
-          this.columnElm.innerHTML = renderedElm;
-        } else {
-          this.columnElm.innerHTML = "";
-          this.columnElm.appendChild(renderedElm);
-        }
-      }
       if (this.isHeader) {
-        this.columnElm.innerHTML = this.title;
+        this.columnElm.innerHTML = this.caption;
         this.sortable = this.sortable || false;
         this.renderSort();
       }
@@ -14281,7 +14332,7 @@ var Table = class extends Control {
       expandElm.style.display = hidden ? "table-row" : "none";
     }
   }
-  renderRow(rowElm, rowData, rowIndex) {
+  async renderRow(rowElm, rowData, rowIndex) {
     if (this.expandable) {
       const expandIcon = this.expandable.onRenderExpandIcon;
       if (expandIcon) {
@@ -14291,31 +14342,35 @@ var Table = class extends Control {
       }
     }
     let row = [];
-    this.columns.forEach((column, colIndex) => {
-      var _a;
-      let spanData;
-      if (typeof column.onCell === "function")
-        spanData = column.onCell(rowData, rowIndex);
-      if ((spanData == null ? void 0 : spanData.rowSpan) === 0 || (spanData == null ? void 0 : spanData.columnSpan) === 0)
+    this.columns.forEach(async (column, colIndex) => {
+      const columnData = rowData[column.fieldName];
+      const cell = new TableCell({
+        columnSpan: 1,
+        rowSpan: 1,
+        value: columnData != null ? columnData : "--"
+      });
+      const columnElm = new TableColumn(this, __spreadProps(__spreadValues({}, column), {
+        data: columnData != null ? columnData : "--"
+      }));
+      let customElm;
+      if (typeof column.onRenderCell === "function")
+        customElm = await column.onRenderCell(columnElm, columnData, rowData, rowIndex, cell);
+      if (cell.rowSpan === 0 || cell.columnSpan === 0) {
+        columnElm.remove();
         return;
+      }
       const tdElm = this.createElement("td", rowElm);
       tdElm.classList.add("i-table-cell");
       tdElm.setAttribute("data-index", colIndex.toString());
       tdElm.setAttribute("data-fieldname", column.fieldName || "action");
-      (spanData == null ? void 0 : spanData.columnSpan) !== void 0 && tdElm.setAttribute("colspan", spanData == null ? void 0 : spanData.columnSpan);
-      (spanData == null ? void 0 : spanData.rowSpan) !== void 0 && tdElm.setAttribute("rowspan", spanData == null ? void 0 : spanData.rowSpan);
+      cell.columnSpan > 1 && tdElm.setAttribute("colspan", cell.columnSpan + "");
+      cell.rowSpan > 1 && tdElm.setAttribute("rowspan", cell.rowSpan + "");
       if (column.width)
         tdElm.style.width = typeof column.width === "number" ? `${column.width}px` : column.width;
       column.textAlign && (tdElm.style.textAlign = column.textAlign);
-      const columnData = rowData[column.fieldName];
-      const columnElm = new TableColumn(void 0, __spreadProps(__spreadValues({}, column), {
-        data: columnData != null ? columnData : "--",
-        rowData
-      }));
+      customElm && columnElm.appendNode(customElm);
       tdElm.appendChild(columnElm);
-      row.push(new TableCell(__spreadProps(__spreadValues({}, spanData), {
-        value: (_a = rowData[column.fieldName]) != null ? _a : "--"
-      })));
+      row.push(cell);
     });
     this._rows.push(new TableRow(row));
   }

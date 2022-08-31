@@ -2895,6 +2895,10 @@ declare module "@ijstech/*base/src/component" {
         bottom?: boolean;
         left?: boolean;
     }
+    export interface IBackground {
+        color?: string;
+        image?: string;
+    }
     export class Component extends HTMLElement {
         protected connected: boolean;
         protected _parent: Component | undefined;
@@ -2924,12 +2928,13 @@ declare module "@ijstech/*base/src/component" {
     }
 }
 declare module "@ijstech/*base/src/style/base.css" {
-    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow } from "@ijstech/*base/@ijstech/components";
+    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground } from "@ijstech/*base/@ijstech/components";
     export const disabledStyle: string;
     export const containerStyle: string;
     export const getBorderSideStyleClass: (side: BorderStylesSideType, value: IBorderSideStyles) => string;
     export const getBorderStyleClass: (value: IBorder) => string;
     export const getOverflowStyleClass: (value: IOverflow) => string;
+    export const getBackgroundStyleClass: (value: IBackground) => string;
 }
 declare module "@ijstech/*tooltip/src/style/tooltip.css" { }
 declare module "@ijstech/*tooltip/src/tooltip" {
@@ -2980,7 +2985,7 @@ declare module "@ijstech/*tooltip/@ijstech/components" {
     export { Tooltip, ITooltip } from "@ijstech/*tooltip/src/tooltip";
 }
 declare module "@ijstech/*base/src/control" {
-    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor } from "@ijstech/*base/src/component";
+    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "@ijstech/*base/src/component";
     import { notifyEventCallback } from "@ijstech/*base/@ijstech/components";
     export type DockStyle = 'none' | 'bottom' | 'center' | 'fill' | 'left' | 'right' | 'top';
     export type LineHeightType = string | number | 'normal' | 'initial' | 'inherit';
@@ -3085,6 +3090,18 @@ declare module "@ijstech/*base/src/control" {
         private updateValue;
         setOverflowStyle(value?: IOverflow | OverflowType): void;
     }
+    class Background {
+        private _target;
+        private _value;
+        private _style;
+        constructor(target: Control, value?: IBackground);
+        get color(): string;
+        set color(value: string);
+        get image(): string;
+        set image(value: string);
+        private updateValue;
+        setBackgroundStyle(value?: IBackground): void;
+    }
     export class Control extends Component {
         protected _controls: Control[];
         protected _enabled: boolean;
@@ -3103,6 +3120,7 @@ declare module "@ijstech/*base/src/control" {
         protected _border: Border;
         protected _overflow: Overflow;
         protected _anchor: IAnchor;
+        protected _background: Background;
         protected _resizer: ContainerResizer;
         private _tooltip;
         protected _font: IFont;
@@ -3174,8 +3192,8 @@ declare module "@ijstech/*base/src/control" {
         set stack(value: IStack);
         get grid(): IGrid;
         set grid(value: IGrid);
-        get background(): string;
-        set background(value: string);
+        get background(): Background;
+        set background(value: IBackground);
         get zIndex(): string | number;
         set zIndex(value: string | number);
         get lineHeight(): LineHeightType;
@@ -3233,9 +3251,9 @@ declare module "@ijstech/*base/src/types" {
 }
 declare module "@ijstech/*base/@ijstech/components" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/*base/src/observable";
-    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow } from "@ijstech/*base/src/component";
+    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground } from "@ijstech/*base/src/component";
     export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType } from "@ijstech/*base/src/control";
-    import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor } from "@ijstech/*base/src/component";
+    import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "@ijstech/*base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "@ijstech/*base/src/control";
     import { ITooltip } from "@ijstech/*tooltip/@ijstech/components";
     export { Control, Container };
@@ -3268,7 +3286,7 @@ declare module "@ijstech/*base/@ijstech/components" {
         padding?: ISpace;
         stack?: IStack;
         grid?: IGrid;
-        background?: string;
+        background?: IBackground;
         lineHeight?: LineHeightType;
         zIndex?: string | number;
         position?: PositionType;
@@ -7320,6 +7338,7 @@ declare module "@ijstech/*modal/src/modal" {
         protected _handleOnShow(event: Event): void;
         _handleClick(event: Event): boolean;
         private updateModal;
+        refresh(): void;
         protected init(): void;
         static create(options?: ModalElement, parent?: Container): Promise<Modal>;
     }
@@ -8399,11 +8418,32 @@ declare module "@ijstech/*table/src/style/table.css" {
     export const tableStyle: string;
     export const getTableMediaQueriesStyleClass: (columns: TableColumnElement[], mediaQueries: ITableMediaQuery[]) => string;
 }
+declare module "@ijstech/*table/src/tableCell" {
+    import "@ijstech/*table/src/style/table.css";
+    export interface ITableCell {
+        rowSpan: number;
+        columnSpan: number;
+        value: string;
+    }
+    export class TableCell {
+        private _rowSpan;
+        private _columnSpan;
+        private _value;
+        constructor(options: ITableCell);
+        get rowSpan(): number;
+        set rowSpan(value: number);
+        get columnSpan(): number;
+        set columnSpan(value: number);
+        get value(): string;
+        set value(data: string);
+    }
+}
 declare module "@ijstech/*table/src/tableColumn" {
     import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
+    import { TableCell } from "@ijstech/*table/src/tableCell";
     import "@ijstech/*table/src/style/table.css";
     export type SortDirection = 'asc' | 'desc' | 'none';
-    type renderCallback = (target: TableColumn, columnData: any, rowData: any) => any;
+    type renderCallback = (target: TableColumn, columnData: any, rowData: any, rowIndex?: number, cell?: TableCell) => any;
     type TextAlign = 'left' | 'right' | 'center';
     export interface TableColumnElement extends ControlElement {
         title: string;
@@ -8413,11 +8453,10 @@ declare module "@ijstech/*table/src/tableColumn" {
         sortOrder?: SortDirection;
         textAlign?: TextAlign;
         sorter?: (a: any, b: any) => boolean;
-        onCell?: any;
         onRenderCell?: renderCallback;
     }
     export class TableColumn extends Control {
-        title: string;
+        caption: string;
         fieldName: string;
         key?: string | number;
         sortable?: boolean;
@@ -8428,23 +8467,20 @@ declare module "@ijstech/*table/src/tableColumn" {
         private isHeader;
         private _sortOrder;
         private _data;
-        private _rowData;
         private _textAlign;
         onSortChange: (source: Control, key: string, value: SortDirection) => void;
         onRenderCell: renderCallback;
-        onCell: any;
         sorter: (a: any, b: any) => boolean;
         constructor(parent?: Control, options?: any);
         get data(): number | string;
         set data(value: number | string);
-        get rowData(): any;
-        set rowData(value: any);
         get sortOrder(): SortDirection;
         set sortOrder(value: SortDirection);
         get textAlign(): TextAlign;
         set textAlign(value: TextAlign);
         renderSort(): void;
-        init(): Promise<void>;
+        appendNode(node: string | HTMLElement | Control): void;
+        init(): void;
     }
 }
 declare module "@ijstech/*table/src/utils" {
@@ -8456,22 +8492,6 @@ declare module "@ijstech/*table/src/utils" {
     export const getValueByPath: (object: any, prop: string) => any;
     export const orderBy: (list: any[], sortBy: string | string[], sortValue: string, sorter: any) => any[];
     export const filterBy: (list: any[], value: any, columnKey: string | number) => any[];
-}
-declare module "@ijstech/*table/src/tableCell" {
-    import "@ijstech/*table/src/style/table.css";
-    export class TableCell {
-        private _rowSpan;
-        private _columnSpan;
-        private _value;
-        private cellElm;
-        constructor(options: TableCell);
-        get rowSpan(): number;
-        set rowSpan(value: number);
-        get columnSpan(): number;
-        set columnSpan(value: number);
-        get value(): string;
-        set value(data: string);
-    }
 }
 declare module "@ijstech/*table/src/tableRow" {
     import "@ijstech/*table/src/style/table.css";
@@ -8490,7 +8510,6 @@ declare module "@ijstech/*table/src/table" {
     import { TableRow } from "@ijstech/*table/src/tableRow";
     import { Icon } from "@ijstech/*icon/@ijstech/components";
     type cellClickCallback = (target: Table, rowIndex: number, columnIdx: number, record: any) => void;
-    type renderCellCallback = (target: Table, columnIdx: number, rowIdx: number, rowData: any) => void;
     type emptyCallback = (target: Table) => void;
     type sortCallback = (target: Table, key: string, value: string) => void;
     interface ITableExpandable {
@@ -8511,7 +8530,6 @@ declare module "@ijstech/*table/src/table" {
         pagination?: string;
         expandable?: ITableExpandable;
         mediaQueries?: ITableMediaQuery[];
-        onRenderCell?: renderCellCallback;
         onRenderEmptyTable?: emptyCallback;
         onCellClick?: cellClickCallback;
         onColumnSort?: sortCallback;
@@ -8531,7 +8549,6 @@ declare module "@ijstech/*table/src/table" {
         private pagingElm;
         onCellClick: cellClickCallback;
         onRenderEmptyTable: emptyCallback;
-        onRenderCell: renderCellCallback;
         onColumnSort: sortCallback;
         private _data;
         private _filteredData;
@@ -8673,7 +8690,7 @@ declare module "@ijstech/components" {
     export { Pagination } from "@ijstech/*pagination/@ijstech/components";
     export { Progress } from "@ijstech/*progress/@ijstech/components";
     export { Link } from "@ijstech/*link/@ijstech/components";
-    export { Table, TableColumn } from "@ijstech/*table/@ijstech/components";
+    export { Table, TableColumn, TableCell } from "@ijstech/*table/@ijstech/components";
     export { CarouselSlider } from "@ijstech/*carousel/@ijstech/components";
 }
 declare module "src/launcher" {
@@ -8707,6 +8724,6 @@ declare module "src/launcher" {
     export { Pagination } from "@ijstech/*pagination/@ijstech/components";
     export { Progress } from "@ijstech/*progress/@ijstech/components";
     export { Link } from "@ijstech/*link/@ijstech/components";
-    export { Table, TableColumn } from "@ijstech/*table/@ijstech/components";
+    export { Table, TableColumn, TableCell } from "@ijstech/*table/@ijstech/components";
     export { CarouselSlider } from "@ijstech/*carousel/@ijstech/components";
 }
