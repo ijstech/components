@@ -3461,6 +3461,7 @@ declare module "@ijstech/*application/@ijstech/components" {
         env?: string[];
     }
     export interface IModuleOptions extends IHasDependencies {
+        codeCID?: string;
         name?: string;
         main?: string;
         type?: number;
@@ -7806,12 +7807,6 @@ declare module "@ijstech/*tree-view/src/treeView" {
         onMouseLeaveNode: mouseLeaveCallback;
         onLazyLoad: lazyLoadCallback;
         onActionButtonClick: actionButtonCallback;
-        tag: {
-            [key: string]: {
-                name: string;
-                paths: any[];
-            };
-        };
         constructor(parent?: Control, options?: any);
         get activeItem(): TreeNode | undefined;
         set activeItem(value: TreeNode | undefined);
@@ -7851,9 +7846,6 @@ declare module "@ijstech/*tree-view/src/treeView" {
         private _childNodeElm;
         private _iconElm;
         private _iconRightElm;
-        tag: {
-            paths: any[];
-        };
         constructor(parent?: Control, options?: any);
         get data(): ITreeNode;
         set data(value: ITreeNode);
@@ -8490,7 +8482,7 @@ declare module "@ijstech/*table/src/utils" {
     export const getColumnKey: (columns: TableColumnElement[], columnIdx: number) => string;
     export const getSorter: (columns: TableColumnElement[], key: string) => ((a: any, b: any) => boolean) | null | undefined;
     export const getValueByPath: (object: any, prop: string) => any;
-    export const orderBy: (list: any[], sortBy: string | string[], sortValue: string, sorter: any) => any[];
+    export const orderBy: (list: any, sortConfig: any, columns: TableColumnElement[]) => any;
     export const filterBy: (list: any[], value: any, columnKey: string | number) => any[];
 }
 declare module "@ijstech/*table/src/tableRow" {
@@ -8559,13 +8551,14 @@ declare module "@ijstech/*table/src/table" {
         private firstLoad;
         private _mediaQueries;
         private _expandable;
-        private sortConfig;
+        private _sortConfig;
         private _heading;
         constructor(parent?: Control, options?: any);
         get data(): any;
         set data(value: any);
         get filteredData(): any;
         set filteredData(value: any);
+        private get sortConfig();
         private sortFn;
         get columns(): TableColumnElement[];
         set columns(value: TableColumnElement[]);

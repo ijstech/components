@@ -11631,7 +11631,6 @@ var TreeView = class extends Control {
       editable: false
     });
     this._items = [];
-    this.tag = {};
   }
   get activeItem() {
     return this._activeItem;
@@ -11672,7 +11671,6 @@ var TreeView = class extends Control {
     }
   }
   add(parentNode, caption) {
-    var _a;
     const childData = { caption, children: [] };
     const childNode = new TreeNode(this, __spreadValues({}, childData));
     this.initNode(childNode);
@@ -11682,11 +11680,7 @@ var TreeView = class extends Control {
     const name = caption || "";
     if (parentNode) {
       parentNode.appendNode(childNode);
-      const paths = ((_a = parentNode.tag) == null ? void 0 : _a.paths) || [];
-      childNode.tag = { paths: [...paths, { name }] };
     } else {
-      this.appendChild(childNode);
-      childNode.tag = { paths: [{ name }] };
     }
     return childNode;
   }
@@ -11739,7 +11733,6 @@ var TreeView = class extends Control {
     const name = node.caption || "";
     if (node.children) {
       paths.push({ name });
-      treeNode.tag = { paths: [...paths] };
       if (!node.isLazyLoad) {
         for (const child2 of node.children) {
           const childWrapper = treeNode.querySelector(".i-tree-node_children");
@@ -11750,7 +11743,6 @@ var TreeView = class extends Control {
         }
       }
     } else {
-      treeNode.tag = { paths: [...paths, { name }] };
     }
     return treeNode;
   }
@@ -11902,12 +11894,6 @@ var TreeNode = class extends Control {
     return this._iconRightElm;
   }
   handleChange(target, oldValue, newValue) {
-    var _a;
-    const paths = (_a = target.tag) == null ? void 0 : _a.paths;
-    if (paths) {
-      paths[paths.length - 1] = { name: newValue };
-      target.tag = { paths };
-    }
     const fn = this.rootParent.onChange;
     if (fn && typeof fn === "function")
       fn(this.rootParent, target, oldValue, newValue);
@@ -14083,61 +14069,23 @@ var getSorter = (columns, key2) => {
   const findedColumn = columns.find((column) => column.fieldName === key2);
   return findedColumn ? findedColumn.sorter : null;
 };
-var getValueByPath = function(object, prop) {
-  prop = prop || "";
-  const paths = prop.split(".");
-  let current = object;
-  let result = null;
-  for (let i = 0, j = paths.length; i < j; i++) {
-    const path = paths[i];
-    if (!current)
-      break;
-    if (i === j - 1) {
-      result = current[path];
-      break;
+var orderBy = (list, sortConfig, columns) => {
+  if (!sortConfig.length)
+    return list;
+  return list.sort((a, b) => {
+    for (const config of sortConfig) {
+      const { key: key2, direction } = config;
+      const sorter = getSorter(columns, key2);
+      if (sorter)
+        return sorter(a.value, b.value);
+      const sortDirection = direction === "asc" ? 1 : -1;
+      if (a[key2] > b[key2])
+        return sortDirection;
+      if (a[key2] < b[key2])
+        return sortDirection * -1;
+      return 0;
     }
-    current = current[path];
-  }
-  return result;
-};
-var orderBy = (list, sortBy, sortValue, sorter) => {
-  const getKey = sorter ? null : (value, key2) => {
-    if (sortBy) {
-      if (!Array.isArray(sortBy)) {
-        sortBy = [sortBy];
-      }
-      return sortBy.map((by) => getValueByPath(value, by));
-    }
-  };
-  const compare = (a, b) => {
-    if (sorter) {
-      return sorter(a.value, b.value);
-    }
-    for (let i = 0, len = a.key.length; i < len; i++) {
-      if (a.key[i] < b.key[i]) {
-        return -1;
-      }
-      if (a.key[i] > b.key[i]) {
-        return 1;
-      }
-    }
-    return 0;
-  };
-  const reverse = sortValue === "asc" ? 1 : -1;
-  let sortedList = list.map((value, index) => {
-    return {
-      value,
-      index,
-      key: getKey ? getKey(value, index) : null
-    };
-  }).sort((a, b) => {
-    let order = compare(a, b);
-    if (!order) {
-      order = a.index - b.index;
-    }
-    return order * reverse;
-  }).map((data) => data.value);
-  return sortedList;
+  });
 };
 
 // packages/table/src/tableRow.ts
@@ -14188,7 +14136,7 @@ var Table = class extends Control {
     });
     this._rows = [];
     this.firstLoad = true;
-    this.sortConfig = { key: "", value: "none" };
+    this._sortConfig = {};
   }
   get data() {
     return this._data;
@@ -14206,13 +14154,23 @@ var Table = class extends Control {
   set filteredData(value) {
     this._filteredData = value;
   }
+  get sortConfig() {
+    if (!this._sortConfig || !Object.keys(this._sortConfig).length)
+      return [];
+    const list = [];
+    for (const col of this.columns) {
+      const direction = this._sortConfig[col.fieldName];
+      if (direction && direction !== "none") {
+        list.push({ key: col.fieldName, direction });
+      }
+    }
+    return list;
+  }
   sortFn(list) {
-    var _a, _b, _c;
     if (!list)
       return [];
-    if (((_a = this.sortConfig) == null ? void 0 : _a.key) && ((_b = this.sortConfig) == null ? void 0 : _b.value) !== "none") {
-      const sorter = getSorter(this.columns, (_c = this.sortConfig) == null ? void 0 : _c.key);
-      return orderBy([...list], this.sortConfig.key, this.sortConfig.value, sorter);
+    if (this.sortConfig.length) {
+      return orderBy([...list], this.sortConfig, this.columns);
     }
     return list;
   }
@@ -14274,7 +14232,7 @@ var Table = class extends Control {
     this.renderBody();
   }
   onSortChange(source, key2, value) {
-    this.sortConfig = { key: key2, value };
+    this._sortConfig[key2] = value;
     if (this.filteredData)
       this.renderBody();
     if (this.onColumnSort)
@@ -14342,7 +14300,8 @@ var Table = class extends Control {
       }
     }
     let row = [];
-    this.columns.forEach(async (column, colIndex) => {
+    for (let colIndex = 0; colIndex < this.columns.length; colIndex++) {
+      const column = this.columns[colIndex];
       const columnData = rowData[column.fieldName];
       const cell = new TableCell({
         columnSpan: 1,
@@ -14357,7 +14316,7 @@ var Table = class extends Control {
         customElm = await column.onRenderCell(columnElm, columnData, rowData, rowIndex, cell);
       if (cell.rowSpan === 0 || cell.columnSpan === 0) {
         columnElm.remove();
-        return;
+        continue;
       }
       const tdElm = this.createElement("td", rowElm);
       tdElm.classList.add("i-table-cell");
@@ -14371,7 +14330,7 @@ var Table = class extends Control {
       customElm && columnElm.appendNode(customElm);
       tdElm.appendChild(columnElm);
       row.push(cell);
-    });
+    }
     this._rows.push(new TableRow(row));
   }
   renderBody() {
