@@ -3309,6 +3309,7 @@ declare module "@ijstech/*base/@ijstech/components" {
 }
 declare module "@ijstech/*module/src/module" {
     import { Container, ContainerElement } from "@ijstech/*base/@ijstech/components";
+    import { IHasDependencies } from "@ijstech/*application/@ijstech/components";
     export interface ModuleElement extends ContainerElement {
         caption?: string;
     }
@@ -3323,8 +3324,26 @@ declare module "@ijstech/*module/src/module" {
     export class Module extends Container {
         private $renderElms;
         private $render;
+        modules: {
+            [modulePath: string]: Module;
+        };
+        modulesMapper: Map<string, string>;
+        moduleDependenciesMapper: Map<string, IHasDependencies>;
+        currentPath: string;
+        private _currentModuleUrl;
         static create(options?: ModuleElement, parent?: Container, defaults?: ModuleElement): Promise<Module>;
         constructor(parent?: Container, options?: any, defaults?: any);
+        protected bindOnHashChange(): void;
+        get currentModuleUrl(): string;
+        get pathRegex(): any[];
+        protected initCustomData(options: any): void;
+        getModulePath(path: string): string;
+        locationHashChanged(): Promise<void>;
+        protected afterLocationHashChanged(): Promise<void>;
+        handleLoadModule(modulePath: string): Promise<void>;
+        protected handleLoadModuleCustom(module: Module): Promise<void>;
+        loadModule(modulePath: string): Promise<Module | null>;
+        hideModule(modulePath: string): Promise<void>;
         init(): void;
         flattenArray(arr: any[]): any;
         _render(...params: any[]): HTMLElement;
@@ -3395,7 +3414,7 @@ declare module "@ijstech/*checkbox/src/checkbox" {
         get captionWidth(): number | string;
         set captionWidth(value: number | string);
         get height(): number;
-        set height(value: number);
+        set height(value: number | string);
         get indeterminate(): boolean;
         set indeterminate(value: boolean);
         get checked(): boolean;
@@ -6831,9 +6850,9 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         get captionWidth(): number;
         set captionWidth(value: number | string);
         get height(): number;
-        set height(value: number);
+        set height(value: number | string);
         get width(): number;
-        set width(value: number);
+        set width(value: number | string);
         get value(): Moment.Moment | undefined;
         set value(value: Moment.Moment | undefined);
         get defaultDateTimeFormat(): string;
@@ -6901,18 +6920,15 @@ declare module "@ijstech/*range/src/range" {
         set caption(value: string);
         get captionWidth(): number;
         set captionWidth(value: number | string);
-        get height(): number;
-        set height(value: number);
         get value(): number;
         set value(value: number);
         get width(): number;
-        set width(value: number);
-        get _ratio(): number;
+        set width(value: number | string);
         set enabled(value: boolean);
         get tooltipVisible(): boolean;
         set tooltipVisible(value: boolean);
-        onSliderChange(event: Event): void;
-        onUpdateTooltip(init: boolean): void;
+        private onSliderChange;
+        private onUpdateTooltip;
         protected init(): void;
         static create(options?: RangeElement, parent?: Control): Promise<Range>;
     }
@@ -7053,7 +7069,7 @@ declare module "@ijstech/*input/src/input" {
         get captionWidth(): number | string;
         set captionWidth(value: number | string);
         get height(): number;
-        set height(value: number);
+        set height(value: number | string);
         get value(): any;
         set value(value: any);
         get width(): number | string;
@@ -8444,7 +8460,7 @@ declare module "@ijstech/*table/src/tableColumn" {
         sortable?: boolean;
         sortOrder?: SortDirection;
         textAlign?: TextAlign;
-        sorter?: (a: any, b: any) => boolean;
+        sorter?: (a: any, b: any) => number;
         onRenderCell?: renderCallback;
     }
     export class TableColumn extends Control {
@@ -8462,7 +8478,7 @@ declare module "@ijstech/*table/src/tableColumn" {
         private _textAlign;
         onSortChange: (source: Control, key: string, value: SortDirection) => void;
         onRenderCell: renderCallback;
-        sorter: (a: any, b: any) => boolean;
+        sorter: (a: any, b: any) => number;
         constructor(parent?: Control, options?: any);
         get data(): number | string;
         set data(value: number | string);
@@ -8471,7 +8487,7 @@ declare module "@ijstech/*table/src/tableColumn" {
         get textAlign(): TextAlign;
         set textAlign(value: TextAlign);
         renderSort(): void;
-        appendNode(node: string | HTMLElement | Control): void;
+        appendNode(params: any): Promise<void>;
         init(): void;
     }
 }
@@ -8480,7 +8496,7 @@ declare module "@ijstech/*table/src/utils" {
     export const paginate: <Type>(array: Type[], pageSize: number, pageNumber: number) => Type[];
     export const getColumnIndex: (columns: TableColumnElement[], key: string) => number;
     export const getColumnKey: (columns: TableColumnElement[], columnIdx: number) => string;
-    export const getSorter: (columns: TableColumnElement[], key: string) => ((a: any, b: any) => boolean) | null | undefined;
+    export const getSorter: (columns: TableColumnElement[], key: string) => ((a: any, b: any) => number) | null | undefined;
     export const getValueByPath: (object: any, prop: string) => any;
     export const orderBy: (list: any, sortConfig: any, columns: TableColumnElement[]) => any;
     export const filterBy: (list: any[], value: any, columnKey: string | number) => any[];
@@ -8497,7 +8513,7 @@ declare module "@ijstech/*table/src/tableRow" {
 }
 declare module "@ijstech/*table/src/table" {
     import { Control, ControlElement, IMediaQuery } from "@ijstech/*base/@ijstech/components";
-    import { SortDirection, TableColumnElement } from "@ijstech/*table/src/tableColumn";
+    import { TableColumnElement } from "@ijstech/*table/src/tableColumn";
     import { Pagination } from "@ijstech/*pagination/@ijstech/components";
     import { TableRow } from "@ijstech/*table/src/tableRow";
     import { Icon } from "@ijstech/*icon/@ijstech/components";
@@ -8572,7 +8588,7 @@ declare module "@ijstech/*table/src/table" {
         get mediaQueries(): ITableMediaQuery[];
         set mediaQueries(value: ITableMediaQuery[]);
         private onPageChanged;
-        protected onSortChange(source: Control, key: string, value: SortDirection): void;
+        private onSortChange;
         private renderHeader;
         _handleClick(event: Event): boolean;
         private expandRow;

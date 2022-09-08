@@ -9940,6 +9940,7 @@ var Checkbox = class extends Control {
       this.value = this.caption;
       this.checked = this.getAttribute("checked", true, false);
       this.indeterminate = this.getAttribute("indeterminate", true);
+      this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
       super.init();
     }
   }
@@ -10241,6 +10242,7 @@ var Application = class {
 };
 window["application"] = Application.Instance;
 var application = Application.Instance;
+var src_default = application;
 
 // packages/image/src/style/image.css.ts
 var Theme4 = theme_exports.ThemeVars;
@@ -11755,26 +11757,21 @@ var Datepicker = class extends Control {
   set captionWidth(value) {
     this._captionWidth = value;
     this.setElementPosition(this.labelElm, "width", value);
-    const width = typeof this.width === "string" ? this.width : `${this.width}px`;
-    const captionWidth = typeof this.captionWidth === "string" ? this.captionWidth : `${this.captionWidth}px`;
-    const iconWidth = `${this._iconWidth || 0}px`;
-    this.inputElm.style.width = `calc(${width} - ${captionWidth} - ${iconWidth})`;
+    const width = this.width - this.captionWidth - (this._iconWidth || 0);
+    this.inputElm.style.width = `${width}px`;
   }
   get height() {
     return this.offsetHeight;
   }
   set height(value) {
-    if (typeof value == "string")
-      value = parseInt(value);
-    this._height = value;
-    this.inputElm.style.height = value + "px";
+    this.setPosition("height", value);
+    this.inputElm.style.height = typeof value === "string" ? value : `${value}px`;
   }
   get width() {
     return this.offsetWidth;
   }
   set width(value) {
-    this._width = value;
-    this.style.width = value + "px";
+    this.setPosition("width", value);
     const width = typeof this._width === "string" ? this._width : `${this._width}px`;
     const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
     const iconWidth = `${this._iconWidth || 0}px`;
@@ -11867,7 +11864,7 @@ var Datepicker = class extends Control {
     if (!this.captionSpanElm) {
       this.callback = this.getAttribute("parentCallback", true);
       this.dateTimeFormat = this.getAttribute("dateTimeFormat", true, "");
-      this._type = this.getAttribute("type", true) || "date";
+      this._type = this.getAttribute("type", true, "date");
       this._iconWidth = this.getAttribute("height", true);
       this.captionSpanElm = this.createElement("span", this);
       this.labelElm = this.createElement("label", this.captionSpanElm);
@@ -12070,7 +12067,6 @@ cssRule("i-range", {
 });
 
 // packages/range/src/range.ts
-var defaultCaptionWidth2 = 40;
 var Range = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
@@ -12095,17 +12091,8 @@ var Range = class extends Control {
   set captionWidth(value) {
     this._captionWidth = value;
     this.setElementPosition(this.labelElm, "width", value);
-    const width = typeof this.width === "string" ? this.width : `${this.width}px`;
-    const captionWidth = typeof this.captionWidth === "string" ? this.captionWidth : `${this.captionWidth}px`;
-    this.inputContainerElm.style.width = `calc(${width} - ${captionWidth})`;
-  }
-  get height() {
-    return this.offsetHeight;
-  }
-  set height(value) {
-    if (typeof value == "string")
-      value = parseInt(value);
-    this._height = value;
+    const width = this.width - this.captionWidth;
+    this.inputContainerElm.style.width = `${width}px`;
   }
   get value() {
     return this._value;
@@ -12119,24 +12106,17 @@ var Range = class extends Control {
     const max = Number(this.inputElm.max);
     this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
     this.onUpdateTooltip(false);
-    if (this.callback) {
+    if (this.callback)
       this.callback(value);
-    }
   }
   get width() {
     return this.offsetWidth;
   }
   set width(value) {
-    this._width = value;
-    this.style.width = value + "px";
-    const width = typeof this.width === "string" ? this.width : `${this.width}px`;
-    const captionWidth = typeof this.captionWidth === "string" ? this.captionWidth : `${this.captionWidth}px`;
+    this.setPosition("width", value);
+    const width = typeof value === "string" ? value : `${value}px`;
+    const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
     this.inputContainerElm.style.width = `calc(${width} - ${captionWidth})`;
-  }
-  get _ratio() {
-    var min = this.inputElm.min === "" ? 0 : parseInt(this.inputElm.min);
-    var max = this.inputElm.max === "" ? 100 : parseInt(this.inputElm.max);
-    return (this.value - min) / (max - min);
   }
   set enabled(value) {
     this.inputElm.disabled = !value;
@@ -12220,7 +12200,7 @@ var Range = class extends Control {
           dotElm.classList.add("step-dot");
         }
       }
-      this.captionWidth = this.getAttribute("captionWidth", true) || defaultCaptionWidth2;
+      this.captionWidth = this.getAttribute("captionWidth", true, 40);
       this.caption = this.getAttribute("caption", true);
       this.value = this.getAttribute("value", true, 0);
       if (this._value > 0) {
@@ -12256,11 +12236,11 @@ var captionStyle = style({
 });
 
 // packages/radio/src/radio.ts
-var defaultCaptionWidth3 = 40;
+var defaultCaptionWidth2 = 40;
 var Radio = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
-      captionWidth: defaultCaptionWidth3,
+      captionWidth: defaultCaptionWidth2,
       height: 25,
       width: 100
     });
@@ -12312,7 +12292,7 @@ var Radio = class extends Control {
       this.captionSpanElm = this.createElement("span", this.labelElm);
       this.captionSpanElm.classList.add("i-radio_label");
       this.caption = this.getAttribute("caption", true, "");
-      this.captionWidth = this.getAttribute("captionWidth", true, defaultCaptionWidth3);
+      this.captionWidth = this.getAttribute("captionWidth", true, defaultCaptionWidth2);
       this.labelElm.style.color = theme_exports.ThemeVars.text.primary;
     }
   }
@@ -12337,9 +12317,9 @@ var RadioGroup = class extends Control {
     return this._selectedValue;
   }
   set selectedValue(value) {
+    this._selectedValue = value;
     this._group.forEach((item) => {
       if (item.value === value) {
-        this._selectedValue = value;
         const inputElm = item.querySelector("input");
         if (inputElm)
           inputElm.checked = true;
@@ -12370,6 +12350,8 @@ var RadioGroup = class extends Control {
     elm.onClick = this._handleChange.bind(this);
     const inputElm = elm.getElementsByTagName("input")[0];
     inputElm && inputElm.setAttribute("name", this.name);
+    if (this.selectedValue && elm.value === this.selectedValue)
+      inputElm.checked = true;
     this._group.push(elm);
   }
   _handleChange(source, event) {
@@ -12474,7 +12456,7 @@ cssRule("i-input", {
 });
 
 // packages/input/src/input.ts
-var defaultCaptionWidth4 = 40;
+var defaultCaptionWidth3 = 40;
 var defaultRows = 4;
 var Input = class extends Control {
   constructor(parent, options) {
@@ -12514,7 +12496,7 @@ var Input = class extends Control {
     if (this._inputControl) {
       this._inputControl.captionWidth = value;
     } else {
-      value = this._caption ? value || defaultCaptionWidth4 : 0;
+      value = this._caption ? value || defaultCaptionWidth3 : 0;
       this._captionWidth = value;
       this.labelElm.style.width = value + "px";
     }
@@ -12523,13 +12505,11 @@ var Input = class extends Control {
     return this.offsetHeight;
   }
   set height(value) {
-    if (typeof value == "string")
-      value = parseInt(value);
-    this._height = value;
+    this.setPosition("height", value);
     if (this._inputControl) {
       this._inputControl.height = value;
     } else {
-      this.inputElm.style.height = value + "px";
+      this.inputElm.style.height = typeof value === "string" ? value : `${value}px`;
     }
   }
   get value() {
@@ -13725,6 +13705,7 @@ cssRule("i-link", {
       color: Theme14.colors.primary.dark
     },
     "> a": {
+      display: "inline",
       transition: "all .3s",
       textDecoration: "underline",
       color: "inherit",
@@ -15348,11 +15329,114 @@ var Module = class extends Container {
     this.$renderElms = [];
     let proxy = ProxyObject(this, true);
     this.$render = this._render.bind(proxy);
+    this.modules = {};
+    this.moduleDependenciesMapper = new Map();
+    this.modulesMapper = new Map();
+    let defaultRoute;
+    if (options) {
+      this.initCustomData(options);
+      if (Array.isArray(options.routes)) {
+        for (let i = 0; i < options.routes.length; i++) {
+          let route = options.routes[i];
+          if (route.default)
+            defaultRoute = route;
+          this.modulesMapper.set(route.url, route.module);
+          this.moduleDependenciesMapper.set(route.module, route);
+        }
+      }
+    }
+    this.bindOnHashChange();
+    if (defaultRoute && !location.hash)
+      location.hash = defaultRoute.url;
+    else
+      setTimeout(() => {
+        this.locationHashChanged();
+      }, 1);
   }
   static async create(options, parent, defaults) {
     let self = new this(parent, options, defaults);
     await self.ready();
     return self;
+  }
+  bindOnHashChange() {
+  }
+  get currentModuleUrl() {
+    return this._currentModuleUrl;
+  }
+  get pathRegex() {
+    const keyMap = Array.from(this.modulesMapper.keys()).sort((a, b) => b.length - a.length);
+    return keyMap.reduce((result, url, key2) => {
+      const regex = /(\:[^\/]*)/g;
+      const matches = url.match(regex);
+      if (matches) {
+        const newUrl = matches.reduce((result2, item) => result2.replace(item, "(\\w+)"), url);
+        const data = {
+          regex: new RegExp(`${newUrl}`, "gi"),
+          module: this.modulesMapper.get(url),
+          url
+        };
+        result.push(data);
+      }
+      return result;
+    }, []);
+  }
+  initCustomData(options) {
+  }
+  getModulePath(path) {
+    if (this.modulesMapper.has(path)) {
+      this._currentModuleUrl = path;
+      return this.modulesMapper.get(path) || "";
+    } else {
+      const moduleData = this.pathRegex.find((item) => item == null ? void 0 : item.regex.exec(path));
+      if (moduleData) {
+        this._currentModuleUrl = moduleData.url;
+        return moduleData.module;
+      } else {
+        const index = path.lastIndexOf("/");
+        if (index > 1) {
+          path = path.substring(0, index);
+          return this.getModulePath(path);
+        }
+      }
+    }
+    return "";
+  }
+  async locationHashChanged() {
+    const path = location.hash.split("?")[0];
+    const modulePath = this.getModulePath(path);
+    await this.hideModule(this.currentPath);
+    this.currentPath = modulePath;
+    if (!modulePath)
+      return;
+    await this.handleLoadModule(modulePath);
+    window.scrollTo(0, 0);
+    await this.afterLocationHashChanged();
+  }
+  async afterLocationHashChanged() {
+  }
+  async handleLoadModule(modulePath) {
+    let module2 = await this.loadModule(modulePath);
+    if (module2) {
+      await this.handleLoadModuleCustom(module2);
+      module2.onLoad();
+    }
+  }
+  async handleLoadModuleCustom(module2) {
+  }
+  async loadModule(modulePath) {
+    if (this.modules[modulePath])
+      return this.modules[modulePath];
+    let module2 = await src_default.newModule(modulePath, this.moduleDependenciesMapper.get(modulePath));
+    if (module2)
+      this.modules[modulePath] = module2;
+    return module2;
+  }
+  async hideModule(modulePath) {
+    if (!modulePath)
+      return;
+    let module2 = this.modules[modulePath];
+    if (module2)
+      module2.style.display = "none";
   }
   init() {
     super.init();
@@ -15371,12 +15455,12 @@ var Module = class extends Container {
           let target = value.__target;
           let paths = value.__path;
           let targetValue = this.getValue(target, paths);
-          let observable4 = getObservable(target, paths);
-          if (isObservable(observable4)) {
+          let observable3 = getObservable(target, paths);
+          if (isObservable(observable3)) {
             if (paths.length > 0)
-              Observe(observable4, bindObservable(elm, prop), { path: paths.join(".") });
+              Observe(observable3, bindObservable(elm, prop), { path: paths.join(".") });
             else {
-              Observe(observable4, bindObservable(elm, prop));
+              Observe(observable3, bindObservable(elm, prop));
             }
           }
           elm[prop] = targetValue;
@@ -15584,15 +15668,18 @@ cssRule("i-tree-view", {
           display: "flex"
         },
         "&:not(.custom-icon)": {
-          visibility: "hidden"
+          display: "none"
         }
       }
     },
     "input ~ .i-tree-node_icon:not(.custom-icon), input ~ .is-right > .i-tree-node_icon:not(.custom-icon)": {
-      visibility: "visible"
+      display: "inline-block"
     },
     "input ~ .i-tree-node_label": {
       maxWidth: "calc(100% - 15px)"
+    },
+    ".i-tree-node_icon + .i-tree-node_label": {
+      paddingLeft: "0.3em"
     },
     "&.i-tree-view": {
       padding: 0,
@@ -15627,7 +15714,7 @@ cssRule("i-tree-view", {
           margin: 0
         },
         ".i-tree-node_label": {
-          padding: ".2rem .3rem",
+          padding: ".2rem .3rem .2em 0",
           maxWidth: "calc(100% - 30px)",
           whiteSpace: "nowrap",
           overflow: "hidden",
@@ -15813,10 +15900,16 @@ var TreeView = class extends Control {
     childNode.editable = this.editable;
     if (this.onRenderNode)
       this.onRenderNode(this, childNode);
-    const name = caption || "";
     if (parentNode) {
       parentNode.appendNode(childNode);
+      const parentContent = parentNode.querySelector(".i-tree-node_content");
+      const childContent = childNode.querySelector(".i-tree-node_content");
+      if (parentContent && childContent) {
+        const parentLeft = parentContent.style.paddingLeft || 0;
+        childContent.style.paddingLeft = `calc(${parentLeft} + 1em)`;
+      }
     } else {
+      this.appendChild(childNode);
     }
     return childNode;
   }
@@ -15862,10 +15955,12 @@ var TreeView = class extends Control {
     node.addEventListener("beforeExpand", (event) => this.handleLazyLoad(node));
     this.onRenderNode && this.onRenderNode(this, node);
   }
-  renderTreeNode(node, parent, paths = []) {
+  renderTreeNode(node, parent, paths = [], level) {
     const treeNode = new TreeNode(parent, node);
     treeNode.editable = this.editable;
     this.initNode(treeNode);
+    const treeContent = treeNode.querySelector(".i-tree-node_content");
+    treeContent && (treeContent.style.paddingLeft = `${level}em`);
     const name = node.caption || "";
     if (node.children) {
       paths.push({ name });
@@ -15873,7 +15968,7 @@ var TreeView = class extends Control {
         for (const child2 of node.children) {
           const childWrapper = treeNode.querySelector(".i-tree-node_children");
           if (childWrapper) {
-            const childNode = this.renderTreeNode(child2, parent, paths);
+            const childNode = this.renderTreeNode(child2, parent, paths, level + 1);
             childWrapper && childWrapper.appendChild(childNode);
           }
         }
@@ -15886,13 +15981,17 @@ var TreeView = class extends Control {
     if (!value || !value.length)
       return;
     for (const node of value) {
-      let treeNode = this.renderTreeNode(node, this);
+      let treeNode = this.renderTreeNode(node, this, [], 0);
       this.appendChild(treeNode);
-      const activedNode = treeNode.querySelector(".active");
-      if (activedNode) {
-        treeNode.classList.add("is-checked");
-        const inputArr = Array.from(treeNode.querySelectorAll('input[type="checkbox"]'));
-        inputArr.forEach((input) => input.checked = true);
+      const activedNodes = treeNode.querySelectorAll(".active");
+      if (activedNodes.length) {
+        const activedNode = activedNodes[activedNodes.length - 1];
+        treeNode.expanded = true;
+        const treeNodes = Array.from(treeNode.querySelectorAll("i-tree-node.has-children"));
+        treeNodes.forEach((treeNode2) => {
+          if (treeNode2.contains(activedNode))
+            treeNode2.expanded = true;
+        });
         this.activeItem = activedNode;
       }
       this._items.push(treeNode);
@@ -16844,6 +16943,7 @@ var UploadDrag = class extends Control {
   init() {
     if (!this._wrapperElm) {
       super.init();
+      this.onDrop = this.getAttribute("onDrop", true) || this.onDrop;
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-drag_area");
       this._labelElm = this.createElement("span", this._wrapperElm);
@@ -17100,13 +17200,14 @@ var Upload = class extends Control {
       this._wrapperFileElm = this.createElement("div", this._wrapperElm);
       this.caption = this.getAttribute("caption", true);
       this.draggable = this.getAttribute("draggable", true, false);
-      this._uploadDragElm = new UploadDrag();
+      this._uploadDragElm = new UploadDrag(this, {
+        caption: this.caption,
+        disabled: !this.enabled || !this.draggable,
+        onDrop: (source, value) => {
+          value && this.proccessFiles(value);
+        }
+      });
       this._wrapperElm.appendChild(this._uploadDragElm);
-      this._uploadDragElm.caption = this.caption;
-      this._uploadDragElm.disabled = !this.enabled || !this.draggable;
-      this._uploadDragElm.onDrop = (source, value) => {
-        value && this.proccessFiles(value);
-      };
       this._fileElm = this.createElement("input", this._wrapperFileElm);
       this._fileElm.type = "file";
       this.multiple = this.getAttribute("multiple", true);
@@ -17943,7 +18044,6 @@ var tableStyle = style({
       padding: "1rem",
       overflowWrap: "break-word",
       position: "relative",
-      overflow: "hidden",
       textOverflow: "ellipsis",
       whiteSpace: "normal"
     },
@@ -18091,23 +18191,6 @@ var Theme28 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
-    this.caption = options.title;
-    this.fieldName = options.fieldName;
-    if (options.key)
-      this.key = options.key;
-    if (options.sortable)
-      this.sortable = options.sortable;
-    if (options.sorter)
-      this.sorter = options.sorter;
-    this.sortOrder = options.sortOrder;
-    if (this.options.onRenderCell)
-      this.onRenderCell = this.options.onRenderCell;
-    if (options.grid)
-      this.grid = options.grid;
-    if (options.display)
-      this.display = options.display;
-    if (options.textAlign)
-      this.textAlign = options.textAlign;
   }
   get data() {
     return this._data;
@@ -18131,7 +18214,7 @@ var TableColumn = class extends Control {
       this.ascElm && this.ascElm.classList.remove("sort-icon--active");
       this.descElm && this.descElm.classList.remove("sort-icon--active");
     }
-    if (typeof this.onSortChange === "function")
+    if (value && this.onSortChange)
       this.onSortChange(this, this.fieldName, value);
   }
   get textAlign() {
@@ -18149,7 +18232,7 @@ var TableColumn = class extends Control {
     if (!this.sortElm) {
       this.sortElm = this.createElement("div", this);
       this.sortElm.classList.add("i-table-sort");
-      this.ascElm = new Icon(void 0, {
+      this.ascElm = new Icon(this, {
         name: "caret-up",
         width: 14,
         height: 14,
@@ -18157,7 +18240,7 @@ var TableColumn = class extends Control {
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
-      this.descElm = new Icon(void 0, {
+      this.descElm = new Icon(this, {
         name: "caret-down",
         width: 14,
         height: 14,
@@ -18170,11 +18253,22 @@ var TableColumn = class extends Control {
     }
     this.sortElm.style.display = "block";
   }
-  appendNode(node) {
-    if (!this.columnElm)
+  async appendNode(params) {
+    if (!this.columnElm || !this.onRenderCell)
       return;
+    const { tdElm, rowData, rowIndex, cell } = params;
+    let node = await this.onRenderCell(this, this.data, rowData, rowIndex, cell);
+    if (!node)
+      return;
+    if (cell.rowSpan === 0 || cell.columnSpan === 0) {
+      this.remove();
+      tdElm.remove();
+      return;
+    }
+    cell.columnSpan > 1 && tdElm.setAttribute("colspan", cell.columnSpan + "");
+    cell.rowSpan > 1 && tdElm.setAttribute("rowspan", cell.rowSpan + "");
     if (typeof node === "string" || typeof node === "number") {
-      this.columnElm.innerHTML = node;
+      this.columnElm.innerHTML = node + "";
     } else {
       this.columnElm.innerHTML = "";
       this.columnElm.appendChild(node);
@@ -18182,13 +18276,32 @@ var TableColumn = class extends Control {
   }
   init() {
     if (!this.columnElm) {
+      this.caption = this.options.title;
+      this.fieldName = this.options.fieldName;
+      if (this.options.key)
+        this.key = this.options.key;
+      if (this.options.onRenderCell)
+        this.onRenderCell = this.options.onRenderCell.bind(this);
+      if (this.options.grid)
+        this.grid = this.options.grid;
+      if (this.options.display)
+        this.display = this.options.display;
+      if (this.options.textAlign)
+        this.textAlign = this.options.textAlign;
       this.isHeader = this.options.header || false;
       this.columnElm = this.createElement("div", this);
       this.data = this.getAttribute("data", true);
       if (this.isHeader) {
         this.columnElm.innerHTML = this.caption;
-        this.sortable = this.sortable || false;
+        this.sortable = this.getAttribute("sortable", true, false);
+        if (this.options.onSortChange)
+          this.onSortChange = this.options.onSortChange;
+        if (this.options.sorter)
+          this.sorter = this.options.sorter;
         this.renderSort();
+        const sortOrder = this.getAttribute("sortOrder", true);
+        if (sortOrder)
+          this.sortOrder = sortOrder;
       }
     }
   }
@@ -18208,20 +18321,18 @@ var getSorter = (columns, key2) => {
 var orderBy = (list, sortConfig, columns) => {
   if (!sortConfig.length)
     return list;
-  return list.sort((a, b) => {
+  const sortFn = (a, b) => {
+    let sorterCond;
     for (const config of sortConfig) {
       const { key: key2, direction } = config;
-      const sorter = getSorter(columns, key2);
-      if (sorter)
-        return sorter(a.value, b.value);
       const sortDirection = direction === "asc" ? 1 : -1;
-      if (a[key2] > b[key2])
-        return sortDirection;
-      if (a[key2] < b[key2])
-        return sortDirection * -1;
-      return 0;
+      const sorter = getSorter(columns, key2);
+      const value = sorter ? sorter(a, b) * sortDirection : (a[key2] > b[key2] ? 1 : a[key2] < b[key2] ? -1 : 0) * sortDirection;
+      sorterCond = sorterCond || value;
     }
-  });
+    return sorterCond || 0;
+  };
+  return list.sort((a, b) => sortFn(a, b));
 };
 
 // packages/table/src/tableRow.ts
@@ -18368,6 +18479,7 @@ var Table = class extends Control {
     this.renderBody();
   }
   onSortChange(source, key2, value) {
+    this._sortConfig = this._sortConfig || {};
     this._sortConfig[key2] = value;
     if (this.filteredData)
       this.renderBody();
@@ -18444,35 +18556,26 @@ var Table = class extends Control {
         rowSpan: 1,
         value: columnData != null ? columnData : "--"
       });
-      const columnElm = new TableColumn(this, __spreadProps(__spreadValues({}, column), {
-        data: columnData != null ? columnData : "--"
-      }));
-      let customElm;
-      if (typeof column.onRenderCell === "function")
-        customElm = await column.onRenderCell(columnElm, columnData, rowData, rowIndex, cell);
-      if (cell.rowSpan === 0 || cell.columnSpan === 0) {
-        columnElm.remove();
-        continue;
-      }
       const tdElm = this.createElement("td", rowElm);
       tdElm.classList.add("i-table-cell");
       tdElm.setAttribute("data-index", colIndex.toString());
       tdElm.setAttribute("data-fieldname", column.fieldName || "action");
-      cell.columnSpan > 1 && tdElm.setAttribute("colspan", cell.columnSpan + "");
-      cell.rowSpan > 1 && tdElm.setAttribute("rowspan", cell.rowSpan + "");
       if (column.width)
         tdElm.style.width = typeof column.width === "number" ? `${column.width}px` : column.width;
       column.textAlign && (tdElm.style.textAlign = column.textAlign);
-      customElm && columnElm.appendNode(customElm);
+      const columnElm = new TableColumn(this, __spreadProps(__spreadValues({}, column), {
+        data: columnData != null ? columnData : "--"
+      }));
       tdElm.appendChild(columnElm);
+      await columnElm.appendNode({ tdElm, rowData, rowIndex, cell });
       row.push(cell);
     }
-    this._rows.push(new TableRow(row));
+    if (this._rows)
+      this._rows[rowIndex] = new TableRow(row);
   }
   renderBody() {
     var _a, _b;
     this.tBodyElm.innerHTML = "";
-    this._rows = [];
     if (this.filteredData && this.filteredData.length) {
       const currentPage = ((_a = this.pagination) == null ? void 0 : _a.currentPage) || 1;
       const pageSize2 = ((_b = this.pagination) == null ? void 0 : _b.pageSize) || 10;
@@ -18535,11 +18638,15 @@ var Table = class extends Control {
     this.renderBody();
   }
   init() {
-    var _a;
+    var _a, _b, _c;
     if (!this.tableElm) {
       this.classList.add("i-table", tableStyle);
       if ((_a = this.options) == null ? void 0 : _a.onRenderEmptyTable)
         this.onRenderEmptyTable = this.options.onRenderEmptyTable;
+      if ((_b = this.options) == null ? void 0 : _b.onColumnSort)
+        this.onColumnSort = this.options.onColumnSort;
+      if ((_c = this.options) == null ? void 0 : _c.onCellClick)
+        this.onCellClick = this.options.onCellClick;
       this.wrapperElm = this.createElement("div", this);
       this.wrapperElm.classList.add("i-table-container");
       this._heading = this.getAttribute("heading", true, false);
