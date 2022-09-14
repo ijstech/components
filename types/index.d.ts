@@ -1,3 +1,4 @@
+/// <reference types="node" />
 declare module "@ijstech/*style/src/colors" {
     export interface IColor {
         50: string;
@@ -2869,6 +2870,7 @@ declare module "@ijstech/*base/src/component" {
         color?: string;
         bold?: boolean;
         style?: FontStyle;
+        transform?: TextTransform;
     }
     export interface ISpace {
         top?: string | number;
@@ -2883,6 +2885,7 @@ declare module "@ijstech/*base/src/component" {
         shrink?: string;
     }
     export type FontStyle = 'normal' | 'italic' | 'oblique' | 'initial' | 'inherit';
+    export type TextTransform = 'capitalize' | 'uppercase' | 'lowercase' | 'full-width' | 'full-size-kana' | 'inherit' | 'initial' | 'revert' | 'revert-layer' | 'unset';
     export type WrapType = 'nowrap' | 'wrap' | 'wrap-reverse' | 'initial' | 'inherit';
     export type OverflowType = 'visible' | 'hidden' | 'clip' | 'scroll' | 'auto' | 'initial' | 'inherit' | 'unset';
     export interface IOverflow {
@@ -3251,7 +3254,7 @@ declare module "@ijstech/*base/src/types" {
 }
 declare module "@ijstech/*base/@ijstech/components" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/*base/src/observable";
-    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground } from "@ijstech/*base/src/component";
+    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground, TextTransform } from "@ijstech/*base/src/component";
     export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType } from "@ijstech/*base/src/control";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "@ijstech/*base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "@ijstech/*base/src/control";
@@ -3642,6 +3645,8 @@ declare module "@ijstech/*button/src/button" {
         set icon(value: Icon);
         get rightIcon(): Icon;
         set rightIcon(value: Icon);
+        get enabled(): boolean;
+        set enabled(value: boolean);
         private get isSpinning();
         private prependIcon;
         private appendIcon;
@@ -7383,12 +7388,23 @@ declare module "@ijstech/*layout/src/style/panel.css" {
     export const getTemplateColumnsStyleClass: (columns: string[]) => string;
     export const getTemplateRowsStyleClass: (rows: string[]) => string;
     export const getTemplateAreasStyleClass: (templateAreas: string[][]) => string;
+    export const getSpacingValue: (value: string | number) => string;
     export const getGridLayoutMediaQueriesStyleClass: (mediaQueries: IGridLayoutMediaQuery[]) => string;
 }
 declare module "@ijstech/*layout/src/stack" {
-    import { Container, ContainerElement, IMediaQuery } from "@ijstech/*base/@ijstech/components";
+    import { Container, ContainerElement, IMediaQuery, IBackground, ISpace, PositionType } from "@ijstech/*base/@ijstech/components";
     export interface IStackMediaQueryProps {
         direction?: StackDirectionType;
+        width?: number | string;
+        height?: number | string;
+        gap?: number | string;
+        background?: IBackground;
+        padding?: ISpace;
+        margin?: ISpace;
+        justifyContent?: StackJustifyContentType;
+        alignItems?: StackAlignItemsType;
+        position?: PositionType;
+        top?: number | string;
     }
     export type IStackMediaQuery = IMediaQuery<IStackMediaQueryProps>;
     export type StackWrapType = 'nowrap' | 'wrap' | 'wrap-reverse' | 'initial' | 'inherit';
@@ -7506,7 +7522,7 @@ declare module "@ijstech/*layout/src/panel" {
     }
 }
 declare module "@ijstech/*layout/src/grid" {
-    import { Control, ControlElement, Container, IMediaQuery, DisplayType } from "@ijstech/*base/@ijstech/components";
+    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, ISpace } from "@ijstech/*base/@ijstech/components";
     export interface IGap {
         row?: string | number;
         column?: string | number;
@@ -7516,6 +7532,10 @@ declare module "@ijstech/*layout/src/grid" {
         templateRows?: string[];
         templateAreas?: string[][];
         display?: DisplayType;
+        gap?: IGap;
+        background?: IBackground;
+        padding?: ISpace;
+        margin?: ISpace;
     }
     export type IGridLayoutMediaQuery = IMediaQuery<IGridLayoutMediaQueryProps>;
     export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
@@ -8476,12 +8496,15 @@ declare module "@ijstech/*table/src/tableColumn" {
         private _sortOrder;
         private _data;
         private _textAlign;
+        private _rowData;
         onSortChange: (source: Control, key: string, value: SortDirection) => void;
         onRenderCell: renderCallback;
         sorter: (a: any, b: any) => number;
         constructor(parent?: Control, options?: any);
         get data(): number | string;
         set data(value: number | string);
+        get rowData(): number | string;
+        set rowData(value: any);
         get sortOrder(): SortDirection;
         set sortOrder(value: SortDirection);
         get textAlign(): TextAlign;
@@ -8668,6 +8691,28 @@ declare module "@ijstech/*carousel/src/carousel" {
 declare module "@ijstech/*carousel/@ijstech/components" {
     export { CarouselSlider } from "@ijstech/*carousel/src/carousel";
 }
+declare module "@ijstech/*ipfs/@ijstech/components" {
+    export interface ICidInfo {
+        cid: string;
+        links?: ICidInfo[];
+        name: string;
+        size: number;
+        type?: 'dir' | 'file';
+    }
+    export function parse(cid: string): {
+        code: number;
+        version: number;
+        multihash: {
+            code: number;
+            size: number;
+            digest: Uint8Array;
+            bytes: Uint8Array;
+        };
+        bytes: Uint8Array;
+    };
+    export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
+    export function hashContent(content: string | Buffer, version?: number): Promise<string>;
+}
 declare module "@ijstech/components" {
     export * as Styles from "@ijstech/*style/@ijstech/components";
     export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "@ijstech/*base/@ijstech/components";
@@ -8701,6 +8746,7 @@ declare module "@ijstech/components" {
     export { Link } from "@ijstech/*link/@ijstech/components";
     export { Table, TableColumn, TableCell } from "@ijstech/*table/@ijstech/components";
     export { CarouselSlider } from "@ijstech/*carousel/@ijstech/components";
+    export * as IPFS from "@ijstech/*ipfs/@ijstech/components";
 }
 declare module "src/launcher" {
     export * as Styles from "@ijstech/*style/@ijstech/components";
@@ -8735,4 +8781,5 @@ declare module "src/launcher" {
     export { Link } from "@ijstech/*link/@ijstech/components";
     export { Table, TableColumn, TableCell } from "@ijstech/*table/@ijstech/components";
     export { CarouselSlider } from "@ijstech/*carousel/@ijstech/components";
+    export * as IPFS from "@ijstech/*ipfs/@ijstech/components";
 }
