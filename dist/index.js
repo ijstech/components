@@ -12980,52 +12980,40 @@ var Control = class extends Component {
     if (this._onClick) {
       this._onClick(this, event);
       return true;
-    }
-    if (stopPropagation)
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleClick = parent._handleClick.bind(parent);
+      return parent._handleClick(event);
+    } else
       return true;
-    let parent = getParentControl(this);
-    while (parent) {
-      if (parent._onClick) {
-        parent._onClick(parent, event);
-        return true;
-      }
-      parent = getParentControl(parent);
-    }
-    return false;
   }
   _handleContextMenu(event, stopPropagation) {
     if (this._onContextMenu) {
       this._onContextMenu(this, event);
       return true;
-    }
-    if (stopPropagation)
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleContextMenu = parent._handleContextMenu.bind(parent);
+      return parent._handleContextMenu(event);
+    } else
       return true;
-    let parent = getParentControl(this);
-    while (parent) {
-      if (parent._onContextMenu) {
-        parent._onContextMenu(parent, event);
-        return true;
-      }
-      parent = getParentControl(parent);
-    }
-    return false;
   }
   _handleDblClick(event, stopPropagation) {
     if (this._onDblClick) {
       this._onDblClick(this, event);
       return true;
-    }
-    if (stopPropagation)
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleDblClick = parent._handleDblClick.bind(parent);
+      return parent._handleDblClick(event);
+    } else
       return true;
-    let parent = getParentControl(this);
-    while (parent) {
-      if (parent._onDblClick) {
-        parent._onDblClick(parent, event);
-        return true;
-      }
-      parent = getParentControl(parent);
-    }
-    return false;
   }
   get maxWidth() {
     return this.style.maxWidth;
@@ -18491,6 +18479,7 @@ var GridLayout = class extends Container {
   constructor(parent, options) {
     super(parent, options);
     this._styleClassMap = {};
+    this.removeStyleClass = this.removeStyleClass.bind(this);
   }
   static async create(options, parent) {
     let self = new this(parent, options);
