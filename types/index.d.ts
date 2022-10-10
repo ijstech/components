@@ -128,6 +128,14 @@ declare module "@ijstech/*style/src/theme" {
             fontFamily: string;
             fontSize: string;
         };
+        input: {
+            background: string;
+            fontColor: string;
+        };
+        combobox: {
+            background: string;
+            fontColor: string;
+        };
     }
     export interface IThemeVariables {
         action: {
@@ -183,6 +191,14 @@ declare module "@ijstech/*style/src/theme" {
         typography: {
             fontFamily: string;
             fontSize: string;
+        };
+        input: {
+            background: string;
+            fontColor: string;
+        };
+        combobox: {
+            background: string;
+            fontColor: string;
         };
     }
     export const defaultTheme: ITheme;
@@ -3093,7 +3109,7 @@ declare module "@ijstech/*base/src/control" {
         private updateValue;
         setOverflowStyle(value?: IOverflow | OverflowType): void;
     }
-    class Background {
+    export class Background {
         private _target;
         private _value;
         private _style;
@@ -3220,6 +3236,8 @@ declare module "@ijstech/*base/src/control" {
         set display(value: DisplayType);
         get anchor(): IAnchor;
         set anchor(value: IAnchor);
+        get opacity(): number | string;
+        set opacity(value: number | string);
     }
     export class ContainerResizer {
         private target;
@@ -3255,7 +3273,7 @@ declare module "@ijstech/*base/src/types" {
 declare module "@ijstech/*base/@ijstech/components" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/*base/src/observable";
     export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground, TextTransform } from "@ijstech/*base/src/component";
-    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType } from "@ijstech/*base/src/control";
+    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border } from "@ijstech/*base/src/control";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "@ijstech/*base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "@ijstech/*base/src/control";
     import { ITooltip } from "@ijstech/*tooltip/@ijstech/components";
@@ -3300,6 +3318,8 @@ declare module "@ijstech/*base/@ijstech/components" {
         display?: DisplayType;
         tooltip?: ITooltip | string;
         anchor?: IAnchor;
+        opacity?: number | string;
+        tag?: any;
         onClick?: notifyEventCallback;
         onDblClick?: notifyEventCallback;
         onContextMenu?: notifyEventCallback;
@@ -3334,9 +3354,11 @@ declare module "@ijstech/*module/src/module" {
         moduleDependenciesMapper: Map<string, IHasDependencies>;
         currentPath: string;
         private _currentModuleUrl;
+        private modulesUrlRegex;
         static create(options?: ModuleElement, parent?: Container, defaults?: ModuleElement): Promise<Module>;
         constructor(parent?: Container, options?: any, defaults?: any);
         protected bindOnHashChange(): void;
+        set currentModuleUrl(value: string);
         get currentModuleUrl(): string;
         get pathRegex(): any[];
         protected initCustomData(options: any): void;
@@ -3504,11 +3526,10 @@ declare module "@ijstech/*application/@ijstech/components" {
     }
     export type IIPFSDirectoryInfo = IIPFSDirectoryFileInfo[];
     export interface IIPFSDirectoryFileInfo {
-        Hash: string;
-        Name: string;
-        Size: number;
-        Target: string;
-        Type: IpfsDataType;
+        cid: string;
+        name: string;
+        size: number;
+        type: string;
     }
     class Application {
         private static _instance;
@@ -6731,7 +6752,7 @@ declare module "@ijstech/*combo-box/src/combo-box" {
     import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
     import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
     import "@ijstech/*combo-box/src/style/combo-box.css";
-    interface IComboItem {
+    export interface IComboItem {
         value: string;
         label: string;
         isNew?: boolean;
@@ -6808,7 +6829,7 @@ declare module "@ijstech/*combo-box/src/combo-box" {
     }
 }
 declare module "@ijstech/*combo-box/@ijstech/components" {
-    export { ComboBox, ComboBoxElement } from "@ijstech/*combo-box/src/combo-box";
+    export { ComboBox, ComboBoxElement, IComboItem } from "@ijstech/*combo-box/src/combo-box";
 }
 declare module "@ijstech/*datepicker/src/style/datepicker.css" { }
 declare module "@ijstech/*datepicker/src/datepicker" {
@@ -7017,7 +7038,7 @@ declare module "@ijstech/*input/src/input" {
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
     type actionCallback = (target: Input) => void;
     type changeCallback = (target: Input, val: string) => void;
-    type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit";
+    type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
     export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
         caption?: string;
         captionWidth?: number | string;
@@ -7299,7 +7320,7 @@ declare module "@ijstech/*modal/src/style/modal.css" {
     export const titleStyle: string;
 }
 declare module "@ijstech/*modal/src/modal" {
-    import { Control, ControlElement, Container } from "@ijstech/*base/@ijstech/components";
+    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "@ijstech/*base/@ijstech/components";
     import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
     export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop';
     type eventCallback = (target: Control) => void;
@@ -7339,7 +7360,6 @@ declare module "@ijstech/*modal/src/modal" {
         set onOpen(callback: any);
         get title(): string;
         set title(value: string);
-        set width(value: number | string);
         get popupPlacement(): modalPopupPlacementType;
         set popupPlacement(value: modalPopupPlacementType);
         get closeIcon(): Icon | null;
@@ -7361,6 +7381,12 @@ declare module "@ijstech/*modal/src/modal" {
         _handleClick(event: Event): boolean;
         private updateModal;
         refresh(): void;
+        get background(): Background;
+        set background(value: IBackground);
+        get width(): number | string;
+        set width(value: number | string);
+        get border(): Border;
+        set border(value: IBorder);
         protected init(): void;
         static create(options?: ModalElement, parent?: Container): Promise<Modal>;
     }
@@ -7461,6 +7487,7 @@ declare module "@ijstech/*layout/src/stack" {
         private _justifyContent;
         private _alignItems;
         private _mediaQueries;
+        private _mediaStyle;
         constructor(parent?: Container, options?: any);
         static create(options?: StackLayoutElement, parent?: Container): Promise<StackLayout>;
         get direction(): StackDirectionType;
@@ -7566,6 +7593,8 @@ declare module "@ijstech/*layout/src/grid" {
         private _verticalAlignment;
         private _autoFillInHoles;
         private _mediaQueries;
+        private _mediaStyle;
+        private _styleClassMap;
         constructor(parent?: Control, options?: any);
         static create(options?: GridLayoutElement, parent?: Container): Promise<GridLayout>;
         get templateColumns(): string[];
@@ -7591,6 +7620,7 @@ declare module "@ijstech/*layout/src/grid" {
         get mediaQueries(): IGridLayoutMediaQuery[];
         set mediaQueries(value: IGridLayoutMediaQuery[]);
         protected setAttributeToProperty<P extends keyof GridLayout>(propertyName: P): void;
+        protected removeStyleClass(name: string): void;
         protected init(): void;
     }
     global {
@@ -7684,6 +7714,7 @@ declare module "@ijstech/*menu/src/menu" {
         set data(value: IMenuItem[]);
         get items(): MenuItem[];
         set items(items: MenuItem[]);
+        get menuItems(): MenuItem[];
         private clear;
         private renderItem;
         private handleUpdateMode;
@@ -8719,7 +8750,7 @@ declare module "@ijstech/components" {
     export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem } from "@ijstech/*application/@ijstech/components";
     export { Button } from "@ijstech/*button/@ijstech/components";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "@ijstech/*code-editor/@ijstech/components";
-    export { ComboBox } from "@ijstech/*combo-box/@ijstech/components";
+    export { ComboBox, IComboItem } from "@ijstech/*combo-box/@ijstech/components";
     export { Input } from "@ijstech/*input/@ijstech/components";
     export { Icon, IconName } from "@ijstech/*icon/@ijstech/components";
     export { Image } from "@ijstech/*image/@ijstech/components";
@@ -8754,7 +8785,7 @@ declare module "src/launcher" {
     export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem } from "@ijstech/*application/@ijstech/components";
     export { Button } from "@ijstech/*button/@ijstech/components";
     export { CodeEditor, CodeDiffEditor } from "@ijstech/*code-editor/@ijstech/components";
-    export { ComboBox } from "@ijstech/*combo-box/@ijstech/components";
+    export { ComboBox, IComboItem } from "@ijstech/*combo-box/@ijstech/components";
     export { Input } from "@ijstech/*input/@ijstech/components";
     export { Icon, IconName } from "@ijstech/*icon/@ijstech/components";
     export { Image } from "@ijstech/*image/@ijstech/components";
