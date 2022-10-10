@@ -18609,13 +18609,14 @@ var GridLayout = class extends Container {
       this[propertyName] = prop;
   }
   removeStyleClass(name) {
-    if (this._styleClassMap[name]) {
+    if (this._styleClassMap && this._styleClassMap[name]) {
       this.classList.remove(this._styleClassMap[name]);
       delete this._styleClassMap[name];
     }
   }
   init() {
     super.init();
+    this._styleClassMap = {};
     this.classList.add(gridStyle);
     this.setAttributeToProperty("templateColumns");
     this.setAttributeToProperty("templateRows");

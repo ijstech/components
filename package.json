@@ -1,7 +1,7 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.12",
-    "cid": "bafybeigd7x2nzvp3jteiqadlr4twt3rxsscyaczlihjnxbowihsosdviyi",
+    "version": "0.1.13",
+    "cid": "bafybeibue3x2xoxlivab4eujcvlmlxztsdcy4l3j4z6xej3iffmxmhlvzm",
     "types": "types",    
     "license": "AGPL-3.0",
     "devDependencies": {
