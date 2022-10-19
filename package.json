@@ -1,11 +1,12 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.13",
-    "cid": "bafybeibue3x2xoxlivab4eujcvlmlxztsdcy4l3j4z6xej3iffmxmhlvzm",
-    "types": "types",    
+    "version": "0.1.15",
+    "cid": "bafybeihij2r7rfqpkvififukmudzxhynl5gwpz423ww6sz4gi7aspftcti",
+    "main": "dist/index.js",
+    "types": "types/index.d.ts",    
     "license": "AGPL-3.0",
     "devDependencies": {
-        "@ijstech/node": "git+https://github.com/ijstech/node.git"
+        "@ijstech/node": "0.1.14"
     },
     "scripts": {
         "deploy": "node tools/deploy"

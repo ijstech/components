@@ -3484,8 +3484,16 @@ declare module "@ijstech/*application/@ijstech/components" {
     import { EventBus } from "@ijstech/*application/src/event-bus";
     import { GlobalEvents } from "@ijstech/*application/src/globalEvent";
     export interface IHasDependencies {
+        rootDir?: string;
+        moduleDir?: string;
         dependencies?: {
             [name: string]: string;
+        };
+        modules?: {
+            [name: string]: {
+                path: string;
+                dependencies: string[];
+            };
         };
         script?: string;
     }
@@ -3552,7 +3560,7 @@ declare module "@ijstech/*application/@ijstech/components" {
         getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
         loadPackage(packageName: string, modulePath: string, options?: IModuleOptions): Promise<boolean>;
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
-        newModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
+        newModule(module: string, options?: IHasDependencies): Promise<Module | null>;
         copyToClipboard(value: string): Promise<boolean>;
     }
     export const application: Application;
@@ -7159,9 +7167,12 @@ declare module "@ijstech/*markdown/src/markdown" {
 declare module "@ijstech/*markdown/@ijstech/components" {
     export { Markdown, MarkdownElement } from "@ijstech/*markdown/src/markdown";
 }
-declare module "@ijstech/*tab/src/style/tab.css" { }
+declare module "@ijstech/*tab/src/style/tab.css" {
+    import { ITabMediaQuery } from "@ijstech/*tab/src/tab";
+    export const getTabMediaQueriesStyleClass: (mediaQueries: ITabMediaQuery[]) => string;
+}
 declare module "@ijstech/*tab/src/tab" {
-    import { Control, Container, ContainerElement, IFont } from "@ijstech/*base/@ijstech/components";
+    import { Control, Container, ContainerElement, IFont, IMediaQuery } from "@ijstech/*base/@ijstech/components";
     import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
     import "@ijstech/*tab/src/style/tab.css";
     type TabModeType = "horizontal" | "vertical";
@@ -7172,6 +7183,7 @@ declare module "@ijstech/*tab/src/tab" {
         closable?: boolean;
         draggable?: boolean;
         mode?: TabModeType;
+        mediaQueries?: ITabMediaQuery[];
         onChanged?: TabsEventCallback;
         onCloseTab?: TabCloseEventCallback;
     }
@@ -7183,6 +7195,10 @@ declare module "@ijstech/*tab/src/tab" {
     export interface ITab extends TabElement {
         children?: Control | Container;
     }
+    export interface ITabMediaQueryProps {
+        mode?: TabModeType;
+    }
+    export type ITabMediaQuery = IMediaQuery<ITabMediaQueryProps>;
     global {
         namespace JSX {
             interface IntrinsicElements {
@@ -7199,6 +7215,8 @@ declare module "@ijstech/*tab/src/tab" {
         private _activeTabIndex;
         private _closable;
         private _draggable;
+        private _mediaQueries;
+        private _mediaStyle;
         private accumTabIndex;
         private curDragTab;
         onChanged: TabsEventCallback;
@@ -7214,6 +7232,8 @@ declare module "@ijstech/*tab/src/tab" {
         set draggable(value: boolean);
         get mode(): TabModeType;
         set mode(type: TabModeType);
+        get mediaQueries(): ITabMediaQuery[];
+        set mediaQueries(value: ITabMediaQuery[]);
         add(options?: ITab): Tab;
         delete(tab: Tab): void;
         private appendTab;
@@ -7777,10 +7797,12 @@ declare module "@ijstech/*label/src/label" {
     import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
     import { Link, LinkElement } from "@ijstech/*link/@ijstech/components";
     type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
+    type OverflowWrapType = 'normal' | 'break-word' | 'anywhere' | 'inherit' | 'initial' | 'revert' | 'unset';
     export interface LabelElement extends ControlElement {
         caption?: string;
         link?: LinkElement;
         wordBreak?: WordBreakType;
+        overflowWrap?: OverflowWrapType;
     }
     global {
         namespace JSX {
@@ -7801,6 +7823,8 @@ declare module "@ijstech/*label/src/label" {
         set width(value: number);
         get wordBreak(): WordBreakType;
         set wordBreak(value: WordBreakType);
+        get overflowWrap(): OverflowWrapType;
+        set overflowWrap(value: OverflowWrapType);
         protected init(): void;
         static create(options?: LabelElement, parent?: Control): Promise<Label>;
     }
