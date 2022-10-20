@@ -19925,11 +19925,12 @@ var Application = class {
         for (let i = 0; i < dependencies.length; i++) {
           let pack = options.modules[dependencies[i]];
           if (pack && pack.path) {
-            let path = "";
+            let path = "/";
             if (options.rootDir)
-              path = "/" + options.rootDir + "/" + pack.path;
-            else
-              path = "/" + pack.path;
+              path += options.rootDir + "/";
+            if (options.moduleDir)
+              path += options.moduleDir + "/";
+            path += pack.path;
             if (!pack.path.endsWith(".js"))
               path += "/index.js";
             await this.loadPackage(dependencies[i], path, options);
@@ -28979,28 +28980,28 @@ __export(src_exports2, {
   hashItems: () => hashItems,
   parse: () => parse
 });
-var IPFS = require("@ijstech/ipfs-utils");
+var import_ipfs_utils = __toModule(require("@ijstech/ipfs-utils"));
 function parse(cid) {
-  return IPFS.parse(cid);
+  return import_ipfs_utils.default.parse(cid);
 }
 async function hashItems(items, version) {
-  return await IPFS.hashItems(items || [], version);
+  return await import_ipfs_utils.default.hashItems(items || [], version);
 }
 async function hashContent(content, version) {
   if (version == void 0)
     version = 1;
   if (content.length == 0) {
-    return await IPFS.hashContent("", version);
+    return await import_ipfs_utils.default.hashContent("", version);
   }
   let result;
   if (version == 1) {
-    result = await IPFS.hashFile(content, version, {
+    result = await import_ipfs_utils.default.hashFile(content, version, {
       rawLeaves: true,
       maxChunkSize: 1048576,
       maxChildrenPerNode: 1024
     });
   } else
-    result = await IPFS.hashFile(content, version);
+    result = await import_ipfs_utils.default.hashFile(content, version);
   return result.cid;
 }
 

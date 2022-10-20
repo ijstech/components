@@ -1,5 +1,802 @@
-/// <reference types="node" />
-declare module "@ijstech/*style/src/colors" {
+declare module "moment"{
+    /**
+ * @param strict Strict parsing disables the deprecated fallback to the native Date constructor when
+ * parsing a string.
+ */
+ function moment(inp?: moment.MomentInput, strict?: boolean): moment.Moment;
+/**
+ * @param strict Strict parsing requires that the format and input match exactly, including delimiters.
+ * Strict parsing is frequently the best parsing option. For more information about choosing strict vs
+ * forgiving parsing, see the [parsing guide](https://momentjs.com/guides/#/parsing/).
+ */
+ function moment(inp?: moment.MomentInput, format?: moment.MomentFormatSpecification, strict?: boolean): moment.Moment;
+/**
+ * @param strict Strict parsing requires that the format and input match exactly, including delimiters.
+ * Strict parsing is frequently the best parsing option. For more information about choosing strict vs
+ * forgiving parsing, see the [parsing guide](https://momentjs.com/guides/#/parsing/).
+ */
+ function moment(inp?: moment.MomentInput, format?: moment.MomentFormatSpecification, language?: string, strict?: boolean): moment.Moment;
+
+ namespace moment {
+  type RelativeTimeKey = 's' | 'ss' | 'm' | 'mm' | 'h' | 'hh' | 'd' | 'dd' | 'w' | 'ww' | 'M' | 'MM' | 'y' | 'yy';
+  type CalendarKey = 'sameDay' | 'nextDay' | 'lastDay' | 'nextWeek' | 'lastWeek' | 'sameElse' | string;
+  type LongDateFormatKey = 'LTS' | 'LT' | 'L' | 'LL' | 'LLL' | 'LLLL' | 'lts' | 'lt' | 'l' | 'll' | 'lll' | 'llll';
+
+  interface Locale {
+    calendar(key?: CalendarKey, m?: Moment, now?: Moment): string;
+
+    longDateFormat(key: LongDateFormatKey): string;
+    invalidDate(): string;
+    ordinal(n: number): string;
+
+    preparse(inp: string): string;
+    postformat(inp: string): string;
+    relativeTime(n: number, withoutSuffix: boolean,
+                 key: RelativeTimeKey, isFuture: boolean): string;
+    pastFuture(diff: number, absRelTime: string): string;
+    set(config: Object): void;
+
+    months(): string[];
+    months(m: Moment, format?: string): string;
+    monthsShort(): string[];
+    monthsShort(m: Moment, format?: string): string;
+    monthsParse(monthName: string, format: string, strict: boolean): number;
+    monthsRegex(strict: boolean): RegExp;
+    monthsShortRegex(strict: boolean): RegExp;
+
+    week(m: Moment): number;
+    firstDayOfYear(): number;
+    firstDayOfWeek(): number;
+
+    weekdays(): string[];
+    weekdays(m: Moment, format?: string): string;
+    weekdaysMin(): string[];
+    weekdaysMin(m: Moment): string;
+    weekdaysShort(): string[];
+    weekdaysShort(m: Moment): string;
+    weekdaysParse(weekdayName: string, format: string, strict: boolean): number;
+    weekdaysRegex(strict: boolean): RegExp;
+    weekdaysShortRegex(strict: boolean): RegExp;
+    weekdaysMinRegex(strict: boolean): RegExp;
+
+    isPM(input: string): boolean;
+    meridiem(hour: number, minute: number, isLower: boolean): string;
+  }
+
+  interface StandaloneFormatSpec {
+    format: string[];
+    standalone: string[];
+    isFormat?: RegExp;
+  }
+
+  interface WeekSpec {
+    dow: number;
+    doy?: number;
+  }
+
+  type CalendarSpecVal = string | ((m?: MomentInput, now?: Moment) => string);
+  interface CalendarSpec {
+    sameDay?: CalendarSpecVal;
+    nextDay?: CalendarSpecVal;
+    lastDay?: CalendarSpecVal;
+    nextWeek?: CalendarSpecVal;
+    lastWeek?: CalendarSpecVal;
+    sameElse?: CalendarSpecVal;
+
+    // any additional properties might be used with moment.calendarFormat
+    [x: string]: CalendarSpecVal | void; // undefined
+  }
+
+  type RelativeTimeSpecVal = (
+    string |
+    ((n: number, withoutSuffix: boolean,
+      key: RelativeTimeKey, isFuture: boolean) => string)
+  );
+  type RelativeTimeFuturePastVal = string | ((relTime: string) => string);
+
+  interface RelativeTimeSpec {
+    future?: RelativeTimeFuturePastVal;
+    past?: RelativeTimeFuturePastVal;
+    s?: RelativeTimeSpecVal;
+    ss?: RelativeTimeSpecVal;
+    m?: RelativeTimeSpecVal;
+    mm?: RelativeTimeSpecVal;
+    h?: RelativeTimeSpecVal;
+    hh?: RelativeTimeSpecVal;
+    d?: RelativeTimeSpecVal;
+    dd?: RelativeTimeSpecVal;
+    w?: RelativeTimeSpecVal
+    ww?: RelativeTimeSpecVal;
+    M?: RelativeTimeSpecVal;
+    MM?: RelativeTimeSpecVal;
+    y?: RelativeTimeSpecVal;
+    yy?: RelativeTimeSpecVal;
+  }
+
+  interface LongDateFormatSpec {
+    LTS: string;
+    LT: string;
+    L: string;
+    LL: string;
+    LLL: string;
+    LLLL: string;
+
+    // lets forget for a sec that any upper/lower permutation will also work
+    lts?: string;
+    lt?: string;
+    l?: string;
+    ll?: string;
+    lll?: string;
+    llll?: string;
+  }
+
+  type MonthWeekdayFn = (momentToFormat: Moment, format?: string) => string;
+  type WeekdaySimpleFn = (momentToFormat: Moment) => string;
+  interface EraSpec {
+    since: string | number;
+    until: string | number;
+    offset: number;
+    name: string;
+    narrow: string;
+    abbr: string;
+  }
+
+  interface LocaleSpecification {
+    months?: string[] | StandaloneFormatSpec | MonthWeekdayFn;
+    monthsShort?: string[] | StandaloneFormatSpec | MonthWeekdayFn;
+
+    weekdays?: string[] | StandaloneFormatSpec | MonthWeekdayFn;
+    weekdaysShort?: string[] | StandaloneFormatSpec | WeekdaySimpleFn;
+    weekdaysMin?: string[] | StandaloneFormatSpec | WeekdaySimpleFn;
+
+    meridiemParse?: RegExp;
+    meridiem?: (hour: number, minute:number, isLower: boolean) => string;
+
+    isPM?: (input: string) => boolean;
+
+    longDateFormat?: LongDateFormatSpec;
+    calendar?: CalendarSpec;
+    relativeTime?: RelativeTimeSpec;
+    invalidDate?: string;
+    ordinal?: (n: number) => string;
+    ordinalParse?: RegExp;
+
+    week?: WeekSpec;
+    eras?: EraSpec[];
+
+    // Allow anything: in general any property that is passed as locale spec is
+    // put in the locale object so it can be used by locale functions
+    [x: string]: any;
+  }
+
+  interface MomentObjectOutput {
+    years: number;
+    /* One digit */
+    months: number;
+    /* Day of the month */
+    date: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    milliseconds: number;
+  }
+
+  interface argThresholdOpts {
+    ss?: number;
+    s?: number;
+    m?: number;
+    h?: number;
+    d?: number;
+    w?: number | void;
+    M?: number;
+  }
+
+  interface Duration {
+    clone(): Duration;
+
+    humanize(argWithSuffix?: boolean, argThresholds?: argThresholdOpts): string;
+    
+    humanize(argThresholds?: argThresholdOpts): string;
+
+    abs(): Duration;
+
+    as(units: unitOfTime.Base): number;
+    get(units: unitOfTime.Base): number;
+
+    milliseconds(): number;
+    asMilliseconds(): number;
+
+    seconds(): number;
+    asSeconds(): number;
+
+    minutes(): number;
+    asMinutes(): number;
+
+    hours(): number;
+    asHours(): number;
+
+    days(): number;
+    asDays(): number;
+
+    weeks(): number;
+    asWeeks(): number;
+
+    months(): number;
+    asMonths(): number;
+
+    years(): number;
+    asYears(): number;
+
+    add(inp?: DurationInputArg1, unit?: DurationInputArg2): Duration;
+    subtract(inp?: DurationInputArg1, unit?: DurationInputArg2): Duration;
+
+    locale(): string;
+    locale(locale: LocaleSpecifier): Duration;
+    localeData(): Locale;
+
+    toISOString(): string;
+    toJSON(): string;
+
+    isValid(): boolean;
+
+    /**
+     * @deprecated since version 2.8.0
+     */
+    lang(locale: LocaleSpecifier): Moment;
+    /**
+     * @deprecated since version 2.8.0
+     */
+    lang(): Locale;
+    /**
+     * @deprecated
+     */
+    toIsoString(): string;
+  }
+
+  interface MomentRelativeTime {
+    future: any;
+    past: any;
+    s: any;
+    ss: any;
+    m: any;
+    mm: any;
+    h: any;
+    hh: any;
+    d: any;
+    dd: any;
+    M: any;
+    MM: any;
+    y: any;
+    yy: any;
+  }
+
+  interface MomentLongDateFormat {
+    L: string;
+    LL: string;
+    LLL: string;
+    LLLL: string;
+    LT: string;
+    LTS: string;
+
+    l?: string;
+    ll?: string;
+    lll?: string;
+    llll?: string;
+    lt?: string;
+    lts?: string;
+  }
+
+  interface MomentParsingFlags {
+    empty: boolean;
+    unusedTokens: string[];
+    unusedInput: string[];
+    overflow: number;
+    charsLeftOver: number;
+    nullInput: boolean;
+    invalidMonth: string | void; // null
+    invalidFormat: boolean;
+    userInvalidated: boolean;
+    iso: boolean;
+    parsedDateParts: any[];
+    meridiem: string | void; // null
+  }
+
+  interface MomentParsingFlagsOpt {
+    empty?: boolean;
+    unusedTokens?: string[];
+    unusedInput?: string[];
+    overflow?: number;
+    charsLeftOver?: number;
+    nullInput?: boolean;
+    invalidMonth?: string;
+    invalidFormat?: boolean;
+    userInvalidated?: boolean;
+    iso?: boolean;
+    parsedDateParts?: any[];
+    meridiem?: string;
+  }
+
+  interface MomentBuiltinFormat {
+    __momentBuiltinFormatBrand: any;
+  }
+
+  type MomentFormatSpecification = string | MomentBuiltinFormat | (string | MomentBuiltinFormat)[];
+
+  export namespace unitOfTime {
+    type Base = (
+      "year" | "years" | "y" |
+      "month" | "months" | "M" |
+      "week" | "weeks" | "w" |
+      "day" | "days" | "d" |
+      "hour" | "hours" | "h" |
+      "minute" | "minutes" | "m" |
+      "second" | "seconds" | "s" |
+      "millisecond" | "milliseconds" | "ms"
+    );
+
+    type _quarter = "quarter" | "quarters" | "Q";
+    type _isoWeek = "isoWeek" | "isoWeeks" | "W";
+    type _date = "date" | "dates" | "D";
+    type DurationConstructor = Base | _quarter | _isoWeek;
+
+    export type DurationAs = Base;
+
+    export type StartOf = Base | _quarter | _isoWeek | _date | void; // null
+
+    export type Diff = Base | _quarter;
+
+    export type MomentConstructor = Base | _date;
+
+    export type All = Base | _quarter | _isoWeek | _date |
+      "weekYear" | "weekYears" | "gg" |
+      "isoWeekYear" | "isoWeekYears" | "GG" |
+      "dayOfYear" | "dayOfYears" | "DDD" |
+      "weekday" | "weekdays" | "e" |
+      "isoWeekday" | "isoWeekdays" | "E";
+  }
+
+  type numberlike = number | string;
+  interface MomentInputObject {
+    years?: numberlike;
+    year?: numberlike;
+    y?: numberlike;
+
+    months?: numberlike;
+    month?: numberlike;
+    M?: numberlike;
+
+    days?: numberlike;
+    day?: numberlike;
+    d?: numberlike;
+
+    dates?: numberlike;
+    date?: numberlike;
+    D?: numberlike;
+
+    hours?: numberlike;
+    hour?: numberlike;
+    h?: numberlike;
+
+    minutes?: numberlike;
+    minute?: numberlike;
+    m?: numberlike;
+
+    seconds?: numberlike;
+    second?: numberlike;
+    s?: numberlike;
+
+    milliseconds?: numberlike;
+    millisecond?: numberlike;
+    ms?: numberlike;
+  }
+
+  interface DurationInputObject extends MomentInputObject {
+    quarters?: numberlike;
+    quarter?: numberlike;
+    Q?: numberlike;
+
+    weeks?: numberlike;
+    week?: numberlike;
+    w?: numberlike;
+  }
+
+  interface MomentSetObject extends MomentInputObject {
+    weekYears?: numberlike;
+    weekYear?: numberlike;
+    gg?: numberlike;
+
+    isoWeekYears?: numberlike;
+    isoWeekYear?: numberlike;
+    GG?: numberlike;
+
+    quarters?: numberlike;
+    quarter?: numberlike;
+    Q?: numberlike;
+
+    weeks?: numberlike;
+    week?: numberlike;
+    w?: numberlike;
+
+    isoWeeks?: numberlike;
+    isoWeek?: numberlike;
+    W?: numberlike;
+
+    dayOfYears?: numberlike;
+    dayOfYear?: numberlike;
+    DDD?: numberlike;
+
+    weekdays?: numberlike;
+    weekday?: numberlike;
+    e?: numberlike;
+
+    isoWeekdays?: numberlike;
+    isoWeekday?: numberlike;
+    E?: numberlike;
+  }
+
+  interface FromTo {
+    from: MomentInput;
+    to: MomentInput;
+  }
+
+  type MomentInput = Moment | Date | string | number | (number | string)[] | MomentInputObject | void; // null | undefined
+  type DurationInputArg1 = Duration | number | string | FromTo | DurationInputObject | void; // null | undefined
+  type DurationInputArg2 = unitOfTime.DurationConstructor;
+  type LocaleSpecifier = string | Moment | Duration | string[] | boolean;
+
+  interface MomentCreationData {
+    input: MomentInput;
+    format?: MomentFormatSpecification;
+    locale: Locale;
+    isUTC: boolean;
+    strict?: boolean;
+  }
+
+  interface Moment extends Object {
+    format(format?: string): string;
+
+    startOf(unitOfTime: unitOfTime.StartOf): Moment;
+    endOf(unitOfTime: unitOfTime.StartOf): Moment;
+
+    add(amount?: DurationInputArg1, unit?: DurationInputArg2): Moment;
+    /**
+     * @deprecated reverse syntax
+     */
+    add(unit: unitOfTime.DurationConstructor, amount: number|string): Moment;
+
+    subtract(amount?: DurationInputArg1, unit?: DurationInputArg2): Moment;
+    /**
+     * @deprecated reverse syntax
+     */
+    subtract(unit: unitOfTime.DurationConstructor, amount: number|string): Moment;
+
+    calendar(): string;
+    calendar(formats: CalendarSpec): string;
+    calendar(time: MomentInput, formats?: CalendarSpec): string;
+
+    clone(): Moment;
+
+    /**
+     * @return Unix timestamp in milliseconds
+     */
+    valueOf(): number;
+
+    // current date/time in local mode
+    local(keepLocalTime?: boolean): Moment;
+    isLocal(): boolean;
+
+    // current date/time in UTC mode
+    utc(keepLocalTime?: boolean): Moment;
+    isUTC(): boolean;
+    /**
+     * @deprecated use isUTC
+     */
+    isUtc(): boolean;
+
+    parseZone(): Moment;
+    isValid(): boolean;
+    invalidAt(): number;
+
+    hasAlignedHourOffset(other?: MomentInput): boolean;
+
+    creationData(): MomentCreationData;
+    parsingFlags(): MomentParsingFlags;
+
+    year(y: number): Moment;
+    year(): number;
+    /**
+     * @deprecated use year(y)
+     */
+    years(y: number): Moment;
+    /**
+     * @deprecated use year()
+     */
+    years(): number;
+    quarter(): number;
+    quarter(q: number): Moment;
+    quarters(): number;
+    quarters(q: number): Moment;
+    month(M: number|string): Moment;
+    month(): number;
+    /**
+     * @deprecated use month(M)
+     */
+    months(M: number|string): Moment;
+    /**
+     * @deprecated use month()
+     */
+    months(): number;
+    day(d: number|string): Moment;
+    day(): number;
+    days(d: number|string): Moment;
+    days(): number;
+    date(d: number): Moment;
+    date(): number;
+    /**
+     * @deprecated use date(d)
+     */
+    dates(d: number): Moment;
+    /**
+     * @deprecated use date()
+     */
+    dates(): number;
+    hour(h: number): Moment;
+    hour(): number;
+    hours(h: number): Moment;
+    hours(): number;
+    minute(m: number): Moment;
+    minute(): number;
+    minutes(m: number): Moment;
+    minutes(): number;
+    second(s: number): Moment;
+    second(): number;
+    seconds(s: number): Moment;
+    seconds(): number;
+    millisecond(ms: number): Moment;
+    millisecond(): number;
+    milliseconds(ms: number): Moment;
+    milliseconds(): number;
+    weekday(): number;
+    weekday(d: number): Moment;
+    isoWeekday(): number;
+    isoWeekday(d: number|string): Moment;
+    weekYear(): number;
+    weekYear(d: number): Moment;
+    isoWeekYear(): number;
+    isoWeekYear(d: number): Moment;
+    week(): number;
+    week(d: number): Moment;
+    weeks(): number;
+    weeks(d: number): Moment;
+    isoWeek(): number;
+    isoWeek(d: number): Moment;
+    isoWeeks(): number;
+    isoWeeks(d: number): Moment;
+    weeksInYear(): number;
+    weeksInWeekYear(): number;
+    isoWeeksInYear(): number;
+    isoWeeksInISOWeekYear(): number;
+    dayOfYear(): number;
+    dayOfYear(d: number): Moment;
+
+    from(inp: MomentInput, suffix?: boolean): string;
+    to(inp: MomentInput, suffix?: boolean): string;
+    fromNow(withoutSuffix?: boolean): string;
+    toNow(withoutPrefix?: boolean): string;
+
+    diff(b: MomentInput, unitOfTime?: unitOfTime.Diff, precise?: boolean): number;
+
+    toArray(): number[];
+    toDate(): Date;
+    toISOString(keepOffset?: boolean): string;
+    inspect(): string;
+    toJSON(): string;
+    unix(): number;
+
+    isLeapYear(): boolean;
+    /**
+     * @deprecated in favor of utcOffset
+     */
+    zone(): number;
+    zone(b: number|string): Moment;
+    utcOffset(): number;
+    utcOffset(b: number|string, keepLocalTime?: boolean): Moment;
+    isUtcOffset(): boolean;
+    daysInMonth(): number;
+    isDST(): boolean;
+
+    zoneAbbr(): string;
+    zoneName(): string;
+
+    isBefore(inp?: MomentInput, granularity?: unitOfTime.StartOf): boolean;
+    isAfter(inp?: MomentInput, granularity?: unitOfTime.StartOf): boolean;
+    isSame(inp?: MomentInput, granularity?: unitOfTime.StartOf): boolean;
+    isSameOrAfter(inp?: MomentInput, granularity?: unitOfTime.StartOf): boolean;
+    isSameOrBefore(inp?: MomentInput, granularity?: unitOfTime.StartOf): boolean;
+    isBetween(a: MomentInput, b: MomentInput, granularity?: unitOfTime.StartOf, inclusivity?: "()" | "[)" | "(]" | "[]"): boolean;
+
+    /**
+     * @deprecated as of 2.8.0, use locale
+     */
+    lang(language: LocaleSpecifier): Moment;
+    /**
+     * @deprecated as of 2.8.0, use locale
+     */
+    lang(): Locale;
+
+    locale(): string;
+    locale(locale: LocaleSpecifier): Moment;
+
+    localeData(): Locale;
+
+    /**
+     * @deprecated no reliable implementation
+     */
+    isDSTShifted(): boolean;
+
+    // NOTE(constructor): Same as moment constructor
+    /**
+     * @deprecated as of 2.7.0, use moment.min/max
+     */
+    max(inp?: MomentInput, format?: MomentFormatSpecification, strict?: boolean): Moment;
+    /**
+     * @deprecated as of 2.7.0, use moment.min/max
+     */
+    max(inp?: MomentInput, format?: MomentFormatSpecification, language?: string, strict?: boolean): Moment;
+
+    // NOTE(constructor): Same as moment constructor
+    /**
+     * @deprecated as of 2.7.0, use moment.min/max
+     */
+    min(inp?: MomentInput, format?: MomentFormatSpecification, strict?: boolean): Moment;
+    /**
+     * @deprecated as of 2.7.0, use moment.min/max
+     */
+    min(inp?: MomentInput, format?: MomentFormatSpecification, language?: string, strict?: boolean): Moment;
+
+    get(unit: unitOfTime.All): number;
+    set(unit: unitOfTime.All, value: number): Moment;
+    set(objectLiteral: MomentSetObject): Moment;
+
+    toObject(): MomentObjectOutput;
+  }
+
+  export var version: string;
+  export var fn: Moment;
+
+  // NOTE(constructor): Same as moment constructor
+  /**
+   * @param strict Strict parsing disables the deprecated fallback to the native Date constructor when
+   * parsing a string.
+   */
+  export function utc(inp?: MomentInput, strict?: boolean): Moment;
+  /**
+   * @param strict Strict parsing requires that the format and input match exactly, including delimiters.
+   * Strict parsing is frequently the best parsing option. For more information about choosing strict vs
+   * forgiving parsing, see the [parsing guide](https://momentjs.com/guides/#/parsing/).
+   */
+  export function utc(inp?: MomentInput, format?: MomentFormatSpecification, strict?: boolean): Moment;
+  /**
+   * @param strict Strict parsing requires that the format and input match exactly, including delimiters.
+   * Strict parsing is frequently the best parsing option. For more information about choosing strict vs
+   * forgiving parsing, see the [parsing guide](https://momentjs.com/guides/#/parsing/).
+   */
+  export function utc(inp?: MomentInput, format?: MomentFormatSpecification, language?: string, strict?: boolean): Moment;
+
+  export function unix(timestamp: number): Moment;
+
+  export function invalid(flags?: MomentParsingFlagsOpt): Moment;
+  export function isMoment(m: any): m is Moment;
+  export function isDate(m: any): m is Date;
+  export function isDuration(d: any): d is Duration;
+
+  /**
+   * @deprecated in 2.8.0
+   */
+  export function lang(language?: string): string;
+  /**
+   * @deprecated in 2.8.0
+   */
+  export function lang(language?: string, definition?: Locale): string;
+
+  export function locale(language?: string): string;
+  export function locale(language?: string[]): string;
+  export function locale(language?: string, definition?: LocaleSpecification | void): string; // null | undefined
+
+  export function localeData(key?: string | string[]): Locale;
+
+  export function duration(inp?: DurationInputArg1, unit?: DurationInputArg2): Duration;
+
+  // NOTE(constructor): Same as moment constructor
+  export function parseZone(inp?: MomentInput, format?: MomentFormatSpecification, strict?: boolean): Moment;
+  export function parseZone(inp?: MomentInput, format?: MomentFormatSpecification, language?: string, strict?: boolean): Moment;
+
+  export function months(): string[];
+  export function months(index: number): string;
+  export function months(format: string): string[];
+  export function months(format: string, index: number): string;
+  export function monthsShort(): string[];
+  export function monthsShort(index: number): string;
+  export function monthsShort(format: string): string[];
+  export function monthsShort(format: string, index: number): string;
+
+  export function weekdays(): string[];
+  export function weekdays(index: number): string;
+  export function weekdays(format: string): string[];
+  export function weekdays(format: string, index: number): string;
+  export function weekdays(localeSorted: boolean): string[];
+  export function weekdays(localeSorted: boolean, index: number): string;
+  export function weekdays(localeSorted: boolean, format: string): string[];
+  export function weekdays(localeSorted: boolean, format: string, index: number): string;
+  export function weekdaysShort(): string[];
+  export function weekdaysShort(index: number): string;
+  export function weekdaysShort(format: string): string[];
+  export function weekdaysShort(format: string, index: number): string;
+  export function weekdaysShort(localeSorted: boolean): string[];
+  export function weekdaysShort(localeSorted: boolean, index: number): string;
+  export function weekdaysShort(localeSorted: boolean, format: string): string[];
+  export function weekdaysShort(localeSorted: boolean, format: string, index: number): string;
+  export function weekdaysMin(): string[];
+  export function weekdaysMin(index: number): string;
+  export function weekdaysMin(format: string): string[];
+  export function weekdaysMin(format: string, index: number): string;
+  export function weekdaysMin(localeSorted: boolean): string[];
+  export function weekdaysMin(localeSorted: boolean, index: number): string;
+  export function weekdaysMin(localeSorted: boolean, format: string): string[];
+  export function weekdaysMin(localeSorted: boolean, format: string, index: number): string;
+
+  export function min(moments: Moment[]): Moment;
+  export function min(...moments: Moment[]): Moment;
+  export function max(moments: Moment[]): Moment;
+  export function max(...moments: Moment[]): Moment;
+
+  /**
+   * Returns unix time in milliseconds. Overwrite for profit.
+   */
+  export function now(): number;
+
+  export function defineLocale(language: string, localeSpec: LocaleSpecification | void): Locale; // null
+  export function updateLocale(language: string, localeSpec: LocaleSpecification | void): Locale; // null
+
+  export function locales(): string[];
+
+  export function normalizeUnits(unit: unitOfTime.All): string;
+  export function relativeTimeThreshold(threshold: string): number | boolean;
+  export function relativeTimeThreshold(threshold: string, limit: number): boolean;
+  export function relativeTimeRounding(fn: (num: number) => number): boolean;
+  export function relativeTimeRounding(): (num: number) => number;
+  export function calendarFormat(m: Moment, now: Moment): string;
+
+  export function parseTwoDigitYear(input: string): number;
+
+  /**
+   * Constant used to enable explicit ISO_8601 format parsing.
+   */
+  export var ISO_8601: MomentBuiltinFormat;
+  export var RFC_2822: MomentBuiltinFormat;
+
+  export var defaultFormat: string;
+  export var defaultFormatUtc: string;
+  export var suppressDeprecationWarnings: boolean;
+  export var deprecationHandler: ((name: string | void, msg: string) => void) | void;
+
+  export var HTML5_FMT: {
+    DATETIME_LOCAL: string,
+    DATETIME_LOCAL_SECONDS: string,
+    DATETIME_LOCAL_MS: string,
+    DATE: string,
+    TIME: string,
+    TIME_SECONDS: string,
+    TIME_MS: string,
+    WEEK: string,
+    MONTH: string
+  };
+
+}
+
+export default moment;
+
+}declare module "packages/style/src/colors" {
     export interface IColor {
         50: string;
         100: string;
@@ -58,8 +855,8 @@ declare module "@ijstech/*style/src/colors" {
     }
     export const Colors: IColors;
 }
-declare module "@ijstech/*style/src/theme" {
-    import { IColor, Colors } from "@ijstech/*style/src/colors";
+declare module "packages/style/src/theme" {
+    import { IColor, Colors } from "packages/style/src/colors";
     export { Colors };
     type IColorVar = string;
     interface IThemeColors {
@@ -207,7 +1004,7 @@ declare module "@ijstech/*style/src/theme" {
     export const ColorVars: IColor;
     export function applyTheme(theme: ITheme): void;
 }
-declare module "@ijstech/*style/src/styles" {
+declare module "packages/style/src/styles" {
     export type PropertyValue = number | boolean | string;
     export interface Styles {
         $unique?: boolean;
@@ -275,7 +1072,7 @@ declare module "@ijstech/*style/src/styles" {
     }
     export function create(changes?: Changes): FreeStyle;
 }
-declare module "@ijstech/*style/src/csstype" {
+declare module "packages/style/src/csstype" {
     export type PropertyValue<TValue> = TValue extends Array<infer AValue> ? Array<AValue extends infer TUnpacked & {} ? TUnpacked : AValue> : TValue extends infer TUnpacked & {} ? TUnpacked : TValue;
     export type Fallback<T> = {
         [P in keyof T]: T[P] | NonNullable<T[P]>[];
@@ -2717,8 +3514,8 @@ declare module "@ijstech/*style/src/csstype" {
         type VisualBox = "border-box" | "content-box" | "padding-box";
     }
 }
-declare module "@ijstech/*style/src/types" {
-    import * as CSS from "@ijstech/*style/src/csstype";
+declare module "packages/style/src/types" {
+    import * as CSS from "packages/style/src/csstype";
     export type TLength = number | string;
     export interface CSSProperties extends CSS.StandardPropertiesFallback<TLength>, CSS.SvgPropertiesFallback<TLength>, CSS.VendorPropertiesHyphenFallback<TLength>, CSS.ObsoletePropertiesFallback<TLength> {
         $unique?: boolean;
@@ -2793,14 +3590,14 @@ declare module "@ijstech/*style/src/types" {
         [key: string]: CSSProperties | string | undefined;
     }
 }
-declare module "@ijstech/*style/src/formatting" {
-    import * as types from "@ijstech/*style/src/types";
-    import { Styles } from "@ijstech/*style/src/styles";
+declare module "packages/style/src/formatting" {
+    import * as types from "packages/style/src/types";
+    import { Styles } from "packages/style/src/styles";
     export function convertToStyles(object: types.NestedCSSProperties): Styles;
     export function convertToKeyframes(frames: types.KeyFrames): Styles;
 }
-declare module "@ijstech/*style/src/utilities" {
-    import { MediaQuery, NestedCSSProperties } from "@ijstech/*style/src/types";
+declare module "packages/style/src/utilities" {
+    import { MediaQuery, NestedCSSProperties } from "packages/style/src/types";
     export const raf: (cb: () => void) => void;
     export function classes(...classes: (string | false | undefined | null | {
         [className: string]: any;
@@ -2808,8 +3605,8 @@ declare module "@ijstech/*style/src/utilities" {
     export function extend(...objects: (NestedCSSProperties | undefined | null | false)[]): NestedCSSProperties;
     export const media: (mediaQuery: MediaQuery, ...objects: (NestedCSSProperties | undefined | null | false)[]) => NestedCSSProperties;
 }
-declare module "@ijstech/*style/src/typestyle" {
-    import * as types from "@ijstech/*style/src/types";
+declare module "packages/style/src/typestyle" {
+    import * as types from "packages/style/src/types";
     export type StylesTarget = {
         textContent: string | null;
     };
@@ -2841,23 +3638,23 @@ declare module "@ijstech/*style/src/typestyle" {
     }
     export const typeStyle: TypeStyle;
 }
-declare module "@ijstech/*style/src/snippets" {
+declare module "packages/style/src/snippets" {
     export function rotate(degree: number): string;
 }
-declare module "@ijstech/*style/@ijstech/components" {
-    export * as Theme from "@ijstech/*style/src/theme";
-    export { Colors } from "@ijstech/*style/src/colors";
+declare module "packages/style/src/index" {
+    export * as Theme from "packages/style/src/theme";
+    export { Colors } from "packages/style/src/colors";
     export const cssRaw: (mustBeValidCSS: string) => void;
-    export const cssRule: (selector: string, ...objects: import("@ijstech/*style/src/types").NestedCSSProperties[]) => void;
-    export const fontFace: (...fontFace: import("@ijstech/*style/src/types").FontFace[]) => void;
-    export { rotate } from "@ijstech/*style/src/snippets";
-    export const keyframes: (frames: import("@ijstech/*style/src/types").KeyFrames) => string;
+    export const cssRule: (selector: string, ...objects: import("packages/style/src/types").NestedCSSProperties[]) => void;
+    export const fontFace: (...fontFace: import("packages/style/src/types").FontFace[]) => void;
+    export { rotate } from "packages/style/src/snippets";
+    export const keyframes: (frames: import("packages/style/src/types").KeyFrames) => string;
     export const style: {
-        (...objects: (import("@ijstech/*style/src/types").NestedCSSProperties | undefined)[]): string;
-        (...objects: (false | import("@ijstech/*style/src/types").NestedCSSProperties | null | undefined)[]): string;
+        (...objects: (import("packages/style/src/types").NestedCSSProperties | undefined)[]): string;
+        (...objects: (false | import("packages/style/src/types").NestedCSSProperties | null | undefined)[]): string;
     };
 }
-declare module "@ijstech/*base/src/observable" {
+declare module "packages/base/src/observable" {
     export function isObservable(input: any): boolean;
     export interface ObserverOptions {
         path?: string;
@@ -2879,7 +3676,7 @@ declare module "@ijstech/*base/src/observable" {
     export function initObservables(target: any): void;
     export function Observables(target: any, propertyName?: string): any;
 }
-declare module "@ijstech/*base/src/component" {
+declare module "packages/base/src/component" {
     export interface IFont {
         name?: string;
         size?: string;
@@ -2946,8 +3743,8 @@ declare module "@ijstech/*base/src/component" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*base/src/style/base.css" {
-    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground } from "@ijstech/*base/@ijstech/components";
+declare module "packages/base/src/style/base.css" {
+    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground } from "packages/base/src/index";
     export const disabledStyle: string;
     export const containerStyle: string;
     export const getBorderSideStyleClass: (side: BorderStylesSideType, value: IBorderSideStyles) => string;
@@ -2955,10 +3752,10 @@ declare module "@ijstech/*base/src/style/base.css" {
     export const getOverflowStyleClass: (value: IOverflow) => string;
     export const getBackgroundStyleClass: (value: IBackground) => string;
 }
-declare module "@ijstech/*tooltip/src/style/tooltip.css" { }
-declare module "@ijstech/*tooltip/src/tooltip" {
-    import { Control } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*tooltip/src/style/tooltip.css";
+declare module "packages/tooltip/src/style/tooltip.css" { }
+declare module "packages/tooltip/src/tooltip" {
+    import { Control } from "packages/base/src/index";
+    import "packages/tooltip/src/style/tooltip.css";
     type PlacementType = 'top' | 'left' | 'right' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'leftTop' | 'leftBottom' | 'rightTop' | 'rightBottom';
     type TriggerType = 'hover' | 'click';
     export interface ITooltip {
@@ -3000,12 +3797,12 @@ declare module "@ijstech/*tooltip/src/tooltip" {
         private initEvents;
     }
 }
-declare module "@ijstech/*tooltip/@ijstech/components" {
-    export { Tooltip, ITooltip } from "@ijstech/*tooltip/src/tooltip";
+declare module "packages/tooltip/src/index" {
+    export { Tooltip, ITooltip } from "packages/tooltip/src/tooltip";
 }
-declare module "@ijstech/*base/src/control" {
-    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "@ijstech/*base/src/component";
-    import { notifyEventCallback } from "@ijstech/*base/@ijstech/components";
+declare module "packages/base/src/control" {
+    import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "packages/base/src/component";
+    import { notifyEventCallback } from "packages/base/src/index";
     export type DockStyle = 'none' | 'bottom' | 'center' | 'fill' | 'left' | 'right' | 'top';
     export type LineHeightType = string | number | 'normal' | 'initial' | 'inherit';
     export type DisplayType = 'inline-block' | 'block' | 'inline-flex' | 'flex' | 'inline' | 'initial' | 'inherit' | 'none';
@@ -3264,21 +4061,21 @@ declare module "@ijstech/*base/src/control" {
         refresh(skipRefreshControls?: boolean): void;
     }
 }
-declare module "@ijstech/*base/src/types" {
+declare module "packages/base/src/types" {
     export interface INumberDictionary<TValue> {
         [id: number]: TValue;
     }
     export type Color = string;
 }
-declare module "@ijstech/*base/@ijstech/components" {
-    export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/*base/src/observable";
-    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground, TextTransform } from "@ijstech/*base/src/component";
-    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border } from "@ijstech/*base/src/control";
-    import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "@ijstech/*base/src/component";
-    import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "@ijstech/*base/src/control";
-    import { ITooltip } from "@ijstech/*tooltip/@ijstech/components";
+declare module "packages/base/src/index" {
+    export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "packages/base/src/observable";
+    export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground, TextTransform } from "packages/base/src/component";
+    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border } from "packages/base/src/control";
+    import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "packages/base/src/component";
+    import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "packages/base/src/control";
+    import { ITooltip } from "packages/tooltip/src/index";
     export { Control, Container };
-    export * as Types from "@ijstech/*base/src/types";
+    export * as Types from "packages/base/src/types";
     let LibPath: string;
     export { LibPath };
     export const RequireJS: {
@@ -3330,9 +4127,9 @@ declare module "@ijstech/*base/@ijstech/components" {
     export function customElements(name: string, options?: ElementDefinitionOptions): (constructor: CustomElementConstructor) => void;
     export function customModule(target: any): void;
 }
-declare module "@ijstech/*module/src/module" {
-    import { Container, ContainerElement } from "@ijstech/*base/@ijstech/components";
-    import { IHasDependencies } from "@ijstech/*application/@ijstech/components";
+declare module "packages/module/src/module" {
+    import { Container, ContainerElement } from "packages/base/src/index";
+    import { IHasDependencies } from "packages/application/src/index";
     export interface ModuleElement extends ContainerElement {
         caption?: string;
     }
@@ -3376,10 +4173,10 @@ declare module "@ijstech/*module/src/module" {
         onLoad(): void;
     }
 }
-declare module "@ijstech/*module/@ijstech/components" {
-    export { Module, ModuleElement } from "@ijstech/*module/src/module";
+declare module "packages/module/src/index" {
+    export { Module, ModuleElement } from "packages/module/src/module";
 }
-declare module "@ijstech/*application/src/event-bus" {
+declare module "packages/application/src/event-bus" {
     export interface Registry {
         unregister: () => void;
     }
@@ -3404,10 +4201,10 @@ declare module "@ijstech/*application/src/event-bus" {
         private getNextId;
     }
 }
-declare module "@ijstech/*checkbox/src/style/checkbox.css" { }
-declare module "@ijstech/*checkbox/src/checkbox" {
-    import { ControlElement, Control, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*checkbox/src/style/checkbox.css";
+declare module "packages/checkbox/src/style/checkbox.css" { }
+declare module "packages/checkbox/src/checkbox" {
+    import { ControlElement, Control, notifyEventCallback } from "packages/base/src/index";
+    import "packages/checkbox/src/style/checkbox.css";
     export interface CheckboxElement extends ControlElement {
         checked?: boolean;
         indeterminate?: boolean;
@@ -3452,10 +4249,10 @@ declare module "@ijstech/*checkbox/src/checkbox" {
         static create(options?: CheckboxElement, parent?: Control): Promise<Checkbox>;
     }
 }
-declare module "@ijstech/*checkbox/@ijstech/components" {
-    export { Checkbox, CheckboxElement } from "@ijstech/*checkbox/src/checkbox";
+declare module "packages/checkbox/src/index" {
+    export { Checkbox, CheckboxElement } from "packages/checkbox/src/checkbox";
 }
-declare module "@ijstech/*application/src/globalEvent" {
+declare module "packages/application/src/globalEvent" {
     export class GlobalEvents {
         constructor();
         private _handleClick;
@@ -3476,13 +4273,13 @@ declare module "@ijstech/*application/src/globalEvent" {
         private bindEvents;
     }
 }
-declare module "@ijstech/*application/src/styles/index.css" {
+declare module "packages/application/src/styles/index.css" {
     export const applicationStyle: string;
 }
-declare module "@ijstech/*application/@ijstech/components" {
-    import { Module } from "@ijstech/*module/@ijstech/components";
-    import { EventBus } from "@ijstech/*application/src/event-bus";
-    import { GlobalEvents } from "@ijstech/*application/src/globalEvent";
+declare module "packages/application/src/index" {
+    import { Module } from "packages/module/src/index";
+    import { EventBus } from "packages/application/src/event-bus";
+    import { GlobalEvents } from "packages/application/src/globalEvent";
     export interface IHasDependencies {
         rootDir?: string;
         moduleDir?: string;
@@ -3564,13 +4361,13 @@ declare module "@ijstech/*application/@ijstech/components" {
         copyToClipboard(value: string): Promise<boolean>;
     }
     export const application: Application;
-    export { EventBus, IEventBus } from "@ijstech/*application/src/event-bus";
+    export { EventBus, IEventBus } from "packages/application/src/event-bus";
     export default application;
 }
-declare module "@ijstech/*image/src/style/image.css" { }
-declare module "@ijstech/*image/src/image" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*image/src/style/image.css";
+declare module "packages/image/src/style/image.css" { }
+declare module "packages/image/src/image" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/image/src/style/image.css";
     export interface ImageElement extends ControlElement {
         rotate?: number;
         url?: string;
@@ -3600,14 +4397,14 @@ declare module "@ijstech/*image/src/image" {
         static create(options?: ImageElement, parent?: Control): Promise<Image>;
     }
 }
-declare module "@ijstech/*image/@ijstech/components" {
-    export { Image, ImageElement } from "@ijstech/*image/src/image";
+declare module "packages/image/src/index" {
+    export { Image, ImageElement } from "packages/image/src/image";
 }
-declare module "@ijstech/*icon/src/style/icon.css" { }
-declare module "@ijstech/*icon/src/icon" {
-    import { Control, ControlElement, Types } from "@ijstech/*base/@ijstech/components";
-    import { Image, ImageElement } from "@ijstech/*image/@ijstech/components";
-    import "@ijstech/*icon/src/style/icon.css";
+declare module "packages/icon/src/style/icon.css" { }
+declare module "packages/icon/src/icon" {
+    import { Control, ControlElement, Types } from "packages/base/src/index";
+    import { Image, ImageElement } from "packages/image/src/index";
+    import "packages/icon/src/style/icon.css";
     export type IconName = "" | "ad" | "address-book" | "address-card" | "adjust" | "air-freshener" | "align-center" | "align-justify" | "align-left" | "align-right" | "allergies" | "ambulance" | "american-sign-language-interpreting" | "anchor" | "angle-double-down" | "angle-double-left" | "angle-double-right" | "angle-double-up" | "angle-down" | "angle-left" | "angle-right" | "angle-up" | "angry" | "ankh" | "apple-alt" | "archive" | "archway" | "arrow-alt-circle-down" | "arrow-alt-circle-left" | "arrow-alt-circle-right" | "arrow-alt-circle-up" | "arrow-circle-down" | "arrow-circle-left" | "arrow-circle-right" | "arrow-circle-up" | "arrow-down" | "arrow-left" | "arrow-right" | "arrow-up" | "arrows-alt" | "arrows-alt-h" | "arrows-alt-v" | "assistive-listening-systems" | "asterisk" | "at" | "atlas" | "atom" | "audio-description" | "award" | "baby" | "baby-carriage" | "backspace" | "backward" | "bacon" | "bacteria" | "bacterium" | "bahai" | "balance-scale" | "balance-scale-left" | "balance-scale-right" | "ban" | "band-aid" | "barcode" | "bars" | "baseball-ball" | "basketball-ball" | "bath" | "battery-empty" | "battery-full" | "battery-half" | "battery-quarter" | "battery-three-quarters" | "bed" | "beer" | "bell" | "bell-slash" | "bezier-curve" | "bible" | "bicycle" | "biking" | "binoculars" | "biohazard" | "birthday-cake" | "blender" | "blender-phone" | "blind" | "blog" | "bold" | "bolt" | "bomb" | "bone" | "bong" | "book" | "book-dead" | "book-medical" | "book-open" | "book-reader" | "bookmark" | "border-all" | "border-none" | "border-style" | "bowling-ball" | "box" | "box-open" | "box-tissue" | "boxes" | "braille" | "brain" | "bread-slice" | "briefcase" | "briefcase-medical" | "broadcast-tower" | "broom" | "brush" | "bug" | "building" | "bullhorn" | "bullseye" | "burn" | "bus" | "bus-alt" | "business-time" | "calculator" | "calendar" | "calendar-alt" | "calendar-check" | "calendar-day" | "calendar-minus" | "calendar-plus" | "calendar-times" | "calendar-week" | "camera" | "camera-retro" | "campground" | "candy-cane" | "cannabis" | "capsules" | "car" | "car-alt" | "car-battery" | "car-crash" | "car-side" | "caravan" | "caret-down" | "caret-left" | "caret-right" | "caret-square-down" | "caret-square-left" | "caret-square-right" | "caret-square-up" | "caret-up" | "carrot" | "cart-arrow-down" | "cart-plus" | "cash-register" | "cat" | "certificate" | "chair" | "chalkboard" | "chalkboard-teacher" | "charging-station" | "chart-area" | "chart-bar" | "chart-line" | "chart-pie" | "check" | "check-circle" | "check-double" | "check-square" | "cheese" | "chess" | "chess-bishop" | "chess-board" | "chess-king" | "chess-knight" | "chess-pawn" | "chess-queen" | "chess-rook" | "chevron-circle-down" | "chevron-circle-left" | "chevron-circle-right" | "chevron-circle-up" | "chevron-down" | "chevron-left" | "chevron-right" | "chevron-up" | "child" | "church" | "circle" | "circle-notch" | "city" | "clinic-medical" | "clipboard" | "clipboard-check" | "clipboard-list" | "clock" | "clone" | "closed-captioning" | "cloud" | "cloud-download-alt" | "cloud-meatball" | "cloud-moon" | "cloud-moon-rain" | "cloud-rain" | "cloud-showers-heavy" | "cloud-sun" | "cloud-sun-rain" | "cloud-upload-alt" | "cocktail" | "code" | "code-branch" | "coffee" | "cog" | "cogs" | "coins" | "columns" | "comment" | "comment-alt" | "comment-dollar" | "comment-dots" | "comment-medical" | "comment-slash" | "comments" | "comments-dollar" | "compact-disc" | "compass" | "compress" | "compress-alt" | "compress-arrows-alt" | "concierge-bell" | "cookie" | "cookie-bite" | "copy" | "copyright" | "couch" | "credit-card" | "crop" | "crop-alt" | "cross" | "crosshairs" | "crow" | "crown" | "crutch" | "cube" | "cubes" | "cut" | "database" | "deaf" | "democrat" | "desktop" | "dharmachakra" | "diagnoses" | "dice" | "dice-d20" | "dice-d6" | "dice-five" | "dice-four" | "dice-one" | "dice-six" | "dice-three" | "dice-two" | "digital-tachograph" | "directions" | "disease" | "divide" | "dizzy" | "dna" | "dog" | "dollar-sign" | "dolly" | "dolly-flatbed" | "donate" | "door-closed" | "door-open" | "dot-circle" | "dove" | "download" | "drafting-compass" | "dragon" | "draw-polygon" | "drum" | "drum-steelpan" | "drumstick-bite" | "dumbbell" | "dumpster" | "dumpster-fire" | "dungeon" | "edit" | "egg" | "eject" | "ellipsis-h" | "ellipsis-v" | "envelope" | "envelope-open" | "envelope-open-text" | "envelope-square" | "equals" | "eraser" | "ethernet" | "euro-sign" | "exchange-alt" | "exclamation" | "exclamation-circle" | "exclamation-triangle" | "expand" | "expand-alt" | "expand-arrows-alt" | "external-link-alt" | "external-link-square-alt" | "eye" | "eye-dropper" | "eye-slash" | "fan" | "fast-backward" | "fast-forward" | "faucet" | "fax" | "feather" | "feather-alt" | "female" | "fighter-jet" | "file" | "file-alt" | "file-archive" | "file-audio" | "file-code" | "file-contract" | "file-csv" | "file-download" | "file-excel" | "file-export" | "file-image" | "file-import" | "file-invoice" | "file-invoice-dollar" | "file-medical" | "file-medical-alt" | "file-pdf" | "file-powerpoint" | "file-prescription" | "file-signature" | "file-upload" | "file-video" | "file-word" | "fill" | "fill-drip" | "film" | "filter" | "fingerprint" | "fire" | "fire-alt" | "fire-extinguisher" | "first-aid" | "fish" | "fist-raised" | "flag" | "flag-checkered" | "flag-usa" | "flask" | "flushed" | "folder" | "folder-minus" | "folder-open" | "folder-plus" | "font" | "font-awesome-logo-full" | "football-ball" | "forward" | "frog" | "frown" | "frown-open" | "funnel-dollar" | "futbol" | "gamepad" | "gas-pump" | "gavel" | "gem" | "genderless" | "ghost" | "gift" | "gifts" | "glass-cheers" | "glass-martini" | "glass-martini-alt" | "glass-whiskey" | "glasses" | "globe" | "globe-africa" | "globe-americas" | "globe-asia" | "globe-europe" | "golf-ball" | "gopuram" | "graduation-cap" | "greater-than" | "greater-than-equal" | "grimace" | "grin" | "grin-alt" | "grin-beam" | "grin-beam-sweat" | "grin-hearts" | "grin-squint" | "grin-squint-tears" | "grin-stars" | "grin-tears" | "grin-tongue" | "grin-tongue-squint" | "grin-tongue-wink" | "grin-wink" | "grip-horizontal" | "grip-lines" | "grip-lines-vertical" | "grip-vertical" | "guitar" | "h-square" | "hamburger" | "hammer" | "hamsa" | "hand-holding" | "hand-holding-heart" | "hand-holding-medical" | "hand-holding-usd" | "hand-holding-water" | "hand-lizard" | "hand-middle-finger" | "hand-paper" | "hand-peace" | "hand-point-down" | "hand-point-left" | "hand-point-right" | "hand-point-up" | "hand-pointer" | "hand-rock" | "hand-scissors" | "hand-sparkles" | "hand-spock" | "hands" | "hands-helping" | "hands-wash" | "handshake" | "handshake-alt-slash" | "handshake-slash" | "hanukiah" | "hard-hat" | "hashtag" | "hat-cowboy" | "hat-cowboy-side" | "hat-wizard" | "hdd" | "head-side-cough" | "head-side-cough-slash" | "head-side-mask" | "head-side-virus" | "heading" | "headphones" | "headphones-alt" | "headset" | "heart" | "heart-broken" | "heartbeat" | "helicopter" | "highlighter" | "hiking" | "hippo" | "history" | "hockey-puck" | "holly-berry" | "home" | "horse" | "horse-head" | "hospital" | "hospital-alt" | "hospital-symbol" | "hospital-user" | "hot-tub" | "hotdog" | "hotel" | "hourglass" | "hourglass-end" | "hourglass-half" | "hourglass-start" | "house-damage" | "house-user" | "hryvnia" | "i-cursor" | "ice-cream" | "icicles" | "icons" | "id-badge" | "id-card" | "id-card-alt" | "igloo" | "image" | "images" | "inbox" | "indent" | "industry" | "infinity" | "info" | "info-circle" | "italic" | "jedi" | "joint" | "journal-whills" | "kaaba" | "key" | "keyboard" | "khanda" | "kiss" | "kiss-beam" | "kiss-wink-heart" | "kiwi-bird" | "landmark" | "language" | "laptop" | "laptop-code" | "laptop-house" | "laptop-medical" | "laugh" | "laugh-beam" | "laugh-squint" | "laugh-wink" | "layer-group" | "leaf" | "lemon" | "less-than" | "less-than-equal" | "level-down-alt" | "level-up-alt" | "life-ring" | "lightbulb" | "link" | "lira-sign" | "list" | "list-alt" | "list-ol" | "list-ul" | "location-arrow" | "lock" | "lock-open" | "long-arrow-alt-down" | "long-arrow-alt-left" | "long-arrow-alt-right" | "long-arrow-alt-up" | "low-vision" | "luggage-cart" | "lungs" | "lungs-virus" | "magic" | "magnet" | "mail-bulk" | "male" | "map" | "map-marked" | "map-marked-alt" | "map-marker" | "map-marker-alt" | "map-pin" | "map-signs" | "marker" | "mars" | "mars-double" | "mars-stroke" | "mars-stroke-h" | "mars-stroke-v" | "mask" | "medal" | "medkit" | "meh" | "meh-blank" | "meh-rolling-eyes" | "memory" | "menorah" | "mercury" | "meteor" | "microchip" | "microphone" | "microphone-alt" | "microphone-alt-slash" | "microphone-slash" | "microscope" | "minus" | "minus-circle" | "minus-square" | "mitten" | "mobile" | "mobile-alt" | "money-bill" | "money-bill-alt" | "money-bill-wave" | "money-bill-wave-alt" | "money-check" | "money-check-alt" | "monument" | "moon" | "mortar-pestle" | "mosque" | "motorcycle" | "mountain" | "mouse" | "mouse-pointer" | "mug-hot" | "music" | "network-wired" | "neuter" | "newspaper" | "not-equal" | "notes-medical" | "object-group" | "object-ungroup" | "oil-can" | "om" | "otter" | "outdent" | "pager" | "paint-brush" | "paint-roller" | "palette" | "pallet" | "paper-plane" | "paperclip" | "parachute-box" | "paragraph" | "parking" | "passport" | "pastafarianism" | "paste" | "pause" | "pause-circle" | "paw" | "peace" | "pen" | "pen-alt" | "pen-fancy" | "pen-nib" | "pen-square" | "pencil-alt" | "pencil-ruler" | "people-arrows" | "people-carry" | "pepper-hot" | "percent" | "percentage" | "person-booth" | "phone" | "phone-alt" | "phone-slash" | "phone-square" | "phone-square-alt" | "phone-volume" | "photo-video" | "piggy-bank" | "pills" | "pizza-slice" | "place-of-worship" | "plane" | "plane-arrival" | "plane-departure" | "plane-slash" | "play" | "play-circle" | "plug" | "plus" | "plus-circle" | "plus-square" | "podcast" | "poll" | "poll-h" | "poo" | "poo-storm" | "poop" | "portrait" | "pound-sign" | "power-off" | "pray" | "praying-hands" | "prescription" | "prescription-bottle" | "prescription-bottle-alt" | "print" | "procedures" | "project-diagram" | "pump-medical" | "pump-soap" | "puzzle-piece" | "qrcode" | "question" | "question-circle" | "quidditch" | "quote-left" | "quote-right" | "quran" | "radiation" | "radiation-alt" | "rainbow" | "random" | "receipt" | "record-vinyl" | "recycle" | "redo" | "redo-alt" | "registered" | "remove-format" | "reply" | "reply-all" | "republican" | "restroom" | "retweet" | "ribbon" | "ring" | "road" | "robot" | "rocket" | "route" | "rss" | "rss-square" | "ruble-sign" | "ruler" | "ruler-combined" | "ruler-horizontal" | "ruler-vertical" | "running" | "rupee-sign" | "sad-cry" | "sad-tear" | "satellite" | "satellite-dish" | "save" | "school" | "screwdriver" | "scroll" | "sd-card" | "search" | "search-dollar" | "search-location" | "search-minus" | "search-plus" | "seedling" | "server" | "shapes" | "share" | "share-alt" | "share-alt-square" | "share-square" | "shekel-sign" | "shield-alt" | "shield-virus" | "ship" | "shipping-fast" | "shoe-prints" | "shopping-bag" | "shopping-basket" | "shopping-cart" | "shower" | "shuttle-van" | "sign" | "sign-in-alt" | "sign-language" | "sign-out-alt" | "signal" | "signature" | "sim-card" | "sink" | "sitemap" | "skating" | "skiing" | "skiing-nordic" | "skull" | "skull-crossbones" | "slash" | "sleigh" | "sliders-h" | "smile" | "smile-beam" | "smile-wink" | "smog" | "smoking" | "smoking-ban" | "sms" | "snowboarding" | "snowflake" | "snowman" | "snowplow" | "soap" | "socks" | "solar-panel" | "sort" | "sort-alpha-down" | "sort-alpha-down-alt" | "sort-alpha-up" | "sort-alpha-up-alt" | "sort-amount-down" | "sort-amount-down-alt" | "sort-amount-up" | "sort-amount-up-alt" | "sort-down" | "sort-numeric-down" | "sort-numeric-down-alt" | "sort-numeric-up" | "sort-numeric-up-alt" | "sort-up" | "spa" | "space-shuttle" | "spell-check" | "spider" | "spinner" | "splotch" | "spray-can" | "square" | "square-full" | "square-root-alt" | "stamp" | "star" | "star-and-crescent" | "star-half" | "star-half-alt" | "star-of-david" | "star-of-life" | "step-backward" | "step-forward" | "stethoscope" | "sticky-note" | "stop" | "stop-circle" | "stopwatch" | "stopwatch-20" | "store" | "store-alt" | "store-alt-slash" | "store-slash" | "stream" | "street-view" | "strikethrough" | "stroopwafel" | "subscript" | "subway" | "suitcase" | "suitcase-rolling" | "sun" | "superscript" | "surprise" | "swatchbook" | "swimmer" | "swimming-pool" | "synagogue" | "sync" | "sync-alt" | "syringe" | "table" | "table-tennis" | "tablet" | "tablet-alt" | "tablets" | "tachometer-alt" | "tag" | "tags" | "tape" | "tasks" | "taxi" | "teeth" | "teeth-open" | "temperature-high" | "temperature-low" | "tenge" | "terminal" | "text-height" | "text-width" | "th" | "th-large" | "th-list" | "theater-masks" | "thermometer" | "thermometer-empty" | "thermometer-full" | "thermometer-half" | "thermometer-quarter" | "thermometer-three-quarters" | "thumbs-down" | "thumbs-up" | "thumbtack" | "ticket-alt" | "times" | "times-circle" | "tint" | "tint-slash" | "tired" | "toggle-off" | "toggle-on" | "toilet" | "toilet-paper" | "toilet-paper-slash" | "toolbox" | "tools" | "tooth" | "torah" | "torii-gate" | "tractor" | "trademark" | "traffic-light" | "trailer" | "train" | "tram" | "transgender" | "transgender-alt" | "trash" | "trash-alt" | "trash-restore" | "trash-restore-alt" | "tree" | "trophy" | "truck" | "truck-loading" | "truck-monster" | "truck-moving" | "truck-pickup" | "tshirt" | "tty" | "tv" | "umbrella" | "umbrella-beach" | "underline" | "undo" | "undo-alt" | "universal-access" | "university" | "unlink" | "unlock" | "unlock-alt" | "upload" | "user" | "user-alt" | "user-alt-slash" | "user-astronaut" | "user-check" | "user-circle" | "user-clock" | "user-cog" | "user-edit" | "user-friends" | "user-graduate" | "user-injured" | "user-lock" | "user-md" | "user-minus" | "user-ninja" | "user-nurse" | "user-plus" | "user-secret" | "user-shield" | "user-slash" | "user-tag" | "user-tie" | "user-times" | "users" | "users-cog" | "users-slash" | "utensil-spoon" | "utensils" | "vector-square" | "venus" | "venus-double" | "venus-mars" | "vest" | "vest-patches" | "vial" | "vials" | "video" | "video-slash" | "vihara" | "virus" | "virus-slash" | "viruses" | "voicemail" | "volleyball-ball" | "volume-down" | "volume-mute" | "volume-off" | "volume-up" | "vote-yea" | "vr-cardboard" | "walking" | "wallet" | "warehouse" | "water" | "wave-square" | "weight" | "weight-hanging" | "wheelchair" | "wifi" | "wind" | "window-close" | "window-maximize" | "window-minimize" | "window-restore" | "wine-bottle" | "wine-glass" | "wine-glass-alt" | "won-sign" | "wrench" | "x-ray" | "yen-sign" | "yin-yang";
     export interface IconElement extends ControlElement {
         name?: IconName;
@@ -3642,14 +4439,14 @@ declare module "@ijstech/*icon/src/icon" {
         static create(options?: IconElement, parent?: Control): Promise<Icon>;
     }
 }
-declare module "@ijstech/*icon/@ijstech/components" {
-    export { IconName, Icon, IconElement } from "@ijstech/*icon/src/icon";
+declare module "packages/icon/src/index" {
+    export { IconName, Icon, IconElement } from "packages/icon/src/icon";
 }
-declare module "@ijstech/*button/src/style/button.css" { }
-declare module "@ijstech/*button/src/button" {
-    import { Control, Container, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
-    import "@ijstech/*button/src/style/button.css";
+declare module "packages/button/src/style/button.css" { }
+declare module "packages/button/src/button" {
+    import { Control, Container, ControlElement } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import "packages/button/src/style/button.css";
     export interface ButtonElement extends ControlElement {
         caption?: string;
         icon?: IconElement;
@@ -3685,10 +4482,10 @@ declare module "@ijstech/*button/src/button" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*button/@ijstech/components" {
-    export { Button, ButtonElement } from "@ijstech/*button/src/button";
+declare module "packages/button/src/index" {
+    export { Button, ButtonElement } from "packages/button/src/button";
 }
-declare module "@ijstech/*code-editor/src/editor.api" {
+declare module "packages/code-editor/src/editor.api" {
     global {
         let MonacoEnvironment: Environment | undefined;
     }
@@ -6644,8 +7441,8 @@ declare module "@ijstech/*code-editor/src/editor.api" {
         type MarkupKind = 'plaintext' | 'markdown';
     }
 }
-declare module "@ijstech/*code-editor/src/monaco" {
-    import * as IMonaco from "@ijstech/*code-editor/src/editor.api";
+declare module "packages/code-editor/src/monaco" {
+    import * as IMonaco from "packages/code-editor/src/editor.api";
     export type LanguageType = "txt" | "css" | "json" | "javascript" | "typescript" | "solidity" | "markdown" | "html" | "xml";
     export interface Monaco {
         editor: typeof IMonaco.editor;
@@ -6659,12 +7456,12 @@ declare module "@ijstech/*code-editor/src/monaco" {
     export function addLib(lib: string, dts: string): Promise<void>;
     export function initMonaco(): Promise<Monaco>;
 }
-declare module "@ijstech/*code-editor/src/style/code-editor.css" { }
-declare module "@ijstech/*code-editor/src/code-editor" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import { addLib, addFile, getFileModel, updateFile, LanguageType, Monaco } from "@ijstech/*code-editor/src/monaco";
-    import * as IMonaco from "@ijstech/*code-editor/src/editor.api";
-    import "@ijstech/*code-editor/src/style/code-editor.css";
+declare module "packages/code-editor/src/style/code-editor.css" { }
+declare module "packages/code-editor/src/code-editor" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { addLib, addFile, getFileModel, updateFile, LanguageType, Monaco } from "packages/code-editor/src/monaco";
+    import * as IMonaco from "packages/code-editor/src/editor.api";
+    import "packages/code-editor/src/style/code-editor.css";
     export interface CodeEditorElement extends ControlElement {
         language?: LanguageType;
         onChange?: any;
@@ -6700,12 +7497,12 @@ declare module "@ijstech/*code-editor/src/code-editor" {
         set value(value: string);
     }
 }
-declare module "@ijstech/*code-editor/src/diff-editor" {
-    import { Control } from "@ijstech/*base/@ijstech/components";
-    import { addLib, addFile, getFileModel, updateFile, LanguageType } from "@ijstech/*code-editor/src/monaco";
-    import { CodeEditorElement } from "@ijstech/*code-editor/src/code-editor";
-    import * as IMonaco from "@ijstech/*code-editor/src/editor.api";
-    import "@ijstech/*code-editor/src/style/code-editor.css";
+declare module "packages/code-editor/src/diff-editor" {
+    import { Control } from "packages/base/src/index";
+    import { addLib, addFile, getFileModel, updateFile, LanguageType } from "packages/code-editor/src/monaco";
+    import { CodeEditorElement } from "packages/code-editor/src/code-editor";
+    import * as IMonaco from "packages/code-editor/src/editor.api";
+    import "packages/code-editor/src/style/code-editor.css";
     enum EditorType {
         'modified' = 0,
         'original' = 1
@@ -6748,18 +7545,18 @@ declare module "@ijstech/*code-editor/src/diff-editor" {
         set modifiedValue(value: string);
     }
 }
-declare module "@ijstech/*code-editor/@ijstech/components" {
-    export { CodeEditor, CodeEditorElement } from "@ijstech/*code-editor/src/code-editor";
-    export { CodeDiffEditor, CodeDiffEditorElement } from "@ijstech/*code-editor/src/diff-editor";
-    export { LanguageType } from "@ijstech/*code-editor/src/monaco";
+declare module "packages/code-editor/src/index" {
+    export { CodeEditor, CodeEditorElement } from "packages/code-editor/src/code-editor";
+    export { CodeDiffEditor, CodeDiffEditorElement } from "packages/code-editor/src/diff-editor";
+    export { LanguageType } from "packages/code-editor/src/monaco";
 }
-declare module "@ijstech/*combo-box/src/style/combo-box.css" {
+declare module "packages/combo-box/src/style/combo-box.css" {
     export let ItemListStyle: string;
 }
-declare module "@ijstech/*combo-box/src/combo-box" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
-    import "@ijstech/*combo-box/src/style/combo-box.css";
+declare module "packages/combo-box/src/combo-box" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import "packages/combo-box/src/style/combo-box.css";
     export interface IComboItem {
         value: string;
         label: string;
@@ -6836,13 +7633,13 @@ declare module "@ijstech/*combo-box/src/combo-box" {
         static create(options?: ComboBoxElement, parent?: Control): Promise<ComboBox>;
     }
 }
-declare module "@ijstech/*combo-box/@ijstech/components" {
-    export { ComboBox, ComboBoxElement, IComboItem } from "@ijstech/*combo-box/src/combo-box";
+declare module "packages/combo-box/src/index" {
+    export { ComboBox, ComboBoxElement, IComboItem } from "packages/combo-box/src/combo-box";
 }
-declare module "@ijstech/*datepicker/src/style/datepicker.css" { }
-declare module "@ijstech/*datepicker/src/datepicker" {
-    import { ControlElement, Control, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*datepicker/src/style/datepicker.css";
+declare module "packages/datepicker/src/style/datepicker.css" { }
+declare module "packages/datepicker/src/datepicker" {
+    import { ControlElement, Control, notifyEventCallback } from "packages/base/src/index";
+    import "packages/datepicker/src/style/datepicker.css";
     import Moment from 'moment';
     type dateType = 'date' | 'dateTime' | 'time';
     export interface DatepickerElement extends ControlElement {
@@ -6908,13 +7705,13 @@ declare module "@ijstech/*datepicker/src/datepicker" {
         static create(options?: DatepickerElement, parent?: Control): Promise<Datepicker>;
     }
 }
-declare module "@ijstech/*datepicker/@ijstech/components" {
-    export { Datepicker, DatepickerElement } from "@ijstech/*datepicker/src/datepicker";
+declare module "packages/datepicker/src/index" {
+    export { Datepicker, DatepickerElement } from "packages/datepicker/src/datepicker";
 }
-declare module "@ijstech/*range/src/style/range.css" { }
-declare module "@ijstech/*range/src/range" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*range/src/style/range.css";
+declare module "packages/range/src/style/range.css" { }
+declare module "packages/range/src/range" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import "packages/range/src/style/range.css";
     export interface RangeElement extends ControlElement {
         caption?: string;
         captionWidth?: number | string;
@@ -6967,14 +7764,14 @@ declare module "@ijstech/*range/src/range" {
         static create(options?: RangeElement, parent?: Control): Promise<Range>;
     }
 }
-declare module "@ijstech/*range/@ijstech/components" {
-    export { Range, RangeElement } from "@ijstech/*range/src/range";
+declare module "packages/range/src/index" {
+    export { Range, RangeElement } from "packages/range/src/range";
 }
-declare module "@ijstech/*radio/src/radio.css" {
+declare module "packages/radio/src/radio.css" {
     export const captionStyle: string;
 }
-declare module "@ijstech/*radio/src/radio" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
+declare module "packages/radio/src/radio" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
     export interface RadioElement extends ControlElement {
         caption?: string;
         captionWidth?: number | string;
@@ -7030,18 +7827,18 @@ declare module "@ijstech/*radio/src/radio" {
         static create(options?: RadioGroupElement, parent?: Control): Promise<RadioGroup>;
     }
 }
-declare module "@ijstech/*radio/@ijstech/components" {
-    export { Radio, RadioElement, RadioGroup, RadioGroupElement } from "@ijstech/*radio/src/radio";
+declare module "packages/radio/src/index" {
+    export { Radio, RadioElement, RadioGroup, RadioGroupElement } from "packages/radio/src/radio";
 }
-declare module "@ijstech/*input/src/style/input.css" { }
-declare module "@ijstech/*input/src/input" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import { Checkbox, CheckboxElement } from "@ijstech/*checkbox/@ijstech/components";
-    import { ComboBox, ComboBoxElement } from "@ijstech/*combo-box/@ijstech/components";
-    import { Datepicker, DatepickerElement } from "@ijstech/*datepicker/@ijstech/components";
-    import { Range, RangeElement } from "@ijstech/*range/@ijstech/components";
-    import { Radio, RadioElement } from "@ijstech/*radio/@ijstech/components";
-    import "@ijstech/*input/src/style/input.css";
+declare module "packages/input/src/style/input.css" { }
+declare module "packages/input/src/input" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Checkbox, CheckboxElement } from "packages/checkbox/src/index";
+    import { ComboBox, ComboBoxElement } from "packages/combo-box/src/index";
+    import { Datepicker, DatepickerElement } from "packages/datepicker/src/index";
+    import { Range, RangeElement } from "packages/range/src/index";
+    import { Radio, RadioElement } from "packages/radio/src/index";
+    import "packages/input/src/style/input.css";
     export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text';
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
     type actionCallback = (target: Input) => void;
@@ -7133,13 +7930,13 @@ declare module "@ijstech/*input/src/input" {
         static create(options?: InputElement, parent?: Control): Promise<Input>;
     }
 }
-declare module "@ijstech/*input/@ijstech/components" {
-    export { Input, InputElement } from "@ijstech/*input/src/input";
+declare module "packages/input/src/index" {
+    export { Input, InputElement } from "packages/input/src/input";
 }
-declare module "@ijstech/*markdown/src/style/markdown.css" { }
-declare module "@ijstech/*markdown/src/markdown" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*markdown/src/style/markdown.css";
+declare module "packages/markdown/src/style/markdown.css" { }
+declare module "packages/markdown/src/markdown" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/markdown/src/style/markdown.css";
     export interface MarkdownElement extends ControlElement {
         caption?: string;
         src?: string;
@@ -7164,17 +7961,17 @@ declare module "@ijstech/*markdown/src/markdown" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*markdown/@ijstech/components" {
-    export { Markdown, MarkdownElement } from "@ijstech/*markdown/src/markdown";
+declare module "packages/markdown/src/index" {
+    export { Markdown, MarkdownElement } from "packages/markdown/src/markdown";
 }
-declare module "@ijstech/*tab/src/style/tab.css" {
-    import { ITabMediaQuery } from "@ijstech/*tab/src/tab";
+declare module "packages/tab/src/style/tab.css" {
+    import { ITabMediaQuery } from "packages/tab/src/tab";
     export const getTabMediaQueriesStyleClass: (mediaQueries: ITabMediaQuery[]) => string;
 }
-declare module "@ijstech/*tab/src/tab" {
-    import { Control, Container, ContainerElement, IFont, IMediaQuery } from "@ijstech/*base/@ijstech/components";
-    import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
-    import "@ijstech/*tab/src/style/tab.css";
+declare module "packages/tab/src/tab" {
+    import { Control, Container, ContainerElement, IFont, IMediaQuery } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import "packages/tab/src/style/tab.css";
     type TabModeType = "horizontal" | "vertical";
     type TabsEventCallback = (target: Tabs, activeTab: Tab) => void;
     type TabCloseEventCallback = (target: Tabs, tab: Tab) => void;
@@ -7271,13 +8068,13 @@ declare module "@ijstech/*tab/src/tab" {
         static create(options?: TabElement, parent?: Control): Promise<Tab>;
     }
 }
-declare module "@ijstech/*tab/@ijstech/components" {
-    export { Tabs, TabsElement, Tab, TabElement } from "@ijstech/*tab/src/tab";
+declare module "packages/tab/src/index" {
+    export { Tabs, TabsElement, Tab, TabElement } from "packages/tab/src/tab";
 }
-declare module "@ijstech/*markdown-editor/src/style/markdown-editor.css" { }
-declare module "@ijstech/*markdown-editor/src/markdown-editor" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*markdown-editor/src/style/markdown-editor.css";
+declare module "packages/markdown-editor/src/style/markdown-editor.css" { }
+declare module "packages/markdown-editor/src/markdown-editor" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/markdown-editor/src/style/markdown-editor.css";
     export interface MarkdownEditorElement extends ControlElement {
     }
     global {
@@ -7300,13 +8097,13 @@ declare module "@ijstech/*markdown-editor/src/markdown-editor" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*markdown-editor/@ijstech/components" {
-    export { MarkdownEditor, MarkdownEditorElement } from "@ijstech/*markdown-editor/src/markdown-editor";
+declare module "packages/markdown-editor/src/index" {
+    export { MarkdownEditor, MarkdownEditorElement } from "packages/markdown-editor/src/markdown-editor";
 }
-declare module "@ijstech/*link/src/style/link.css" { }
-declare module "@ijstech/*link/src/link" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*link/src/style/link.css";
+declare module "packages/link/src/style/link.css" { }
+declare module "packages/link/src/link" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/link/src/style/link.css";
     type TagertType = '_self' | '_blank' | '_parent' | '_top';
     export interface LinkElement extends ControlElement {
         href?: string;
@@ -7329,19 +8126,19 @@ declare module "@ijstech/*link/src/link" {
         static create(options?: LinkElement, parent?: Control): Promise<Link>;
     }
 }
-declare module "@ijstech/*link/@ijstech/components" {
-    export { Link, LinkElement } from "@ijstech/*link/src/link";
+declare module "packages/link/src/index" {
+    export { Link, LinkElement } from "packages/link/src/link";
 }
-declare module "@ijstech/*modal/src/style/modal.css" {
+declare module "packages/modal/src/style/modal.css" {
     export const wrapperStyle: string;
     export const noBackdropStyle: string;
     export const visibleStyle: string;
     export const modalStyle: string;
     export const titleStyle: string;
 }
-declare module "@ijstech/*modal/src/modal" {
-    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "@ijstech/*base/@ijstech/components";
-    import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
+declare module "packages/modal/src/modal" {
+    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
     export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop';
     type eventCallback = (target: Control) => void;
     type ModalPositionType = "fixed" | "absolute";
@@ -7411,11 +8208,11 @@ declare module "@ijstech/*modal/src/modal" {
         static create(options?: ModalElement, parent?: Container): Promise<Modal>;
     }
 }
-declare module "@ijstech/*modal/@ijstech/components" {
-    export { Modal, ModalElement, modalPopupPlacementType } from "@ijstech/*modal/src/modal";
+declare module "packages/modal/src/index" {
+    export { Modal, ModalElement, modalPopupPlacementType } from "packages/modal/src/modal";
 }
-declare module "@ijstech/*layout/src/style/panel.css" {
-    import { IGridLayoutMediaQuery, IStackMediaQuery, StackDirectionType } from "@ijstech/*layout/@ijstech/components";
+declare module "packages/layout/src/style/panel.css" {
+    import { IGridLayoutMediaQuery, IStackMediaQuery, StackDirectionType } from "packages/layout/src/index";
     export const panelStyle: string;
     export const overflowStyle: string;
     export const vStackStyle: string;
@@ -7437,8 +8234,8 @@ declare module "@ijstech/*layout/src/style/panel.css" {
     export const getSpacingValue: (value: string | number) => string;
     export const getGridLayoutMediaQueriesStyleClass: (mediaQueries: IGridLayoutMediaQuery[]) => string;
 }
-declare module "@ijstech/*layout/src/stack" {
-    import { Container, ContainerElement, IMediaQuery, IBackground, ISpace, PositionType } from "@ijstech/*base/@ijstech/components";
+declare module "packages/layout/src/stack" {
+    import { Container, ContainerElement, IMediaQuery, IBackground, ISpace, PositionType } from "packages/base/src/index";
     export interface IStackMediaQueryProps {
         direction?: StackDirectionType;
         width?: number | string;
@@ -7550,8 +8347,8 @@ declare module "@ijstech/*layout/src/stack" {
         static create(options?: VStackElement, parent?: Container): Promise<VStack>;
     }
 }
-declare module "@ijstech/*layout/src/panel" {
-    import { Control, Container, ContainerElement } from "@ijstech/*base/@ijstech/components";
+declare module "packages/layout/src/panel" {
+    import { Control, Container, ContainerElement } from "packages/base/src/index";
     export interface PanelElement extends ContainerElement {
     }
     global {
@@ -7568,8 +8365,8 @@ declare module "@ijstech/*layout/src/panel" {
         static create(options?: PanelElement, parent?: Control): Promise<Panel>;
     }
 }
-declare module "@ijstech/*layout/src/grid" {
-    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, ISpace } from "@ijstech/*base/@ijstech/components";
+declare module "packages/layout/src/grid" {
+    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, ISpace } from "packages/base/src/index";
     export interface IGap {
         row?: string | number;
         column?: string | number;
@@ -7651,9 +8448,9 @@ declare module "@ijstech/*layout/src/grid" {
         }
     }
 }
-declare module "@ijstech/*layout/src/card" {
-    import { Container } from "@ijstech/*base/@ijstech/components";
-    import { GridLayout, GridLayoutElement } from "@ijstech/*layout/src/grid";
+declare module "packages/layout/src/card" {
+    import { Container } from "packages/base/src/index";
+    import { GridLayout, GridLayoutElement } from "packages/layout/src/grid";
     export interface CardLayoutElement extends GridLayoutElement {
         cardMinWidth?: number | string;
         cardHeight?: number | string;
@@ -7681,21 +8478,21 @@ declare module "@ijstech/*layout/src/card" {
         }
     }
 }
-declare module "@ijstech/*layout/@ijstech/components" {
-    export { StackDirectionType, StackLayout, VStack, VStackElement, HStack, HStackElement, IStackMediaQuery } from "@ijstech/*layout/src/stack";
-    export { Panel, PanelElement } from "@ijstech/*layout/src/panel";
-    export { CardLayout, CardLayoutElement } from "@ijstech/*layout/src/card";
-    export { IGridLayoutMediaQuery, GridLayout, GridLayoutElement } from "@ijstech/*layout/src/grid";
+declare module "packages/layout/src/index" {
+    export { StackDirectionType, StackLayout, VStack, VStackElement, HStack, HStackElement, IStackMediaQuery } from "packages/layout/src/stack";
+    export { Panel, PanelElement } from "packages/layout/src/panel";
+    export { CardLayout, CardLayoutElement } from "packages/layout/src/card";
+    export { IGridLayoutMediaQuery, GridLayout, GridLayoutElement } from "packages/layout/src/grid";
 }
-declare module "@ijstech/*menu/src/style/menu.css" {
+declare module "packages/menu/src/style/menu.css" {
     export const menuStyle: string;
     export const meunItemStyle: string;
     export const modalStyle: string;
 }
-declare module "@ijstech/*menu/src/menu" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Link, LinkElement } from "@ijstech/*link/@ijstech/components";
-    import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
+declare module "packages/menu/src/menu" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Link, LinkElement } from "packages/link/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
     export type MenuMode = "horizontal" | "vertical" | "inline";
     interface MenuItemElement extends IMenuItem {
         level?: number;
@@ -7787,15 +8584,15 @@ declare module "@ijstech/*menu/src/menu" {
         static create(options?: MenuItemElement, parent?: Control): Promise<MenuItem>;
     }
 }
-declare module "@ijstech/*menu/@ijstech/components" {
-    export { Menu, IMenuItem, MenuElement } from "@ijstech/*menu/src/menu";
+declare module "packages/menu/src/index" {
+    export { Menu, IMenuItem, MenuElement } from "packages/menu/src/menu";
 }
-declare module "@ijstech/*label/src/style/label.css" {
+declare module "packages/label/src/style/label.css" {
     export const captionStyle: string;
 }
-declare module "@ijstech/*label/src/label" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Link, LinkElement } from "@ijstech/*link/@ijstech/components";
+declare module "packages/label/src/label" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Link, LinkElement } from "packages/link/src/index";
     type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
     type OverflowWrapType = 'normal' | 'break-word' | 'anywhere' | 'inherit' | 'initial' | 'revert' | 'unset';
     export interface LabelElement extends ControlElement {
@@ -7829,15 +8626,15 @@ declare module "@ijstech/*label/src/label" {
         static create(options?: LabelElement, parent?: Control): Promise<Label>;
     }
 }
-declare module "@ijstech/*label/@ijstech/components" {
-    export { Label, LabelElement } from "@ijstech/*label/src/label";
+declare module "packages/label/src/index" {
+    export { Label, LabelElement } from "packages/label/src/label";
 }
-declare module "@ijstech/*tree-view/src/style/treeView.css" { }
-declare module "@ijstech/*tree-view/src/treeView" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Icon, IconElement } from "@ijstech/*icon/@ijstech/components";
-    import { Button, ButtonElement } from "@ijstech/*button/@ijstech/components";
-    import "@ijstech/*tree-view/src/style/treeView.css";
+declare module "packages/tree-view/src/style/treeView.css" { }
+declare module "packages/tree-view/src/treeView" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import { Button, ButtonElement } from "packages/button/src/index";
+    import "packages/tree-view/src/style/treeView.css";
     type activedChangeCallback = (target: TreeView, prevNode?: TreeNode, event?: Event) => void;
     type changeCallback = (target: TreeView, node: TreeNode, oldValue: string, newValue: string) => void;
     type renderCallback = (target: TreeView, node: TreeNode) => void;
@@ -7968,13 +8765,13 @@ declare module "@ijstech/*tree-view/src/treeView" {
         static create(options?: TreeNodeElement, parent?: Control): Promise<TreeNode>;
     }
 }
-declare module "@ijstech/*tree-view/@ijstech/components" {
-    export { TreeView, TreeViewElement, TreeNode, TreeNodeElement } from "@ijstech/*tree-view/src/treeView";
+declare module "packages/tree-view/src/index" {
+    export { TreeView, TreeViewElement, TreeNode, TreeNodeElement } from "packages/tree-view/src/treeView";
 }
-declare module "@ijstech/*switch/src/style/switch.css" { }
-declare module "@ijstech/*switch/src/switch" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*switch/src/style/switch.css";
+declare module "packages/switch/src/style/switch.css" { }
+declare module "packages/switch/src/switch" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import "packages/switch/src/style/switch.css";
     export interface SwitchElement extends ControlElement {
         checkedThumbColor?: string;
         uncheckedThumbColor?: string;
@@ -8036,11 +8833,11 @@ declare module "@ijstech/*switch/src/switch" {
         static create(options?: SwitchElement, parent?: Control): Promise<Switch>;
     }
 }
-declare module "@ijstech/*switch/@ijstech/components" {
-    export { Switch, SwitchElement } from "@ijstech/*switch/src/switch";
+declare module "packages/switch/src/index" {
+    export { Switch, SwitchElement } from "packages/switch/src/switch";
 }
-declare module "@ijstech/*chart/src/chart" {
-    import { Control } from "@ijstech/*base/@ijstech/components";
+declare module "packages/chart/src/chart" {
+    import { Control } from "packages/base/src/index";
     export class Chart<T> extends Control {
         private _data;
         private _timeCreated;
@@ -8056,9 +8853,9 @@ declare module "@ijstech/*chart/src/chart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/src/lineChart" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Chart } from "@ijstech/*chart/src/chart";
+declare module "packages/chart/src/lineChart" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Chart } from "packages/chart/src/chart";
     export interface LineEchartElement extends ControlElement {
         data?: any;
     }
@@ -8074,9 +8871,9 @@ declare module "@ijstech/*chart/src/lineChart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/src/barChart" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Chart } from "@ijstech/*chart/src/chart";
+declare module "packages/chart/src/barChart" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Chart } from "packages/chart/src/chart";
     export interface IBarChartAxisTick {
         show?: boolean;
     }
@@ -8145,9 +8942,9 @@ declare module "@ijstech/*chart/src/barChart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/src/barStackChart" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Chart } from "@ijstech/*chart/src/chart";
+declare module "packages/chart/src/barStackChart" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Chart } from "packages/chart/src/chart";
     export interface BarEchartElement extends ControlElement {
         data?: any;
     }
@@ -8163,9 +8960,9 @@ declare module "@ijstech/*chart/src/barStackChart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/src/pieChart" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Chart } from "@ijstech/*chart/src/chart";
+declare module "packages/chart/src/pieChart" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Chart } from "packages/chart/src/chart";
     export interface IPieChartTooltip {
         trigger?: string;
         formatter?: string;
@@ -8195,9 +8992,9 @@ declare module "@ijstech/*chart/src/pieChart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/src/scatterChart" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Chart } from "@ijstech/*chart/src/chart";
+declare module "packages/chart/src/scatterChart" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Chart } from "packages/chart/src/chart";
     export interface ScatterChartElement extends ControlElement {
         data?: any;
     }
@@ -8213,9 +9010,9 @@ declare module "@ijstech/*chart/src/scatterChart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/src/scatterLineChart" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { Chart } from "@ijstech/*chart/src/chart";
+declare module "packages/chart/src/scatterLineChart" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Chart } from "packages/chart/src/chart";
     export interface ScatterLineChartElement extends ControlElement {
         data?: any;
     }
@@ -8231,19 +9028,19 @@ declare module "@ijstech/*chart/src/scatterLineChart" {
         protected init(): void;
     }
 }
-declare module "@ijstech/*chart/@ijstech/components" {
-    export { Chart } from "@ijstech/*chart/src/chart";
-    export { LineChart } from "@ijstech/*chart/src/lineChart";
-    export { BarChart } from "@ijstech/*chart/src/barChart";
-    export { BarStackChart } from "@ijstech/*chart/src/barStackChart";
-    export { PieChart } from "@ijstech/*chart/src/pieChart";
-    export { ScatterChart } from "@ijstech/*chart/src/scatterChart";
-    export { ScatterLineChart } from "@ijstech/*chart/src/scatterLineChart";
+declare module "packages/chart/src/index" {
+    export { Chart } from "packages/chart/src/chart";
+    export { LineChart } from "packages/chart/src/lineChart";
+    export { BarChart } from "packages/chart/src/barChart";
+    export { BarStackChart } from "packages/chart/src/barStackChart";
+    export { PieChart } from "packages/chart/src/pieChart";
+    export { ScatterChart } from "packages/chart/src/scatterChart";
+    export { ScatterLineChart } from "packages/chart/src/scatterLineChart";
 }
-declare module "@ijstech/*upload/src/style/upload.css" { }
-declare module "@ijstech/*upload/src/upload" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*upload/src/style/upload.css";
+declare module "packages/upload/src/style/upload.css" { }
+declare module "packages/upload/src/upload" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/upload/src/style/upload.css";
     type changedCallback = (target: Upload, files: File[]) => void;
     type removedCallback = (target: Upload, file: File) => void;
     type uploadingCallback = (target: Upload, file: File) => Promise<boolean>;
@@ -8330,11 +9127,11 @@ declare module "@ijstech/*upload/src/upload" {
         static create(options?: UploadElement, parent?: Control): Promise<Upload>;
     }
 }
-declare module "@ijstech/*upload/@ijstech/components" {
-    export { Upload, UploadElement } from "@ijstech/*upload/src/upload";
+declare module "packages/upload/src/index" {
+    export { Upload, UploadElement } from "packages/upload/src/upload";
 }
-declare module "@ijstech/*iframe/src/iframe" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
+declare module "packages/iframe/src/iframe" {
+    import { Control, ControlElement } from "packages/base/src/index";
     export interface IframeElement extends ControlElement {
         url?: string;
     }
@@ -8356,13 +9153,13 @@ declare module "@ijstech/*iframe/src/iframe" {
         static create(options?: IframeElement, parent?: Control): Promise<Iframe>;
     }
 }
-declare module "@ijstech/*iframe/@ijstech/components" {
-    export { Iframe, IframeElement } from "@ijstech/*iframe/src/iframe";
+declare module "packages/iframe/src/index" {
+    export { Iframe, IframeElement } from "packages/iframe/src/iframe";
 }
-declare module "@ijstech/*pagination/src/style/pagination.css" { }
-declare module "@ijstech/*pagination/src/pagination" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*pagination/src/style/pagination.css";
+declare module "packages/pagination/src/style/pagination.css" { }
+declare module "packages/pagination/src/pagination" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/pagination/src/style/pagination.css";
     type notifyCallback = (target: Pagination, lastActivePage: number) => void;
     export interface PaginationElement extends ControlElement {
         totalPages?: number;
@@ -8414,13 +9211,13 @@ declare module "@ijstech/*pagination/src/pagination" {
         static create(options?: PaginationElement, parent?: Control): Promise<Pagination>;
     }
 }
-declare module "@ijstech/*pagination/@ijstech/components" {
-    export { Pagination, PaginationElement } from "@ijstech/*pagination/src/pagination";
+declare module "packages/pagination/src/index" {
+    export { Pagination, PaginationElement } from "packages/pagination/src/pagination";
 }
-declare module "@ijstech/*progress/src/style/progress.css" { }
-declare module "@ijstech/*progress/src/progress" {
-    import { Control, ControlElement, Types, IFont } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*progress/src/style/progress.css";
+declare module "packages/progress/src/style/progress.css" { }
+declare module "packages/progress/src/progress" {
+    import { Control, ControlElement, Types, IFont } from "packages/base/src/index";
+    import "packages/progress/src/style/progress.css";
     export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
     export type ProgressType = 'line' | 'circle';
     type callbackType = (source: Control) => void;
@@ -8492,17 +9289,17 @@ declare module "@ijstech/*progress/src/progress" {
         static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
     }
 }
-declare module "@ijstech/*progress/@ijstech/components" {
-    export { Progress } from "@ijstech/*progress/src/progress";
+declare module "packages/progress/src/index" {
+    export { Progress } from "packages/progress/src/progress";
 }
-declare module "@ijstech/*table/src/style/table.css" {
-    import { TableColumnElement } from "@ijstech/*table/src/tableColumn";
-    import { ITableMediaQuery } from "@ijstech/*table/src/table";
+declare module "packages/table/src/style/table.css" {
+    import { TableColumnElement } from "packages/table/src/tableColumn";
+    import { ITableMediaQuery } from "packages/table/src/table";
     export const tableStyle: string;
     export const getTableMediaQueriesStyleClass: (columns: TableColumnElement[], mediaQueries: ITableMediaQuery[]) => string;
 }
-declare module "@ijstech/*table/src/tableCell" {
-    import "@ijstech/*table/src/style/table.css";
+declare module "packages/table/src/tableCell" {
+    import "packages/table/src/style/table.css";
     export interface ITableCell {
         rowSpan: number;
         columnSpan: number;
@@ -8521,10 +9318,10 @@ declare module "@ijstech/*table/src/tableCell" {
         set value(data: string);
     }
 }
-declare module "@ijstech/*table/src/tableColumn" {
-    import { Control, ControlElement } from "@ijstech/*base/@ijstech/components";
-    import { TableCell } from "@ijstech/*table/src/tableCell";
-    import "@ijstech/*table/src/style/table.css";
+declare module "packages/table/src/tableColumn" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { TableCell } from "packages/table/src/tableCell";
+    import "packages/table/src/style/table.css";
     export type SortDirection = 'asc' | 'desc' | 'none';
     type renderCallback = (target: TableColumn, columnData: any, rowData: any, rowIndex?: number, cell?: TableCell) => any;
     type TextAlign = 'left' | 'right' | 'center';
@@ -8569,8 +9366,8 @@ declare module "@ijstech/*table/src/tableColumn" {
         init(): void;
     }
 }
-declare module "@ijstech/*table/src/utils" {
-    import { TableColumnElement } from "@ijstech/*table/src/tableColumn";
+declare module "packages/table/src/utils" {
+    import { TableColumnElement } from "packages/table/src/tableColumn";
     export const paginate: <Type>(array: Type[], pageSize: number, pageNumber: number) => Type[];
     export const getColumnIndex: (columns: TableColumnElement[], key: string) => number;
     export const getColumnKey: (columns: TableColumnElement[], columnIdx: number) => string;
@@ -8579,9 +9376,9 @@ declare module "@ijstech/*table/src/utils" {
     export const orderBy: (list: any, sortConfig: any, columns: TableColumnElement[]) => any;
     export const filterBy: (list: any[], value: any, columnKey: string | number) => any[];
 }
-declare module "@ijstech/*table/src/tableRow" {
-    import "@ijstech/*table/src/style/table.css";
-    import { TableCell } from "@ijstech/*table/src/tableCell";
+declare module "packages/table/src/tableRow" {
+    import "packages/table/src/style/table.css";
+    import { TableCell } from "packages/table/src/tableCell";
     export class TableRow {
         private _cells;
         constructor(cells: TableCell[]);
@@ -8589,12 +9386,12 @@ declare module "@ijstech/*table/src/tableRow" {
         set cells(value: TableCell[]);
     }
 }
-declare module "@ijstech/*table/src/table" {
-    import { Control, ControlElement, IMediaQuery } from "@ijstech/*base/@ijstech/components";
-    import { TableColumnElement } from "@ijstech/*table/src/tableColumn";
-    import { Pagination } from "@ijstech/*pagination/@ijstech/components";
-    import { TableRow } from "@ijstech/*table/src/tableRow";
-    import { Icon } from "@ijstech/*icon/@ijstech/components";
+declare module "packages/table/src/table" {
+    import { Control, ControlElement, IMediaQuery } from "packages/base/src/index";
+    import { TableColumnElement } from "packages/table/src/tableColumn";
+    import { Pagination } from "packages/pagination/src/index";
+    import { TableRow } from "packages/table/src/tableRow";
+    import { Icon } from "packages/icon/src/index";
     type cellClickCallback = (target: Table, rowIndex: number, columnIdx: number, record: any) => void;
     type emptyCallback = (target: Table) => void;
     type sortCallback = (target: Table, key: string, value: string) => void;
@@ -8679,16 +9476,16 @@ declare module "@ijstech/*table/src/table" {
         static create(options?: TableElement, parent?: Control): Promise<Table>;
     }
 }
-declare module "@ijstech/*table/@ijstech/components" {
-    export { Table, TableElement } from "@ijstech/*table/src/table";
-    export { TableColumn } from "@ijstech/*table/src/tableColumn";
-    export { TableRow } from "@ijstech/*table/src/tableRow";
-    export { TableCell } from "@ijstech/*table/src/tableCell";
+declare module "packages/table/src/index" {
+    export { Table, TableElement } from "packages/table/src/table";
+    export { TableColumn } from "packages/table/src/tableColumn";
+    export { TableRow } from "packages/table/src/tableRow";
+    export { TableCell } from "packages/table/src/tableCell";
 }
-declare module "@ijstech/*carousel/src/style/carousel.css" { }
-declare module "@ijstech/*carousel/src/carousel" {
-    import { Control, ControlElement, ContainerElement } from "@ijstech/*base/@ijstech/components";
-    import "@ijstech/*carousel/src/style/carousel.css";
+declare module "packages/carousel/src/style/carousel.css" { }
+declare module "packages/carousel/src/carousel" {
+    import { Control, ControlElement, ContainerElement } from "packages/base/src/index";
+    import "packages/carousel/src/style/carousel.css";
     export interface CarouselItemElement extends ContainerElement {
         name?: string;
     }
@@ -8743,10 +9540,10 @@ declare module "@ijstech/*carousel/src/carousel" {
         static create(options?: CarouselSliderElement, parent?: Control): Promise<CarouselSlider>;
     }
 }
-declare module "@ijstech/*carousel/@ijstech/components" {
-    export { CarouselSlider } from "@ijstech/*carousel/src/carousel";
+declare module "packages/carousel/src/index" {
+    export { CarouselSlider } from "packages/carousel/src/carousel";
 }
-declare module "@ijstech/*ipfs/@ijstech/components" {
+declare module "packages/ipfs/src/index" {
     export interface ICidInfo {
         cid: string;
         links?: ICidInfo[];
@@ -8766,75 +9563,40 @@ declare module "@ijstech/*ipfs/@ijstech/components" {
         bytes: Uint8Array;
     };
     export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
-    export function hashContent(content: string | Buffer, version?: number): Promise<string>;
+    export function hashContent(content: string, version?: number): Promise<string>;
 }
 declare module "@ijstech/components" {
-    export * as Styles from "@ijstech/*style/@ijstech/components";
-    export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "@ijstech/*base/@ijstech/components";
-    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem } from "@ijstech/*application/@ijstech/components";
-    export { Button } from "@ijstech/*button/@ijstech/components";
-    export { CodeEditor, LanguageType, CodeDiffEditor } from "@ijstech/*code-editor/@ijstech/components";
-    export { ComboBox, IComboItem } from "@ijstech/*combo-box/@ijstech/components";
-    export { Input } from "@ijstech/*input/@ijstech/components";
-    export { Icon, IconName } from "@ijstech/*icon/@ijstech/components";
-    export { Image } from "@ijstech/*image/@ijstech/components";
-    export { Markdown } from "@ijstech/*markdown/@ijstech/components";
-    export { MarkdownEditor } from "@ijstech/*markdown-editor/@ijstech/components";
-    export { Menu, IMenuItem } from "@ijstech/*menu/@ijstech/components";
-    export { Module } from "@ijstech/*module/@ijstech/components";
-    export { Label } from "@ijstech/*label/@ijstech/components";
-    export { Tooltip } from "@ijstech/*tooltip/@ijstech/components";
-    export { TreeView, TreeNode } from "@ijstech/*tree-view/@ijstech/components";
-    export { Switch } from "@ijstech/*switch/@ijstech/components";
-    export { Modal } from "@ijstech/*modal/@ijstech/components";
-    export { Checkbox } from "@ijstech/*checkbox/@ijstech/components";
-    export { Datepicker } from "@ijstech/*datepicker/@ijstech/components";
-    export { LineChart, BarChart, PieChart, ScatterChart, ScatterLineChart } from "@ijstech/*chart/@ijstech/components";
-    export { Upload } from "@ijstech/*upload/@ijstech/components";
-    export { Tabs, Tab } from "@ijstech/*tab/@ijstech/components";
-    export { Iframe } from "@ijstech/*iframe/@ijstech/components";
-    export { Range } from "@ijstech/*range/@ijstech/components";
-    export { Radio, RadioGroup } from "@ijstech/*radio/@ijstech/components";
-    export { Panel, VStack, HStack, CardLayout, GridLayout } from "@ijstech/*layout/@ijstech/components";
-    export { Pagination } from "@ijstech/*pagination/@ijstech/components";
-    export { Progress } from "@ijstech/*progress/@ijstech/components";
-    export { Link } from "@ijstech/*link/@ijstech/components";
-    export { Table, TableColumn, TableCell } from "@ijstech/*table/@ijstech/components";
-    export { CarouselSlider } from "@ijstech/*carousel/@ijstech/components";
-    export * as IPFS from "@ijstech/*ipfs/@ijstech/components";
-}
-declare module "src/launcher" {
-    export * as Styles from "@ijstech/*style/@ijstech/components";
-    export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "@ijstech/*base/@ijstech/components";
-    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem } from "@ijstech/*application/@ijstech/components";
-    export { Button } from "@ijstech/*button/@ijstech/components";
-    export { CodeEditor, CodeDiffEditor } from "@ijstech/*code-editor/@ijstech/components";
-    export { ComboBox, IComboItem } from "@ijstech/*combo-box/@ijstech/components";
-    export { Input } from "@ijstech/*input/@ijstech/components";
-    export { Icon, IconName } from "@ijstech/*icon/@ijstech/components";
-    export { Image } from "@ijstech/*image/@ijstech/components";
-    export { Markdown } from "@ijstech/*markdown/@ijstech/components";
-    export { MarkdownEditor } from "@ijstech/*markdown-editor/@ijstech/components";
-    export { Menu, IMenuItem } from "@ijstech/*menu/@ijstech/components";
-    export { Module } from "@ijstech/*module/@ijstech/components";
-    export { Label } from "@ijstech/*label/@ijstech/components";
-    export { Tooltip } from "@ijstech/*tooltip/@ijstech/components";
-    export { TreeView, TreeNode } from "@ijstech/*tree-view/@ijstech/components";
-    export { Switch } from "@ijstech/*switch/@ijstech/components";
-    export { Modal } from "@ijstech/*modal/@ijstech/components";
-    export { Checkbox } from "@ijstech/*checkbox/@ijstech/components";
-    export { Datepicker } from "@ijstech/*datepicker/@ijstech/components";
-    export { LineChart, BarChart, PieChart, ScatterChart, ScatterLineChart } from "@ijstech/*chart/@ijstech/components";
-    export { Upload } from "@ijstech/*upload/@ijstech/components";
-    export { Tabs, Tab } from "@ijstech/*tab/@ijstech/components";
-    export { Iframe } from "@ijstech/*iframe/@ijstech/components";
-    export { Range } from "@ijstech/*range/@ijstech/components";
-    export { Radio, RadioGroup } from "@ijstech/*radio/@ijstech/components";
-    export { Panel, VStack, HStack, CardLayout, GridLayout } from "@ijstech/*layout/@ijstech/components";
-    export { Pagination } from "@ijstech/*pagination/@ijstech/components";
-    export { Progress } from "@ijstech/*progress/@ijstech/components";
-    export { Link } from "@ijstech/*link/@ijstech/components";
-    export { Table, TableColumn, TableCell } from "@ijstech/*table/@ijstech/components";
-    export { CarouselSlider } from "@ijstech/*carousel/@ijstech/components";
-    export * as IPFS from "@ijstech/*ipfs/@ijstech/components";
+    export * as Styles from "packages/style/src/index";
+    export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "packages/base/src/index";
+    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem } from "packages/application/src/index";
+    export { Button } from "packages/button/src/index";
+    export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
+    export { ComboBox, IComboItem } from "packages/combo-box/src/index";
+    export { Input } from "packages/input/src/index";
+    export { Icon, IconName } from "packages/icon/src/index";
+    export { Image } from "packages/image/src/index";
+    export { Markdown } from "packages/markdown/src/index";
+    export { MarkdownEditor } from "packages/markdown-editor/src/index";
+    export { Menu, IMenuItem } from "packages/menu/src/index";
+    export { Module } from "packages/module/src/index";
+    export { Label } from "packages/label/src/index";
+    export { Tooltip } from "packages/tooltip/src/index";
+    export { TreeView, TreeNode } from "packages/tree-view/src/index";
+    export { Switch } from "packages/switch/src/index";
+    export { Modal } from "packages/modal/src/index";
+    export { Checkbox } from "packages/checkbox/src/index";
+    export { Datepicker } from "packages/datepicker/src/index";
+    export { LineChart, BarChart, PieChart, ScatterChart, ScatterLineChart } from "packages/chart/src/index";
+    export { Upload } from "packages/upload/src/index";
+    export { Tabs, Tab } from "packages/tab/src/index";
+    export { Iframe } from "packages/iframe/src/index";
+    export { Range } from "packages/range/src/index";
+    export { Radio, RadioGroup } from "packages/radio/src/index";
+    export { Panel, VStack, HStack, CardLayout, GridLayout } from "packages/layout/src/index";
+    export { Pagination } from "packages/pagination/src/index";
+    export { Progress } from "packages/progress/src/index";
+    export { Link } from "packages/link/src/index";
+    export { Table, TableColumn, TableCell } from "packages/table/src/index";
+    export { CarouselSlider } from "packages/carousel/src/index";
+    export * as IPFS from "packages/ipfs/src/index";
 }
