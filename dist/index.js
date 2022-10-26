@@ -16271,9 +16271,7 @@ var RadioGroup = class extends Control {
     const selectedValue = this.selectedValue;
     const value = source.value;
     this._selectedValue = value;
-    const radioElm = this.querySelector("i-radio.is-checked");
-    if (radioElm && !radioElm.isSameNode(source))
-      radioElm.classList.remove("is-checked");
+    this._group.forEach((item) => item.classList.remove("is-checked"));
     source.classList.add("is-checked");
     if (this.onChanged && selectedValue !== value)
       this.onChanged(this, event);
@@ -18135,15 +18133,6 @@ var Modal = class extends Container {
         if (!this.visible)
           return;
         if (event.key === "Escape") {
-          this.visible = false;
-        }
-      });
-      document.body.addEventListener("click", (event) => {
-        var _a2;
-        if (!this.visible)
-          return;
-        const target = event.target;
-        if (!this.contains(target) && !((_a2 = this.parentElement) == null ? void 0 : _a2.contains(target)) && this.closeOnBackdropClick) {
           this.visible = false;
         }
       });
@@ -22871,6 +22860,24 @@ cssRule("i-carousel-slider", {
   margin: 0,
   padding: 0,
   $nest: {
+    ".wrapper-slider": {
+      display: "flex",
+      alignItems: "center"
+    },
+    ".wrapper-slider-list": {
+      display: "block",
+      width: "100%",
+      overflow: "hidden"
+    },
+    ".slider-arrow": {
+      width: 28,
+      height: 28,
+      fill: Theme29.colors.primary.main,
+      cursor: "pointer"
+    },
+    ".slider-arrow-hidden": {
+      visibility: "hidden"
+    },
     ".slider-list": {
       display: "flex",
       position: "relative",
@@ -22920,12 +22927,19 @@ cssRule("i-carousel-slider", {
 var CarouselSlider = class extends Control {
   constructor(parent, options) {
     super(parent, options, { activeSlide: 0 });
+    this._type = "dot";
   }
   get slidesToShow() {
     return this._slidesToShow;
   }
   set slidesToShow(value) {
     this._slidesToShow = value;
+    this.renderItems(this.items);
+    if (this.isArrow) {
+      this.renderArrows();
+    } else {
+      this.renderDotPagination();
+    }
   }
   get transitionSpeed() {
     return this._transitionSpeed;
@@ -22953,6 +22967,10 @@ var CarouselSlider = class extends Control {
   }
   set activeSlide(value) {
     var _a;
+    if (this.isArrow) {
+      this.updateSliderByArrows(value);
+      return;
+    }
     const validValue = value >= 0 && value < this.dotsElm.length ? value : 0;
     this._activeSlide = validValue;
     const currentActive = this.dotPagination.querySelector("li.--active");
@@ -22978,10 +22996,75 @@ var CarouselSlider = class extends Control {
   }
   set items(nodes) {
     this.renderItems(nodes);
-    this.renderDotPagination();
+    if (this.isArrow) {
+      this.renderArrows();
+    } else {
+      this.renderDotPagination();
+    }
     this.setAutoplay();
   }
+  get type() {
+    return this._type;
+  }
+  set type(value) {
+    this._type = value;
+    this.updateWrapperClass();
+    if (this.isArrow) {
+      this.renderArrows();
+    } else {
+      this.renderDotPagination();
+    }
+  }
+  get isArrow() {
+    return this.type === "arrow";
+  }
+  updateArrows(prev, next) {
+    if (this.arrowPrev && this.arrowNext) {
+      if (prev) {
+        this.arrowPrev.classList.remove("slider-arrow-hidden");
+      } else {
+        this.arrowPrev.classList.add("slider-arrow-hidden");
+      }
+      if (next) {
+        this.arrowNext.classList.remove("slider-arrow-hidden");
+      } else {
+        this.arrowNext.classList.add("slider-arrow-hidden");
+      }
+    }
+  }
+  updateSliderByArrows(value) {
+    var _a;
+    const lastIdx = value + this.slidesToShow;
+    const validValue = value >= 0 && lastIdx <= this._slider.length ? value : 0;
+    this.updateArrows(validValue > 0, lastIdx < this._slider.length);
+    this._activeSlide = validValue;
+    const fixedWidth = this.slidesToShow === 1 && this._slider && ((_a = this._slider[0]) == null ? void 0 : _a.offsetWidth) && this._slider[0].offsetWidth !== this.offsetWidth - 50;
+    const itemWidth = this._slider && this._slider[0] ? this._slider[0].offsetWidth : (this.offsetWidth - 50) / this.slidesToShow;
+    const tx = fixedWidth ? -this._slider[0].offsetWidth * this._activeSlide : -itemWidth * this._activeSlide;
+    this.sliderListElm.style.transform = `translateX(${tx}px)`;
+    if (this._slider && this._slider.length) {
+      const min = validValue;
+      const max = this.slidesToShow + validValue;
+      for (let i = 0; i < this._slider.length; i++) {
+        if (i >= min && i < max)
+          this._slider[i].classList.add("is-actived");
+        else
+          this._slider[i].classList.remove("is-actived");
+      }
+    }
+  }
+  updateWrapperClass() {
+    if (!this.wrapperSliderElm)
+      return;
+    if (this.isArrow) {
+      this.wrapperSliderElm.classList.add("wrapper-slider");
+    } else {
+      this.wrapperSliderElm.classList.remove("wrapper-slider");
+    }
+  }
   renderItems(items) {
+    if (!this.sliderListElm)
+      return;
     this._items = items;
     this.sliderListElm.innerHTML = "";
     if (!items)
@@ -23000,8 +23083,15 @@ var CarouselSlider = class extends Control {
     });
   }
   renderDotPagination() {
+    if (!this.dotPagination)
+      return;
     this.dotPagination.innerHTML = "";
     this.dotsElm = [];
+    if (this.isArrow) {
+      this.dotPagination.classList.add("hidden");
+      return;
+    }
+    this.dotPagination.classList.remove("hidden");
     if (this.hasChildNodes() && this.sliderListElm.childNodes.length) {
       const childLength = this.sliderListElm.childNodes.length;
       const totalDots = this.slidesToShow > 0 ? Math.ceil(childLength / this.slidesToShow) : childLength;
@@ -23019,6 +23109,22 @@ var CarouselSlider = class extends Control {
       }
     }
   }
+  renderArrows() {
+    if (!this.arrowPrev || !this.arrowNext)
+      return;
+    if (this.dotPagination) {
+      this.dotPagination.innerHTML = "";
+      this.dotPagination.classList.add("hidden");
+      this.dotsElm = [];
+    }
+    if (this.hasChildNodes() && this.sliderListElm.childNodes.length) {
+      const childLength = this.sliderListElm.childNodes.length;
+      const isArrowShown = childLength > this.slidesToShow && this.isArrow;
+      this.updateArrows(isArrowShown, isArrowShown);
+    } else {
+      this.updateArrows(false, false);
+    }
+  }
   onDotClick(index) {
     this.activeSlide = index;
   }
@@ -23026,24 +23132,42 @@ var CarouselSlider = class extends Control {
     if (this.timer) {
       clearInterval(this.timer);
     }
-    if (this.autoplay && this.dotsElm.length > 1) {
-      this.timer = setInterval(() => {
-        const index = this.activeSlide + 1 >= this.dotsElm.length ? 0 : this.activeSlide + 1;
-        this.onDotClick(index);
-      }, this.autoplaySpeed);
+    if (this.autoplay) {
+      if (!this.isArrow && this.dotsElm.length > 1) {
+        this.timer = setInterval(() => {
+          const index = this.activeSlide + 1 >= this.dotsElm.length ? 0 : this.activeSlide + 1;
+          this.onDotClick(index);
+        }, this.autoplaySpeed);
+      } else if (this.isArrow) {
+        this.timer = setInterval(() => {
+          if (this._slider && this._slider.length > this.slidesToShow) {
+            let idx = 0;
+            if (this._slider) {
+              idx = this.activeSlide + this.slidesToShow >= this._slider.length ? 0 : this.activeSlide + 1;
+            }
+            this.updateSliderByArrows(idx);
+          }
+        }, this.autoplaySpeed);
+      }
     }
   }
   prev() {
     const index = this.activeSlide - 1 < 0 ? this._slider.length - 1 : this.activeSlide - 1;
-    this.onDotClick(index);
+    this.activeSlide = index;
+    this.setAutoplay();
   }
   next() {
     const index = this.activeSlide + 1 >= this._slider.length ? 0 : this.activeSlide + 1;
-    this.onDotClick(index);
+    this.activeSlide = index;
+    this.setAutoplay();
   }
   refresh() {
     super.refresh();
     if (this._slider && this._slider.length) {
+      if (this.isArrow) {
+        this.updateSliderByArrows(this.activeSlide);
+        return;
+      }
       const fixedWidth = this.slidesToShow === 1 && this._slider[0] && this._slider[0].offsetWidth && this._slider[0].offsetWidth !== this.offsetWidth;
       const tx = fixedWidth ? -this._slider[0].offsetWidth * this._activeSlide : -this.offsetWidth * this._activeSlide;
       this.sliderListElm.style.transform = `translateX(${tx}px)`;
@@ -23051,10 +23175,24 @@ var CarouselSlider = class extends Control {
   }
   init() {
     super.init();
+    this.type = this.getAttribute("type", true, "dot");
+    this.wrapperSliderElm = this.createElement("div", this);
+    this.updateWrapperClass();
+    const wrapper = this.createElement("div", this.wrapperSliderElm);
+    wrapper.classList.add("wrapper-slider-list");
     this.slidesToShow = this.getAttribute("slidesToShow", true, 1);
-    this.sliderListElm = this.createElement("div", this);
+    this.sliderListElm = this.createElement("div", wrapper);
     this.sliderListElm.classList.add("slider-list");
     this.transitionSpeed = this.getAttribute("transitionSpeed", true, 500);
+    this.arrowPrev = new Icon(void 0, { name: "angle-left" });
+    this.arrowNext = new Icon(void 0, { name: "angle-right" });
+    this.arrowPrev.classList.add("slider-arrow");
+    this.arrowNext.classList.add("slider-arrow");
+    this.arrowPrev.onClick = () => this.prev();
+    this.arrowNext.onClick = () => this.next();
+    this.wrapperSliderElm.prepend(this.arrowPrev);
+    this.wrapperSliderElm.append(this.arrowNext);
+    this.renderArrows();
     this.dotPagination = this.createElement("ul", this);
     this.dotPagination.classList.add("dots-pagination");
     this.renderDotPagination();

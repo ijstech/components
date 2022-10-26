@@ -9496,6 +9496,7 @@ declare module "packages/carousel/src/carousel" {
         autoplaySpeed?: number;
         items?: CarouselItemElement[];
         activeSlide?: number;
+        type?: 'dot' | 'arrow';
     }
     global {
         namespace JSX {
@@ -9507,6 +9508,7 @@ declare module "packages/carousel/src/carousel" {
     export class CarouselSlider extends Control {
         private _slidesToShow;
         private _transitionSpeed;
+        private _type;
         private _autoplay;
         private _autoplaySpeed;
         private _activeSlide;
@@ -9516,6 +9518,9 @@ declare module "packages/carousel/src/carousel" {
         private sliderListElm;
         private dotPagination;
         private dotsElm;
+        private wrapperSliderElm;
+        private arrowPrev;
+        private arrowNext;
         constructor(parent?: Control, options?: any);
         get slidesToShow(): number;
         set slidesToShow(value: number);
@@ -9529,8 +9534,15 @@ declare module "packages/carousel/src/carousel" {
         set activeSlide(value: number);
         get items(): CarouselItemElement[];
         set items(nodes: CarouselItemElement[]);
+        get type(): 'dot' | 'arrow';
+        set type(value: 'dot' | 'arrow');
+        get isArrow(): boolean;
+        private updateArrows;
+        private updateSliderByArrows;
+        private updateWrapperClass;
         private renderItems;
         private renderDotPagination;
+        private renderArrows;
         private onDotClick;
         private setAutoplay;
         prev(): void;
