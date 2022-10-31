@@ -3684,6 +3684,7 @@ declare module "packages/base/src/component" {
         bold?: boolean;
         style?: FontStyle;
         transform?: TextTransform;
+        weight?: number | string;
     }
     export interface ISpace {
         top?: string | number;
@@ -9604,7 +9605,7 @@ declare module "@ijstech/components" {
     export { Iframe } from "packages/iframe/src/index";
     export { Range } from "packages/range/src/index";
     export { Radio, RadioGroup } from "packages/radio/src/index";
-    export { Panel, VStack, HStack, CardLayout, GridLayout } from "packages/layout/src/index";
+    export { Panel, VStack, HStack, CardLayout, GridLayout, StackLayout } from "packages/layout/src/index";
     export { Pagination } from "packages/pagination/src/index";
     export { Progress } from "packages/progress/src/index";
     export { Link } from "packages/link/src/index";

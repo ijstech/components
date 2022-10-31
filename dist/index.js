@@ -1865,9 +1865,9 @@ var AMDLoader;
             moduleManager.enqueueDefineAnonymousModule(dependencies, callback);
         }
     };
-    DefineFunc.amd = {
-        jQuery: true
-    };
+    // DefineFunc.amd = {
+    //     jQuery: true
+    // };
     var _requireFunc_config = function (params, shouldOverwrite) {
         if (shouldOverwrite === void 0) { shouldOverwrite = false; }
         moduleManager.configure(params, shouldOverwrite);
@@ -9915,17 +9915,17 @@ function BufferBigIntNotDefined () {
     return {cid: lastCid.toString(), size: lastSize}
   };
   // AMD
-  if (typeof define == 'function' && define.amd)
+  // if (typeof define == 'function' && define.amd)
     define('@ijstech/ipfs-utils', function () { return { parse, hashItems, hashContent, hashFile, mergeOptions }; })
   // Node.js
-  else if (typeof module != 'undefined' && module.exports)
-    module.exports = { parse, hashItems, hashContent, hashFile, mergeOptions }
-  // Browser
-  else {
-    if (!globalObject)
-      globalObject = typeof self != 'undefined' && self ? self : window;
-    globalObject.IPFSUtils = { parse, hashItems, hashContent, hashFile, mergeOptions };
-  };
+  // else if (typeof module != 'undefined' && module.exports)
+  //   module.exports = { parse, hashItems, hashContent, hashFile, mergeOptions }
+  // // Browser
+  // else {
+  //   if (!globalObject)
+  //     globalObject = typeof self != 'undefined' && self ? self : window;
+  //   globalObject.IPFSUtils = { parse, hashItems, hashContent, hashFile, mergeOptions };
+  // };
 })(this);
 define("@ijstech/components",(require, exports)=>{
 var __create = Object.create;
@@ -10004,6 +10004,7 @@ __export(exports, {
   RequireJS: () => RequireJS,
   ScatterChart: () => ScatterChart,
   ScatterLineChart: () => ScatterLineChart,
+  StackLayout: () => StackLayout,
   Styles: () => src_exports,
   Switch: () => Switch,
   Tab: () => Tab,
@@ -13380,16 +13381,17 @@ var Control = class extends Component {
       size: this.style.fontSize,
       bold: this.style.fontStyle.indexOf("bold") >= 0,
       style: this.style.fontStyle,
-      transform: this.style.textTransform
+      transform: this.style.textTransform,
+      weight: this.style.fontWeight
     };
   }
   set font(value) {
     this.style.color = value.color || "";
     this.style.fontSize = value.size || "";
-    this.style.fontWeight = value.bold ? "bold" : "";
     this.style.fontFamily = value.name || "";
     this.style.fontStyle = value.style || "";
     this.style.textTransform = value.transform || "none";
+    this.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
   }
   get display() {
     return this._display;
@@ -14000,8 +14002,8 @@ var Application = class {
         modulePath = modulePath.replace("{LIB}/", LibPath);
       else
         modulePath = modulePath.replace("{LIB}/", LibPath + "/");
-    }
-    ;
+    } else if (modulePath == "*")
+      modulePath = "/libs/" + packageName + "/index.js";
     let script = await this.getScript(modulePath);
     if (script) {
       _currentDefineModule = null;
@@ -17446,17 +17448,18 @@ var Tab = class extends Container {
       size: this.captionElm.style.fontSize,
       bold: this.captionElm.style.fontStyle.indexOf("bold") >= 0,
       style: this.captionElm.style.fontStyle,
-      transform: this.captionElm.style.textTransform
+      transform: this.captionElm.style.textTransform,
+      weight: this.captionElm.style.fontWeight
     };
   }
   set font(value) {
     if (this.captionElm) {
       this.captionElm.style.color = value.color || "";
       this.captionElm.style.fontSize = value.size || "";
-      this.captionElm.style.fontWeight = value.bold ? "bold" : "";
       this.captionElm.style.fontFamily = value.name || "";
       this.captionElm.style.fontStyle = value.style || "";
       this.captionElm.style.textTransform = value.transform || "none";
+      this.captionElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
     }
   }
   _handleClick(event) {
@@ -22039,7 +22042,8 @@ var Progress = class extends Control {
       size: this._textElm.style.fontSize,
       bold: this._textElm.style.fontStyle.indexOf("bold") >= 0,
       style: this._textElm.style.fontStyle,
-      transform: this._textElm.style.textTransform
+      transform: this._textElm.style.textTransform,
+      weight: this._textElm.style.fontWeight
     };
   }
   set font(value) {
@@ -22050,6 +22054,7 @@ var Progress = class extends Control {
       this._textElm.style.fontFamily = value.name || "";
       this._textElm.style.fontStyle = value.style || "";
       this._textElm.style.textTransform = value.transform || "none";
+      this._textElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
     }
   }
   get relativeStrokeWidth() {
