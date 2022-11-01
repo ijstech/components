@@ -10022,6 +10022,7 @@ __export(exports, {
   customElements: () => customElements2,
   customModule: () => customModule,
   isObservable: () => isObservable,
+  moment: () => moment,
   observable: () => observable
 });
 
@@ -15596,8 +15597,8 @@ var Datepicker = class extends Control {
     });
     this._onDatePickerChange = (event) => {
       const pickerValue = this.datepickerElm.value;
-      RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
-        let _moment = this._type === "time" ? moment(pickerValue, "HH:mm") : moment(pickerValue);
+      RequireJS.require(["@moment"], (moment2) => {
+        let _moment = this._type === "time" ? moment2(pickerValue, "HH:mm") : moment2(pickerValue);
         this.updateValue(_moment);
         if (this.onChanged)
           this.onChanged(this, event);
@@ -15644,9 +15645,9 @@ var Datepicker = class extends Control {
         return;
       }
       ;
-      RequireJS.require([`${LibPath}lib/moment/2.29.1/moment.js`], (moment) => {
-        const temp = moment(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
-        const _moment = moment(temp, this.datepickerFormat, true);
+      RequireJS.require(["@moment"], (moment2) => {
+        const temp = moment2(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
+        const _moment = moment2(temp, this.datepickerFormat, true);
         this.updateValue(_moment, event);
       });
     };
@@ -15776,6 +15777,11 @@ var Datepicker = class extends Control {
   }
   init() {
     if (!this.captionSpanElm) {
+      RequireJS.config({
+        paths: {
+          "@moment": `${LibPath}lib/moment/2.29.1/moment.js`
+        }
+      });
       this.callback = this.getAttribute("parentCallback", true);
       this.dateTimeFormat = this.getAttribute("dateTimeFormat", true, "");
       this._type = this.getAttribute("type", true, "date");
@@ -23277,6 +23283,17 @@ async function hashContent(content, version) {
     result = await import_ipfs_utils.default.hashFile(content, version);
   return result.cid;
 }
+
+// packages/moment/src/index.ts
+RequireJS.config({
+  paths: {
+    "@moment": `${LibPath}lib/moment/2.29.1/moment.js`
+  }
+});
+var moment;
+RequireJS.require(["@moment"], (_moment) => {
+  moment = _moment;
+});
 /*!-----------------------------------------------------------
 * Copyright (c) IJS Technologies. All rights reserved.
 * Released under dual AGPLv3/commercial license

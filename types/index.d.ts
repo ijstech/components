@@ -9578,6 +9578,11 @@ declare module "packages/ipfs/src/index" {
     export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
     export function hashContent(content: string, version?: number): Promise<string>;
 }
+declare module "packages/moment/src/index" {
+    import Moment from 'moment';
+    var moment: typeof Moment;
+    export { moment };
+}
 declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "packages/base/src/index";
@@ -9612,4 +9617,5 @@ declare module "@ijstech/components" {
     export { Table, TableColumn, TableCell } from "packages/table/src/index";
     export { CarouselSlider } from "packages/carousel/src/index";
     export * as IPFS from "packages/ipfs/src/index";
+    export { moment } from "packages/moment/src/index";
 }
