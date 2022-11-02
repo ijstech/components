@@ -19908,14 +19908,15 @@ var Application = class {
       modulePath += options.modules[module2].path;
       if (!modulePath.endsWith(".js"))
         modulePath += "/index.js";
-    }
-    ;
+    } else if (options && options.dependencies && options.dependencies[module2])
+      modulePath = `libs/${module2}/index.js`;
     let elmId = this.modulesId[modulePath];
     if (elmId && modulePath)
       return document.createElement(elmId);
     if (options && options.dependencies) {
       for (let p in options.dependencies) {
-        await this.loadPackage(p, options.dependencies[p]);
+        if (p != options.main)
+          await this.loadPackage(p, options.dependencies[p]);
       }
     }
     ;

@@ -4283,6 +4283,7 @@ declare module "packages/application/src/index" {
     import { GlobalEvents } from "packages/application/src/globalEvent";
     export interface IHasDependencies {
         rootDir?: string;
+        main?: string;
         moduleDir?: string;
         dependencies?: {
             [name: string]: string;
