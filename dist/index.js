@@ -14062,7 +14062,7 @@ var Application = class {
     let modulePath = module2;
     if (options) {
       if (!this._assets && options.assets)
-        this._assets = await this.loadPackage(options.assets, null, options) || {};
+        this._assets = await this.loadPackage(options.assets, "", options) || {};
       if (options.modules && options.modules[module2] && options.modules[module2].path) {
         modulePath = "/";
         if (options.rootDir)
