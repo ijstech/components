@@ -13923,6 +13923,7 @@ var Application = class {
     this.scripts = {};
     this.id = 0;
     this.LibHost = "";
+    this.packages = {};
     this.globalEvents = new GlobalEvents();
   }
   get EventBus() {
@@ -13930,6 +13931,21 @@ var Application = class {
   }
   static get Instance() {
     return this._instance || (this._instance = new this());
+  }
+  assets(name) {
+    if (this._assets) {
+      let items = name.split("/");
+      let value = this._assets;
+      let item = items.shift();
+      ;
+      while (value && item) {
+        value = value[item];
+        item = items.shift();
+      }
+      ;
+      return value;
+    }
+    ;
   }
   async verifyScript(modulePath, script) {
     return true;
@@ -13996,15 +14012,28 @@ var Application = class {
     return result;
   }
   async loadPackage(packageName, modulePath, options) {
-    if (RequireJS.defined(packageName))
-      return true;
-    if (modulePath.startsWith("{LIB}/")) {
-      if (LibPath.endsWith("/"))
-        modulePath = modulePath.replace("{LIB}/", LibPath);
+    var _a, _b;
+    if (RequireJS.defined(packageName)) {
+      if (!this.packages[packageName]) {
+        let m = window["require"](packageName);
+        if (m)
+          this.packages[packageName] = m.default || m;
+      }
+      return this.packages[packageName];
+    }
+    ;
+    let libPath = LibPath || "";
+    if (LibPath && !LibPath.endsWith("/"))
+      libPath = libPath + "/";
+    if (!modulePath) {
+      if ((_a = options == null ? void 0 : options.modules) == null ? void 0 : _a[packageName])
+        modulePath = "modules/" + ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName].path) + "/index.js";
       else
-        modulePath = modulePath.replace("{LIB}/", LibPath + "/");
+        return null;
     } else if (modulePath == "*")
-      modulePath = "/libs/" + packageName + "/index.js";
+      modulePath = "libs/" + packageName + "/index.js";
+    else if (modulePath.startsWith("{LIB}/"))
+      modulePath = modulePath.replace("{LIB}/", libPath);
     let script = await this.getScript(modulePath);
     if (script) {
       _currentDefineModule = null;
@@ -14016,10 +14045,12 @@ var Application = class {
       await import(`data:text/javascript,${encodeURIComponent(script)}`);
       this.currentModulePath = "";
       this.currentModuleDir = "";
-      return true;
+      let m = window["require"](packageName);
+      if (m)
+        return m.default || m;
     }
     ;
-    return false;
+    return null;
   }
   async loadModule(modulePath, options) {
     let module2 = await this.newModule(modulePath, options);
@@ -14029,17 +14060,22 @@ var Application = class {
   }
   async newModule(module2, options) {
     let modulePath = module2;
-    if (options && options.modules && options.modules[module2] && options.modules[module2].path) {
-      modulePath = "/";
-      if (options.rootDir)
-        modulePath += options.rootDir + "/";
-      if (options.moduleDir)
-        modulePath += options.moduleDir + "/";
-      modulePath += options.modules[module2].path;
-      if (!modulePath.endsWith(".js"))
-        modulePath += "/index.js";
-    } else if (options && options.dependencies && options.dependencies[module2])
-      modulePath = `libs/${module2}/index.js`;
+    if (options) {
+      if (!this._assets && options.assets)
+        this._assets = await this.loadPackage(options.assets, null, options) || {};
+      if (options.modules && options.modules[module2] && options.modules[module2].path) {
+        modulePath = "/";
+        if (options.rootDir)
+          modulePath += options.rootDir + "/";
+        if (options.moduleDir)
+          modulePath += options.moduleDir + "/";
+        modulePath += options.modules[module2].path;
+        if (!modulePath.endsWith(".js"))
+          modulePath += "/index.js";
+      } else if (options.dependencies && options.dependencies[module2])
+        modulePath = `libs/${module2}/index.js`;
+    }
+    ;
     let elmId = this.modulesId[modulePath];
     if (elmId && modulePath)
       return document.createElement(elmId);
