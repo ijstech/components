@@ -3745,13 +3745,16 @@ declare module "packages/base/src/component" {
     }
 }
 declare module "packages/base/src/style/base.css" {
-    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground } from "packages/base/src/index";
+    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground, IControlMediaQuery } from "packages/base/src/index";
     export const disabledStyle: string;
     export const containerStyle: string;
     export const getBorderSideStyleClass: (side: BorderStylesSideType, value: IBorderSideStyles) => string;
     export const getBorderStyleClass: (value: IBorder) => string;
     export const getOverflowStyleClass: (value: IOverflow) => string;
     export const getBackgroundStyleClass: (value: IBackground) => string;
+    export const getSpacingValue: (value: string | number) => string;
+    export const getControlMediaQueriesStyle: (mediaQueries: IControlMediaQuery[]) => any;
+    export const getControlMediaQueriesStyleClass: (mediaQueries: IControlMediaQuery[]) => string;
 }
 declare module "packages/tooltip/src/style/tooltip.css" { }
 declare module "packages/tooltip/src/tooltip" {
@@ -3919,6 +3922,14 @@ declare module "packages/base/src/control" {
         private updateValue;
         setBackgroundStyle(value?: IBackground): void;
     }
+    export interface IControlMediaQueryProps {
+        padding?: ISpace;
+        margin?: ISpace;
+        border?: IBorder;
+        visible?: boolean;
+        background?: IBackground;
+    }
+    export type IControlMediaQuery = IMediaQuery<IControlMediaQueryProps>;
     export class Control extends Component {
         protected _controls: Control[];
         protected _enabled: boolean;
@@ -3942,6 +3953,8 @@ declare module "packages/base/src/control" {
         private _tooltip;
         protected _font: IFont;
         protected _display: DisplayType;
+        private _cmediaQueries;
+        protected _mediaStyle: string;
         _container?: HTMLElement;
         tag: any;
         protected static create(options?: any, parent?: Container, defaults?: any): Promise<Control>;
@@ -4036,6 +4049,8 @@ declare module "packages/base/src/control" {
         set anchor(value: IAnchor);
         get opacity(): number | string;
         set opacity(value: number | string);
+        get mediaQueries(): any[];
+        set mediaQueries(value: any[]);
     }
     export class ContainerResizer {
         private target;
@@ -4071,12 +4086,13 @@ declare module "packages/base/src/types" {
 declare module "packages/base/src/index" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "packages/base/src/observable";
     export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground, TextTransform } from "packages/base/src/component";
-    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border } from "packages/base/src/control";
+    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border, IControlMediaQueryProps, IControlMediaQuery } from "packages/base/src/control";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground } from "packages/base/src/component";
-    import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType } from "packages/base/src/control";
+    import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType, IControlMediaQuery } from "packages/base/src/control";
     import { ITooltip } from "packages/tooltip/src/index";
     export { Control, Container };
     export * as Types from "packages/base/src/types";
+    export { getControlMediaQueriesStyle } from "packages/base/src/style/base.css";
     let LibPath: string;
     export { LibPath };
     export const RequireJS: {
@@ -4118,6 +4134,7 @@ declare module "packages/base/src/index" {
         anchor?: IAnchor;
         opacity?: number | string;
         tag?: any;
+        mediaQueries?: IControlMediaQuery[];
         onClick?: notifyEventCallback;
         onDblClick?: notifyEventCallback;
         onContextMenu?: notifyEventCallback;
@@ -7979,7 +7996,7 @@ declare module "packages/tab/src/style/tab.css" {
     export const getTabMediaQueriesStyleClass: (mediaQueries: ITabMediaQuery[]) => string;
 }
 declare module "packages/tab/src/tab" {
-    import { Control, Container, ContainerElement, IFont, IMediaQuery } from "packages/base/src/index";
+    import { Control, Container, ContainerElement, IFont, IMediaQuery, IControlMediaQueryProps } from "packages/base/src/index";
     import { Icon, IconElement } from "packages/icon/src/index";
     import "packages/tab/src/style/tab.css";
     type TabModeType = "horizontal" | "vertical";
@@ -8002,7 +8019,7 @@ declare module "packages/tab/src/tab" {
     export interface ITab extends TabElement {
         children?: Control | Container;
     }
-    export interface ITabMediaQueryProps {
+    export interface ITabMediaQueryProps extends IControlMediaQueryProps {
         mode?: TabModeType;
     }
     export type ITabMediaQuery = IMediaQuery<ITabMediaQueryProps>;
@@ -8023,7 +8040,6 @@ declare module "packages/tab/src/tab" {
         private _closable;
         private _draggable;
         private _mediaQueries;
-        private _mediaStyle;
         private accumTabIndex;
         private curDragTab;
         onChanged: TabsEventCallback;
@@ -8245,15 +8261,13 @@ declare module "packages/layout/src/style/panel.css" {
     export const getGridLayoutMediaQueriesStyleClass: (mediaQueries: IGridLayoutMediaQuery[]) => string;
 }
 declare module "packages/layout/src/stack" {
-    import { Container, ContainerElement, IMediaQuery, IBackground, ISpace, PositionType } from "packages/base/src/index";
-    export interface IStackMediaQueryProps {
+    import { Container, ContainerElement, IMediaQuery, IBackground, PositionType, IControlMediaQueryProps } from "packages/base/src/index";
+    export interface IStackMediaQueryProps extends IControlMediaQueryProps {
         direction?: StackDirectionType;
         width?: number | string;
         height?: number | string;
         gap?: number | string;
         background?: IBackground;
-        padding?: ISpace;
-        margin?: ISpace;
         justifyContent?: StackJustifyContentType;
         alignItems?: StackAlignItemsType;
         position?: PositionType;
@@ -8314,7 +8328,6 @@ declare module "packages/layout/src/stack" {
         private _justifyContent;
         private _alignItems;
         private _mediaQueries;
-        private _mediaStyle;
         constructor(parent?: Container, options?: any);
         static create(options?: StackLayoutElement, parent?: Container): Promise<StackLayout>;
         get direction(): StackDirectionType;
@@ -8376,20 +8389,18 @@ declare module "packages/layout/src/panel" {
     }
 }
 declare module "packages/layout/src/grid" {
-    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, ISpace } from "packages/base/src/index";
+    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, IControlMediaQueryProps } from "packages/base/src/index";
     export interface IGap {
         row?: string | number;
         column?: string | number;
     }
-    export interface IGridLayoutMediaQueryProps {
+    export interface IGridLayoutMediaQueryProps extends IControlMediaQueryProps {
         templateColumns?: string[];
         templateRows?: string[];
         templateAreas?: string[][];
         display?: DisplayType;
         gap?: IGap;
         background?: IBackground;
-        padding?: ISpace;
-        margin?: ISpace;
     }
     export type IGridLayoutMediaQuery = IMediaQuery<IGridLayoutMediaQueryProps>;
     export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
@@ -8420,7 +8431,6 @@ declare module "packages/layout/src/grid" {
         private _verticalAlignment;
         private _autoFillInHoles;
         private _mediaQueries;
-        private _mediaStyle;
         private _styleClassMap;
         constructor(parent?: Control, options?: any);
         static create(options?: GridLayoutElement, parent?: Container): Promise<GridLayout>;
@@ -9397,7 +9407,7 @@ declare module "packages/table/src/tableRow" {
     }
 }
 declare module "packages/table/src/table" {
-    import { Control, ControlElement, IMediaQuery } from "packages/base/src/index";
+    import { Control, ControlElement, IMediaQuery, IControlMediaQueryProps } from "packages/base/src/index";
     import { TableColumnElement } from "packages/table/src/tableColumn";
     import { Pagination } from "packages/pagination/src/index";
     import { TableRow } from "packages/table/src/tableRow";
@@ -9410,7 +9420,7 @@ declare module "packages/table/src/table" {
         rowExpandable: boolean;
         onRenderExpandIcon?: (target: Table, expand: boolean) => Icon;
     }
-    export interface ITableMediaQueryProps {
+    export interface ITableMediaQueryProps extends IControlMediaQueryProps {
         fieldNames?: string[];
         expandable?: ITableExpandable;
     }
