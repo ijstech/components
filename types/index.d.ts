@@ -1002,6 +1002,7 @@ declare module "packages/style/src/theme" {
     export const darkTheme: ITheme;
     export const ThemeVars: IThemeVariables;
     export const ColorVars: IColor;
+    export var currentTheme: ITheme;
     export function applyTheme(theme: ITheme): void;
 }
 declare module "packages/style/src/styles" {
@@ -4147,7 +4148,6 @@ declare module "packages/base/src/index" {
 }
 declare module "packages/module/src/module" {
     import { Container, ContainerElement } from "packages/base/src/index";
-    import { IHasDependencies } from "packages/application/src/index";
     export interface ModuleElement extends ContainerElement {
         caption?: string;
     }
@@ -4162,33 +4162,16 @@ declare module "packages/module/src/module" {
     export class Module extends Container {
         private $renderElms;
         private $render;
-        modules: {
-            [modulePath: string]: Module;
-        };
-        modulesMapper: Map<string, string>;
-        moduleDependenciesMapper: Map<string, IHasDependencies>;
-        currentPath: string;
-        private _currentModuleUrl;
         private modulesUrlRegex;
         static create(options?: ModuleElement, parent?: Container, defaults?: ModuleElement): Promise<Module>;
         constructor(parent?: Container, options?: any, defaults?: any);
-        protected bindOnHashChange(): void;
-        set currentModuleUrl(value: string);
-        get currentModuleUrl(): string;
-        get pathRegex(): any[];
-        protected initCustomData(options: any): void;
-        getModulePath(path: string): string;
-        locationHashChanged(): Promise<void>;
-        protected afterLocationHashChanged(): Promise<void>;
-        handleLoadModule(modulePath: string): Promise<void>;
-        protected handleLoadModuleCustom(module: Module): Promise<void>;
-        loadModule(modulePath: string): Promise<Module | null>;
-        hideModule(modulePath: string): Promise<void>;
         init(): void;
         flattenArray(arr: any[]): any;
         _render(...params: any[]): HTMLElement;
         render(): void;
         onLoad(): void;
+        onShow(options?: any): void;
+        onHide(): void;
     }
 }
 declare module "packages/module/src/index" {
