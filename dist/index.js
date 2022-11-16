@@ -22438,10 +22438,12 @@ var TableColumn = class extends Control {
     this.sortElm.style.display = "block";
   }
   async appendNode(params) {
-    if (!this.columnElm || !this.onRenderCell)
+    if (!params)
       return;
     const { tdElm, rowData, rowIndex, cell } = params;
     this.rowData = rowData;
+    if (!this.columnElm || !this.onRenderCell)
+      return;
     let node = await this.onRenderCell(this, this.data, rowData, rowIndex, cell);
     if (!node)
       return;
@@ -22587,6 +22589,9 @@ var Table = class extends Control {
   set filteredData(value) {
     this._filteredData = value;
   }
+  get hasData() {
+    return this.filteredData && this.filteredData.length;
+  }
   get sortConfig() {
     if (!this._sortConfig || !Object.keys(this._sortConfig).length)
       return [];
@@ -22697,7 +22702,7 @@ var Table = class extends Control {
   }
   _handleClick(event) {
     const target = event.target;
-    if (target) {
+    if (target && this.hasData) {
       const rowElm = target.closest(".i-table-row");
       let colElm = target.closest("i-table-column");
       if (!colElm)
@@ -22767,7 +22772,7 @@ var Table = class extends Control {
   renderBody() {
     var _a, _b;
     this.tBodyElm.innerHTML = "";
-    if (this.filteredData && this.filteredData.length) {
+    if (this.hasData) {
       const currentPage = ((_a = this.pagination) == null ? void 0 : _a.currentPage) || 1;
       const pageSize2 = ((_b = this.pagination) == null ? void 0 : _b.pageSize) || 10;
       const dataList = this.pagination ? paginate(this.filteredData, pageSize2, currentPage) : this.filteredData;
@@ -22953,6 +22958,9 @@ var CarouselSlider = class extends Control {
   constructor(parent, options) {
     super(parent, options, { activeSlide: 0 });
     this._type = "dot";
+    this.posX1 = 0;
+    this.posX2 = 0;
+    this.threshold = 30;
   }
   get slidesToShow() {
     return this._slidesToShow;
@@ -23039,9 +23047,36 @@ var CarouselSlider = class extends Control {
     } else {
       this.renderDotPagination();
     }
+    if (this.arrowPrev)
+      this.arrowPrev.visible = this.isArrow;
+    if (this.arrowNext)
+      this.arrowNext.visible = this.isArrow;
+  }
+  get swipe() {
+    return this._swipe;
+  }
+  set swipe(value) {
+    this._swipe = value;
+    if (this._swipe) {
+      this.sliderListElm.onmousedown = this.dragStartHandler;
+      this.sliderListElm.addEventListener("touchstart", this.dragStartHandler);
+      this.sliderListElm.addEventListener("touchend", this.dragEndHandler);
+      this.sliderListElm.addEventListener("touchmove", this.dragHandler);
+    } else {
+      this.sliderListElm.onmousedown = null;
+      this.sliderListElm.removeEventListener("touchstart", this.dragStartHandler);
+      this.sliderListElm.removeEventListener("touchend", this.dragEndHandler);
+      this.sliderListElm.removeEventListener("touchmove", this.dragHandler);
+    }
   }
   get isArrow() {
     return this.type === "arrow";
+  }
+  disconnectCallback() {
+    this.sliderListElm.onmousedown = null;
+    this.sliderListElm.removeEventListener("touchstart", this.dragStartHandler);
+    this.sliderListElm.removeEventListener("touchend", this.dragEndHandler);
+    this.sliderListElm.removeEventListener("touchmove", this.dragHandler);
   }
   updateArrows(prev, next) {
     if (this.arrowPrev && this.arrowNext) {
@@ -23059,6 +23094,8 @@ var CarouselSlider = class extends Control {
   }
   updateSliderByArrows(value) {
     var _a;
+    if (!this._slider)
+      return;
     const lastIdx = value + this.slidesToShow;
     const validValue = value >= 0 && lastIdx <= this._slider.length ? value : 0;
     this.updateArrows(validValue > 0, lastIdx < this._slider.length);
@@ -23177,12 +23214,18 @@ var CarouselSlider = class extends Control {
     }
   }
   prev() {
-    const index = this.activeSlide - 1 < 0 ? this._slider.length - 1 : this.activeSlide - 1;
+    const index = this.activeSlide - 1 < 0 ? this.activeSlide : this.activeSlide - 1;
     this.activeSlide = index;
     this.setAutoplay();
   }
   next() {
-    const index = this.activeSlide + 1 >= this._slider.length ? 0 : this.activeSlide + 1;
+    let index;
+    if (!this.isArrow) {
+      const total = this.slidesToShow > 0 ? Math.ceil(this._slider.length / this.slidesToShow) : this._slider.length;
+      index = this.activeSlide + 1 >= total ? this.activeSlide : this.activeSlide + 1;
+    } else {
+      index = this.activeSlide + this.slidesToShow >= this._slider.length ? this.activeSlide : this.activeSlide + 1;
+    }
     this.activeSlide = index;
     this.setAutoplay();
   }
@@ -23198,8 +23241,61 @@ var CarouselSlider = class extends Control {
       this.sliderListElm.style.transform = `translateX(${tx}px)`;
     }
   }
+  dragStartHandler(event) {
+    if (event instanceof TouchEvent) {
+      this.posX1 = event.touches[0].clientX;
+      this.posX2 = 0;
+    } else {
+      event.preventDefault();
+      this.posX1 = event.clientX;
+      this.posX2 = 0;
+      this.sliderListElm.onmouseup = this.dragEndHandler;
+      this.sliderListElm.onmouseleave = this.dragEndHandler;
+      this.sliderListElm.onmousemove = this.dragHandler;
+    }
+    this.isSwiping = false;
+    if (this.onSwipeStart)
+      this.onSwipeStart();
+  }
+  dragHandler(event) {
+    var _a, _b;
+    if (event instanceof TouchEvent) {
+      this.posX2 = this.posX1 - event.touches[0].clientX;
+    } else {
+      this.posX2 = this.posX1 - event.clientX;
+    }
+    if (this.isArrow) {
+      const fixedWidth = this.slidesToShow === 1 && this._slider && ((_a = this._slider[0]) == null ? void 0 : _a.offsetWidth) && this._slider[0].offsetWidth !== this.offsetWidth - 50;
+      const itemWidth = this._slider && this._slider[0] ? this._slider[0].offsetWidth : (this.offsetWidth - 50) / this.slidesToShow;
+      const tx = fixedWidth ? -this._slider[0].offsetWidth * this._activeSlide : -itemWidth * this._activeSlide;
+      const tx2 = Math.min(Math.abs(this.posX2), itemWidth);
+      this.sliderListElm.style.transform = `translateX(${tx - (this.posX2 > 0 ? tx2 : -tx2)}px)`;
+    } else {
+      const fixedWidth = this.slidesToShow === 1 && this._slider && ((_b = this._slider[0]) == null ? void 0 : _b.offsetWidth) && this._slider[0].offsetWidth !== this.offsetWidth;
+      const tx = fixedWidth ? -this._slider[0].offsetWidth * this._activeSlide : -this.offsetWidth * this._activeSlide;
+      this.sliderListElm.style.transform = `translateX(${tx - this.posX2}px)`;
+    }
+    this.isSwiping = Math.abs(this.posX2) > this.threshold;
+  }
+  dragEndHandler(event) {
+    if (this.posX2 < -this.threshold) {
+      this.prev();
+    } else if (this.posX2 > this.threshold) {
+      this.next();
+    } else {
+      this.refresh();
+    }
+    this.sliderListElm.onmouseup = null;
+    this.sliderListElm.onmouseleave = null;
+    this.sliderListElm.onmousemove = null;
+    if (this.onSwipeEnd)
+      this.onSwipeEnd(this.isSwiping);
+  }
   init() {
     super.init();
+    this.dragStartHandler = this.dragStartHandler.bind(this);
+    this.dragHandler = this.dragHandler.bind(this);
+    this.dragEndHandler = this.dragEndHandler.bind(this);
     this.type = this.getAttribute("type", true, "dot");
     this.wrapperSliderElm = this.createElement("div", this);
     this.updateWrapperClass();
@@ -23209,8 +23305,8 @@ var CarouselSlider = class extends Control {
     this.sliderListElm = this.createElement("div", wrapper);
     this.sliderListElm.classList.add("slider-list");
     this.transitionSpeed = this.getAttribute("transitionSpeed", true, 500);
-    this.arrowPrev = new Icon(void 0, { name: "angle-left" });
-    this.arrowNext = new Icon(void 0, { name: "angle-right" });
+    this.arrowPrev = new Icon(void 0, { name: "angle-left", visible: this.isArrow });
+    this.arrowNext = new Icon(void 0, { name: "angle-right", visible: this.isArrow });
     this.arrowPrev.classList.add("slider-arrow");
     this.arrowNext.classList.add("slider-arrow");
     this.arrowPrev.onClick = () => this.prev();
@@ -23225,6 +23321,7 @@ var CarouselSlider = class extends Control {
     this.autoplay = this.getAttribute("autoplay", true);
     this.items = this.getAttribute("items", true, []);
     this.activeSlide = this.getAttribute("activeSlide", true, 0);
+    this.swipe = this.getAttribute("swipe", true, false);
   }
   static async create(options, parent) {
     let self = new this(parent, options);

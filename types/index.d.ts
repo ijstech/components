@@ -9452,6 +9452,7 @@ declare module "packages/table/src/table" {
         set data(value: any);
         get filteredData(): any;
         set filteredData(value: any);
+        private get hasData();
         private get sortConfig();
         private sortFn;
         get columns(): TableColumnElement[];
@@ -9489,6 +9490,8 @@ declare module "packages/carousel/src/style/carousel.css" { }
 declare module "packages/carousel/src/carousel" {
     import { Control, ControlElement, ContainerElement } from "packages/base/src/index";
     import "packages/carousel/src/style/carousel.css";
+    type SwipeStartEventCallback = () => void;
+    type SwipeEndEventCallback = (isSwiping: boolean) => void;
     export interface CarouselItemElement extends ContainerElement {
         name?: string;
     }
@@ -9500,6 +9503,9 @@ declare module "packages/carousel/src/carousel" {
         items?: CarouselItemElement[];
         activeSlide?: number;
         type?: 'dot' | 'arrow';
+        swipe?: boolean;
+        onSwipeStart?: SwipeStartEventCallback;
+        onSwipeEnd?: SwipeEndEventCallback;
     }
     global {
         namespace JSX {
@@ -9524,6 +9530,13 @@ declare module "packages/carousel/src/carousel" {
         private wrapperSliderElm;
         private arrowPrev;
         private arrowNext;
+        private posX1;
+        private posX2;
+        private threshold;
+        private _swipe;
+        onSwipeStart: SwipeStartEventCallback;
+        onSwipeEnd: SwipeEndEventCallback;
+        private isSwiping;
         constructor(parent?: Control, options?: any);
         get slidesToShow(): number;
         set slidesToShow(value: number);
@@ -9539,7 +9552,10 @@ declare module "packages/carousel/src/carousel" {
         set items(nodes: CarouselItemElement[]);
         get type(): 'dot' | 'arrow';
         set type(value: 'dot' | 'arrow');
+        get swipe(): boolean;
+        set swipe(value: boolean);
         get isArrow(): boolean;
+        disconnectCallback(): void;
         private updateArrows;
         private updateSliderByArrows;
         private updateWrapperClass;
@@ -9551,6 +9567,9 @@ declare module "packages/carousel/src/carousel" {
         prev(): void;
         next(): void;
         refresh(): void;
+        dragStartHandler(event: MouseEvent | TouchEvent): void;
+        dragHandler(event: MouseEvent | TouchEvent): void;
+        dragEndHandler(event: MouseEvent | TouchEvent): void;
         protected init(): void;
         static create(options?: CarouselSliderElement, parent?: Control): Promise<CarouselSlider>;
     }
