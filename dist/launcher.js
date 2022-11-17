@@ -1940,9 +1940,7 @@ var AMDLoader;
             moduleManager.enqueueDefineAnonymousModule(dependencies, callback);
         }
     };
-    // DefineFunc.amd = {
-    //     jQuery: true
-    // };
+    DefineFunc.amd = true;
     var _requireFunc_config = function (params, shouldOverwrite) {
         if (shouldOverwrite === void 0) { shouldOverwrite = false; }
         moduleManager.configure(params, shouldOverwrite);
@@ -19903,7 +19901,7 @@ var CodeEditor = class extends Control {
       this.language = this.getAttribute("language", true);
       this.style.display = "inline-block";
       if (this.language)
-        this.loadContent("", this.language);
+        this.loadContent(void 0, this.language);
     }
     ;
   }
@@ -22798,10 +22796,11 @@ var MarkdownEditor = class extends Control {
       width: "auto"
     });
     container.appendChild(this.tabs);
-    this.mdEditor = new CodeEditor();
-    this.mdEditor.width = "100%";
-    this.mdEditor.height = "646px";
-    this.mdEditor.language = "markdown";
+    this.mdEditor = new CodeEditor(void 0, {
+      width: "100%",
+      height: "646px",
+      language: "markdown"
+    });
     this.editTab = this.tabs.add({
       caption: "Edit file",
       icon: {
@@ -22931,7 +22930,7 @@ var wrapperStyle = style({
   visibility: "hidden",
   transform: "scale(1.1)",
   transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-  zIndex: 10,
+  zIndex: 1e3,
   overflow: "auto"
 });
 var noBackdropStyle = style({
@@ -22942,7 +22941,7 @@ var noBackdropStyle = style({
   visibility: "hidden",
   transform: "scale(1.1)",
   transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-  zIndex: 10,
+  zIndex: 1e3,
   overflow: "auto",
   width: "100%",
   maxWidth: "inherit",
