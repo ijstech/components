@@ -14089,7 +14089,7 @@ var Application = class {
     return result;
   }
   async loadPackage(packageName, modulePath, options) {
-    var _a, _b;
+    var _a, _b, _c;
     if (RequireJS.defined(packageName)) {
       if (!this.packages[packageName]) {
         let m = window["require"](packageName);
@@ -14099,18 +14099,30 @@ var Application = class {
       return this.packages[packageName];
     }
     ;
-    let libPath = LibPath || "";
-    if (LibPath && !LibPath.endsWith("/"))
-      libPath = libPath + "/";
+    options = options || this._initOptions;
+    if (options && options.modules && options.modules[packageName]) {
+      let pack = options.modules[packageName];
+      for (let i = 0; i < ((_a = pack.dependencies) == null ? void 0 : _a.length); i++) {
+        let n = pack.dependencies[i];
+        if (!RequireJS.defined(n))
+          await this.loadPackage(n);
+      }
+      ;
+    }
+    ;
     if (!modulePath) {
-      if ((_a = options == null ? void 0 : options.modules) == null ? void 0 : _a[packageName])
-        modulePath = "modules/" + ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName].path) + "/index.js";
+      if ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName])
+        modulePath = "modules/" + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
       else
         return null;
-    } else if (modulePath == "*")
+    } else if (modulePath == "*") {
       modulePath = "libs/" + packageName + "/index.js";
-    else if (modulePath.startsWith("{LIB}/"))
+    } else if (modulePath.startsWith("{LIB}/")) {
+      let libPath = LibPath || "";
+      if (LibPath && !LibPath.endsWith("/"))
+        libPath = libPath + "/";
       modulePath = modulePath.replace("{LIB}/", libPath);
+    }
     let script = await this.getScript(modulePath);
     if (script) {
       _currentDefineModule = null;
@@ -14135,52 +14147,54 @@ var Application = class {
       document.body.append(module2);
     return module2;
   }
-  async newModule(module2, options) {
+  getModulePath(module2) {
+    let options = this._initOptions;
     let modulePath = module2;
-    if (options) {
-      if (!this._assets && options.assets)
-        this._assets = await this.loadPackage(options.assets, "", options) || {};
-      if (options.modules && options.modules[module2] && options.modules[module2].path) {
-        modulePath = "/";
-        if (options.rootDir)
-          modulePath += options.rootDir + "/";
-        if (options.moduleDir)
-          modulePath += options.moduleDir + "/";
-        modulePath += options.modules[module2].path;
-        if (!modulePath.endsWith(".js"))
-          modulePath += "/index.js";
-      } else if (options.dependencies && options.dependencies[module2])
-        modulePath = `libs/${module2}/index.js`;
+    if (options && options.modules && options.modules[module2] && options.modules[module2].path) {
+      modulePath = "/";
+      if (options.rootDir)
+        modulePath += options.rootDir + "/";
+      if (options.moduleDir)
+        modulePath += options.moduleDir + "/";
+      modulePath += options.modules[module2].path;
+      if (!modulePath.endsWith(".js"))
+        modulePath += "/index.js";
+    } else if (options.dependencies && options.dependencies[module2])
+      modulePath = `libs/${module2}/index.js`;
+    return modulePath;
+  }
+  async newModule(module2, options) {
+    if (!this._initOptions && options) {
+      this._initOptions = options;
+      if (!this._assets && this._initOptions.assets)
+        this._assets = await this.loadPackage(this._initOptions.assets) || {};
+      if (this._initOptions.dependencies) {
+        for (let p in this._initOptions.dependencies) {
+          if (p != this._initOptions.main)
+            await this.loadPackage(p, this._initOptions.dependencies[p]);
+        }
+        ;
+      }
+      ;
     }
     ;
+    let modulePath = module2;
+    if (this._initOptions)
+      modulePath = this.getModulePath(module2);
     let elmId = this.modulesId[modulePath];
     if (elmId && modulePath)
       return document.createElement(elmId);
-    if (options && options.dependencies) {
-      for (let p in options.dependencies) {
-        if (p != options.main)
-          await this.loadPackage(p, options.dependencies[p]);
-      }
-    }
-    ;
     let script;
     if (options && options.script)
       script = options.script;
     else {
-      if (options && options.modules && options.modules[module2] && options.modules[module2].dependencies) {
-        let dependencies = options.modules[module2].dependencies;
+      if (this._initOptions && this._initOptions.modules && this._initOptions.modules[module2] && this._initOptions.modules[module2].dependencies) {
+        let dependencies = this._initOptions.modules[module2].dependencies;
         for (let i = 0; i < dependencies.length; i++) {
-          let pack = options.modules[dependencies[i]];
-          if (pack && pack.path) {
-            let path = "/";
-            if (options.rootDir)
-              path += options.rootDir + "/";
-            if (options.moduleDir)
-              path += options.moduleDir + "/";
-            path += pack.path;
-            if (!pack.path.endsWith(".js"))
-              path += "/index.js";
-            await this.loadPackage(dependencies[i], path, options);
+          let dep = dependencies[i];
+          if (!this.packages[dep]) {
+            let path = this.getModulePath(dep);
+            await this.loadPackage(dep, path);
           }
           ;
         }

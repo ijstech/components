@@ -4353,6 +4353,7 @@ declare module "packages/application/src/index" {
         _assets: {
             [name: string]: any;
         };
+        private _initOptions;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -4363,10 +4364,11 @@ declare module "packages/application/src/index" {
         getContent(modulePath: string): Promise<string>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<IIPFSDirectoryInfo>;
         getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
-        loadPackage(packageName: string, modulePath?: string, options?: IModuleOptions): Promise<{
+        loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
             [name: string]: any;
         } | null>;
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
+        private getModulePath;
         newModule(module: string, options?: IHasDependencies): Promise<Module | null>;
         copyToClipboard(value: string): Promise<boolean>;
     }
