@@ -15054,6 +15054,7 @@ __export(exports, {
   Unobserve: () => Unobserve,
   Upload: () => Upload,
   VStack: () => VStack,
+  Video: () => Video,
   application: () => application,
   customElements: () => customElements2,
   customModule: () => customModule,
@@ -18668,8 +18669,8 @@ var RequireJS = {
   config(config) {
     window.require.config(config);
   },
-  require(reqs, callback) {
-    window.require(reqs, callback);
+  require(reqs2, callback) {
+    window.require(reqs2, callback);
   },
   defined(module2) {
     return window.require.defined(module2);
@@ -19154,7 +19155,7 @@ var Application = class {
       else
         return null;
     } else if (modulePath == "*") {
-      modulePath = "libs/" + packageName + "/index.js";
+      modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "libs/" + packageName + "/index.js";
     } else if (modulePath.startsWith("{LIB}/")) {
       let libPath = LibPath || "";
       if (LibPath && !LibPath.endsWith("/"))
@@ -19179,8 +19180,8 @@ var Application = class {
     ;
     return null;
   }
-  async loadModule(modulePath, options) {
-    let module2 = await this.newModule(modulePath, options);
+  async loadModule(modulePath, options, forceInit) {
+    let module2 = await this.newModule(modulePath, options, forceInit);
     if (module2)
       document.body.append(module2);
     return module2;
@@ -19189,7 +19190,7 @@ var Application = class {
     let options = this._initOptions;
     let modulePath = module2;
     if (options && options.modules && options.modules[module2] && options.modules[module2].path) {
-      modulePath = "/";
+      modulePath = "";
       if (options.rootDir)
         modulePath += options.rootDir + "/";
       if (options.moduleDir)
@@ -19198,11 +19199,12 @@ var Application = class {
       if (!modulePath.endsWith(".js"))
         modulePath += "/index.js";
     } else if (options.dependencies && options.dependencies[module2])
-      modulePath = `libs/${module2}/index.js`;
+      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : ""}libs/${module2}/index.js`;
     return modulePath;
   }
-  async newModule(module2, options) {
-    if (!this._initOptions && options) {
+  async newModule(module2, options, forceInit) {
+    const _initOptions = this._initOptions;
+    if ((!this._initOptions || forceInit) && options) {
       this._initOptions = options;
       if (!this._assets && this._initOptions.assets)
         this._assets = await this.loadPackage(this._initOptions.assets) || {};
@@ -19220,8 +19222,11 @@ var Application = class {
     if (this._initOptions)
       modulePath = this.getModulePath(module2);
     let elmId = this.modulesId[modulePath];
-    if (elmId && modulePath)
+    if (elmId && modulePath) {
+      if (forceInit && _initOptions)
+        this._initOptions = _initOptions;
       return document.createElement(elmId);
+    }
     let script;
     if (options && options.script)
       script = options.script;
@@ -19263,11 +19268,15 @@ var Application = class {
           };
           customElements.define(elmId, Module2);
           let result = new Module2(null, options);
+          if (forceInit && _initOptions)
+            this._initOptions = _initOptions;
           return result;
         }
         ;
       }
     }
+    if (forceInit && _initOptions)
+      this._initOptions = _initOptions;
     return null;
   }
   async copyToClipboard(value) {
@@ -28456,6 +28465,83 @@ var moment;
 RequireJS.require(["@moment"], (_moment) => {
   moment = _moment;
 });
+
+// packages/video/src/style/video.css.ts
+cssRule("i-video", {
+  $nest: {}
+});
+
+// packages/video/src/video.ts
+var reqs = ["video-js"];
+RequireJS.config({
+  baseUrl: `${LibPath}lib/video-js`,
+  paths: {
+    "video-js": "video-js"
+  }
+});
+function loadCss() {
+  const cssId = "videoCss";
+  if (!document.getElementById(cssId)) {
+    const head = document.getElementsByTagName("head")[0];
+    const link = document.createElement("link");
+    link.id = cssId;
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = `${LibPath}lib/video-js/video-js.css`;
+    link.media = "all";
+    head.appendChild(link);
+  }
+}
+var Video = class extends Container {
+  get url() {
+    return this._url;
+  }
+  set url(value) {
+    this._url = value;
+    if (value && !this.sourceElm)
+      this.sourceElm = this.createElement("source", this.videoElm);
+    if (this.sourceElm)
+      this.sourceElm.src = value;
+  }
+  init() {
+    if (!this.initialized) {
+      super.init();
+      loadCss();
+      const self = this;
+      let id = `video-${new Date().getTime()}`;
+      this.videoElm = this.createElement("video-js", this);
+      this.videoElm.id = id;
+      this.videoElm.setAttribute("controls", "true");
+      this.videoElm.setAttribute("preload", "auto");
+      this.videoElm.classList.add("vjs-default-skin");
+      this.sourceElm = this.createElement("source", this.videoElm);
+      this.sourceElm.type = "application/x-mpegURL";
+      this.url = this.getAttribute("url", true);
+      RequireJS.require(reqs, function(videojs) {
+        self.player = videojs(id, {
+          playsinline: true,
+          autoplay: false,
+          controls: true,
+          fluid: true,
+          aspectRatio: "16:9",
+          responsive: true,
+          inactivityTimeout: 500,
+          preload: "auto",
+          techOrder: ["html5"],
+          plugins: {}
+        });
+      });
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Video = __decorateClass([
+  customElements2("i-video")
+], Video);
 
 // src/launcher.ts
 var import_eth_wallet = __toModule(require("@ijstech/eth-wallet"));

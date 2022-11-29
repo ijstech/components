@@ -4367,9 +4367,9 @@ declare module "packages/application/src/index" {
         loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
             [name: string]: any;
         } | null>;
-        loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
+        loadModule(modulePath: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
         private getModulePath;
-        newModule(module: string, options?: IHasDependencies): Promise<Module | null>;
+        newModule(module: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
         copyToClipboard(value: string): Promise<boolean>;
     }
     export const application: Application;
@@ -9606,6 +9606,34 @@ declare module "packages/moment/src/index" {
     var moment: typeof Moment;
     export { moment };
 }
+declare module "packages/video/src/style/video.css" { }
+declare module "packages/video/src/video" {
+    import { Container, ControlElement, Control } from "packages/base/src/index";
+    import "packages/video/src/style/video.css";
+    export interface VideoElement extends ControlElement {
+        url?: string;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-video']: VideoElement;
+            }
+        }
+    }
+    export class Video extends Container {
+        private videoElm;
+        private sourceElm;
+        private player;
+        private _url;
+        get url(): string;
+        set url(value: string);
+        protected init(): void;
+        static create(options?: VideoElement, parent?: Control): Promise<Video>;
+    }
+}
+declare module "packages/video/src/index" {
+    export { Video, VideoElement } from "packages/video/src/video";
+}
 declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "packages/base/src/index";
@@ -9641,4 +9669,5 @@ declare module "@ijstech/components" {
     export { CarouselSlider } from "packages/carousel/src/index";
     export * as IPFS from "packages/ipfs/src/index";
     export { moment } from "packages/moment/src/index";
+    export { Video } from "packages/video/src/index";
 }
