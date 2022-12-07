@@ -10395,8 +10395,8 @@ var defaultTheme = {
   background: {
     default: "#fafafa",
     paper: "#fff",
-    main: "#181e3e",
-    modal: "#192046",
+    main: "#ffffff",
+    modal: "#ffffff",
     gradient: "linear-gradient(90deg, #a8327f 0%, #d4626a 100%)"
   },
   breakboints: {
@@ -11854,6 +11854,9 @@ var Component = class extends HTMLElement {
   }
   init() {
     this.initialized = true;
+    if (this.options["class"]) {
+      this.setAttribute("class", this.options["class"]);
+    }
     if (this._ready === void 0) {
       this._ready = true;
       if (this._readyCallback) {
@@ -13460,7 +13463,7 @@ var Control = class extends Component {
     this.style.fontFamily = value.name || "";
     this.style.fontStyle = value.style || "";
     this.style.textTransform = value.transform || "none";
-    this.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
+    this.style.fontWeight = value.bold ? "bold" : `${value.weight || ""}`;
   }
   get display() {
     return this._display;
@@ -14113,7 +14116,7 @@ var Application = class {
     ;
     if (!modulePath) {
       if ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName])
-        modulePath = "modules/" + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
+        modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "modules/" + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
       else
         return null;
     } else if (modulePath == "*") {
