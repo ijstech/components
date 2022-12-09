@@ -19132,15 +19132,6 @@ var Application = class {
   }
   async loadPackage(packageName, modulePath, options) {
     var _a, _b, _c;
-    if (RequireJS.defined(packageName)) {
-      if (!this.packages[packageName]) {
-        let m = window["require"](packageName);
-        if (m)
-          this.packages[packageName] = m.default || m;
-      }
-      return this.packages[packageName];
-    }
-    ;
     options = options || this._initOptions;
     if (options && options.modules && options.modules[packageName]) {
       let pack = options.modules[packageName];
@@ -19165,6 +19156,8 @@ var Application = class {
         libPath = libPath + "/";
       modulePath = modulePath.replace("{LIB}/", libPath);
     }
+    if (this.packages[modulePath])
+      return this.packages[modulePath];
     let script = await this.getScript(modulePath);
     if (script) {
       _currentDefineModule = null;
@@ -19177,8 +19170,10 @@ var Application = class {
       this.currentModulePath = "";
       this.currentModuleDir = "";
       let m = window["require"](packageName);
-      if (m)
+      if (m) {
+        this.packages[modulePath] = m.default || m;
         return m.default || m;
+      }
     }
     ;
     return null;
@@ -19238,8 +19233,8 @@ var Application = class {
         let dependencies = this._initOptions.modules[module2].dependencies;
         for (let i = 0; i < dependencies.length; i++) {
           let dep = dependencies[i];
-          if (!this.packages[dep]) {
-            let path = this.getModulePath(dep);
+          let path = this.getModulePath(dep);
+          if (!this.packages[path]) {
             await this.loadPackage(dep, path);
           }
           ;
@@ -20529,7 +20524,7 @@ var ComboBox = class extends Control {
       this.openList();
     const ulElm = this.createElement("ul", this.listElm);
     for (let item of this.items) {
-      const label = item.label;
+      const label = item.label || "";
       if (!this.searchStr || label.toLowerCase().includes(this.searchStr.toLowerCase())) {
         const liElm = this.createElement("li", ulElm);
         liElm.setAttribute("data-key", item.value);
@@ -21817,6 +21812,19 @@ var Input = class extends Control {
         this.inputElm.addEventListener("blur", this._handleOnBlur.bind(this));
         this.inputElm.addEventListener("focus", this._handleOnFocus.bind(this));
         break;
+      case "color":
+        this.captionSpanElm = this.createElement("span", this);
+        this.labelElm = this.createElement("label", this.captionSpanElm);
+        this.inputElm = this.createElement("input", this);
+        this.inputElm.style.height = "auto";
+        this.inputElm.disabled = enabled === false;
+        this.inputElm.setAttribute("type", "color");
+        this.inputElm.addEventListener("input", this._handleChange.bind(this));
+        this.inputElm.addEventListener("keydown", this._handleInputKeyDown.bind(this));
+        this.inputElm.addEventListener("keyup", this._handleInputKeyUp.bind(this));
+        this.inputElm.addEventListener("blur", this._handleOnBlur.bind(this));
+        this.inputElm.addEventListener("focus", this._handleOnFocus.bind(this));
+        break;
       default:
         const inputType = type == "password" ? type : "text";
         this.captionSpanElm = this.createElement("span", this);
@@ -23023,7 +23031,8 @@ var Modal = class extends Container {
     });
   }
   get visible() {
-    return this.wrapperDiv.classList.contains(visibleStyle);
+    var _a;
+    return ((_a = this.wrapperDiv) == null ? void 0 : _a.classList.contains(visibleStyle)) || false;
   }
   set visible(value) {
     var _a, _b;

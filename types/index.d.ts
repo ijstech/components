@@ -7851,7 +7851,7 @@ declare module "packages/input/src/input" {
     import { Range, RangeElement } from "packages/range/src/index";
     import { Radio, RadioElement } from "packages/radio/src/index";
     import "packages/input/src/style/input.css";
-    export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text';
+    export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text' | 'color';
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
     type actionCallback = (target: Input) => void;
     type changeCallback = (target: Input, val: string) => void;
