@@ -865,6 +865,14 @@ declare module "packages/style/src/theme" {
         dark: IColorVar;
         contrastText: IColorVar;
     }
+    interface ILayout {
+        container: {
+            width: string;
+            maxWidth: string;
+            textAlign: string;
+            overflow: string;
+        };
+    }
     export interface ITheme {
         action: {
             active: IColorVar;
@@ -901,6 +909,7 @@ declare module "packages/style/src/theme" {
             info: IThemeColors;
             success: IThemeColors;
         };
+        layout: ILayout;
         divider: IColorVar;
         shadows: {
             0: string;
@@ -970,6 +979,7 @@ declare module "packages/style/src/theme" {
             info: IThemeColors;
             success: IThemeColors;
         };
+        layout: ILayout;
         divider: string;
         shadows: {
             0: string;
@@ -9189,7 +9199,6 @@ declare module "packages/pagination/src/pagination" {
         private pageItems;
         private activeItem;
         private _paginationDiv;
-        private _mainPagiElm;
         private _prevElm;
         private _nextElm;
         private pagerCount;
