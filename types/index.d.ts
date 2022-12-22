@@ -9057,7 +9057,7 @@ declare module "packages/upload/src/upload" {
     import { Control, ControlElement } from "packages/base/src/index";
     import "packages/upload/src/style/upload.css";
     type changedCallback = (target: Upload, files: File[]) => void;
-    type removedCallback = (target: Upload, file: File) => void;
+    type removedCallback = (target: Upload, file?: File) => void;
     type uploadingCallback = (target: Upload, file: File) => Promise<boolean>;
     type addedCallback = (target: Upload, file: File) => Promise<boolean>;
     export const genFileId: () => number;

@@ -12182,7 +12182,7 @@ cssRule("body", {
       maxWidth: "300px",
       overflowWrap: "break-word",
       fontWeight: 500,
-      zIndex: 10
+      zIndex: 9999
     },
     ".ii-tooltip-top::after": {
       content: "''",
@@ -14234,6 +14234,9 @@ var Application = class {
       document.getElementsByTagName("html")[0].classList.add(applicationStyle);
       this.currentModulePath = "";
       this.currentModuleDir = "";
+      if (!_currentDefineModule && this.packages[modulePath]) {
+        _currentDefineModule = this.packages[modulePath];
+      }
       if (_currentDefineModule) {
         let module3 = _currentDefineModule.default || _currentDefineModule;
         if (module3) {
@@ -15483,17 +15486,21 @@ var ComboBox = class extends Control {
   }
   renderItems() {
     if (this.mode === "tags" && this.newItem) {
+      if (this.searchStr)
+        this.newItem.label = this.searchStr;
       const liElm = this.listElm.querySelector(`li[data-key="${this.newItem.value}"]`);
       if (liElm) {
         if (this.searchStr) {
+          liElm.textContent = this.searchStr;
           liElm.classList.add("matched");
           liElm.innerHTML = `<span class="highlight">${this.searchStr}</span>`;
-          this.newItem.label = this.searchStr;
-          return;
         } else {
           liElm.remove();
           this.newItem = null;
         }
+      } else {
+        const ul = this.listElm.querySelector("ul");
+        ul && this.add(this.newItem, ul);
       }
     }
     const regExp = new RegExp(this.escapeRegExp(this.searchStr), "g");
@@ -15501,9 +15508,14 @@ var ComboBox = class extends Control {
     if (this.searchStr)
       this.openList();
     const ulElm = this.createElement("ul", this.listElm);
+    let creatingNew = false;
     for (let item of this.items) {
       const label = item.label || "";
-      if (!this.searchStr || label.toLowerCase().includes(this.searchStr.toLowerCase())) {
+      const isMatchedPart = this.searchStr && label.toLowerCase().includes(this.searchStr.toLowerCase());
+      const isMatchedDone = this.searchStr && label.toLowerCase() === this.searchStr.toLowerCase();
+      if (item.isNew && isMatchedPart && !isMatchedDone)
+        creatingNew = true;
+      if (!this.searchStr || isMatchedDone || isMatchedPart) {
         const liElm = this.createElement("li", ulElm);
         liElm.setAttribute("data-key", item.value);
         liElm.addEventListener("click", (event) => {
@@ -15521,21 +15533,22 @@ var ComboBox = class extends Control {
         liElm.innerHTML = displayItem;
       }
     }
-    if (!ulElm.innerHTML) {
-      if (this.mode === "tags" && !this.newItem) {
-        this.newItem = {
-          value: new Date().getTime().toString(),
-          label: this.searchStr
-        };
-        this.add(this.newItem, ulElm);
-        return;
-      } else {
+    if (!ulElm.innerHTML || creatingNew) {
+      if (this.mode === "tags") {
+        if (!this.newItem)
+          this.newItem = {
+            value: new Date().getTime().toString(),
+            label: this.searchStr
+          };
+        const liElm = this.listElm.querySelector(`li[data-key="${this.newItem.label}"]`);
+        if (!liElm)
+          this.add(this.newItem, ulElm);
+      } else if (!ulElm.innerHTML)
         ulElm.innerHTML = '<li style="text-align:center;">No data</li>';
-      }
     }
   }
   add(item, parent) {
-    const liElm = this.createElement("li", parent);
+    const liElm = this.createElement("li");
     liElm.setAttribute("data-key", item.value);
     liElm.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -15543,6 +15556,7 @@ var ComboBox = class extends Control {
     });
     liElm.classList.add("matched");
     liElm.innerHTML = `<span class="highlight">${this.searchStr}</span>`;
+    parent.prepend(liElm);
   }
   handleRemove(event, item) {
     event.stopPropagation();
@@ -15567,10 +15581,10 @@ var ComboBox = class extends Control {
   onItemClick(event, liElm, item) {
     var _a;
     if (((_a = this.newItem) == null ? void 0 : _a.value) === item.value) {
-      item = { ...this.newItem, isNew: true };
+      item = { ...this.newItem, value: this.newItem.label, isNew: true };
       this.items.push(item);
-      this.newItem = null;
     }
+    this.newItem = null;
     if (Array.isArray(this.selectedItem)) {
       const index = this.getItemIndex(this.selectedItem, item);
       const selectedItem = this.selectedItem;
@@ -21183,9 +21197,9 @@ var Upload = class extends Control {
       if (!this.isPreviewing || !this.enabled)
         return;
       event.stopPropagation();
-      const file = this._dt.files.length ? this._dt.files[0] : null;
+      const file = this._dt.files.length ? this._dt.files[0] : void 0;
       this.clear();
-      if (this.onRemoved && file)
+      if (this.onRemoved)
         this.onRemoved(this, file);
     };
     this.toBase64 = (file) => new Promise((resolve, reject) => {
