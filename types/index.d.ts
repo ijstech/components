@@ -8666,12 +8666,14 @@ declare module "packages/tree-view/src/treeView" {
         isLazyLoad?: boolean;
         active?: boolean;
         children?: ITreeNode[];
+        alwaysExpanded?: boolean;
     }
     export interface TreeViewElement extends ControlElement {
         activeItem?: TreeNode;
         data?: ITreeNode[];
         editable?: boolean;
         actionButtons?: ButtonElement[];
+        alwaysExpanded?: boolean;
         onActiveChange?: activedChangeCallback;
         onChange?: changeCallback;
         onRenderNode?: renderCallback;
@@ -8703,6 +8705,7 @@ declare module "packages/tree-view/src/treeView" {
         private _editable;
         private _items;
         private _actionButtons;
+        private _alwaysExpanded;
         onRenderNode: renderCallback;
         onActiveChange: activedChangeCallback;
         onChange: changeCallback;
@@ -8713,6 +8716,8 @@ declare module "packages/tree-view/src/treeView" {
         constructor(parent?: Control, options?: any);
         get activeItem(): TreeNode | undefined;
         set activeItem(value: TreeNode | undefined);
+        get alwaysExpanded(): boolean;
+        set alwaysExpanded(value: boolean);
         get data(): ITreeNode[];
         set data(value: ITreeNode[]);
         get items(): TreeNode[];
@@ -8743,6 +8748,7 @@ declare module "packages/tree-view/src/treeView" {
         private _isLazyLoad;
         private _editable;
         private _data;
+        private _alwaysExpanded;
         private _wrapperElm;
         private _expandElm;
         private _captionElm;
@@ -8758,6 +8764,8 @@ declare module "packages/tree-view/src/treeView" {
         set collapsible(value: any);
         get expanded(): boolean;
         set expanded(value: any);
+        get alwaysExpanded(): boolean;
+        set alwaysExpanded(value: boolean);
         get active(): boolean;
         set active(value: any);
         get isLazyLoad(): boolean;

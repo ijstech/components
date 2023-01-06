@@ -7,7 +7,7 @@ async function main(){
         let storage = new Storage(Config);
         let path = Path.resolve(__dirname, '../dist');
         console.dir(path)
-        let result = await storage.putDir(path, {ipfs: false, s3: true}, 'launcher')
+        let result = await storage.putDir(path, {ipfs: true, s3: true}, 'components')
         console.dir(result);
     }
     catch(err){

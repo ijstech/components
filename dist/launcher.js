@@ -25113,6 +25113,7 @@ var TreeView = class extends Control {
       editable: false
     });
     this._items = [];
+    this._alwaysExpanded = false;
   }
   get activeItem() {
     return this._activeItem;
@@ -25123,6 +25124,12 @@ var TreeView = class extends Control {
     treeNodes.forEach((treeNode) => treeNode.active = false);
     if (value)
       value.active = true;
+  }
+  get alwaysExpanded() {
+    return this._alwaysExpanded;
+  }
+  set alwaysExpanded(value) {
+    this._alwaysExpanded = value;
   }
   get data() {
     return this._items.map((node) => node.data);
@@ -25157,6 +25164,7 @@ var TreeView = class extends Control {
     const childNode = new TreeNode(this, { ...childData });
     this.initNode(childNode);
     childNode.editable = this.editable;
+    childNode.alwaysExpanded = this.alwaysExpanded;
     if (this.onRenderNode)
       this.onRenderNode(this, childNode);
     if (parentNode) {
@@ -25282,6 +25290,7 @@ var TreeView = class extends Control {
       this.classList.add("i-tree-view");
       if ((_a = this.options) == null ? void 0 : _a.onRenderNode)
         this.onRenderNode = this.options.onRenderNode;
+      this.alwaysExpanded = this.getAttribute("alwaysExpanded", true, false);
       this.editable = this.getAttribute("editable", true, false);
       this.actionButtons = this.getAttribute("actionButtons", true);
       this.data = this.getAttribute("data", true);
@@ -25302,6 +25311,7 @@ var TreeNode = class extends Control {
   constructor(parent, options) {
     super(parent, options);
     this._editable = false;
+    this._alwaysExpanded = false;
     options && (this.data = options);
     this.handleEdit = this.handleEdit.bind(this);
   }
@@ -25347,6 +25357,12 @@ var TreeNode = class extends Control {
         this._expandElm.checked = false;
       this.classList.remove("is-checked");
     }
+  }
+  get alwaysExpanded() {
+    return this._alwaysExpanded;
+  }
+  set alwaysExpanded(value) {
+    this._alwaysExpanded = value;
   }
   get active() {
     return this._active;
@@ -25458,7 +25474,7 @@ var TreeNode = class extends Control {
       this._expandElm.checked = !this._expandElm.checked;
       if (this._expandElm.checked)
         this.classList.add("is-checked");
-      else
+      else if (!this.alwaysExpanded)
         this.classList.remove("is-checked");
     }
     ;
