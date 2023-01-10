@@ -23533,17 +23533,19 @@ var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
     if (mediaQueryRule) {
       styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
       if (mediaQuery.properties.templateColumns) {
-        styleObj["$nest"][mediaQueryRule]["gridTemplateColumns"] = mediaQuery.properties.templateColumns.join(" ");
+        const templateColumnsStr = mediaQuery.properties.templateColumns.join(" ");
+        styleObj["$nest"][mediaQueryRule]["gridTemplateColumns"] = `${templateColumnsStr} !important`;
       }
       if (mediaQuery.properties.templateRows) {
-        styleObj["$nest"][mediaQueryRule]["gridTemplateRows"] = mediaQuery.properties.templateRows.join(" ");
+        const templateRowsStr = mediaQuery.properties.templateRows.join(" ");
+        styleObj["$nest"][mediaQueryRule]["gridTemplateRows"] = `${templateRowsStr} !important`;
       }
       if (mediaQuery.properties.templateAreas) {
         let templateAreasStr = "";
         for (let i = 0; i < mediaQuery.properties.templateAreas.length; i++) {
           templateAreasStr += '"' + mediaQuery.properties.templateAreas[i].join(" ") + '" ';
         }
-        styleObj["$nest"][mediaQueryRule]["gridTemplateAreas"] = templateAreasStr;
+        styleObj["$nest"][mediaQueryRule]["gridTemplateAreas"] = `${templateAreasStr} !important`;
       }
       if (mediaQuery.properties.display) {
         styleObj["$nest"][mediaQueryRule]["display"] = mediaQuery.properties.display;
