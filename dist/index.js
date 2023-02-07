@@ -9973,6 +9973,8 @@ __export(exports, {
   Component: () => Component,
   Container: () => Container,
   Control: () => Control,
+  DataGrid: () => DataGrid,
+  DataSchemaValidator: () => DataSchemaValidator,
   Datepicker: () => Datepicker,
   EventBus: () => EventBus,
   GridLayout: () => GridLayout,
@@ -10022,7 +10024,8 @@ __export(exports, {
   customModule: () => customModule,
   isObservable: () => isObservable,
   moment: () => moment,
-  observable: () => observable
+  observable: () => observable,
+  renderUI: () => renderUI
 });
 
 // packages/style/src/index.ts
@@ -11798,14 +11801,14 @@ var Component = class extends HTMLElement {
       parentElm.appendChild(result);
     return result;
   }
-  getValue(target, paths, idx) {
+  getAttributeValue(target, paths, idx) {
     idx = idx || 0;
     let path = paths[idx];
     let value = target[path];
     idx++;
     if (paths.length > idx)
       try {
-        return this.getValue(value, paths, idx);
+        return this.getAttributeValue(value, paths, idx);
       } catch (error) {
         return value;
       }
@@ -11819,7 +11822,7 @@ var Component = class extends HTMLElement {
       if (removeAfter)
         this.removeAttribute(name);
       if (this.attrs[name].__target)
-        return this.getValue(this.attrs[name].__target, this.attrs[name].__path);
+        return this.getAttributeValue(this.attrs[name].__target, this.attrs[name].__path);
       else
         return this.attrs[name];
     } else {
@@ -13119,6 +13122,84 @@ var Control = class extends Component {
     } else
       return true;
   }
+  _handleFocus(event, stopPropagation) {
+    if (this._onFocus) {
+      this._onFocus(this, event);
+      return true;
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleFocus = parent._handleFocus.bind(parent);
+      return parent._handleFocus(event);
+    } else
+      return true;
+  }
+  _handleKeyDown(event, stopPropagation) {
+    if (this._onKeyDown) {
+      this._onKeyDown(this, event);
+      return true;
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleKeyDown = parent._handleKeyDown.bind(parent);
+      return parent._handleKeyDown(event);
+    } else
+      return true;
+  }
+  _handleKeyUp(event, stopPropagation) {
+    if (this._onKeyUp) {
+      this._onKeyUp(this, event);
+      return true;
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleKeyUp = parent._handleKeyUp.bind(parent);
+      return parent._handleKeyUp(event);
+    } else
+      return true;
+  }
+  _handleMouseDown(event, stopPropagation) {
+    if (this._onMouseDown) {
+      this._onMouseDown(this, event);
+      return true;
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleMouseDown = parent._handleMouseDown.bind(parent);
+      return parent._handleMouseDown(event);
+    } else
+      return true;
+  }
+  _handleMouseMove(event, stopPropagation) {
+    if (this._onMouseMove) {
+      this._onMouseMove(this, event);
+      return true;
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleMouseMove = parent._handleMouseMove.bind(parent);
+      return parent._handleMouseMove(event);
+    } else
+      return true;
+  }
+  _handleMouseUp(event, stopPropagation) {
+    if (this._onMouseUp) {
+      this._onMouseUp(this, event);
+      return true;
+    } else if (!stopPropagation) {
+      let parent = getParentControl(this);
+      if (!parent)
+        return false;
+      parent._handleMouseUp = parent._handleMouseUp.bind(parent);
+      return parent._handleMouseUp(event);
+    } else
+      return true;
+  }
   get maxWidth() {
     return this.style.maxWidth;
   }
@@ -13178,7 +13259,7 @@ var Control = class extends Component {
         }
         case "left": {
           let top = this.getParentOccupiedTop();
-          this.top = top + this.marginStyle("top");
+          this.top = top;
           this.left = this.getParentOccupiedLeft();
           this.height = this.getParentHeight() - top - this.getParentOccupiedBottom() - this.marginStyle("top") - this.marginStyle("bottom");
           break;
@@ -13300,12 +13381,19 @@ var Control = class extends Component {
       this["_" + prop] = value;
       this.style[prop] = value;
     }
+    ;
   }
   get height() {
     return !isNaN(this._height) ? this._height : this.offsetHeight;
   }
   set height(value) {
     this.setPosition("height", value);
+  }
+  get heightValue() {
+    if (typeof this._height == "string")
+      return parseInt(this._height, 10);
+    else
+      return this._height;
   }
   get left() {
     return !isNaN(this._left) ? this._left : this.offsetLeft;
@@ -13344,6 +13432,12 @@ var Control = class extends Component {
   }
   set width(value) {
     this.setPosition("width", value);
+  }
+  get widthValue() {
+    if (typeof this._width == "string")
+      return parseInt(this._width, 10);
+    else
+      return this._width;
   }
   get stack() {
     return this._stack;
@@ -13919,6 +14013,9 @@ var GlobalEvents = class {
   constructor() {
     this.bindEvents();
   }
+  abortEvent(event) {
+    event.stopPropagation();
+  }
   _handleClick(event) {
     let control = getControl(event.target);
     if (control && !(control instanceof Checkbox)) {
@@ -13926,14 +14023,38 @@ var GlobalEvents = class {
         if (control._handleClick(event)) {
           event.stopPropagation();
         }
+        ;
+      }
+      ;
+    }
+    ;
+  }
+  _handleMouseDown(event) {
+    let control = getControl(event.target);
+    if (control == null ? void 0 : control.enabled) {
+      if (control._handleMouseDown(event)) {
+        event.preventDefault();
+        event.stopPropagation();
       }
     }
   }
-  _handleMouseDown(event) {
-  }
   _handleMouseMove(event) {
+    let control = getControl(event.target);
+    if (control == null ? void 0 : control.enabled) {
+      if (control._handleMouseMove(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
   }
   _handleMouseUp(event) {
+    let control = getControl(event.target);
+    if (control == null ? void 0 : control.enabled) {
+      if (control._handleMouseUp(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
   }
   _handleDblClick(event) {
     let control = getControl(event.target);
@@ -13947,8 +14068,26 @@ var GlobalEvents = class {
     }
   }
   _handleKeyDown(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled) {
+        if (control._handleKeyDown(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }
   }
   _handleKeyUp(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled) {
+        if (control._handleKeyUp(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }
   }
   _handleContextMenu(event) {
     let control = getControl(event.target);
@@ -13968,10 +14107,30 @@ var GlobalEvents = class {
   _handleChange(event) {
   }
   _handleMouseWheel(event) {
+    let control = getControl(event.target);
+    if (control) {
+      event.stopPropagation();
+      if (control.enabled && control._handleMouseWheel)
+        control._handleMouseWheel(event);
+    }
   }
   _handleFocus(event) {
+    let control = getControl(event.target);
+    if (control) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (control.enabled && control._handleFocus)
+        control._handleFocus(event);
+    }
   }
   _handleBlur(event) {
+    let control = getControl(event.target);
+    if (control) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (control.enabled && control._handleBlur)
+        control._handleBlur(event);
+    }
   }
   bindEvents() {
     window.addEventListener("mousedown", this._handleMouseDown.bind(this));
@@ -13986,7 +14145,7 @@ var GlobalEvents = class {
     window.addEventListener("touchend", this._handleTouchEnd);
     window.addEventListener("touchmove", this._handleTouchMove);
     window.addEventListener("change", this._handleChange);
-    window.addEventListener("wheel", this._handleMouseWheel, false);
+    window.addEventListener("wheel", this._handleMouseWheel, { passive: false });
     window.addEventListener("focus", this._handleFocus, true);
     window.addEventListener("blur", this._handleBlur, true);
   }
@@ -14003,288 +14162,37 @@ var applicationStyle = style({
   }
 });
 
-// packages/application/src/index.ts
-var IpfsDataType;
-(function(IpfsDataType2) {
-  IpfsDataType2[IpfsDataType2["Raw"] = 0] = "Raw";
-  IpfsDataType2[IpfsDataType2["Directory"] = 1] = "Directory";
-  IpfsDataType2[IpfsDataType2["File"] = 2] = "File";
-  IpfsDataType2[IpfsDataType2["Metadata"] = 3] = "Metadata";
-  IpfsDataType2[IpfsDataType2["Symlink"] = 4] = "Symlink";
-  IpfsDataType2[IpfsDataType2["HAMTShard"] = 5] = "HAMTShard";
-})(IpfsDataType || (IpfsDataType = {}));
-var Application = class {
-  constructor() {
-    this.modules = {};
-    this.modulesId = {};
-    this.scripts = {};
-    this.id = 0;
-    this.LibHost = "";
-    this.packages = {};
-    this.globalEvents = new GlobalEvents();
+// packages/ipfs/src/index.ts
+var src_exports2 = {};
+__export(src_exports2, {
+  hashContent: () => hashContent,
+  hashItems: () => hashItems,
+  parse: () => parse
+});
+var import_ipfs_utils = __toModule(require("@ijstech/ipfs-utils"));
+function parse(cid) {
+  return import_ipfs_utils.default.parse(cid);
+}
+async function hashItems(items, version) {
+  return await import_ipfs_utils.default.hashItems(items || [], version);
+}
+async function hashContent(content, version) {
+  if (version == void 0)
+    version = 1;
+  if (content.length == 0) {
+    return await import_ipfs_utils.default.hashContent("", version);
   }
-  get EventBus() {
-    return EventBus.getInstance();
-  }
-  static get Instance() {
-    return this._instance || (this._instance = new this());
-  }
-  assets(name) {
-    if (this._assets) {
-      let items = name.split("/");
-      let value = this._assets;
-      let item = items.shift();
-      ;
-      while (value && item) {
-        value = value[item];
-        item = items.shift();
-      }
-      ;
-      return value;
-    }
-    ;
-  }
-  async verifyScript(modulePath, script) {
-    return true;
-  }
-  async getScript(modulePath) {
-    if (this.scripts[modulePath])
-      return this.scripts[modulePath];
-    try {
-      let result = await (await fetch(modulePath)).text();
-      if (typeof result == "string") {
-        if (await this.verifyScript(modulePath, result)) {
-          this.scripts[modulePath] = result;
-          return result;
-        }
-        ;
-      }
-      ;
-    } catch (err) {
-    }
-    ;
-    return "";
-  }
-  async loadScript(modulePath, script) {
-    try {
-      if (this.scripts[modulePath])
-        return true;
-      if (await this.verifyScript(modulePath, script)) {
-        this.scripts[modulePath] = script;
-        return true;
-      }
-      ;
-    } catch (err) {
-    }
-    ;
-    return false;
-  }
-  async getContent(modulePath) {
-    try {
-      return await (await fetch(modulePath)).text();
-    } catch (err) {
-    }
-    return "";
-  }
-  async fetchDirectoryInfoByCID(ipfsCid) {
-    let directoryInfo = [];
-    try {
-      const IPFS_API = `https://ipfs.scom.dev/ipfs/${ipfsCid}`;
-      let result = await fetch(IPFS_API);
-      let jsonContent = await result.json();
-      if (jsonContent.links) {
-        directoryInfo = jsonContent.links;
-      }
-    } catch (err) {
-      console.log(err);
-    }
-    return directoryInfo;
-  }
-  async getModule(modulePath, options) {
-    if (this.modules[modulePath])
-      return this.modules[modulePath];
-    let result = await this.newModule(modulePath, options);
-    if (result)
-      this.modules[modulePath] = result;
-    return result;
-  }
-  async loadPackage(packageName, modulePath, options) {
-    var _a, _b, _c;
-    options = options || this._initOptions;
-    if (options && options.modules && options.modules[packageName]) {
-      let pack = options.modules[packageName];
-      for (let i = 0; i < ((_a = pack.dependencies) == null ? void 0 : _a.length); i++) {
-        let n = pack.dependencies[i];
-        if (!RequireJS.defined(n))
-          await this.loadPackage(n);
-      }
-      ;
-    }
-    ;
-    if (!modulePath) {
-      if ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName])
-        modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "modules/" + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
-      else
-        return null;
-    } else if (modulePath == "*") {
-      modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "libs/" + packageName + "/index.js";
-    } else if (modulePath.startsWith("{LIB}/")) {
-      let libPath = LibPath || "";
-      if (LibPath && !LibPath.endsWith("/"))
-        libPath = libPath + "/";
-      modulePath = modulePath.replace("{LIB}/", libPath);
-    }
-    if (this.packages[modulePath])
-      return this.packages[modulePath];
-    let script = await this.getScript(modulePath);
-    if (script) {
-      _currentDefineModule = null;
-      this.currentModulePath = modulePath;
-      if (modulePath.indexOf("://") > 0)
-        this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
-      else
-        this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
-      await import(`data:text/javascript,${encodeURIComponent(script)}`);
-      this.currentModulePath = "";
-      this.currentModuleDir = "";
-      let m = window["require"](packageName);
-      if (m) {
-        this.packages[modulePath] = m.default || m;
-        return m.default || m;
-      }
-    }
-    ;
-    return null;
-  }
-  async loadModule(modulePath, options, forceInit) {
-    let module2 = await this.newModule(modulePath, options, forceInit);
-    if (module2)
-      document.body.append(module2);
-    return module2;
-  }
-  getModulePath(module2) {
-    let options = this._initOptions;
-    let modulePath = module2;
-    if (options && options.modules && options.modules[module2] && options.modules[module2].path) {
-      modulePath = "";
-      if (options.rootDir)
-        modulePath += options.rootDir + "/";
-      if (options.moduleDir)
-        modulePath += options.moduleDir + "/";
-      modulePath += options.modules[module2].path;
-      if (!modulePath.endsWith(".js"))
-        modulePath += "/index.js";
-    } else if (options.dependencies && options.dependencies[module2])
-      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : ""}libs/${module2}/index.js`;
-    return modulePath;
-  }
-  async newModule(module2, options, forceInit) {
-    const _initOptions = this._initOptions;
-    if ((!this._initOptions || forceInit) && options) {
-      this._initOptions = options;
-      if (!this._assets && this._initOptions.assets)
-        this._assets = await this.loadPackage(this._initOptions.assets) || {};
-      if (this._initOptions.dependencies) {
-        for (let p in this._initOptions.dependencies) {
-          if (p != this._initOptions.main)
-            await this.loadPackage(p, this._initOptions.dependencies[p]);
-        }
-        ;
-      }
-      ;
-    }
-    ;
-    let modulePath = module2;
-    if (this._initOptions)
-      modulePath = this.getModulePath(module2);
-    let elmId = this.modulesId[modulePath];
-    if (elmId && modulePath) {
-      if (forceInit && _initOptions)
-        this._initOptions = _initOptions;
-      return document.createElement(elmId);
-    }
-    let script;
-    if (options && options.script)
-      script = options.script;
-    else {
-      if (this._initOptions && this._initOptions.modules && this._initOptions.modules[module2] && this._initOptions.modules[module2].dependencies) {
-        let dependencies = this._initOptions.modules[module2].dependencies;
-        for (let i = 0; i < dependencies.length; i++) {
-          let dep = dependencies[i];
-          let path = this.getModulePath(dep);
-          if (!this.packages[path]) {
-            await this.loadPackage(dep, path);
-          }
-          ;
-        }
-        ;
-      }
-      ;
-      script = await this.getScript(modulePath);
-    }
-    ;
-    if (script) {
-      _currentDefineModule = null;
-      this.currentModulePath = modulePath;
-      if (modulePath.indexOf("://") > 0)
-        this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
-      else
-        this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
-      await import(`data:text/javascript,${encodeURIComponent(script)}`);
-      document.getElementsByTagName("html")[0].classList.add(applicationStyle);
-      this.currentModulePath = "";
-      this.currentModuleDir = "";
-      if (!_currentDefineModule && this.packages[modulePath]) {
-        _currentDefineModule = this.packages[modulePath];
-      }
-      if (_currentDefineModule) {
-        let module3 = _currentDefineModule.default || _currentDefineModule;
-        if (module3) {
-          this.id++;
-          elmId = `i-module--${this.id}`;
-          this.modulesId[modulePath] = elmId;
-          let Module2 = class extends module3 {
-          };
-          customElements.define(elmId, Module2);
-          let result = new Module2(null, options);
-          if (forceInit && _initOptions)
-            this._initOptions = _initOptions;
-          return result;
-        }
-        ;
-      }
-    }
-    if (forceInit && _initOptions)
-      this._initOptions = _initOptions;
-    return null;
-  }
-  async copyToClipboard(value) {
-    if (!value)
-      return false;
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(value);
-        return true;
-      } else {
-        const input = document.createElement("input");
-        input.value = value;
-        input.style.position = "fixed";
-        input.style.opacity = "0";
-        document.body.appendChild(input);
-        input.focus();
-        input.select();
-        const result = document.execCommand("copy");
-        document.body.removeChild(input);
-        return result;
-      }
-    } catch (err) {
-      console.log("debug: copy", err);
-      return false;
-    }
-  }
-};
-window["application"] = Application.Instance;
-var application = Application.Instance;
+  let result;
+  if (version == 1) {
+    result = await import_ipfs_utils.default.hashFile(content, version, {
+      rawLeaves: true,
+      maxChunkSize: 1048576,
+      maxChildrenPerNode: 1024
+    });
+  } else
+    result = await import_ipfs_utils.default.hashFile(content, version);
+  return result.cid;
+}
 
 // packages/image/src/style/image.css.ts
 var Theme4 = theme_exports.ThemeVars;
@@ -14714,454 +14622,603 @@ Button = __decorateClass([
   customElements2("i-button")
 ], Button);
 
-// packages/code-editor/src/monaco.ts
-async function addFile(fileName, content) {
-  let monaco = await initMonaco();
-  if (monaco) {
-    let model = await getFileModel(fileName);
-    if (!model) {
-      if ((fileName == null ? void 0 : fileName.endsWith(".tsx")) || (fileName == null ? void 0 : fileName.endsWith(".ts")))
-        model = monaco.editor.createModel(content || "", "typescript", monaco.Uri.file(fileName));
-      else
-        model = monaco.editor.createModel(content || "");
-    }
-    return model;
-  }
-  ;
-  return null;
-}
-async function updateFile(fileName, content) {
-  let monaco = await initMonaco();
-  if (monaco) {
-    let model = await getFileModel(fileName);
-    if (model) {
-      model.setValue(content);
-    }
-    return model;
-  }
-  ;
-  return null;
-}
-async function getFileModel(fileName) {
-  let monaco = await initMonaco();
-  if (monaco) {
-    let models = monaco.editor.getModels();
-    for (let i = 0; i < models.length; i++) {
-      let model = models[i];
-      if (model.uri.path == fileName || model.uri.path == "/" + fileName)
-        return model;
-    }
-    ;
-  }
-  ;
-  return null;
-}
-async function addLib(lib, dts) {
-  let monaco = await initMonaco();
-  monaco.languages.typescript.typescriptDefaults.addExtraLib(dts, lib);
-}
-async function initMonaco() {
-  if (window.monaco)
-    return window.monaco;
-  return new Promise((resolve) => {
-    window.MonacoEnvironment = {};
-    RequireJS.config({ paths: { "vs": `${LibPath}lib/monaco-editor/0.32.1/min/vs` } });
-    RequireJS.require([`vs/editor/editor.main`], (monaco) => {
-      resolve(monaco);
-      if (monaco.$loaded)
-        return;
-      monaco.$loaded = true;
-      monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-        experimentalDecorators: true,
-        allowSyntheticDefaultImports: true,
-        jsx: monaco.languages.typescript.JsxEmit.Preserve,
-        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-        allowNonTsExtensions: true,
-        target: monaco.languages.typescript.ScriptTarget.ES2020
-      });
-      monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
-      monaco.languages.registerCompletionItemProvider("typescript", {
-        triggerCharacters: [">"],
-        provideCompletionItems: (model, position) => {
-          const code = model.getValueInRange({
-            startLineNumber: position.lineNumber,
-            startColumn: 1,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column
-          });
-          const tag = code.slice(code.lastIndexOf("<") + 1, code.length);
-          if (!tag || !tag.endsWith(">") || tag.startsWith("/") || tag.indexOf(" ") > 0)
-            return;
-          const word = model.getWordUntilPosition(position);
-          return {
-            suggestions: [
-              {
-                label: `</${tag}`,
-                kind: monaco.languages.CompletionItemKind.EnumMember,
-                insertText: `$1</${tag}`,
-                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                range: {
-                  startLineNumber: position.lineNumber,
-                  endLineNumber: position.lineNumber,
-                  startColumn: word.startColumn,
-                  endColumn: word.endColumn
-                }
-              }
-            ]
-          };
-        }
-      });
-    });
-  });
-}
-
-// packages/code-editor/src/style/code-editor.css.ts
-cssRule("i-code-editor", {
-  $nest: {
-    "*": {
-      boxSizing: "border-box"
-    },
-    ".full-height": {
-      height: "100vh"
-    },
-    ".half-width": {
-      width: "50%"
-    },
-    ".column": {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "stretch"
-    },
-    ".row": {
-      display: "flex",
-      flexDirection: "row"
-    },
-    ".align-right": {
-      marginLeft: "auto",
-      alignSelf: "stretch"
-    },
-    "#flex-wrapper": {
-      display: "flex",
-      alignItems: "stretch"
-    },
-    "#operation-editor": {
-      height: "60vh",
-      minHeight: "260px"
-    },
-    "#variables-editor": {
-      height: "30vh",
-      alignItems: "stretch"
-    },
-    "#results-editor": {
-      height: "90vh",
-      alignItems: "stretch"
-    },
-    "#toolbar": {
-      minHeight: "40px",
-      backgroundColor: "#1e1e1e",
-      display: "inline-flex",
-      alignItems: "stretch"
-    },
-    "#toolbar > button, #toolbar > select, #toolbar > span, button#execute-op": {
-      margin: "4px",
-      padding: "4px"
-    },
-    "#toolbar button, #toolbar select": {
-      backgroundColor: "#1e1e1e",
-      color: "#eee",
-      border: "1px solid #eee",
-      borderRadius: "4px"
-    },
-    "#toolbar button:hover, select:hover, button:focus, select:focus": {
-      backgroundColor: "darkslategrey"
-    },
-    "#execution-tray": {
-      display: "inline-flex",
-      alignItems: "baseline"
-    },
-    "#schema-status": {
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      color: "#eee"
-    },
-    "#toolbar button.reload-button": {
-      border: "0 none",
-      padding: "4px",
-      width: "30px",
-      textAlign: "center"
-    }
-  }
+// packages/layout/src/style/panel.css.ts
+var panelStyle = style({
+  display: "block",
+  clear: "both",
+  position: "relative"
 });
-
-// packages/code-editor/src/code-editor.ts
-var CodeEditor = class extends Control {
-  get monaco() {
-    return window.monaco;
-  }
-  init() {
-    if (!this.editor) {
-      super.init();
-      this.language = this.getAttribute("language", true);
-      this.style.display = "inline-block";
-      if (this.language)
-        this.loadContent(void 0, this.language);
+var overflowStyle = style({
+  overflow: "hidden"
+});
+var vStackStyle = style({
+  display: "flex",
+  flexDirection: "column"
+});
+var hStackStyle = style({
+  display: "flex",
+  flexDirection: "row"
+});
+var gridStyle = style({
+  display: "grid"
+});
+var getStackDirectionStyleClass = (direction) => {
+  return style({
+    display: "flex",
+    flexDirection: direction == "vertical" ? "column" : "row"
+  });
+};
+var getStackMediaQueriesStyleClass = (mediaQueries) => {
+  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  for (let mediaQuery of mediaQueries) {
+    let mediaQueryRule;
+    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
+    } else if (mediaQuery.minWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
+    } else if (mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
     }
-    ;
-  }
-  get editor() {
-    return this._editor;
-  }
-  get language() {
-    return this._language;
-  }
-  set language(value) {
-    this._language = value;
-    if (!this.editor) {
-      this.loadContent();
-    } else {
-      let monaco = this.monaco;
-      let model = this.editor.getModel();
-      if (model) {
-        monaco.editor.setModelLanguage(model, value);
+    if (mediaQueryRule) {
+      styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
+      if (mediaQuery.properties.direction) {
+        styleObj["$nest"][mediaQueryRule]["flexDirection"] = mediaQuery.properties.direction == "vertical" ? "column" : "row";
+      }
+      if (mediaQuery.properties.justifyContent) {
+        styleObj["$nest"][mediaQueryRule]["justifyContent"] = mediaQuery.properties.justifyContent;
+      }
+      if (mediaQuery.properties.alignItems) {
+        styleObj["$nest"][mediaQueryRule]["alignItems"] = mediaQuery.properties.alignItems;
+      }
+      if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
+        const width = mediaQuery.properties.width;
+        styleObj["$nest"][mediaQueryRule]["width"] = typeof width === "string" ? `${width} !important` : `${width}px !important`;
+      }
+      if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
+        const height = mediaQuery.properties.height;
+        styleObj["$nest"][mediaQueryRule]["height"] = typeof height === "string" ? `${height} !important` : `${height}px !important`;
+      }
+      if (mediaQuery.properties.gap !== void 0 && mediaQuery.properties.gap !== null) {
+        const gap = mediaQuery.properties.gap;
+        styleObj["$nest"][mediaQueryRule]["gap"] = typeof gap === "string" ? `${gap} !important` : `${gap}px !important`;
+      }
+      if (mediaQuery.properties.position) {
+        styleObj["$nest"][mediaQueryRule]["position"] = `${mediaQuery.properties.position} !important`;
+      }
+      if (mediaQuery.properties.top !== null && mediaQuery.properties.top !== void 0) {
+        styleObj["$nest"][mediaQueryRule]["top"] = `${mediaQuery.properties.top} !important`;
+      }
+      if (typeof mediaQuery.properties.visible === "boolean") {
+        const visible = mediaQuery.properties.visible;
+        styleObj["$nest"][mediaQueryRule]["display"] = visible ? "flex !important" : "none !important";
       }
     }
   }
-  async loadContent(content, language, fileName) {
-    let monaco = await initMonaco();
-    if (content == void 0)
-      content = content || this._value || "";
-    this._value = content;
-    language = language || this._language || "typescript";
-    this._language = language;
-    if (!this._editor) {
-      let captionDiv = this.createElement("div", this);
-      captionDiv.style.display = "inline-block";
-      captionDiv.style.height = "100%";
-      captionDiv.style.width = "100%";
-      const customOptions = this._options || {};
-      let options = {
-        theme: "vs-dark",
-        tabSize: 2,
-        formatOnPaste: true,
-        formatOnType: true,
-        renderWhitespace: "none",
-        automaticLayout: true,
-        minimap: {
-          enabled: false
-        },
-        ...customOptions
-      };
-      this._editor = monaco.editor.create(captionDiv, options);
-      this._editor.onDidChangeModelContent((event) => {
-        if (typeof this.onChange === "function")
-          this.onChange(this, event);
-      });
-      if (fileName) {
-        let model = await getFileModel(fileName);
-        if (model) {
-          this._editor.setModel(model);
-          model.setValue(content);
-          return;
+  return style(styleObj);
+};
+var justifyContentStartStyle = style({
+  justifyContent: "flex-start"
+});
+var justifyContentCenterStyle = style({
+  justifyContent: "center"
+});
+var justifyContentEndStyle = style({
+  justifyContent: "flex-end"
+});
+var justifyContentSpaceBetweenStyle = style({
+  justifyContent: "space-between"
+});
+var alignItemsStretchStyle = style({
+  alignItems: "stretch"
+});
+var alignItemsStartStyle = style({
+  alignItems: "flex-start"
+});
+var alignItemsCenterStyle = style({
+  alignItems: "center"
+});
+var alignItemsEndStyle = style({
+  alignItems: "flex-end"
+});
+var getTemplateColumnsStyleClass = (columns) => {
+  return style({
+    gridTemplateColumns: columns.join(" ")
+  });
+};
+var getTemplateRowsStyleClass = (rows) => {
+  return style({
+    gridTemplateRows: rows.join(" ")
+  });
+};
+var getTemplateAreasStyleClass = (templateAreas) => {
+  let templateAreasStr = "";
+  for (let i = 0; i < templateAreas.length; i++) {
+    templateAreasStr += '"' + templateAreas[i].join(" ") + '" ';
+  }
+  return style({
+    gridTemplateAreas: templateAreasStr
+  });
+};
+var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
+  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  for (let mediaQuery of mediaQueries) {
+    let mediaQueryRule;
+    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
+    } else if (mediaQuery.minWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
+    } else if (mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
+    }
+    if (mediaQueryRule) {
+      styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
+      if (mediaQuery.properties.templateColumns) {
+        const templateColumnsStr = mediaQuery.properties.templateColumns.join(" ");
+        styleObj["$nest"][mediaQueryRule]["gridTemplateColumns"] = `${templateColumnsStr} !important`;
+      }
+      if (mediaQuery.properties.templateRows) {
+        const templateRowsStr = mediaQuery.properties.templateRows.join(" ");
+        styleObj["$nest"][mediaQueryRule]["gridTemplateRows"] = `${templateRowsStr} !important`;
+      }
+      if (mediaQuery.properties.templateAreas) {
+        let templateAreasStr = "";
+        for (let i = 0; i < mediaQuery.properties.templateAreas.length; i++) {
+          templateAreasStr += '"' + mediaQuery.properties.templateAreas[i].join(" ") + '" ';
+        }
+        styleObj["$nest"][mediaQueryRule]["gridTemplateAreas"] = `${templateAreasStr} !important`;
+      }
+      if (mediaQuery.properties.display) {
+        styleObj["$nest"][mediaQueryRule]["display"] = mediaQuery.properties.display;
+      }
+      if (mediaQuery.properties.gap) {
+        const gap = mediaQuery.properties.gap;
+        if (gap.row) {
+          styleObj["$nest"][mediaQueryRule]["rowGap"] = typeof gap.row === "string" ? gap.row : `${gap.row}px`;
+        }
+        if (gap.column) {
+          styleObj["$nest"][mediaQueryRule]["columnGap"] = typeof gap.column === "string" ? gap.column : `${gap.column}px`;
         }
       }
-      ;
-      if (language == "typescript" || (fileName == null ? void 0 : fileName.endsWith(".tsx")) || (fileName == null ? void 0 : fileName.endsWith(".ts"))) {
-        let model = monaco.editor.createModel(content || this._value || "", "typescript", fileName ? monaco.Uri.file(fileName) : void 0);
-        this._editor.setModel(model);
-      } else {
-        let model = monaco.editor.createModel(content || this._value || "", language || this._language, fileName ? monaco.Uri.file(fileName) : void 0);
-        this._editor.setModel(model);
+      if (typeof mediaQuery.properties.visible === "boolean") {
+        const visible = mediaQuery.properties.visible;
+        const display = mediaQuery.properties.display || "grid";
+        styleObj["$nest"][mediaQueryRule]["display"] = visible ? display + " !important" : "none !important";
       }
-      ;
-    } else {
-      let model = this._editor.getModel();
-      if (language == "typescript" && model && fileName && this._fileName != fileName) {
-        if (!this._fileName)
-          model.dispose();
-        model = await getFileModel(fileName);
-        if (!model)
-          model = monaco.editor.createModel(content || this._value || "", "typescript", monaco.Uri.file(fileName));
-        this._editor.setModel(model);
-      } else {
-        this._editor.setValue(content);
-        if (language && model)
-          monaco.editor.setModelLanguage(model, language);
-      }
-      ;
     }
-    ;
-    this._fileName = fileName || "";
-    this._editor.setScrollTop(0);
   }
-  async loadFile(fileName) {
-    var _a;
-    let model = await getFileModel(fileName);
-    if (model) {
-      if (!this._fileName)
-        (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
-      this._fileName = fileName;
-      this._editor.setModel(model);
-    }
-    ;
-  }
-  updateOptions(options) {
-    this._options = options;
-    if (this._editor)
-      this._editor.updateOptions(options);
-  }
-  get value() {
-    if (this._editor)
-      return this._editor.getValue();
-    else
-      return this._value;
-  }
-  set value(value) {
-    this._value = value;
-    if (this._editor) {
-      this._editor.setValue(value);
-      this._editor.setScrollTop(0);
-    } else
-      this.loadContent();
-  }
+  return style(styleObj);
 };
-CodeEditor.addLib = addLib;
-CodeEditor.addFile = addFile;
-CodeEditor.getFileModel = getFileModel;
-CodeEditor.updateFile = updateFile;
-CodeEditor = __decorateClass([
-  customElements2("i-code-editor")
-], CodeEditor);
 
-// packages/code-editor/src/diff-editor.ts
-var EditorType;
-(function(EditorType2) {
-  EditorType2[EditorType2["modified"] = 0] = "modified";
-  EditorType2[EditorType2["original"] = 1] = "original";
-})(EditorType || (EditorType = {}));
-var CodeDiffEditor = class extends Control {
+// packages/layout/src/stack.ts
+var StackLayout = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  get direction() {
+    return this._direction;
+  }
+  set direction(value) {
+    this._direction = value;
+    if (value) {
+      let style2 = getStackDirectionStyleClass(value);
+      this.classList.add(style2);
+    }
+  }
+  get justifyContent() {
+    return this._justifyContent;
+  }
+  set justifyContent(value) {
+    this._justifyContent = value || "start";
+    switch (this._justifyContent) {
+      case "start":
+        this.classList.add(justifyContentStartStyle);
+        break;
+      case "center":
+        this.classList.add(justifyContentCenterStyle);
+        break;
+      case "end":
+        this.classList.add(justifyContentEndStyle);
+        break;
+      case "space-between":
+        this.classList.add(justifyContentSpaceBetweenStyle);
+        break;
+    }
+  }
+  get alignItems() {
+    return this._alignItems;
+  }
+  set alignItems(value) {
+    this._alignItems = value || "stretch";
+    switch (this._alignItems) {
+      case "stretch":
+        this.classList.add(alignItemsStretchStyle);
+        break;
+      case "start":
+        this.classList.add(alignItemsStartStyle);
+        break;
+      case "center":
+        this.classList.add(alignItemsCenterStyle);
+        break;
+      case "end":
+        this.classList.add(alignItemsEndStyle);
+        break;
+    }
+  }
+  get gap() {
+    return this._gap;
+  }
+  set gap(value) {
+    this._gap = value || "initial";
+    if (typeof this._gap === "number") {
+      this.style.gap = this._gap + "px";
+    } else {
+      this.style.gap = this._gap;
+    }
+  }
+  get wrap() {
+    return this._wrap;
+  }
+  set wrap(value) {
+    if (!value)
+      return;
+    this._wrap = value;
+    this.style.flexWrap = this._wrap;
+  }
+  get mediaQueries() {
+    return this._mediaQueries;
+  }
+  set mediaQueries(value) {
+    this._mediaQueries = value;
+    let style2 = getStackMediaQueriesStyleClass(this._mediaQueries);
+    this._mediaStyle && this.classList.remove(this._mediaStyle);
+    this._mediaStyle = style2;
+    this.classList.add(style2);
+  }
+  setAttributeToProperty(propertyName) {
+    const prop = this.getAttribute(propertyName, true);
+    if (prop)
+      this[propertyName] = prop;
+  }
   init() {
-    if (!this.editor) {
-      super.init();
-      this.language = this.getAttribute("language", true);
-      this.style.display = "inline-block";
-    }
-    ;
-  }
-  get editor() {
-    return this._editor;
-  }
-  get language() {
-    return this._language;
-  }
-  set language(value) {
-    this._language = value;
-    if (!this.editor) {
-      if (this.language) {
-        this.loadContent(1, "", this.language);
-        this.loadContent(0, "", this.language);
-      }
-    } else {
-      this.setModelLanguage(value, "getOriginalEditor");
-      this.setModelLanguage(value, "getModifiedEditor");
-    }
-  }
-  setModelLanguage(value, functionName) {
-    let monaco = window.monaco;
-    let model = this.editor[functionName]().getModel();
-    if (model) {
-      monaco.editor.setModelLanguage(model, value);
-    }
-  }
-  getEditor(type) {
-    if (type === 1)
-      return this.editor.getOriginalEditor();
-    else
-      return this.editor.getModifiedEditor();
-  }
-  getModel(type) {
-    return this.getEditor(type).getModel();
-  }
-  async loadContent(type, content, language, fileName) {
-    let monaco = await initMonaco();
-    const value = type === 0 ? this._modifiedValue : this._originalValue;
-    if (content == void 0)
-      content = content || value || "";
-    type === 0 ? this._modifiedValue = content : this._originalValue = content;
-    language = language || this._language || "typescript";
-    this._language = language;
-    if (!this._editor) {
-      let captionDiv = this.createElement("div", this);
-      captionDiv.style.display = "inline-block";
-      captionDiv.style.height = "100%";
-      captionDiv.style.width = "100%";
-      let options = {
-        theme: "vs-dark",
-        originalEditable: false,
-        automaticLayout: true
-      };
-      this._editor = monaco.editor.createDiffEditor(captionDiv, options);
-      this._editor.onDidUpdateDiff(() => {
-        if (typeof this.onChange === "function")
-          this.onChange(this);
-      });
-    }
-    if (!this._modifiedModel || !this._originalModel) {
-      let model;
-      if (fileName == null ? void 0 : fileName.endsWith(".tsx")) {
-        model = monaco.editor.createModel(content || value || "", "typescript");
-      } else
-        model = monaco.editor.createModel(content || value || "", language || this._language || "typescript");
-      type === 0 ? this._modifiedModel = model : this._originalModel = model;
-      if (this._originalModel && this._modifiedModel) {
-        this._editor.setModel({
-          original: this._originalModel,
-          modified: this._modifiedModel
-        });
-      }
-    } else {
-      let model = this.getModel(type);
-      if (model)
-        monaco.editor.setModelLanguage(model, language);
-      this.getEditor(type).setValue(content);
-    }
-  }
-  updateOptions(options) {
-    this.editor.updateOptions(options);
-  }
-  get originalValue() {
-    if (this.editor)
-      return this.editor.getOriginalEditor().getValue();
-    else
-      return this._originalValue;
-  }
-  set originalValue(value) {
-    this._originalValue = value;
-    if (this.editor) {
-      this.editor.getOriginalEditor().setValue(value);
-    } else
-      this.loadContent(1);
-  }
-  get modifiedValue() {
-    if (this.editor)
-      return this.editor.getModifiedEditor().getValue();
-    else
-      return this._modifiedValue;
-  }
-  set modifiedValue(value) {
-    this._modifiedValue = value;
-    if (this.editor) {
-      this.editor.getModifiedEditor().setValue(value);
-    } else {
-      this.loadContent(0);
-    }
+    super.init();
+    this.setAttributeToProperty("direction");
+    this.setAttributeToProperty("justifyContent");
+    this.setAttributeToProperty("alignItems");
+    this.setAttributeToProperty("gap");
+    this.setAttributeToProperty("wrap");
+    this.setAttributeToProperty("mediaQueries");
   }
 };
-CodeDiffEditor.addLib = addLib;
-CodeDiffEditor.addFile = addFile;
-CodeDiffEditor.getFileModel = getFileModel;
-CodeDiffEditor.updateFile = updateFile;
-CodeDiffEditor = __decorateClass([
-  customElements2("i-code-diff-editor")
-], CodeDiffEditor);
+StackLayout = __decorateClass([
+  customElements2("i-stack")
+], StackLayout);
+var HStack = class extends StackLayout {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get horizontalAlignment() {
+    return this._horizontalAlignment;
+  }
+  set horizontalAlignment(value) {
+    this._horizontalAlignment = value || "start";
+    this.justifyContent = value;
+  }
+  get verticalAlignment() {
+    return this._verticalAlignment;
+  }
+  set verticalAlignment(value) {
+    this._verticalAlignment = value || "stretch";
+    this.alignItems = value;
+  }
+  setAttributeToProperty(propertyName) {
+    const prop = this.getAttribute(propertyName, true);
+    if (prop)
+      this[propertyName] = prop;
+  }
+  init() {
+    super.init();
+    this.direction = "horizontal";
+    this.setAttributeToProperty("horizontalAlignment");
+    this.setAttributeToProperty("verticalAlignment");
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+HStack = __decorateClass([
+  customElements2("i-hstack")
+], HStack);
+var VStack = class extends StackLayout {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get horizontalAlignment() {
+    return this._horizontalAlignment;
+  }
+  set horizontalAlignment(value) {
+    this._horizontalAlignment = value || "stretch";
+    this.alignItems = value;
+  }
+  get verticalAlignment() {
+    return this._verticalAlignment;
+  }
+  set verticalAlignment(value) {
+    this._verticalAlignment = value || "start";
+    this.justifyContent = value;
+  }
+  setAttributeToProperty(propertyName) {
+    const prop = this.getAttribute(propertyName, true);
+    if (prop)
+      this[propertyName] = prop;
+  }
+  init() {
+    super.init();
+    this.direction = "vertical";
+    this.setAttributeToProperty("horizontalAlignment");
+    this.setAttributeToProperty("verticalAlignment");
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+VStack = __decorateClass([
+  customElements2("i-vstack")
+], VStack);
+
+// packages/layout/src/panel.ts
+var Panel = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  init() {
+    super.init();
+    this.classList.add(panelStyle);
+    if (this.dock) {
+      this.classList.add(overflowStyle);
+    }
+  }
+  connectedCallback() {
+    if (this.connected) {
+      return;
+    }
+    super.connectedCallback();
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Panel = __decorateClass([
+  customElements2("i-panel")
+], Panel);
+
+// packages/layout/src/grid.ts
+var GridLayout = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+    this._styleClassMap = {};
+    this.removeStyleClass = this.removeStyleClass.bind(this);
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  get templateColumns() {
+    return this._templateColumns;
+  }
+  set templateColumns(columns) {
+    this._templateColumns = columns;
+    this.removeStyleClass("columns");
+    if (columns) {
+      let style2 = getTemplateColumnsStyleClass(columns);
+      this._styleClassMap["columns"] = style2;
+      this.classList.add(style2);
+    }
+  }
+  get templateRows() {
+    return this._templateRows;
+  }
+  set templateRows(rows) {
+    this._templateRows = rows;
+    this.removeStyleClass("rows");
+    if (rows) {
+      let style2 = getTemplateRowsStyleClass(rows);
+      this._styleClassMap["rows"] = style2;
+      this.classList.add(style2);
+    }
+  }
+  get templateAreas() {
+    return this._templateAreas;
+  }
+  set templateAreas(value) {
+    this._templateAreas = value;
+    this.removeStyleClass("areas");
+    if (value) {
+      let style2 = getTemplateAreasStyleClass(value);
+      this._styleClassMap["areas"] = style2;
+      this.classList.add(style2);
+    }
+  }
+  get autoColumnSize() {
+    return this._autoColumnSize;
+  }
+  set autoColumnSize(value) {
+    this._autoColumnSize = value;
+    if (value) {
+      this.style.gridAutoColumns = value;
+    }
+  }
+  get autoRowSize() {
+    return this._autoRowSize;
+  }
+  set autoRowSize(value) {
+    this._autoRowSize = value;
+    if (value) {
+      this.style.gridAutoRows = value;
+    }
+  }
+  get columnsPerRow() {
+    return this._columnsPerRow;
+  }
+  set columnsPerRow(value) {
+    this._columnsPerRow = value;
+    this.style.gridTemplateColumns = `repeat(${this._columnsPerRow}, 1fr)`;
+  }
+  get gap() {
+    return this._gap;
+  }
+  set gap(value) {
+    this._gap = value;
+    if (value) {
+      if (value.row) {
+        if (typeof value.row == "number") {
+          this.style.rowGap = value.row + "px";
+        } else {
+          this.style.rowGap = value.row;
+        }
+      }
+      if (value.column) {
+        if (typeof value.column == "number") {
+          this.style.columnGap = value.column + "px";
+        } else {
+          this.style.columnGap = value.column;
+        }
+      }
+    }
+  }
+  get horizontalAlignment() {
+    return this._horizontalAlignment;
+  }
+  set horizontalAlignment(value) {
+    this._horizontalAlignment = value;
+    this.style.justifyItems = value;
+  }
+  get verticalAlignment() {
+    return this._verticalAlignment;
+  }
+  set verticalAlignment(value) {
+    this._verticalAlignment = value;
+    this.style.alignItems = value;
+  }
+  get autoFillInHoles() {
+    return this._autoFillInHoles;
+  }
+  set autoFillInHoles(value) {
+    this._autoFillInHoles = value;
+    this.style.gridAutoFlow = this._autoFillInHoles ? "dense" : "row";
+  }
+  get mediaQueries() {
+    return this._mediaQueries;
+  }
+  set mediaQueries(value) {
+    this._mediaQueries = value;
+    let style2 = getGridLayoutMediaQueriesStyleClass(this._mediaQueries);
+    this._mediaStyle && this.classList.remove(this._mediaStyle);
+    this._mediaStyle = style2;
+    this.classList.add(style2);
+  }
+  setAttributeToProperty(propertyName) {
+    const prop = this.getAttribute(propertyName, true);
+    if (this.id == "thisPnl") {
+      console.log(propertyName, prop);
+    }
+    if (prop)
+      this[propertyName] = prop;
+  }
+  removeStyleClass(name) {
+    if (this._styleClassMap && this._styleClassMap[name]) {
+      this.classList.remove(this._styleClassMap[name]);
+      delete this._styleClassMap[name];
+    }
+  }
+  init() {
+    super.init();
+    this._styleClassMap = {};
+    this.classList.add(gridStyle);
+    this.setAttributeToProperty("templateColumns");
+    this.setAttributeToProperty("templateRows");
+    this.setAttributeToProperty("templateAreas");
+    this.setAttributeToProperty("gap");
+    this.setAttributeToProperty("horizontalAlignment");
+    this.setAttributeToProperty("verticalAlignment");
+    this.setAttributeToProperty("columnsPerRow");
+    this.setAttributeToProperty("autoFillInHoles");
+    this.setAttributeToProperty("autoColumnSize");
+    this.setAttributeToProperty("autoRowSize");
+    this.setAttributeToProperty("mediaQueries");
+  }
+};
+GridLayout = __decorateClass([
+  customElements2("i-grid-layout")
+], GridLayout);
+
+// packages/layout/src/card.ts
+var CardLayout = class extends GridLayout {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  get cardMinWidth() {
+    return this._cardMinWidth;
+  }
+  set cardMinWidth(value) {
+    this._cardMinWidth = value;
+    this.updateGridTemplateColumns();
+  }
+  get columnsPerRow() {
+    return this._columnsPerRow;
+  }
+  set columnsPerRow(value) {
+    this._columnsPerRow = value;
+    this.updateGridTemplateColumns();
+  }
+  get cardHeight() {
+    return this._cardHeight;
+  }
+  set cardHeight(value) {
+    this._cardHeight = typeof value == "number" ? value + "px" : value;
+    this.style.gridAutoRows = this._cardHeight;
+  }
+  updateGridTemplateColumns() {
+    if (this.cardMinWidth && this.columnsPerRow) {
+      let minmaxFirstParam = this.gap && this.gap.column ? `max(${this.cardMinWidth}, calc(100%/${this.columnsPerRow} - ${this.gap.column}))` : `max(${this.cardMinWidth}, 100%/${this.columnsPerRow})`;
+      this.style.gridTemplateColumns = `repeat(auto-fill, minmax(${minmaxFirstParam}, 1fr))`;
+    } else if (this.cardMinWidth) {
+      this.style.gridTemplateColumns = `repeat(auto-fill, minmax(min(${this.cardMinWidth}, 100%), 1fr))`;
+    } else if (this.columnsPerRow) {
+      this.style.gridTemplateColumns = `repeat(${this.columnsPerRow}, 1fr)`;
+    }
+  }
+  setAttributeToProperty(propertyName) {
+    const prop = this.getAttribute(propertyName, true);
+    if (prop)
+      this[propertyName] = prop;
+  }
+  init() {
+    super.init();
+    this.autoRowSize = "1fr";
+    this.setAttributeToProperty("cardMinWidth");
+    this.setAttributeToProperty("cardHeight");
+  }
+};
+CardLayout = __decorateClass([
+  customElements2("i-card-layout")
+], CardLayout);
 
 // packages/combo-box/src/style/combo-box.css.ts
 var Theme6 = theme_exports.ThemeVars;
@@ -15791,14 +15848,6 @@ var Datepicker = class extends Control {
         }
       }
     };
-    this._onFocus = () => {
-      this.inputElm.placeholder = this.formatString;
-      if (!this.inputElm.value)
-        return;
-      if (this.value) {
-        this.inputElm.value = this.value.format(this.defaultDateTimeFormat);
-      }
-    };
     this._onBlur = (event) => {
       if (!this.inputElm.value) {
         const oldVal = this.value;
@@ -16403,10 +16452,10 @@ var RadioGroup = class extends Control {
   set selectedValue(value) {
     this._selectedValue = value;
     this._group.forEach((item) => {
+      const inputElm = item.querySelector("input");
+      if (inputElm)
+        inputElm.checked = item.value === value;
       if (item.value === value) {
-        const inputElm = item.querySelector("input");
-        if (inputElm)
-          inputElm.checked = true;
         item.classList.add("is-checked");
       } else {
         item.classList.remove("is-checked");
@@ -16690,7 +16739,7 @@ var Input = class extends Control {
       this.inputElm.style.resize = value === "auto-grow" ? "none" : value;
       if (value === "auto" || value === "auto-grow") {
         this.inputElm.style.height = "auto";
-        this.inputElm.style.height = this.inputElm.scrollHeight + "px";
+        this.inputElm.style.height = this.inputElm.scrollHeight + 2 + "px";
       }
     }
   }
@@ -16859,7 +16908,7 @@ var Input = class extends Control {
     }
     if (this.inputType === "textarea" && (this.resize === "auto" || this.resize === "auto-grow")) {
       this.inputElm.style.height = "auto";
-      this.inputElm.style.height = this.inputElm.scrollHeight + "px";
+      this.inputElm.style.height = this.inputElm.scrollHeight + 2 + "px";
     }
     this._value = this.inputElm.value;
     if (this.onChanged)
@@ -16927,13 +16976,4382 @@ Input = __decorateClass([
   customElements2("i-input")
 ], Input);
 
-// packages/markdown/src/style/markdown.css.ts
+// packages/link/src/style/link.css.ts
 var Theme11 = theme_exports.ThemeVars;
+cssRule("i-link", {
+  display: "block",
+  cursor: "pointer",
+  textTransform: "inherit",
+  $nest: {
+    "&:hover *": {
+      color: Theme11.colors.primary.dark
+    },
+    "> a": {
+      display: "inline",
+      transition: "all .3s",
+      textDecoration: "underline",
+      color: "inherit",
+      fontSize: "inherit",
+      fontWeight: "inherit",
+      fontFamily: "inherit",
+      textTransform: "inherit"
+    }
+  }
+});
+
+// packages/link/src/link.ts
+var Link = class extends Control {
+  constructor(parent, options) {
+    super(parent, options, {
+      target: "_blank"
+    });
+  }
+  get href() {
+    return this._href;
+  }
+  set href(value) {
+    this._href = typeof value === "string" ? value : "";
+    if (this._linkElm)
+      this._linkElm.href = this._href;
+  }
+  get target() {
+    return this._target;
+  }
+  set target(value) {
+    this._target = value;
+    if (this._linkElm)
+      this._linkElm.target = value;
+  }
+  append(children) {
+    if (!this._linkElm) {
+      this._linkElm = this.createElement("a", this);
+    }
+    this._linkElm.appendChild(children);
+  }
+  _handleClick(event, stopPropagation) {
+    event.preventDefault();
+    window.open(this._linkElm.href, this._linkElm.target);
+    return super._handleClick(event);
+  }
+  addChildControl(control) {
+    if (this._linkElm)
+      this._linkElm.appendChild(control);
+  }
+  removeChildControl(control) {
+    if (this._linkElm && this._linkElm.contains(control))
+      this._linkElm.removeChild(control);
+  }
+  init() {
+    if (!this.initialized) {
+      super.init();
+      if (!this._linkElm)
+        this._linkElm = this.createElement("a", this);
+      this.classList.add("i-link");
+      const hrefAttr = this.getAttribute("href", true);
+      hrefAttr && (this.href = hrefAttr);
+      const targetAttr = this.getAttribute("target", true);
+      targetAttr && (this._linkElm.target = targetAttr);
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Link = __decorateClass([
+  customElements2("i-link")
+], Link);
+
+// packages/label/src/style/label.css.ts
+var Theme12 = theme_exports.ThemeVars;
+var captionStyle2 = style({
+  display: "inline-block",
+  color: Theme12.text.primary,
+  fontFamily: Theme12.typography.fontFamily,
+  fontSize: Theme12.typography.fontSize
+});
+
+// packages/label/src/label.ts
+var Label = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get caption() {
+    return this.captionSpan.innerHTML;
+  }
+  set caption(value) {
+    this.captionSpan.innerHTML = value || "";
+  }
+  get link() {
+    if (!this._link) {
+      this._link = new Link(this, {
+        href: "#",
+        target: "_blank",
+        font: this.font
+      });
+      this._link.append(this.captionSpan);
+      this.appendChild(this._link);
+    }
+    return this._link;
+  }
+  set link(value) {
+    if (this._link) {
+      this._link.prepend(this.captionSpan);
+      this._link.remove();
+    }
+    this._link = value;
+    if (this._link) {
+      this._link.append(this.captionSpan);
+      this.appendChild(this._link);
+    }
+  }
+  set height(value) {
+    this.setPosition("height", value);
+    if (this.captionSpan)
+      this.captionSpan.style.height = value + "px";
+  }
+  set width(value) {
+    this.setPosition("width", value);
+    if (this.captionSpan)
+      this.captionSpan.style.width = value + "px";
+  }
+  get wordBreak() {
+    return this.style.wordBreak;
+  }
+  set wordBreak(value) {
+    this.style.wordBreak = value;
+  }
+  get overflowWrap() {
+    return this.style.overflowWrap;
+  }
+  set overflowWrap(value) {
+    this.style.overflowWrap = value;
+  }
+  init() {
+    if (!this.captionSpan) {
+      let childNodes = [];
+      for (let i = 0; i < this.childNodes.length; i++) {
+        childNodes.push(this.childNodes[i]);
+      }
+      this.captionSpan = this.createElement("span", this);
+      this.classList.add(captionStyle2);
+      this.caption = this.getAttribute("caption", true) || "";
+      if (childNodes && childNodes.length) {
+        for (let i = 0; i < childNodes.length; i++) {
+          this.captionSpan.appendChild(childNodes[i]);
+        }
+      }
+      const linkAttr = this.getAttribute("link", true);
+      if (linkAttr) {
+        const link = new Link(this, {
+          ...linkAttr,
+          font: this.font
+        });
+        this.link = link;
+      }
+      const wordBreak = this.getAttribute("wordBreak", true);
+      if (wordBreak)
+        this.wordBreak = wordBreak;
+      const overflowWrap = this.getAttribute("overflowWrap", true);
+      if (overflowWrap)
+        this.overflowWrap = overflowWrap;
+      super.init();
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Label = __decorateClass([
+  customElements2("i-label")
+], Label);
+
+// packages/application/src/jsonUI.ts
+var checkPropertyChange = (value, schema, property) => {
+  return validate(value, schema, { changing: property || "property" });
+};
+var validate = (instance, schema, options) => {
+  if (!options)
+    options = {};
+  var _changing = options.changing;
+  function getType(schema2) {
+    return schema2.type;
+  }
+  var errors = [];
+  function checkProp(value, schema2, path, i) {
+    var l;
+    path += path ? typeof i == "number" ? "[" + i + "]" : typeof i == "undefined" ? "" : "." + i : i;
+    function addError(message, overwritePath) {
+      errors.push({ property: overwritePath || path, message });
+    }
+    if ((typeof schema2 != "object" || schema2 instanceof Array) && (path || typeof schema2 != "function") && !(schema2 && getType(schema2))) {
+      if (typeof schema2 == "function") {
+        if (!(value instanceof schema2)) {
+          addError("is not an instance of the class/constructor " + schema2.name);
+        }
+      } else if (schema2) {
+        addError("Invalid schema/property definition " + schema2);
+      }
+      return null;
+    }
+    if (_changing && schema2.readOnly) {
+      addError("is a readonly field, it can not be changed");
+    }
+    if (schema2["extends"]) {
+      checkProp(value, schema2["extends"], path, i);
+    }
+    function checkType(type, value2) {
+      if (type) {
+        if (typeof type == "string" && type != "any" && (type == "null" ? value2 !== null : typeof value2 != type) && !(value2 instanceof Array && type == "array") && !(type == "integer" && value2 % 1 === 0)) {
+          return [{
+            property: path,
+            message: value2 + " - " + typeof value2 + " value found, but a " + type + " is required"
+          }];
+        }
+        if (type instanceof Array) {
+          let unionErrors = [];
+          for (var j2 = 0; j2 < type.length; j2++) {
+            if (!(unionErrors = checkType(type[j2], value2)).length) {
+              break;
+            }
+          }
+          if (unionErrors.length) {
+            return unionErrors;
+          }
+        } else if (typeof type == "object") {
+          var priorErrors = errors;
+          errors = [];
+          checkProp(value2, type, path);
+          var theseErrors = errors;
+          errors = priorErrors;
+          return theseErrors;
+        }
+      }
+      return [];
+    }
+    if (value === void 0) {
+      if (schema2.required) {
+        addError("is missing and it is required");
+      }
+    } else {
+      if (getType(schema2) === "object" && schema2.required instanceof Array) {
+        for (let requiredField of schema2.required) {
+          if (value[requiredField] === void 0)
+            addError(`is missing and it is required`, requiredField);
+        }
+      }
+      errors = errors.concat(checkType(getType(schema2), value));
+      if (schema2.disallow && !checkType(schema2.disallow, value).length) {
+        addError(" disallowed value was matched");
+      }
+      if (value !== null) {
+        if (value instanceof Array) {
+          if (schema2.items) {
+            var itemsIsArray = schema2.items instanceof Array;
+            var propDef = schema2.items;
+            for (i = 0, l = value.length; i < l; i += 1) {
+              if (itemsIsArray)
+                propDef = schema2.items[i];
+              if (options.coerce)
+                value[i] = options.coerce(value[i], propDef);
+              var errors2 = checkProp(value[i], propDef, path, i);
+              if (errors2)
+                errors.concat(errors2);
+            }
+          }
+          if (schema2.minItems && value.length < schema2.minItems) {
+            addError("There must be a minimum of " + schema2.minItems + " in the array");
+          }
+          if (schema2.maxItems && value.length > schema2.maxItems) {
+            addError("There must be a maximum of " + schema2.maxItems + " in the array");
+          }
+        } else if (schema2.properties || schema2.additionalProperties) {
+          errors.concat(checkObj(value, schema2.properties, path, schema2.additionalProperties));
+        }
+        if (schema2.pattern && typeof value == "string" && !value.match(schema2.pattern)) {
+          addError("does not match the regex pattern " + schema2.pattern);
+        }
+        if (schema2.maxLength && typeof value == "string" && value.length > schema2.maxLength) {
+          addError("may only be " + schema2.maxLength + " characters long");
+        }
+        if (schema2.minLength && typeof value == "string" && value.length < schema2.minLength) {
+          addError("must be at least " + schema2.minLength + " characters long");
+        }
+        if (typeof schema2.minimum !== "undefined" && typeof value == typeof schema2.minimum && schema2.minimum > value) {
+          addError("must have a minimum value of " + schema2.minimum);
+        }
+        if (typeof schema2.maximum !== "undefined" && typeof value == typeof schema2.maximum && schema2.maximum < value) {
+          addError("must have a maximum value of " + schema2.maximum);
+        }
+        if (schema2["enum"]) {
+          var enumer = schema2["enum"];
+          l = enumer.length;
+          var found;
+          for (var j = 0; j < l; j++) {
+            if (enumer[j] === value) {
+              found = 1;
+              break;
+            }
+          }
+          if (!found) {
+            addError("does not have a value in the enumeration " + enumer.join(", "));
+          }
+        }
+        if (typeof schema2.maxDecimal == "number" && value.toString().match(new RegExp("\\.[0-9]{" + (schema2.maxDecimal + 1) + ",}"))) {
+          addError("may only have " + schema2.maxDecimal + " digits of decimal places");
+        }
+      }
+    }
+    return null;
+  }
+  function checkObj(instance2, objTypeDef, path, additionalProp) {
+    if (typeof objTypeDef == "object") {
+      if (typeof instance2 != "object" || instance2 instanceof Array) {
+        errors.push({ property: path, message: "an object is required" });
+      }
+      for (var i in objTypeDef) {
+        if (objTypeDef.hasOwnProperty(i) && i != "__proto__" && i != "constructor") {
+          var value = instance2.hasOwnProperty(i) ? instance2[i] : void 0;
+          if (value === void 0 && options.existingOnly)
+            continue;
+          var propDef = objTypeDef[i];
+          if (value === void 0 && propDef["default"]) {
+            value = instance2[i] = propDef["default"];
+          }
+          if (options.coerce && i in instance2) {
+            value = instance2[i] = options.coerce(value, propDef);
+          }
+          checkProp(value, propDef, path, i);
+        }
+      }
+    }
+    for (i in instance2) {
+      if (instance2.hasOwnProperty(i) && !(i.charAt(0) == "_" && i.charAt(1) == "_") && objTypeDef && !objTypeDef[i] && additionalProp === false) {
+        if (options.filter) {
+          delete instance2[i];
+          continue;
+        } else {
+          errors.push({
+            property: path,
+            message: "The property " + i + " is not defined in the schema and the schema does not allow additional properties"
+          });
+        }
+      }
+      var requires = objTypeDef && objTypeDef[i] && objTypeDef[i].requires;
+      if (requires && !(requires in instance2)) {
+        errors.push({
+          property: path,
+          message: "the presence of the property " + i + " requires that " + requires + " also be present"
+        });
+      }
+      value = instance2[i];
+      if (additionalProp && (!(objTypeDef && typeof objTypeDef == "object") || !(i in objTypeDef))) {
+        if (options.coerce) {
+          value = instance2[i] = options.coerce(value, additionalProp);
+        }
+        checkProp(value, additionalProp, path, i);
+      }
+      if (!_changing && value && value.$schema) {
+        const errors2 = checkProp(value, value.$schema, path, i);
+        if (errors2)
+          errors = errors.concat(errors2);
+      }
+    }
+    return errors;
+  }
+  if (schema) {
+    checkProp(instance, schema, "", _changing || "");
+  }
+  if (!_changing && instance && instance.$schema) {
+    checkProp(instance, instance.$schema, "", "");
+  }
+  return { valid: !errors.length, errors };
+};
+var mustBeValid = (result) => {
+  if (!result.valid) {
+    throw new TypeError(result.errors.map(function(error) {
+      return "for property " + error.property + ": " + error.message;
+    }).join(", \n"));
+  }
+};
+var DataSchemaValidator = {
+  checkPropertyChange,
+  mustBeValid,
+  validate
+};
+async function renderUI(target, jsonSchema, callback, data, options) {
+  let format = {};
+  let scopeList = [];
+  let nestedData = {};
+  const form = renderForm(jsonSchema, "", "");
+  if (form) {
+    target.append(form);
+    const btnPnl = renderButtons();
+    target.append(btnPnl);
+  }
+  function setId(input, nameBuilder) {
+    let inputId = "#" + nameBuilder;
+    input.id = inputId;
+    scopeList.push(inputId);
+  }
+  function renderForm(schema, name, nameBuilder = "", data2, required) {
+    var _a, _b;
+    if (!schema)
+      return null;
+    const labelName = schema.title || convertFieldNameToLabel(name);
+    let groupPnl;
+    let lbl;
+    let controlPnl;
+    switch ((_a = schema.type) == null ? void 0 : _a.toLowerCase()) {
+      case "object":
+        const req = schema.required;
+        const properties = schema.properties;
+        const box = new Panel();
+        if (name) {
+          let pnl = new Panel(box);
+          new Label(pnl, {
+            caption: schema.title || convertFieldNameToLabel(name)
+          });
+        }
+        const form2 = new Panel();
+        for (const propertyName in properties) {
+          let subLevelData = data2;
+          if (data2 && name)
+            subLevelData = data2[name];
+          const control = renderForm(properties[propertyName], propertyName, `${nameBuilder}/${propertyName}`, subLevelData, req);
+          form2.append(control);
+        }
+        box.append(form2);
+        return box;
+      case "string":
+        switch ((_b = schema.format) == null ? void 0 : _b.toLowerCase()) {
+          case "date":
+            const datePicker = new Datepicker();
+            setId(datePicker, nameBuilder);
+            if (data2)
+              datePicker.value = data2[name];
+            format[nameBuilder] = {
+              control: datePicker,
+              type: "datepicker",
+              required: required && required.indexOf(name) >= 0
+            };
+            groupPnl = new Panel();
+            lbl = new Label(groupPnl, { caption: labelName });
+            controlPnl = new Panel(groupPnl);
+            controlPnl.append(datePicker);
+            return groupPnl;
+          case "datetime":
+            const dateTimePicker = new Datepicker();
+            setId(dateTimePicker, nameBuilder);
+            dateTimePicker.dateTimeFormat = "YYYY-MM-DD HH:mm:ss";
+            if (data2)
+              dateTimePicker.value = data2[name];
+            format[nameBuilder] = {
+              control: dateTimePicker,
+              type: "datepicker",
+              required: required && required.indexOf(name) >= 0
+            };
+            groupPnl = new Panel();
+            lbl = new Label(groupPnl, { caption: labelName });
+            controlPnl = new Panel(groupPnl);
+            controlPnl.append(dateTimePicker);
+            return groupPnl;
+          case "color":
+            const colorPicker = new Input(void 0, { inputType: "color" });
+            setId(colorPicker, nameBuilder);
+            if (data2)
+              colorPicker.value = data2[name];
+            format[nameBuilder] = {
+              control: colorPicker,
+              type: "colorpicker",
+              required: required && required.indexOf(name) >= 0
+            };
+            groupPnl = new Panel();
+            lbl = new Label(groupPnl, { caption: labelName });
+            controlPnl = new Panel(groupPnl);
+            controlPnl.append(colorPicker);
+            return groupPnl;
+          default:
+            if (schema.enum && schema.enum.length > 0) {
+              const items = [];
+              for (const item of schema.enum) {
+                items.push({ label: item, value: item });
+              }
+              const comboBox = new ComboBox(void 0, { items, icon: { name: "caret-down" } });
+              setId(comboBox, nameBuilder);
+              if (data2)
+                comboBox.value = data2[name];
+              format[nameBuilder] = {
+                control: comboBox,
+                type: "combobox",
+                required: required && required.indexOf(name) >= 0
+              };
+              groupPnl = new Panel();
+              lbl = new Label(groupPnl, { caption: labelName });
+              controlPnl = new Panel(groupPnl);
+              controlPnl.append(comboBox);
+              return groupPnl;
+            } else {
+              const input = new Input(void 0, { inputType: "Text" });
+              setId(input, nameBuilder);
+              if (data2)
+                input.value = data2[name];
+              format[nameBuilder] = {
+                control: input,
+                type: "input",
+                required: required && required.indexOf(name) >= 0
+              };
+              groupPnl = new Panel();
+              lbl = new Label(groupPnl, { caption: labelName });
+              controlPnl = new Panel(groupPnl);
+              controlPnl.append(input);
+              return groupPnl;
+            }
+        }
+      case "number":
+        var { minimum, maximum } = schema;
+        if (minimum != void 0 && maximum != void 0) {
+          const input = new Input(void 0, {
+            min: minimum,
+            max: maximum,
+            tooltipVisible: true,
+            inputType: "range"
+          });
+          setId(input, nameBuilder);
+          if (data2)
+            input.value = data2[name];
+          format[nameBuilder] = {
+            control: input,
+            type: "input",
+            required: required && required.indexOf(name) >= 0
+          };
+          groupPnl = new Panel();
+          lbl = new Label(groupPnl, { caption: labelName });
+          controlPnl = new Panel(groupPnl);
+          controlPnl.append(input);
+          return groupPnl;
+        } else {
+          const input = new Input(void 0, {
+            min: minimum,
+            max: maximum,
+            tooltipVisible: true,
+            inputType: "number"
+          });
+          setId(input, nameBuilder);
+          if (data2)
+            input.value = data2[name];
+          format[nameBuilder] = {
+            control: input,
+            type: "input",
+            required: required && required.indexOf(name) >= 0
+          };
+          groupPnl = new Panel();
+          lbl = new Label(groupPnl, { caption: labelName });
+          controlPnl = new Panel(groupPnl);
+          controlPnl.append(input);
+          return groupPnl;
+        }
+      case "integer":
+        var { minimum, maximum } = schema;
+        if (minimum != void 0 && maximum != void 0) {
+          const input = new Input(void 0, {
+            min: minimum,
+            max: maximum,
+            tooltipVisible: true,
+            value: minimum,
+            inputType: "range"
+          });
+          setId(input, nameBuilder);
+          if (data2)
+            input.value = data2[name];
+          format[nameBuilder] = {
+            control: input,
+            type: "input",
+            required: required && required.indexOf(name) >= 0
+          };
+          groupPnl = new Panel();
+          lbl = new Label(groupPnl, { caption: labelName });
+          controlPnl = new Panel(groupPnl);
+          controlPnl.append(input);
+          return groupPnl;
+        } else {
+          const input = new Input(void 0, {
+            inputType: "number"
+          });
+          setId(input, nameBuilder);
+          if (data2)
+            input.value = data2[name];
+          format[nameBuilder] = {
+            control: input,
+            type: "input",
+            required: required && required.indexOf(name) >= 0
+          };
+          groupPnl = new Panel();
+          lbl = new Label(groupPnl, { caption: labelName });
+          controlPnl = new Panel(groupPnl);
+          controlPnl.append(input);
+          return groupPnl;
+        }
+      case "boolean":
+        var checkbox = new Checkbox();
+        setId(checkbox, nameBuilder);
+        if (data2)
+          checkbox.checked = data2[name];
+        format[nameBuilder] = {
+          control: checkbox,
+          type: "checkbox",
+          required: required && required.indexOf(name) >= 0
+        };
+        groupPnl = new Panel();
+        lbl = new Label(groupPnl, { caption: labelName });
+        controlPnl = new Panel(groupPnl);
+        controlPnl.append(checkbox);
+        return groupPnl;
+      default:
+        return null;
+    }
+  }
+  function renderButtons() {
+    let btnPnl = new Panel();
+    let btnHStk = new HStack(btnPnl);
+    let cancelBtn = new Button(btnHStk, {
+      caption: "cancel",
+      height: "30px",
+      margin: { right: 10 },
+      font: { color: "white" }
+    });
+    cancelBtn.onClick = () => {
+      if (callback) {
+        callback(false, "action canceled");
+      }
+    };
+    let confirmBtn = new Button(btnHStk, {
+      caption: "confirm",
+      height: "30px",
+      margin: { right: 10 },
+      font: { color: "white" }
+    });
+    confirmBtn.onClick = async () => {
+      let flatData = await getFormData();
+      nestedData = clone(flatData);
+      convertFlatJsonToNestedJson();
+      const validationResults = DataSchemaValidator.validate(nestedData, jsonSchema, { changing: false });
+      if ((validationResults == null ? void 0 : validationResults.valid) == true) {
+        callback(true, JSON.stringify(nestedData));
+      } else {
+        callback(false, JSON.stringify(validationResults == null ? void 0 : validationResults.errors));
+      }
+    };
+    return btnPnl;
+  }
+  function clone(obj) {
+    if (obj == null || typeof obj != "object")
+      return obj;
+    var copy = obj.constructor();
+    for (var attr in obj) {
+      if (obj.hasOwnProperty(attr))
+        copy[attr] = obj[attr];
+    }
+    return copy;
+  }
+  function convertFlatJsonToNestedJson() {
+    let isAdded = false;
+    for (var key2 of Object.keys(nestedData)) {
+      if (key2.split("/").length > 1) {
+        isAdded = true;
+        let _value = nestedData[key2];
+        let _key = key2;
+        delete nestedData[key2];
+        if (nestedData[key2.split("/")[0]] == void 0) {
+          nestedData[key2.split("/")[0]] = {};
+        }
+        nestedData[_key.split("/")[0]][_key.split("/")[1]] = _value;
+        convertFlatJsonToNestedJson();
+        break;
+      }
+    }
+  }
+  async function getFormData() {
+    let formData = {};
+    scopeList.forEach((value) => {
+      let input = document.getElementById(value);
+      if (input) {
+        switch (input.tagName) {
+          case "I-COMBO-BOX":
+            formData[value.replace("#/", "")] = input.value == null || void 0 ? "" : input.value.value;
+            break;
+          case "I-CHECKBOX":
+            formData[value.replace("#/", "")] = input.checked;
+            break;
+          default:
+            formData[value.replace("#/", "")] = input.value == null || void 0 ? "" : input.value;
+        }
+      }
+    });
+    return formData;
+  }
+}
+function convertFieldNameToLabel(name) {
+  let label = "";
+  for (let i = 0; i < name.length; i++) {
+    let char = name[i];
+    if (i == 0) {
+      label += char.toUpperCase();
+      continue;
+    }
+    if (char == char.toUpperCase())
+      label += ` ${char}`;
+    else
+      label += char;
+  }
+  return label;
+}
+
+// packages/application/src/index.ts
+var IpfsDataType;
+(function(IpfsDataType2) {
+  IpfsDataType2[IpfsDataType2["Raw"] = 0] = "Raw";
+  IpfsDataType2[IpfsDataType2["Directory"] = 1] = "Directory";
+  IpfsDataType2[IpfsDataType2["File"] = 2] = "File";
+  IpfsDataType2[IpfsDataType2["Metadata"] = 3] = "Metadata";
+  IpfsDataType2[IpfsDataType2["Symlink"] = 4] = "Symlink";
+  IpfsDataType2[IpfsDataType2["HAMTShard"] = 5] = "HAMTShard";
+})(IpfsDataType || (IpfsDataType = {}));
+var Application = class {
+  constructor() {
+    this.modules = {};
+    this.modulesId = {};
+    this.scripts = {};
+    this.id = 0;
+    this.LibHost = "";
+    this.packages = {};
+    this.globalEvents = new GlobalEvents();
+  }
+  get EventBus() {
+    return EventBus.getInstance();
+  }
+  static get Instance() {
+    return this._instance || (this._instance = new this());
+  }
+  assets(name) {
+    if (this._assets) {
+      let items = name.split("/");
+      let value = this._assets;
+      let item = items.shift();
+      ;
+      while (value && item) {
+        value = value[item];
+        item = items.shift();
+      }
+      ;
+      return value;
+    }
+    ;
+  }
+  async verifyScript(modulePath, script) {
+    console.dir("verifyScript: " + modulePath);
+    try {
+      let cid = hashContent(script);
+      console.dir(cid);
+    } catch (err) {
+      console.dir(err);
+    }
+    return true;
+  }
+  async getScript(modulePath) {
+    if (this.scripts[modulePath])
+      return this.scripts[modulePath];
+    try {
+      let result = await (await fetch(modulePath)).text();
+      if (typeof result == "string") {
+        if (await this.verifyScript(modulePath, result)) {
+          this.scripts[modulePath] = result;
+          return result;
+        }
+        ;
+      }
+      ;
+    } catch (err) {
+    }
+    ;
+    return "";
+  }
+  async loadScript(modulePath, script) {
+    try {
+      if (this.scripts[modulePath])
+        return true;
+      if (await this.verifyScript(modulePath, script)) {
+        this.scripts[modulePath] = script;
+        return true;
+      }
+      ;
+    } catch (err) {
+    }
+    ;
+    return false;
+  }
+  async getContent(modulePath) {
+    try {
+      return await (await fetch(modulePath)).text();
+    } catch (err) {
+    }
+    return "";
+  }
+  async fetchDirectoryInfoByCID(ipfsCid) {
+    let directoryInfo = [];
+    try {
+      const IPFS_API = `https://ipfs.scom.dev/ipfs/${ipfsCid}`;
+      let result = await fetch(IPFS_API);
+      let jsonContent = await result.json();
+      if (jsonContent.links) {
+        directoryInfo = jsonContent.links;
+      }
+    } catch (err) {
+      console.log(err);
+    }
+    return directoryInfo;
+  }
+  async getModule(modulePath, options) {
+    if (this.modules[modulePath])
+      return this.modules[modulePath];
+    let result = await this.newModule(modulePath, options);
+    if (result)
+      this.modules[modulePath] = result;
+    return result;
+  }
+  async loadPackage(packageName, modulePath, options) {
+    var _a, _b, _c;
+    options = options || this._initOptions;
+    if (options && options.modules && options.modules[packageName]) {
+      let pack = options.modules[packageName];
+      for (let i = 0; i < ((_a = pack.dependencies) == null ? void 0 : _a.length); i++) {
+        let n = pack.dependencies[i];
+        if (!RequireJS.defined(n))
+          await this.loadPackage(n);
+      }
+      ;
+    }
+    ;
+    if (!modulePath) {
+      if ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName])
+        modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "modules/" + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
+      else
+        return null;
+    } else if (modulePath == "*") {
+      modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "libs/" + packageName + "/index.js";
+    } else if (modulePath.startsWith("{LIB}/")) {
+      let libPath = LibPath || "";
+      if (LibPath && !LibPath.endsWith("/"))
+        libPath = libPath + "/";
+      modulePath = modulePath.replace("{LIB}/", libPath);
+    }
+    if (this.packages[modulePath])
+      return this.packages[modulePath];
+    let script = await this.getScript(modulePath);
+    if (script) {
+      _currentDefineModule = null;
+      this.currentModulePath = modulePath;
+      if (modulePath.indexOf("://") > 0)
+        this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
+      else
+        this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
+      await import(`data:text/javascript,${encodeURIComponent(script)}`);
+      this.currentModulePath = "";
+      this.currentModuleDir = "";
+      let m = window["require"](packageName);
+      if (m) {
+        this.packages[modulePath] = m.default || m;
+        return m.default || m;
+      }
+    }
+    ;
+    return null;
+  }
+  async loadModule(modulePath, options, forceInit) {
+    let module2 = await this.newModule(modulePath, options, forceInit);
+    if (module2)
+      document.body.append(module2);
+    return module2;
+  }
+  getModulePath(module2) {
+    let options = this._initOptions;
+    let modulePath = module2;
+    if (options && options.modules && options.modules[module2] && options.modules[module2].path) {
+      modulePath = "";
+      if (options.rootDir)
+        modulePath += options.rootDir + "/";
+      if (options.moduleDir)
+        modulePath += options.moduleDir + "/";
+      modulePath += options.modules[module2].path;
+      if (!modulePath.endsWith(".js"))
+        modulePath += "/index.js";
+    } else if (options.dependencies && options.dependencies[module2])
+      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : ""}libs/${module2}/index.js`;
+    return modulePath;
+  }
+  async newModule(module2, options, forceInit) {
+    const _initOptions = this._initOptions;
+    if ((!this._initOptions || forceInit) && options) {
+      this._initOptions = options;
+      if (!this._assets && this._initOptions.assets)
+        this._assets = await this.loadPackage(this._initOptions.assets) || {};
+      if (this._initOptions.dependencies) {
+        for (let p in this._initOptions.dependencies) {
+          if (p != this._initOptions.main)
+            await this.loadPackage(p, this._initOptions.dependencies[p]);
+        }
+        ;
+      }
+      ;
+    }
+    ;
+    let modulePath = module2;
+    if (this._initOptions)
+      modulePath = this.getModulePath(module2);
+    let elmId = this.modulesId[modulePath];
+    if (elmId && modulePath) {
+      if (forceInit && _initOptions)
+        this._initOptions = _initOptions;
+      return document.createElement(elmId);
+    }
+    let script;
+    if (options && options.script)
+      script = options.script;
+    else {
+      if (this._initOptions && this._initOptions.modules && this._initOptions.modules[module2] && this._initOptions.modules[module2].dependencies) {
+        let dependencies = this._initOptions.modules[module2].dependencies;
+        for (let i = 0; i < dependencies.length; i++) {
+          let dep = dependencies[i];
+          let path = this.getModulePath(dep);
+          if (!this.packages[path]) {
+            await this.loadPackage(dep, path);
+          }
+          ;
+        }
+        ;
+      }
+      ;
+      script = await this.getScript(modulePath);
+    }
+    ;
+    if (script) {
+      _currentDefineModule = null;
+      this.currentModulePath = modulePath;
+      if (modulePath.indexOf("://") > 0)
+        this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
+      else
+        this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
+      await import(`data:text/javascript,${encodeURIComponent(script)}`);
+      document.getElementsByTagName("html")[0].classList.add(applicationStyle);
+      this.currentModulePath = "";
+      this.currentModuleDir = "";
+      if (!_currentDefineModule && this.packages[modulePath]) {
+        _currentDefineModule = this.packages[modulePath];
+      }
+      if (_currentDefineModule) {
+        let module3 = _currentDefineModule.default || _currentDefineModule;
+        if (module3) {
+          this.id++;
+          elmId = `i-module--${this.id}`;
+          this.modulesId[modulePath] = elmId;
+          let Module2 = class extends module3 {
+          };
+          customElements.define(elmId, Module2);
+          let result = new Module2(null, options);
+          if (forceInit && _initOptions)
+            this._initOptions = _initOptions;
+          return result;
+        }
+        ;
+      }
+    }
+    if (forceInit && _initOptions)
+      this._initOptions = _initOptions;
+    return null;
+  }
+  async copyToClipboard(value) {
+    if (!value)
+      return false;
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } else {
+        const input = document.createElement("input");
+        input.value = value;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        const result = document.execCommand("copy");
+        document.body.removeChild(input);
+        return result;
+      }
+    } catch (err) {
+      console.log("debug: copy", err);
+      return false;
+    }
+  }
+  xssSanitize(value) {
+    return value;
+  }
+};
+window["application"] = Application.Instance;
+var application = Application.Instance;
+
+// packages/code-editor/src/monaco.ts
+async function addFile(fileName, content) {
+  let monaco = await initMonaco();
+  if (monaco) {
+    let model = await getFileModel(fileName);
+    if (!model) {
+      if ((fileName == null ? void 0 : fileName.endsWith(".tsx")) || (fileName == null ? void 0 : fileName.endsWith(".ts")))
+        model = monaco.editor.createModel(content || "", "typescript", monaco.Uri.file(fileName));
+      else
+        model = monaco.editor.createModel(content || "");
+    }
+    return model;
+  }
+  ;
+  return null;
+}
+async function updateFile(fileName, content) {
+  let monaco = await initMonaco();
+  if (monaco) {
+    let model = await getFileModel(fileName);
+    if (model) {
+      model.setValue(content);
+    }
+    return model;
+  }
+  ;
+  return null;
+}
+async function getFileModel(fileName) {
+  let monaco = await initMonaco();
+  if (monaco) {
+    let models = monaco.editor.getModels();
+    for (let i = 0; i < models.length; i++) {
+      let model = models[i];
+      if (model.uri.path == fileName || model.uri.path == "/" + fileName)
+        return model;
+    }
+    ;
+  }
+  ;
+  return null;
+}
+async function addLib(lib, dts) {
+  let monaco = await initMonaco();
+  monaco.languages.typescript.typescriptDefaults.addExtraLib(dts, lib);
+}
+async function initMonaco() {
+  if (window.monaco)
+    return window.monaco;
+  return new Promise((resolve) => {
+    window.MonacoEnvironment = {};
+    RequireJS.config({ paths: { "vs": `${LibPath}lib/monaco-editor/0.32.1/min/vs` } });
+    RequireJS.require([`vs/editor/editor.main`], (monaco) => {
+      resolve(monaco);
+      if (monaco.$loaded)
+        return;
+      monaco.$loaded = true;
+      monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+        experimentalDecorators: true,
+        allowSyntheticDefaultImports: true,
+        jsx: monaco.languages.typescript.JsxEmit.Preserve,
+        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+        allowNonTsExtensions: true,
+        target: monaco.languages.typescript.ScriptTarget.ES2020
+      });
+      monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+      monaco.languages.registerCompletionItemProvider("typescript", {
+        triggerCharacters: [">"],
+        provideCompletionItems: (model, position) => {
+          const code = model.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column
+          });
+          const tag = code.slice(code.lastIndexOf("<") + 1, code.length);
+          if (!tag || !tag.endsWith(">") || tag.startsWith("/") || tag.indexOf(" ") > 0)
+            return;
+          const word = model.getWordUntilPosition(position);
+          return {
+            suggestions: [
+              {
+                label: `</${tag}`,
+                kind: monaco.languages.CompletionItemKind.EnumMember,
+                insertText: `$1</${tag}`,
+                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                range: {
+                  startLineNumber: position.lineNumber,
+                  endLineNumber: position.lineNumber,
+                  startColumn: word.startColumn,
+                  endColumn: word.endColumn
+                }
+              }
+            ]
+          };
+        }
+      });
+    });
+  });
+}
+
+// packages/code-editor/src/style/code-editor.css.ts
+cssRule("i-code-editor", {
+  $nest: {
+    "*": {
+      boxSizing: "border-box"
+    },
+    ".full-height": {
+      height: "100vh"
+    },
+    ".half-width": {
+      width: "50%"
+    },
+    ".column": {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "stretch"
+    },
+    ".row": {
+      display: "flex",
+      flexDirection: "row"
+    },
+    ".align-right": {
+      marginLeft: "auto",
+      alignSelf: "stretch"
+    },
+    "#flex-wrapper": {
+      display: "flex",
+      alignItems: "stretch"
+    },
+    "#operation-editor": {
+      height: "60vh",
+      minHeight: "260px"
+    },
+    "#variables-editor": {
+      height: "30vh",
+      alignItems: "stretch"
+    },
+    "#results-editor": {
+      height: "90vh",
+      alignItems: "stretch"
+    },
+    "#toolbar": {
+      minHeight: "40px",
+      backgroundColor: "#1e1e1e",
+      display: "inline-flex",
+      alignItems: "stretch"
+    },
+    "#toolbar > button, #toolbar > select, #toolbar > span, button#execute-op": {
+      margin: "4px",
+      padding: "4px"
+    },
+    "#toolbar button, #toolbar select": {
+      backgroundColor: "#1e1e1e",
+      color: "#eee",
+      border: "1px solid #eee",
+      borderRadius: "4px"
+    },
+    "#toolbar button:hover, select:hover, button:focus, select:focus": {
+      backgroundColor: "darkslategrey"
+    },
+    "#execution-tray": {
+      display: "inline-flex",
+      alignItems: "baseline"
+    },
+    "#schema-status": {
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      color: "#eee"
+    },
+    "#toolbar button.reload-button": {
+      border: "0 none",
+      padding: "4px",
+      width: "30px",
+      textAlign: "center"
+    }
+  }
+});
+
+// packages/code-editor/src/code-editor.ts
+var CodeEditor = class extends Control {
+  get monaco() {
+    return window.monaco;
+  }
+  init() {
+    if (!this.editor) {
+      super.init();
+      this.language = this.getAttribute("language", true);
+      this.style.display = "inline-block";
+      if (this.language)
+        this.loadContent(void 0, this.language);
+    }
+    ;
+  }
+  get editor() {
+    return this._editor;
+  }
+  get language() {
+    return this._language;
+  }
+  set language(value) {
+    this._language = value;
+    if (!this.editor) {
+      this.loadContent();
+    } else {
+      let monaco = this.monaco;
+      let model = this.editor.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, value);
+      }
+    }
+  }
+  async loadContent(content, language, fileName) {
+    let monaco = await initMonaco();
+    if (content == void 0)
+      content = content || this._value || "";
+    this._value = content;
+    language = language || this._language || "typescript";
+    this._language = language;
+    if (!this._editor) {
+      let captionDiv = this.createElement("div", this);
+      captionDiv.style.display = "inline-block";
+      captionDiv.style.height = "100%";
+      captionDiv.style.width = "100%";
+      const customOptions = this._options || {};
+      let options = {
+        theme: "vs-dark",
+        tabSize: 2,
+        formatOnPaste: true,
+        formatOnType: true,
+        renderWhitespace: "none",
+        automaticLayout: true,
+        minimap: {
+          enabled: false
+        },
+        ...customOptions
+      };
+      this._editor = monaco.editor.create(captionDiv, options);
+      this._editor.onDidChangeModelContent((event) => {
+        if (typeof this.onChange === "function")
+          this.onChange(this, event);
+      });
+      if (fileName) {
+        let model = await getFileModel(fileName);
+        if (model) {
+          this._editor.setModel(model);
+          model.setValue(content);
+          return;
+        }
+      }
+      ;
+      if (language == "typescript" || (fileName == null ? void 0 : fileName.endsWith(".tsx")) || (fileName == null ? void 0 : fileName.endsWith(".ts"))) {
+        let model = monaco.editor.createModel(content || this._value || "", "typescript", fileName ? monaco.Uri.file(fileName) : void 0);
+        this._editor.setModel(model);
+      } else {
+        let model = monaco.editor.createModel(content || this._value || "", language || this._language, fileName ? monaco.Uri.file(fileName) : void 0);
+        this._editor.setModel(model);
+      }
+      ;
+    } else {
+      let model = this._editor.getModel();
+      if (language == "typescript" && model && fileName && this._fileName != fileName) {
+        if (!this._fileName)
+          model.dispose();
+        model = await getFileModel(fileName);
+        if (!model)
+          model = monaco.editor.createModel(content || this._value || "", "typescript", monaco.Uri.file(fileName));
+        this._editor.setModel(model);
+      } else {
+        this._editor.setValue(content);
+        if (language && model)
+          monaco.editor.setModelLanguage(model, language);
+      }
+      ;
+    }
+    ;
+    this._fileName = fileName || "";
+    this._editor.setScrollTop(0);
+  }
+  async loadFile(fileName) {
+    var _a;
+    let model = await getFileModel(fileName);
+    if (model) {
+      if (!this._fileName)
+        (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
+      this._fileName = fileName;
+      this._editor.setModel(model);
+    }
+    ;
+  }
+  updateOptions(options) {
+    this._options = options;
+    if (this._editor)
+      this._editor.updateOptions(options);
+  }
+  get value() {
+    if (this._editor)
+      return this._editor.getValue();
+    else
+      return this._value;
+  }
+  set value(value) {
+    this._value = value;
+    if (this._editor) {
+      this._editor.setValue(value);
+      this._editor.setScrollTop(0);
+    } else
+      this.loadContent();
+  }
+};
+CodeEditor.addLib = addLib;
+CodeEditor.addFile = addFile;
+CodeEditor.getFileModel = getFileModel;
+CodeEditor.updateFile = updateFile;
+CodeEditor = __decorateClass([
+  customElements2("i-code-editor")
+], CodeEditor);
+
+// packages/code-editor/src/diff-editor.ts
+var EditorType;
+(function(EditorType2) {
+  EditorType2[EditorType2["modified"] = 0] = "modified";
+  EditorType2[EditorType2["original"] = 1] = "original";
+})(EditorType || (EditorType = {}));
+var CodeDiffEditor = class extends Control {
+  init() {
+    if (!this.editor) {
+      super.init();
+      this.language = this.getAttribute("language", true);
+      this.style.display = "inline-block";
+    }
+    ;
+  }
+  get editor() {
+    return this._editor;
+  }
+  get language() {
+    return this._language;
+  }
+  set language(value) {
+    this._language = value;
+    if (!this.editor) {
+      if (this.language) {
+        this.loadContent(1, "", this.language);
+        this.loadContent(0, "", this.language);
+      }
+    } else {
+      this.setModelLanguage(value, "getOriginalEditor");
+      this.setModelLanguage(value, "getModifiedEditor");
+    }
+  }
+  setModelLanguage(value, functionName) {
+    let monaco = window.monaco;
+    let model = this.editor[functionName]().getModel();
+    if (model) {
+      monaco.editor.setModelLanguage(model, value);
+    }
+  }
+  getEditor(type) {
+    if (type === 1)
+      return this.editor.getOriginalEditor();
+    else
+      return this.editor.getModifiedEditor();
+  }
+  getModel(type) {
+    return this.getEditor(type).getModel();
+  }
+  async loadContent(type, content, language, fileName) {
+    let monaco = await initMonaco();
+    const value = type === 0 ? this._modifiedValue : this._originalValue;
+    if (content == void 0)
+      content = content || value || "";
+    type === 0 ? this._modifiedValue = content : this._originalValue = content;
+    language = language || this._language || "typescript";
+    this._language = language;
+    if (!this._editor) {
+      let captionDiv = this.createElement("div", this);
+      captionDiv.style.display = "inline-block";
+      captionDiv.style.height = "100%";
+      captionDiv.style.width = "100%";
+      let options = {
+        theme: "vs-dark",
+        originalEditable: false,
+        automaticLayout: true
+      };
+      this._editor = monaco.editor.createDiffEditor(captionDiv, options);
+      this._editor.onDidUpdateDiff(() => {
+        if (typeof this.onChange === "function")
+          this.onChange(this);
+      });
+    }
+    if (!this._modifiedModel || !this._originalModel) {
+      let model;
+      if (fileName == null ? void 0 : fileName.endsWith(".tsx")) {
+        model = monaco.editor.createModel(content || value || "", "typescript");
+      } else
+        model = monaco.editor.createModel(content || value || "", language || this._language || "typescript");
+      type === 0 ? this._modifiedModel = model : this._originalModel = model;
+      if (this._originalModel && this._modifiedModel) {
+        this._editor.setModel({
+          original: this._originalModel,
+          modified: this._modifiedModel
+        });
+      }
+    } else {
+      let model = this.getModel(type);
+      if (model)
+        monaco.editor.setModelLanguage(model, language);
+      this.getEditor(type).setValue(content);
+    }
+  }
+  updateOptions(options) {
+    this.editor.updateOptions(options);
+  }
+  get originalValue() {
+    if (this.editor)
+      return this.editor.getOriginalEditor().getValue();
+    else
+      return this._originalValue;
+  }
+  set originalValue(value) {
+    this._originalValue = value;
+    if (this.editor) {
+      this.editor.getOriginalEditor().setValue(value);
+    } else
+      this.loadContent(1);
+  }
+  get modifiedValue() {
+    if (this.editor)
+      return this.editor.getModifiedEditor().getValue();
+    else
+      return this._modifiedValue;
+  }
+  set modifiedValue(value) {
+    this._modifiedValue = value;
+    if (this.editor) {
+      this.editor.getModifiedEditor().setValue(value);
+    } else {
+      this.loadContent(0);
+    }
+  }
+};
+CodeDiffEditor.addLib = addLib;
+CodeDiffEditor.addFile = addFile;
+CodeDiffEditor.getFileModel = getFileModel;
+CodeDiffEditor.updateFile = updateFile;
+CodeDiffEditor = __decorateClass([
+  customElements2("i-code-diff-editor")
+], CodeDiffEditor);
+
+// packages/data-grid/src/style/dataGrid.css.ts
+var Theme13 = theme_exports.ThemeVars;
+cssRule("i-data-grid", {
+  border: "0.5px solid #dadada",
+  $nest: {
+    ".scrollBox": {
+      overflow: "auto",
+      position: "absolute",
+      height: "100%",
+      width: "100%",
+      top: 0,
+      zIndex: 4
+    },
+    ".grid": {
+      position: "absolute",
+      fontSize: "12px",
+      fontFamily: '"Segoe UI", Tahoma, Arial, Helvetica, sans-serif',
+      color: "#5A5757",
+      borderSpacing: 0,
+      tableLayout: "fixed",
+      backgroundColor: "white"
+    },
+    ".grid tr": {
+      overflow: "hidden"
+    },
+    ".grid tr div": {
+      paddingLeft: "2px",
+      paddingRight: "2px"
+    },
+    ".grid_cell_hidden": {
+      display: "none"
+    },
+    ".grid_fixed_cell": {
+      background: "#F9F9F9",
+      borderBottom: "0.5px solid #dadada",
+      borderRight: "0.5px solid #dadada",
+      boxSizing: "border-box"
+    },
+    ".grid_curr_cell": {
+      border: "2px solid #5f5f5f",
+      boxSizing: "border-box"
+    },
+    ".grid_selected_cell": {
+      backgroundColor: "rgb(160, 195, 255)",
+      pointerEvents: "none",
+      opacity: 0.2
+    },
+    ".grid_cell": {
+      borderBottom: "0.5px solid #dadada",
+      borderRight: "0.5px solid #dadada",
+      boxSizing: "border-box",
+      background: "white",
+      cursor: "default"
+    },
+    ".grid_cell_value": {
+      textOverflow: "ellipsis",
+      wordWrap: "break-word",
+      whiteSpace: "pre"
+    },
+    ".grid_cell_value.image img": {
+      maxHeight: "100%",
+      maxWidth: "100%"
+    },
+    ".grid_header_splitter": {
+      position: "relative",
+      zoom: 1,
+      filter: "alpha(opacity=50)",
+      opacity: 0.5,
+      float: "right",
+      cursor: "e-resize"
+    },
+    "input": {
+      border: "none",
+      outline: "none"
+    },
+    "table": {
+      marginLeft: "1px",
+      marginTop: "1px"
+    }
+  }
+});
+
+// packages/data-grid/src/dataGrid.ts
+function parseNumber(value, decimal) {
+  if (typeof value == "string")
+    value = value.replace(/,/g, "");
+  if (decimal)
+    return parseFloat(parseFloat(value).toFixed(decimal));
+  else
+    return parseFloat(value);
+}
+function getCursorPosX(event) {
+  event = event || window.event;
+  let pos = 0;
+  if (event instanceof TouchEvent) {
+    if (event.changedTouches && event.changedTouches[0])
+      pos = event.changedTouches[0].pageX || event.changedTouches[0].clientX;
+    else if (event.touches && event.touches[0])
+      pos = event.touches[0].pageX || event.touches[0].clientX;
+  } else
+    pos = event.pageX || event.clientX;
+  return pos + document.body.scrollLeft + document.documentElement.scrollLeft;
+}
+function getCursorPosY(event) {
+  event = event || window.event;
+  let pos = 0;
+  if (event instanceof TouchEvent) {
+    if (event.changedTouches && event.changedTouches[0])
+      pos = event.changedTouches[0].pageY || event.changedTouches[0].clientY;
+    else if (event.touches && event.touches[0])
+      pos = event.touches[0].pageY || event.touches[0].clientY;
+  } else
+    pos = event.pageY || event.clientY;
+  return pos + document.body.scrollTop + document.documentElement.scrollTop;
+}
+var TGridOptions = class {
+  constructor(owner) {
+    this._autoRowHeight = false;
+    this._rowSelect = false;
+    this.autoAddRow = false;
+    this.fileDropUpload = false;
+    this.sortOnClick = true;
+    this.owner = owner;
+  }
+  get autoRowHeight() {
+    return this._autoRowHeight;
+  }
+  set autoRowHeight(value) {
+    if (value != this._autoRowHeight) {
+      this.owner.rowHeights = [];
+      this._autoRowHeight = value;
+      this.owner.enableUpdateTimer();
+    }
+    ;
+  }
+  get rowSelect() {
+    return this._rowSelect;
+  }
+  set rowSelect(value) {
+    if (this._rowSelect != value) {
+      this._rowSelect = value;
+      this.owner.enableUpdateTimer();
+    }
+    ;
+  }
+};
+var TGridCell = class {
+  constructor(grid, col, row) {
+    this._visible = true;
+    this.grid = grid;
+    this._col = col;
+    this._row = row;
+  }
+  get button() {
+    return this._button;
+  }
+  set button(value) {
+    this._button = value;
+    this.grid.enableUpdateTimer();
+  }
+  get checkBox() {
+    return this._checkBox;
+  }
+  set checkBox(value) {
+    this._checkBox = value;
+    this.grid.enableUpdateTimer();
+  }
+  get col() {
+    return this._col;
+  }
+  set col(value) {
+    this._col = value;
+  }
+  get color() {
+    return this._color;
+  }
+  set color(value) {
+    this._color = value;
+    this.grid.enableUpdateTimer();
+  }
+  get dataType() {
+    return this._dataType;
+  }
+  set dataType(value) {
+    this._dataType = value;
+    this.grid.enableUpdateTimer();
+  }
+  get displayValue() {
+    return;
+  }
+  get formula() {
+    return this._formula;
+  }
+  set formula(value) {
+    this._formula = value;
+    this.grid.enableUpdateTimer();
+  }
+  get hint() {
+    return this._hint;
+  }
+  set hint(value) {
+    this._hint = value;
+    this.grid.enableUpdateTimer();
+  }
+  get horizontalAlign() {
+    return this._horizontalAlign;
+  }
+  set horizontalAlign(value) {
+    this._horizontalAlign = value;
+    this.grid.enableUpdateTimer();
+  }
+  get html() {
+    return this._html;
+  }
+  set html(value) {
+    this._html = value;
+    this.grid.enableUpdateTimer();
+  }
+  get image() {
+    return this._image;
+  }
+  set image(value) {
+    this._image = value;
+    this.grid.enableUpdateTimer();
+  }
+  get object() {
+    return this._object;
+  }
+  set object(value) {
+    this._object = value;
+    this.grid.enableUpdateTimer();
+  }
+  get readOnly() {
+    return this._readOnly;
+  }
+  set readOnly(value) {
+    this._readOnly = value;
+    this.grid.enableUpdateTimer();
+  }
+  get row() {
+    return this._row;
+  }
+  set row(value) {
+    this._row = value;
+  }
+  get text() {
+    return this._text;
+  }
+  set text(value) {
+    this._text = value;
+    this.grid.enableUpdateTimer();
+  }
+  get value() {
+    return this._value;
+  }
+  set value(value) {
+    this._value = value;
+    this.grid.enableUpdateTimer();
+  }
+  get visible() {
+    return this._visible;
+  }
+  set visible(value) {
+    this._visible = value;
+    this.grid.enableUpdateTimer();
+  }
+};
+var TGridCells = class {
+  constructor(owner) {
+    this.data = [[]];
+    this.grid = owner;
+  }
+  assign(data) {
+    for (let r = 0; r < data.length; r++) {
+      let d = data[r]["data"];
+      let row = data[r]["row"];
+      for (let c = 0; c < d.length; c++) {
+        this.setValue(c, row, d[c]);
+      }
+    }
+  }
+  cells(aCol, aRow, refresh2) {
+    if (refresh2)
+      return this.getCell(aCol, aRow);
+    else if (this.data[aRow]) {
+      let cell = this.data[aRow][aCol];
+      if (cell && cell.mergeRect && (aCol != cell.mergeRect.startCol || aRow != cell.mergeRect.startRow)) {
+        cell = this.data[cell.mergeRect.startRow][cell.mergeRect.startCol];
+      }
+      return cell || this.getCell(aCol, aRow);
+    } else
+      return this.getCell(aCol, aRow);
+  }
+  clear() {
+    this.data = [[]];
+  }
+  deleteCol(aCol) {
+    for (let r = 0; r < this.data.length; r++) {
+      let row = this.data[r];
+      if (row)
+        row.splice(aCol, 1);
+    }
+    this.updateCellIndex();
+  }
+  deleteRow(aRow) {
+    if (this.data.length > aRow)
+      this.data.splice(aRow, 1);
+    this.updateCellIndex();
+  }
+  getCell(aCol, aRow, refresh2) {
+    if (typeof this.data[aRow] == "undefined")
+      this.data[aRow] = [];
+    if (typeof this.data[aRow][aCol] == "undefined")
+      this.data[aRow][aCol] = new TGridCell(this.grid, aCol, aRow);
+    if (refresh2 && this.data[aRow][aCol])
+      this.data[aRow][aCol]._displayValue = void 0;
+    return this.data[aRow][aCol];
+  }
+  getObject(aCol, aRow) {
+    let cell = this.cells(aCol, aRow);
+    if (cell)
+      return cell.object;
+    else
+      return void 0;
+  }
+  getValue(aCol, aRow) {
+    let cell = this.cells(aCol, aRow);
+    if (cell) {
+      if (cell.mergeRect)
+        cell = this.getCell(cell.mergeRect.startCol, cell.mergeRect.startRow);
+      if (cell.value != void 0) {
+        return cell.value;
+      } else
+        return "";
+    }
+    ;
+  }
+  getExcelValue(aCol, aRow, callback) {
+  }
+  getExcelValues(startCol, startRow, callback) {
+  }
+  getExcelValues1(startCol, startRow, callback) {
+  }
+  insertCol(aCol) {
+    for (let r = 0; r < this.data.length; r++) {
+      let row = this.data[r];
+      if (row)
+        row.splice(aCol, 0, void 0);
+    }
+    this.updateCellIndex();
+  }
+  insertRow(aRow) {
+    this.data.splice(aRow, 0, []);
+    this.updateCellIndex();
+  }
+  loadFromJSON(json) {
+    let data = json["data"];
+    for (let i = 0; i < data.length; i++) {
+      let row = data[i];
+      for (let k = 0; k < row.length; k++) {
+        let cell = row[k];
+        if (cell)
+          this.setValue(k, i, cell["v"]);
+      }
+    }
+  }
+  moveRow(fromIdx, toIdx) {
+    if (toIdx < this.data.length) {
+      this.data.splice(toIdx, 0, this.data.splice(fromIdx, 1)[0]);
+      this.updateCellIndex();
+    }
+  }
+  saveToJSON(json) {
+    let data = [];
+    json["data"] = data;
+    for (let i = 0; i < this.data.length; i++) {
+      let row = this.data[i];
+      data[i] = [];
+      for (let k = 0; k < row.length; k++) {
+        let cell = row[k];
+        if (cell)
+          data[i][k] = {
+            "v": cell._value
+          };
+      }
+    }
+  }
+  setDateValue(aCol, aRow, aValue) {
+    let cell = this.getCell(aCol, aRow);
+    cell._value = aValue;
+    cell._isDate = true;
+  }
+  setMergeCell(rect) {
+    for (let col = rect.startCol; col <= rect.endCol; col++)
+      for (let row = rect.startRow; row <= rect.endRow; row++) {
+        let cell = this.getCell(col, row);
+        cell.mergeRect = rect;
+      }
+  }
+  setObject(aCol, aRow, aObject) {
+    let cell = this.getCell(aCol, aRow);
+    cell.object = aObject;
+  }
+  setRowCount(value) {
+    if (this.data.length > value)
+      this.data.length = value;
+  }
+  setValue(aCol, aRow, aValue, disp) {
+    let cell = this.getCell(aCol, aRow);
+    if (!disp)
+      cell._value = aValue;
+    else
+      cell._dispValue = aValue;
+  }
+  setFile(aCol, aRow, aValue) {
+    let cell = this.getCell(aCol, aRow);
+    cell._file = aValue;
+  }
+  sort(col, descending) {
+    let fixedRow = this.data.slice(0, this.grid.fixedRow);
+    let data = this.data.slice(this.grid.fixedRow);
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] && data[i][col])
+        data[i][col]._idx = i;
+    }
+    ;
+    let self = this;
+    data.sort(function(item1, item2) {
+      if (self.grid["onSort"]) {
+        if (item1[col] && item2[col])
+          return self.grid["onSort"](self.grid, descending, col, item1[col]._row, item2[col].row);
+        else if (item1[col]) {
+          if (descending)
+            return -1;
+          else
+            return 1;
+        } else {
+          if (descending)
+            return 1;
+          else
+            return -1;
+        }
+      } else {
+        let value1;
+        let value2;
+        let idx1 = 0;
+        let idx2 = 0;
+        ;
+        if (item1[col]) {
+          value1 = item1[col]._displayValue || item1[col]._value;
+          idx1 = item1[col]._idx;
+        }
+        if (value1 == void 0)
+          value1 = "";
+        if (item2[col]) {
+          value2 = item2[col]._displayValue || item2[col]._value;
+          idx2 = item2[col]._idx;
+        }
+        if (value2 == void 0)
+          value2 = "";
+        if (typeof value1 == "string")
+          value1 = value1.toLowerCase();
+        if (typeof value2 == "string")
+          value2 = value2.toLowerCase();
+        if (value1 == value2)
+          return idx1 > idx2 ? 1 : idx1 < idx2 ? -1 : 0;
+        else if (value1 > value2)
+          return descending ? -1 : 1;
+        else
+          return descending ? 1 : -1;
+      }
+    });
+    this.data = fixedRow.concat(data);
+    this.updateCellIndex();
+  }
+  updateCellIndex() {
+    for (let r = 0; r < this.data.length; r++) {
+      let row = this.data[r];
+      for (let c = 0; c < row.length; c++) {
+        let cell = this.data[r][c];
+        if (cell) {
+          cell._col = c;
+          cell._row = r;
+        }
+        ;
+      }
+      ;
+    }
+    ;
+  }
+};
+var TGridColumn = class {
+  constructor(grid, colIdx) {
+    this._visible = true;
+    this._resizable = true;
+    this._sortable = true;
+    this._readOnly = false;
+    this.grid = grid;
+    this._colIdx = colIdx;
+  }
+  get asJSON() {
+    return {
+      "color": this._color && this._color != "clNone" ? this._color : void 0,
+      "horizontalAlign": this._horizontalAlign != void 0 && this._horizontalAlign != 1 ? this._horizontalAlign : void 0,
+      "type": this._type && this._type != "string" ? this._type : void 0,
+      "width": this.width,
+      "readOnly": this._readOnly ? this._readOnly : void 0,
+      "visible": !this._visible ? this._visible : void 0,
+      "resizable": !this._resizable ? this._resizable : void 0,
+      "lookupContext": this._lookupContext ? this._lookupContext : void 0,
+      "lookupTable": this._lookupTable ? this._lookupTable : void 0,
+      "suggestTable": this._suggestTable ? this._suggestTable : void 0,
+      "lookupField": this._lookupField ? this._lookupField : void 0,
+      "lookupDetailField": this._lookupDetailField ? this._lookupDetailField : void 0,
+      "lookupDetailValue": this._lookupDetailValue ? this._lookupDetailValue : void 0,
+      "lookupDetailType": this._lookupDetailType ? this._lookupDetailType : void 0,
+      "listOfValue": this._listOfValue ? this._listOfValue : void 0,
+      "format": this._format ? this._format : void 0,
+      "formula": this._formula ? this._formula : void 0,
+      "displayUserName": this._displayUserName,
+      "binding": this._binding
+    };
+  }
+  set asJSON(value) {
+    this._color = value.color;
+    this._horizontalAlign = value["horizontalAlign"] != void 0 ? value["horizontalAlign"] : value["alignment"];
+    this._type = value["type"] || value["dataType"];
+    this._checkBox = value["type"] == "checkBox";
+    this._radioButton = value["type"] == "radioButton";
+    this._readOnly = value["readOnly"];
+    this._visible = value["visible"];
+    this._resizable = value["resizable"];
+    this._lookupContext = value["lookupContext"];
+    this._lookupTable = value["lookupTable"];
+    this._lookupField = value["lookupField"];
+    this._suggestTable = value["suggestTable"];
+    this._lookupDetailField = value["lookupDetailField"];
+    this._lookupDetailValue = value["lookupDetailValue"];
+    this._lookupDetailType = value["lookupDetailType"];
+    this._listOfValue = value["listOfValue"];
+    this._displayUserName = value["displayUserName"];
+    this._format = value["format"];
+    this._formula = value["formula"];
+    this._binding = value["binding"];
+    if (value["width"] != void 0)
+      this["width"] = value["width"];
+    if (value["rows"] && value["rows"] > 1)
+      this._rows = value["rows"];
+    this.grid.enableUpdateTimer();
+  }
+  get binding() {
+    return this._binding;
+  }
+  set binding(value) {
+    this._binding = value;
+  }
+  get button() {
+    return this._type == "button";
+  }
+  set button(value) {
+    if (value) {
+      this._type = "button";
+      this._button = true;
+    } else if (this._type == "button") {
+      this._type = "string";
+      this._button = false;
+    }
+    ;
+    this.grid.enableUpdateTimer();
+  }
+  get checkBox() {
+    return this._type == "checkBox";
+  }
+  set checkBox(value) {
+    if (value) {
+      this._type = "checkBox";
+      this._checkBox = true;
+    } else if (this._type == "checkBox") {
+      this._type = "string";
+      this._checkBox = false;
+    }
+    ;
+    this.grid.enableUpdateTimer();
+  }
+  get colIdx() {
+    return this._colIdx;
+  }
+  set colIdx(value) {
+    if (this.colIdx > -1)
+      this.grid.columns[this.colIdx] = null;
+    this._colIdx = value;
+    this.grid.columns[value] = this;
+    this.grid.enableUpdateTimer();
+  }
+  get color() {
+    return this._color || "clNone";
+  }
+  set color(value) {
+    this._color = value;
+    this.grid.enableUpdateTimer();
+  }
+  get dataType() {
+    return this._dataType;
+  }
+  set dataType(value) {
+    this._dataType = value;
+    this.grid.enableUpdateTimer();
+  }
+  get default() {
+    return (!this._color || this._color == "clNone") && (this._horizontalAlign == void 0 || this._horizontalAlign == 1) && (!this._type || this._type == "string") && !this._readOnly && this._visible && (!this._dataType || this._dataType == 0) && this._resizable && !this._lookupContext && !this._lookupTable && !this._lookupField && !this._listOfValue;
+  }
+  get format() {
+    return this._format;
+  }
+  set format(value) {
+    this._format = value;
+    this.grid.enableUpdateTimer();
+  }
+  get formula() {
+    return this._formula;
+  }
+  set formula(value) {
+    this._formula = value;
+    this.grid.enableUpdateTimer();
+  }
+  get horizontalAlign() {
+    return this._horizontalAlign || 1;
+  }
+  set horizontalAlign(value) {
+    this._horizontalAlign = value;
+    this.grid.enableUpdateTimer();
+  }
+  get radioButton() {
+    return this._type == "radioButton";
+  }
+  set radioButton(value) {
+    if (value) {
+      this._type = "radioButton";
+      this._radioButton = true;
+    } else if (this._type == "radioButton") {
+      this._type = "string";
+      this._radioButton = false;
+    }
+    this.grid.enableUpdateTimer();
+  }
+  get readOnly() {
+    return this._readOnly;
+  }
+  set readOnly(value) {
+    this._readOnly = value;
+    this.grid.enableUpdateTimer();
+  }
+  get resizable() {
+    return this._resizable !== false;
+  }
+  set resizable(value) {
+    this._resizable = value;
+    this.grid.enableUpdateTimer();
+  }
+  get sortable() {
+    return this._sortable !== false;
+  }
+  set sortable(value) {
+    this._sortable = value;
+  }
+  get type() {
+    return this._type || "string";
+  }
+  set type(value) {
+    this._type = value;
+    this.grid.enableUpdateTimer();
+  }
+  get visible() {
+    return this._visible !== false;
+  }
+  set visible(value) {
+    this._visible = value;
+    this.grid.enableUpdateTimer();
+  }
+  get width() {
+    return this.grid.getColWidth(this._colIdx);
+  }
+  set width(value) {
+    this.grid.setColWidth(this._colIdx, value);
+    this.grid.enableUpdateTimer();
+  }
+};
+var TGridColumns = class {
+  constructor(grid) {
+    this.columns = [];
+    this.grid = grid;
+  }
+  clear() {
+    this.columns = [];
+  }
+  deleteCol(aCol) {
+    this.columns.splice(aCol, 1);
+    this.updateColIndex();
+  }
+  getColumn(index) {
+    if (index > this.columns.length) {
+      let len = this.columns.length;
+      for (let i = len; i <= index; i++)
+        this.columns.push("");
+    }
+    let col = this.columns[index];
+    if (!col) {
+      col = new TGridColumn(this.grid, index);
+      this.columns[index] = col;
+    }
+    return col;
+  }
+  insertCol(colIdx) {
+    let col = new TGridColumn(this.grid, colIdx);
+    this.columns.splice(colIdx, 0, col);
+    this.updateColIndex();
+  }
+  loadFromJSON(value) {
+    this.count = value.length;
+    for (let i = 0; i < value.length; i++) {
+      if (value[i]) {
+        let col = this.getColumn(i);
+        if (value[i]["colIdx"] == void 0)
+          value[i]["colIdx"] = i;
+        col["asJSON"] = value[i];
+      }
+    }
+    this.grid.colCount = this.count;
+  }
+  _loadFromJSON(value) {
+    this.loadFromJSON(value);
+  }
+  saveToJSON() {
+    let result = [];
+    let withValue = false;
+    for (let i = 0; i < this.columns.length; i++) {
+      if (this.columns[i] && !this.columns[i]["default"]) {
+        withValue = true;
+        result.push(this.columns[i]["asJSON"]);
+      } else
+        result.push("");
+    }
+    if (withValue)
+      return result;
+  }
+  setColCount(value) {
+    this.columns.length = value;
+  }
+  updateColIndex() {
+    for (let i = 0; i < this.columns.length; i++)
+      this.columns[i]._colIdx = i;
+  }
+};
+var TGridRow = class {
+  constructor(grid) {
+    this._visible = true;
+    this._resizable = false;
+    this.grid = grid;
+  }
+  get color() {
+    return this._color;
+  }
+  set color(value) {
+    this._color = value;
+    this.grid.enableUpdateTimer();
+  }
+  get height() {
+    return this._height;
+  }
+  set height(value) {
+    this._height = value;
+    this.grid.enableUpdateTimer();
+  }
+  get readOnly() {
+    return this._readOnly;
+  }
+  set readOnly(value) {
+    this._readOnly = value;
+    this.grid.enableUpdateTimer();
+  }
+  get resizable() {
+    return this._resizable;
+  }
+  set resizable(value) {
+    this._resizable = value;
+    this.grid.enableUpdateTimer();
+  }
+  get visible() {
+    return this._visible;
+  }
+  set visible(value) {
+    this._visible = value;
+    this.grid.enableUpdateTimer();
+  }
+};
+var TGridRows = class {
+  constructor(grid, defaultHeight) {
+    this.rows = [];
+    this.grid = grid;
+    this.defaultHeight = defaultHeight;
+  }
+  clear() {
+    this.rows = [];
+  }
+  getHeight(index) {
+    let row = this.rows[index];
+    if (row)
+      return row.height;
+    else
+      return this.defaultHeight;
+  }
+  getRow(index) {
+    let row = this.rows[index];
+    if (!row) {
+      row = new TGridRow(this.grid);
+      this.rows[index] = row;
+    }
+    ;
+    return row;
+  }
+};
+var DataGrid = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+    this._listOfValue = {};
+    this._defaultRowHeight = 19;
+    this._defaultColWidth = 64;
+    this._layout = "grid";
+    this.mergeRect = [];
+    this.tableCells = [[]];
+    this.tableSplitters = [];
+    this.selectedCells = [];
+    this.selectedCellsHighlight = [];
+    this._colCount = 3;
+    this._rowCount = 3;
+    this.colWidths = [];
+    this._rowHeights = [];
+    this._fixedCol = 0;
+    this._fixedRow = 1;
+    this._leftCol = 0;
+    this._topRow = 1;
+    this._row = 0;
+    this._col = 0;
+    this._scrollLeft = 0;
+    this._scrollTop = 0;
+    this.showDataInternalFlag = false;
+    this._sorting = false;
+    this._updateTableInternalFlag = false;
+    this._totalColWidth = 0;
+    this._totalRowHeight = 0;
+    this.visibleRowCount = 0;
+    this.visibleColCount = 0;
+    this.sortingDescending = false;
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  get fixedCol() {
+    return this._fixedCol;
+  }
+  set fixedCol(value) {
+    this._fixedCol = value;
+  }
+  get fixedRow() {
+    return this._fixedRow;
+  }
+  set fixedRow(value) {
+    this._fixedRow = value;
+  }
+  get layout() {
+    return this._layout;
+  }
+  set layout(value) {
+    this._layout = value;
+  }
+  async init() {
+    await super.init();
+    this._init();
+  }
+  _init() {
+    this.options = new TGridOptions(this);
+    this.placeHolder = this.createElement("div", this);
+    this._table = this.createElement("table", this);
+    this.data = new TGridCells(this);
+    this.columns = new TGridColumns(this);
+    this.gridRows = new TGridRows(this, this._defaultRowHeight);
+    this.cellHighlight = this.createElement("div", this);
+    this.placeHolder.style.position = "absolute";
+    this.cellHighlight.className = "grid_curr_cell";
+    this.cellHighlight.style.position = "absolute";
+    this.cellHighlight.style.display = "none";
+    this.cellHighlight.style.zIndex = "3";
+    this.selectedRangeHighlight = this.createElement("div", this);
+    this.selectedRangeHighlight.className = "grid_selected_cell";
+    this.selectedRangeHighlight.style.position = "absolute";
+    this.selectedRangeHighlight.style.display = "none";
+    this.selectedRangeHighlight.style.zIndex = "3";
+    this._table.className = "grid";
+    this._table.style.tableLayout = "fixed";
+    this._table.style.position = "relative";
+    this.tableContainer = this.createElement("div", this);
+    this.tableContainer.className = "container";
+    this.tableContainer.style.overflow = "hidden";
+    this.tableContainer.style.width = "100%";
+    this.tableContainer.style.height = "100%";
+    this.tableContainer.appendChild(this._table);
+    this._scrollBox = this.createElement("div", this);
+    this._scrollBox.className = "scrollBox";
+    this._scrollBox.tabIndex = 0;
+    this._scrollBox.appendChild(this.placeHolder);
+    this.edit = this.createElement("input", this);
+    this.edit.setAttribute("autocomplete", "disabled");
+    this.edit.className = "grid_edit";
+    this.edit.style.border = "0px";
+    this.edit.style.width = "10px";
+    this.edit.style.height = "10px";
+    this.edit.style.position = "absolute";
+    this.edit.style.top = "-100px";
+    this.edit.style.left = "-100px";
+    this.style.overflow = "hidden";
+    this.style.backgroundColor = "#FFFFFF";
+    this._height = 89;
+    this._width = 324;
+    this.colWidths = [];
+    this._scrollLeft = 0;
+    this._scrollTop = 0;
+    this._scrollBox.addEventListener("mousewheel", (event) => {
+      console.dir(event);
+      let delta = Math.max(-1, Math.min(1, event.wheelDelta || -event.detail));
+      this._handleMouseWheel(event, delta);
+    });
+    this.edit.addEventListener("input", this._handleInput.bind(this));
+    this.edit.addEventListener("propertychange", this._handleInput.bind(this));
+    this.addEventListener("dragover", this._handleDragOver.bind(this));
+    this.addEventListener("drop", this._handleFileDrop.bind(this));
+    this._scrollBox.onscroll = this._handleScroll.bind(this);
+    this.setCurrCell(this._fixedCol, this._fixedRow);
+    this._updateLanguage();
+    this._updateListOfValues();
+    this.enableUpdateTimer(true, true);
+  }
+  calcTopRow(rowIdx) {
+    if (rowIdx == this._fixedRow)
+      return rowIdx;
+    let row = rowIdx;
+    let height = this._scrollBox.clientHeight;
+    if (this.layout == "card") {
+    } else {
+      for (let i = 0; i < this._fixedRow; i++)
+        height = height - this.getRowHeight(i) - 0.8;
+      height = height - this.getRowHeight(row);
+      while (row > this._fixedRow) {
+        let h = this.getRowHeight(row) + 0.8;
+        height = height - h;
+        if (height < h - 4) {
+          return row - 1;
+        }
+        ;
+        row--;
+      }
+    }
+    return row;
+  }
+  cells(aCol, aRow, refresh2) {
+    return this.data.getCell(aCol, aRow, refresh2);
+  }
+  get col() {
+    return this._col;
+  }
+  set col(value) {
+    this._col = value;
+  }
+  get row() {
+    return this._row;
+  }
+  set row(value) {
+    this._row = value;
+  }
+  get colCount() {
+    return this._colCount;
+  }
+  set colCount(value) {
+    this._colCount = value;
+    this.enableUpdateTimer(false, true);
+  }
+  get readOnly() {
+    return this._readOnly;
+  }
+  set readOnly(value) {
+    this._readOnly = value;
+  }
+  get rowCount() {
+    return this._rowCount;
+  }
+  set rowCount(value) {
+    this._rowCount = value;
+    this.enableUpdateTimer(true, false);
+  }
+  get topRow() {
+    return this._topRow;
+  }
+  set topRow(value) {
+    this._topRow = value;
+  }
+  _updateRowHeights(row) {
+    let height = this._defaultRowHeight;
+    for (let col = 0; col < this._colCount; col++) {
+      let cell = this.data.cells(col, row);
+      if (cell && cell._height && cell._height > height) {
+        height = cell._height;
+      }
+    }
+    ;
+    this._rowHeights[row] = height;
+    this._updateTotalRowHeight();
+    return height;
+  }
+  setObject(aCol, aRow, aObject) {
+    if (this.data)
+      this.data.setObject(aCol, aRow, aObject);
+  }
+  setJSONValue(value, prop, newValue) {
+    let obj;
+    try {
+      if (value)
+        obj = JSON.parse(value);
+      else
+        obj = {};
+    } catch (err) {
+      obj = {};
+    }
+    obj[prop] = newValue;
+    return JSON.stringify(obj);
+  }
+  updateBindingData(cell, column) {
+    column = column || this.columns.getColumn(cell._col);
+    if (column && column.binding) {
+      let obj = this.getObject(0, cell._row);
+      if (!obj) {
+        obj = {};
+        this.setObject(0, this._row, obj);
+      }
+      obj[column.binding] = cell._value;
+    }
+  }
+  _updateCurrCellValue(editor) {
+    console.dir("### _updateCurrCellValue");
+    let cardViewEditor = false;
+    if (editor)
+      cardViewEditor = true;
+    if (this.editorMode || this._cardPanel) {
+      let oldValue = this.data.getValue(this._col, this._row);
+      editor = editor || this.editor;
+      if (!editor || editor._isModified === false)
+        return;
+      let newValue;
+      if (editor.valueCode)
+        newValue = editor.valueCode;
+      else if (editor.getText)
+        newValue = editor.getText();
+      else
+        newValue = application.xssSanitize(editor.value);
+      let text = "";
+      if (editor.getText)
+        text = editor.getText();
+      else
+        text = newValue;
+      let cell = this.data.getCell(this._col, this._row);
+      if (cell.mergeRect && (this._col != cell.mergeRect.startCol || this._row != cell.mergeRect.startRow))
+        cell = this.data.getCell(cell.mergeRect.startCol, cell.mergeRect.startRow);
+      if (true) {
+        if (this.options._autoRowHeight) {
+          let div = this._currCell.div;
+          div.textContent = text;
+          let height = div.clientHeight + 3;
+          if (cell.mergeRect) {
+            height = height / (cell.mergeRect.endRow - cell.mergeRect.startRow + 1);
+            for (let i = cell.mergeRect.startRow; i <= cell.mergeRect.endRow; i++) {
+              cell._height = height;
+              this._updateRowHeights(i);
+            }
+          } else {
+            cell._height = height;
+            this._updateRowHeights(this._row);
+          }
+        } else
+          this._currCell.div.textContent = text;
+      }
+      cell._value = newValue;
+      this.origValue = void 0;
+      if (!cardViewEditor)
+        this.enableUpdateTimer();
+      if (cell._field) {
+        if (!cell._record) {
+          let column = this.columns.getColumn(cell._col);
+          let record = this.getObject(0, cell._row);
+          let rs = record[cell._lookupTable];
+          cell._record = rs.append();
+          let v = column._lookupDetailValue;
+          switch (column._lookupDetailType) {
+            case "date":
+              v = new Date(v);
+              v.setHours(0, 0, 0, 0);
+              break;
+            case "numeric":
+              if (typeof v == "string")
+                v = parseFloat(v);
+              break;
+          }
+          ;
+          cell._record[column._lookupDetailField] = v;
+        }
+        cell._record[cell._field] = newValue;
+      } else if (this._dataBindingContext) {
+        let record = this.getObject(0, this._row);
+        let field = this.getObject(this._col, 0);
+        let idx = 0;
+        let jsonValue;
+        if (typeof field == "number") {
+          idx = field;
+          field = this.dataBinding["fields"][idx];
+          if (this.dataBinding["jsonValues"])
+            jsonValue = this.dataBinding["jsonValues"][idx];
+        }
+        this.data.getCell(0, this._row)._newRow = false;
+        let fieldType = this.dataBinding["fieldTypes"][idx];
+        if (fieldType == "float")
+          newValue = parseNumber(newValue);
+        else if (fieldType == "integer")
+          newValue == Math.round(parseNumber(newValue));
+        else if (editor && editor["dataType"] == "dtNumber")
+          newValue = parseNumber(newValue);
+        if (!record && field) {
+          record = this._dataBindingContext["append"]();
+          this.setObject(0, this._row, record);
+        }
+        if (record && field) {
+          if (jsonValue)
+            newValue = this.setJSONValue(record[field], jsonValue, newValue);
+          if (record[field] != newValue)
+            record[field] = newValue;
+        }
+        if (true)
+          this.enableUpdateTimer();
+      }
+      this.updateBindingData(cell);
+      if (this.onCellChange)
+        this.onCellChange(this, cell, oldValue, newValue);
+    }
+    ;
+  }
+  hideEditor(updateValue) {
+    this.edit.value = "";
+    if (updateValue && this.editor && this.editor["dataType"] == "dtUserAccount") {
+      let editor = this.editor;
+      editor["dataType"] = "";
+      this.editor = null;
+      let self = this;
+      return;
+    }
+    if (updateValue && this.editor && this.editor["dataType"] == "dtFile")
+      updateValue = false;
+    else if (this.editor && this.editor.buildInEditor && this.editor["dataType"] == "dtLookup") {
+      this.editor["onChange"] = void 0;
+      this.editor.hide(updateValue);
+    }
+    if (updateValue)
+      this._updateCurrCellValue();
+    if (this.editor) {
+      this.editorMode = false;
+      let editor = this.editor;
+      this.editor = void 0;
+      this.removeChild(editor);
+      this.edit.removeEventListener("propertychange", this._handleInput.bind(this));
+      this.edit.removeEventListener("input", this._handleInput.bind(this));
+      this.edit.value = "";
+      this.edit.addEventListener("propertychange", this._handleInput.bind(this));
+      this.edit.addEventListener("input", this._handleInput.bind(this));
+      this.focus();
+      this.edit.focus();
+      if (this.onEditModeChanged)
+        this.onEditModeChanged(this);
+    }
+    ;
+  }
+  checkEmptyRow(row) {
+    let cell = this.data.getCell(0, row);
+    if (cell._newRow != void 0)
+      return cell._newRow;
+    for (let i = 0; i < this._colCount; i++) {
+      if (this.data.getValue(i, row) != "" && this.data.getValue(i, row) != void 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+  setRowCount(aRowCount) {
+    if (this._rowCount != aRowCount) {
+      this._rowCount = aRowCount;
+      if (this._row >= this._rowCount || this._row < this._fixedRow)
+        this._row = this._fixedRow;
+      this.data.setRowCount(aRowCount);
+      this.refresh();
+      this.enableUpdateTimer(true);
+    }
+  }
+  refresh() {
+    super.refresh();
+    this.enableUpdateTimer();
+  }
+  deleteRow(row) {
+    if (this._dataBindingContext && this._dataBindingContext["readOnly"])
+      return;
+    this.data.deleteRow(row);
+    if (this._rowHeights.length > row)
+      this._rowHeights.splice(row, 1);
+    this.setRowCount(this._rowCount - 1);
+    if (this._dataBindingContext) {
+      let record = this.getObject(0, this._row);
+      if (record && this._dataBindingContext["current"] !== record) {
+        if (this._bindingRecordSet)
+          this._bindingRecordSet["current"] = record;
+        this._dataBindingContext["current"] = record;
+      }
+    }
+    ;
+    this.enableUpdateTimer();
+  }
+  getObject(aCol, aRow) {
+    return this.data.getObject(aCol, aRow);
+  }
+  getValue(col, row) {
+    return this.data.getValue(col, row);
+  }
+  setScrollLeft() {
+    console.dir("#setScrollLeft");
+    this._scrollBox.onscroll = null;
+    clearTimeout(this._restScrollboxHandler);
+    clearTimeout(this._setScrollLeftInterval);
+    this._setScrollLeftInterval = setTimeout(() => {
+      this.setScrollLeftInternal();
+      this._restScrollboxHandler = setTimeout(() => {
+        this._scrollBox.onscroll = this._handleScroll.bind(this);
+      }, 10);
+    }, 10);
+  }
+  setScrollLeftInternal() {
+    if (this._leftCol == this._fixedCol) {
+      this._scrollBox.scrollLeft = 0;
+      this._scrollLeft = this._scrollBox.scrollLeft;
+    } else {
+      let w = 0;
+      for (let i = 0; i < this._fixedCol; i++)
+        w = w + this.getColWidth(i) + 0.8;
+      for (let i = this._leftCol; i < this._colCount; i++)
+        w = w + this.getColWidth(i) + 0.8;
+      this._scrollBox.scrollLeft = this._scrollBox.scrollWidth - w;
+      this._scrollLeft = this._scrollBox.scrollLeft;
+    }
+    ;
+  }
+  setScrollTop() {
+    this._scrollBox.onscroll = null;
+    clearInterval(this._restScrollboxHandler);
+    clearInterval(this._setScrollTopInterval);
+    this._setScrollTopInterval = setTimeout(() => {
+      this.setScrollTopInternal();
+      this._restScrollboxHandler = setTimeout(() => {
+        this._scrollBox.onscroll = this._handleScroll.bind(this);
+      }, 10);
+    }, 10);
+  }
+  setScrollTopInternal() {
+    console.dir("setScrollTopInternal");
+    if (this._topRow == this._fixedRow) {
+      this._scrollBox.scrollTop = 0;
+      this._scrollTop = this._scrollBox.scrollTop;
+    }
+    if (this.layout == "card") {
+    } else {
+      let h = 0;
+      for (let i = 0; i < this._fixedRow; i++)
+        h = h + this.getRowHeight(i) + 0.8;
+      for (let i = this._topRow; i < this._rowCount; i++)
+        h = h + this.getRowHeight(i) + 0.8;
+      this._scrollBox.scrollTop = this._scrollBox.scrollHeight - h;
+      this._scrollTop = this._scrollBox.scrollTop;
+    }
+    ;
+  }
+  setLeftCol(aLeftCol, skipSetScroll) {
+    console.log("setLeftCol", aLeftCol, skipSetScroll);
+    if (aLeftCol != this._leftCol) {
+      if (this.editorMode) {
+        this.hideEditor(true);
+      }
+      ;
+      if (aLeftCol < this._fixedCol)
+        this._leftCol = this._fixedCol;
+      else if (aLeftCol >= this._colCount)
+        this._leftCol = this._colCount - 1;
+      else
+        this._leftCol = aLeftCol;
+      this.showData(100);
+      if (!skipSetScroll)
+        this.setScrollLeft();
+      this.enableUpdateTimer();
+    }
+  }
+  setTopRow(row, skipSetScroll) {
+    console.log("setTopRow", row, skipSetScroll);
+    if (row != this._topRow) {
+      if (this.editorMode) {
+        this.hideEditor(true);
+      }
+      ;
+      if (row < this._fixedRow)
+        this._topRow = this._fixedRow;
+      else if (row >= this._rowCount)
+        this._topRow = this._rowCount - 1;
+      else
+        this._topRow = row;
+      this.showData(100);
+      if (!skipSetScroll)
+        this.setScrollTop();
+      this.enableUpdateTimer();
+    }
+    ;
+  }
+  showData(interval) {
+    let self = this;
+    self.showDataFlag = true;
+    if (self._showDataTimeout) {
+      clearTimeout(self._showDataTimeout);
+    }
+    if (interval && !self._refreshDataTimeout) {
+      self._refreshDataTimeout = setTimeout(function() {
+        clearTimeout(self._refreshDataTimeout);
+        self._refreshDataTimeout = void 0;
+        if (!self._destroyed)
+          self.showDataInternal();
+      }, 10);
+    }
+    ;
+    self._showDataTimeout = setTimeout(function() {
+      if (self._refreshDataTimeout) {
+        clearTimeout(self._refreshDataTimeout);
+        self._refreshDataTimeout = void 0;
+      }
+      clearTimeout(self._showDataTimeout);
+      self._showDataTimeout = void 0;
+      if (self.showDataFlag) {
+        self.showDataFlag = false;
+        self._updateTableInternal();
+        if (!self["_destroyed"])
+          self.showDataInternal();
+      }
+    }, 100);
+  }
+  getTableCellByActualIndex(aColIdx, aRowIdx) {
+    let aCol;
+    let aRow;
+    if (aColIdx < this._fixedCol)
+      aCol = aColIdx;
+    else
+      aCol = aColIdx - this._leftCol + this._fixedCol;
+    if (aRowIdx < this._fixedRow)
+      aRow = aRowIdx;
+    else
+      aRow = aRowIdx - this._topRow + this._fixedRow;
+    for (let i = this._topRow; i < aRow; i++) {
+      if (this.gridRows.rows[i] && this.gridRows.rows[i]._visible == false)
+        aRow--;
+    }
+    if (aRow >= this._fixedRow && this.tableCells[aRow])
+      return this.tableCells[aRow][aCol];
+    else
+      return void 0;
+  }
+  getTableCell(aColIdx, aRowIdx) {
+    if (this.tableCells && this.tableCells[aRowIdx])
+      return this.tableCells[aRowIdx][aColIdx];
+    else
+      return void 0;
+  }
+  highlightCurrCell() {
+    var _a, _b, _c;
+    this._currCell = this.getTableCellByActualIndex(this._col, this._row);
+    if (!this.options._rowSelect) {
+      if (!this._currCell) {
+        return this.cellHighlight.style.display = "none";
+      }
+    }
+    this.highlightSelectedCell();
+    this.selectedRangeHighlight.style.display = "none";
+    if (this._currCell || this.options._rowSelect && this._row < this._rowCount) {
+      if (this.options._rowSelect) {
+        this.cellHighlight.style.display = "block";
+        if (this._currCell) {
+          this.cellHighlight.style.display = "";
+          this.cellHighlight.style.top = this._currCell.offsetTop - 1 + "px";
+          this.cellHighlight.style.height = this._currCell.offsetHeight + 1 + "px";
+        } else
+          this.cellHighlight.style.display = "none";
+        this.cellHighlight.style.left = "0px";
+        if (this._totalColWidth + 2 < this.tableContainer.clientWidth)
+          this.cellHighlight.style.width = this._totalColWidth + 2 + "px";
+        else
+          this.cellHighlight.style.width = this.tableContainer.clientWidth + 2 + "px";
+      } else if (this._currCell) {
+        let tableCell = this.getTableCell(this._col, this._row);
+        if (tableCell && this._currCell.cell) {
+          let edit = this.edit;
+          edit.value = this._currCell.cell._displayValue || this._currCell.cell._value || "";
+          edit.setSelectionRange(0, edit.value.length);
+        } else {
+          this.edit.value = "";
+        }
+        ;
+        this.cellHighlight.style.display = "block";
+        let parentRect = this.getBoundingClientRect();
+        let elemRect = (_a = this._currCell) == null ? void 0 : _a.getBoundingClientRect();
+        this.cellHighlight.style.top = this._currCell.offsetTop + "px";
+        this.cellHighlight.style.left = this._currCell.offsetLeft + "px";
+        if ((_b = this._currCell) == null ? void 0 : _b.offsetWidth)
+          this.cellHighlight.style.width = this._currCell.offsetWidth + 1 + "px";
+        else
+          this.cellHighlight.style.width = "0px";
+        if ((_c = this._currCell) == null ? void 0 : _c.offsetHeight)
+          this.cellHighlight.style.height = this._currCell.offsetHeight + 1 + "px";
+        else
+          this.cellHighlight.style.height = "0px";
+      }
+      ;
+    } else {
+      this.cellHighlight.style.display = "none";
+    }
+    if (this._currCell && this._currCell.cell)
+      this.cellHighlight.title = this._currCell.cell._hint || "";
+    else
+      this.cellHighlight.title = "";
+  }
+  setCurrCell(aCol, aRow, triggerEvent) {
+    if (this._col == aCol && this._row == aRow)
+      return;
+    this.selectedCells = [];
+    let cell = this.data.getCell(aCol, aRow);
+    let idx = this.selectedCells.indexOf(cell);
+    if (idx < 0) {
+      this.selectedCells.push(cell);
+    } else {
+      this.selectedCells.splice(idx, 1);
+    }
+    this.highlightSelectedCell();
+    if (this.editorMode) {
+      this.hideEditor(true);
+    }
+    ;
+    if (aCol < 0)
+      aCol = 0;
+    if (aRow < this._fixedRow)
+      aRow = this._fixedRow;
+    let rowChange = false;
+    if (aCol < this._colCount && aRow < this._rowCount) {
+      this._col = aCol;
+      if (this._row != aRow) {
+        rowChange = true;
+        if (!this._readOnly && this.options._autoAddRow && this._row == this._rowCount - 1 && this.checkEmptyRow(this._row)) {
+          if (this._dataBindingContext) {
+            let record = this.getObject(0, this._row);
+            if (record)
+              this._dataBindingContext["delete"](record);
+            this.deleteRow(this._row);
+          } else
+            this._rowCount = this._rowCount - 1;
+          this.enableUpdateTimer();
+        }
+      }
+      this._row = aRow;
+      if (aCol < this._leftCol)
+        this.setLeftCol(aCol);
+      if (aRow < this._topRow)
+        this.setTopRow(aRow);
+      if (this._scrollBox.clientWidth > 0) {
+        let topRow = this.calcTopRow(aRow);
+        if (topRow > this._topRow)
+          this.setTopRow(topRow);
+        let leftCol = this.calcLeftCol(aCol);
+        if (leftCol > this._leftCol)
+          this.setLeftCol(leftCol);
+      }
+      this.highlightCurrCell();
+      if (rowChange) {
+        let record = this.getObject(0, this._row);
+        if (this._bindingRecordSet && this._bindingRecordSet["current"] !== record)
+          this._bindingRecordSet["current"] = record;
+        if (this._dataBindingContext && this._dataBindingContext["current"] !== record) {
+          this._skipRefreshData = true;
+          if (this._bindingRecordSet)
+            this._bindingRecordSet["current"] = record;
+          this._dataBindingContext["current"] = record;
+        }
+        if (triggerEvent && this.onRowChange) {
+          this.onRowChange(this);
+        }
+      }
+      if (triggerEvent && this.onCellSelect) {
+        this.onCellSelect(this, cell);
+      }
+    }
+    ;
+  }
+  highlightSelectedCell() {
+    if (this.selectedCells.length > 1) {
+      let idx = {};
+      for (let i = 0; i < this.selectedCells.length; i++) {
+        let cell = this.selectedCells[i];
+        idx[cell.col + "-" + cell.row] = false;
+      }
+      for (let i = this.selectedCellsHighlight.length - 1; i > -1; i--) {
+        let div = this.selectedCellsHighlight[i];
+        if (typeof idx[div.col + "-" + div.row] == "undefined") {
+          this.removeChild(this.selectedCellsHighlight[i]);
+          this.selectedCellsHighlight["splice"](i, 1);
+        } else
+          idx[div.col + "-" + div.row] = true;
+      }
+      for (let i = 0; i < this.selectedCells.length; i++) {
+        let cell = this.selectedCells[i];
+        if (idx[cell["col"] + "-" + cell["row"]] == false) {
+          let tableCell = this.getTableCellByActualIndex(cell.col, cell.row);
+          if (tableCell) {
+            let div = this.createElement("div", this);
+            this.appendChild(div);
+            this.selectedCellsHighlight.push(div);
+            div.className = "grid_selected_cell";
+            div.style.position = "absolute";
+            div.style.display = "block";
+            div.style.zIndex = "3";
+            div.col = cell["col"];
+            div.row = cell["row"];
+            div.style.top = tableCell.offsetTop + "px";
+            div.style.left = tableCell.offsetLeft + "px";
+            div.style.width = tableCell.offsetWidth + "px";
+            div.style.height = tableCell.offsetHeight + "px";
+          }
+          ;
+        }
+        ;
+      }
+      ;
+    } else {
+      for (let i = this.selectedCellsHighlight.length - 1; i > -1; i--)
+        this.removeChild(this.selectedCellsHighlight[i]);
+      this.selectedCellsHighlight = [];
+    }
+    ;
+  }
+  _updateLanguage() {
+  }
+  _updateListOfValues() {
+  }
+  _handleScrollHorizontal(sender) {
+    if (sender.scrollLeft == 0) {
+      this.setLeftCol(this._fixedCol, true);
+      return;
+    }
+    let width = sender.scrollWidth - sender.scrollLeft - sender.clientWidth;
+    for (let i = 0; i < this._fixedCol; i++)
+      width = width - this.getColWidth(i) - 1;
+    for (let i = this._colCount - 1; i > 0; i--) {
+      let w = this.getColWidth(i);
+      width = width - w - 1;
+      if (width <= 0) {
+        let col = this.calcLeftCol(i);
+        this.setLeftCol(col, true);
+        break;
+      }
+    }
+    this.highlightCurrCell();
+  }
+  _handleScrollVertical(sender) {
+    if (sender.scrollTop == 0) {
+      if (this._cardPanel)
+        this._cardPanel["setTop"](0);
+      this.setTopRow(this._fixedRow, true);
+      return;
+    }
+    if (this.layout == "card") {
+    } else {
+      let height = sender.scrollHeight - sender.scrollTop - sender.clientHeight;
+      for (let i = 0; i < this._fixedRow; i++) {
+        height = height - this.getRowHeight(i);
+      }
+      for (let i = this._rowCount - 1; i > 0; i--) {
+        let h = this.getRowHeight(i);
+        height = height - h;
+        if (height <= 0) {
+          let row = this.calcTopRow(i);
+          this.setTopRow(row, true);
+          break;
+        }
+      }
+      ;
+    }
+    this.highlightCurrCell();
+  }
+  _handleScroll(event) {
+    console.dir("_handleScroll");
+    let target = event.target;
+    clearTimeout(this.scrollHorizontalTimer);
+    clearTimeout(this.scrollVerticalTimer);
+    if (this._scrollLeft != target.scrollLeft) {
+      this._scrollLeft = target.scrollLeft;
+      this.scrollHorizontalTimer = setTimeout(() => {
+        this._handleScrollHorizontal(target);
+      }, 10);
+    } else if (this._scrollTop != target.scrollTop) {
+      this._scrollTop = target.scrollTop;
+      this.scrollVerticalTimer = setTimeout(() => {
+        this._handleScrollVertical(target);
+      }, 10);
+    }
+  }
+  _handleFileDrop(event) {
+    console.dir("## _handleFileDrop");
+  }
+  _handleDragOver(event) {
+    console.dir("## _handleDragOver");
+  }
+  _handleInput(event) {
+    this.showEditor(this.edit.value);
+  }
+  _handleMouseWheel(event, delta) {
+    console.dir("## _handleMouseWheel");
+  }
+  getColLeft(aCol) {
+    let cell = this.getTableCellByActualIndex(aCol, 1);
+    if (cell)
+      return cell.offsetLeft;
+    let r = 0;
+    for (let i = 0; i < this._fixedCol; i++) {
+      r = r + this.getColWidth(i);
+    }
+    for (let i = this._leftCol; i < aCol; i++) {
+      r = r + this.getColWidth(i);
+    }
+    return r;
+  }
+  getColRight(aCol) {
+    let cell = this.getTableCellByActualIndex(aCol, 1);
+    if (cell)
+      return cell.offsetLeft + this.getColWidth(aCol);
+    let r = 0;
+    for (let i = 0; i < this._fixedCol; i++) {
+      r = r + this.getColWidth(i);
+    }
+    for (let i = this._leftCol; i < aCol; i++) {
+      r = r + this.getColWidth(i);
+    }
+    return r + this.getColWidth(aCol);
+  }
+  getColWidth(col) {
+    let column = this.cols(col);
+    if (column && column._visible === false)
+      return 0;
+    let w = this.colWidths[col];
+    if (w != void 0)
+      return w;
+    else
+      return this._defaultColWidth;
+  }
+  getRowHeight(row) {
+    let h = this._rowHeights[row];
+    if (h)
+      return h;
+    else
+      return this._defaultRowHeight;
+  }
+  _updateTotalRowHeight() {
+    this._totalRowHeight = 0;
+    for (let i = 0; i < this._rowCount; i++) {
+      this._totalRowHeight = this._totalRowHeight + this.getRowHeight(i) + 0.8;
+    }
+    this.placeHolder.style.height = this._totalRowHeight + "px";
+  }
+  _updateTotalColWidth() {
+    this._totalColWidth = 0;
+    for (let i = 0; i < this._colCount; i++) {
+      this._totalColWidth = this._totalColWidth + this.getColWidth(i);
+    }
+    if (this._totalColWidth < this["width"])
+      this.placeHolder.style.width = "100%";
+    else
+      this.placeHolder.style.width = this._totalColWidth + "px";
+  }
+  _updateTableRows() {
+    for (let i = this._table.rows.length - 1; i >= 0; i--) {
+      this._table.deleteRow(i);
+    }
+    this.visibleRowCount = Math.round(this.heightValue / this._defaultRowHeight) + 1;
+    if (this.visibleRowCount > this._rowCount)
+      this.visibleRowCount = this._rowCount;
+    for (let i = this._table.rows.length; i < this.visibleRowCount; i++) {
+      let r = this._table.insertRow(this._table.rows.length);
+    }
+    ;
+  }
+  getActualColIdx(col) {
+    if (col < this._fixedCol)
+      return col;
+    else
+      return col + this._leftCol - this._fixedCol;
+  }
+  getActualRowIdx(row) {
+    if (row < this._fixedRow)
+      return row;
+    else {
+      let result = row + this._topRow - this._fixedRow;
+      for (let i = this._topRow; i <= result; i++) {
+        if (this.gridRows.rows[i] && this.gridRows.rows[i]._visible == false)
+          result++;
+      }
+      ;
+      return result;
+    }
+    ;
+  }
+  cols(colIdx) {
+    return this.columns.getColumn(colIdx);
+  }
+  _updateTableCellDiv(tableCell, col, row) {
+    if (!tableCell.div) {
+      let div = this.createElement("div");
+      tableCell.div = div;
+      div.owner = this;
+      if (row < this._fixedRow)
+        tableCell.className = "header grid_fixed_cell";
+      else if (col < this._fixedCol)
+        tableCell.className = "grid_fixed_cell";
+      let actCol = this.getActualColIdx(col);
+      let actRow = this.getActualRowIdx(row);
+      let cell = this.data.cells(actCol, actRow);
+      let w = 0;
+      let h = 0;
+      if (cell && cell.mergeRect) {
+        let divRect = this.createElement("div");
+        divRect.style.overflow = "hidden";
+        divRect.style.position = "relative";
+        tableCell.appendChild(divRect);
+        w = this.getColWidth(cell.mergeRect.startCol) - 2;
+        h = this.getRowHeight(cell.mergeRect.startRow) - 1;
+        for (let i = cell.mergeRect.startCol + 1; i <= cell.mergeRect.endCol; i++)
+          w = w + this.getColWidth(i) - 2;
+        for (let i = cell.mergeRect.startRow + 1; i <= cell.mergeRect.endRow; i++)
+          h = h + this.getRowHeight(i) - 2;
+        let left = 0;
+        let top = 0;
+        if (cell.mergeRect.startCol > this._fixedCol && cell.mergeRect.startCol < this._leftCol) {
+          for (let i = cell.mergeRect.startCol; i < this._leftCol; i++)
+            left = left + this.getColWidth(i) - 2;
+        }
+        if (cell.mergeRect.startRow > this._fixedRow && cell.mergeRect.startRow < this._topRow) {
+          for (let i = cell.mergeRect.startRow; i < this._topRow; i++)
+            top = top + this.getRowHeight(i) - 1;
+        }
+        divRect.appendChild(div);
+        divRect.style.width = w - left + "px";
+        divRect.style.height = h - top + "px";
+        div.style.position = "absolute";
+        div.style.left = -left + "px";
+        div.style.top = -top + "px";
+      } else {
+        w = this.getColWidth(actCol) - 2;
+        let column = this.cols(actCol);
+        if (column && column._visible === false)
+          tableCell.className += " grid_cell_hidden";
+        h = this.getRowHeight(actRow) - 2;
+        if (row < this._fixedRow)
+          tableCell.style.minWidth = w + "px";
+        tableCell.style.position = "relative";
+        tableCell.appendChild(div);
+      }
+      div.style.width = w + "px";
+      div.style.height = "auto";
+      div.style.whiteSpace = "wrap";
+      div.style.maxHeight = h + "px";
+      div.style.overflow = "hidden";
+      if (col == 0)
+        div.style.minHeight = h + "px";
+      div.className = "grid_cell_value";
+    }
+    ;
+  }
+  _updateTableCols() {
+    let w = 0;
+    for (let i = 0; i < this._fixedCol; i++)
+      w = w + this.getColWidth(i);
+    this.visibleColCount = this._fixedCol;
+    let width = this.widthValue;
+    if (width == 0)
+      this._needUpdate = true;
+    else
+      this._needUpdate = false;
+    for (let i = this._leftCol; i < this._colCount; i++) {
+      w = w + this.getColWidth(i);
+      this.visibleColCount++;
+      if (w >= width)
+        break;
+    }
+    ;
+    for (let row = 0; row < this._table.rows.length; row++) {
+      let r = this._table.rows[row];
+      this.tableCells[row] = [];
+      for (let col = 0; col < this.visibleColCount; col++) {
+        let tableCell = r.insertCell(r.cells.length);
+        if (col == 0)
+          tableCell.style.height = this._defaultRowHeight + "px";
+        tableCell.owner = this;
+        if ((col + this._leftCol) % 2 == 0)
+          tableCell.className = "grid_cell even_col";
+        else
+          tableCell.className = "grid_cell odd_col";
+        if ((row + this._topRow) % 2 == 0)
+          tableCell.className += " even_row";
+        else
+          tableCell.className += " odd_row";
+        this._updateTableCellDiv(tableCell, col, row);
+        this.tableCells[row][col] = tableCell;
+        if (row == 0 && (col < this._fixedCol && col == this.sortingCol || (col >= this._fixedCol && col + (this._leftCol > 0 ? this._leftCol - this._fixedCol : 0)) == this.sortingCol)) {
+          tableCell.style.position = "relative";
+          let elm = this.createElement("div");
+          elm.style.position = "absolute";
+          elm.style.width = "6px";
+          elm.style.height = "6px";
+          elm.style.right = "4px";
+          if (this.sortingDescending) {
+            elm.style.top = "2px";
+            elm.className = "fa fa-sort-desc";
+          } else {
+            elm.style.top = "6px";
+            elm.className = "fa fa-sort-asc";
+          }
+          tableCell.appendChild(elm);
+        }
+      }
+    }
+  }
+  setColWidth(aColIndex, width, trigerEvent) {
+    let orig = 0;
+    orig = this.colWidths[aColIndex];
+    this.colWidths[aColIndex] = width;
+    for (let i = 0; i < this.tableCells.length; i++) {
+      let tableCell = this.getTableCell(aColIndex, i);
+      let tableCellDiv = tableCell == null ? void 0 : tableCell.div;
+      let column = this.cols(aColIndex);
+      if (tableCell && tableCell.div && !column._checkBox && !column._radioButton)
+        tableCellDiv.style.width = width - 3 + "px";
+    }
+    for (let i = 0; i < this._rowCount; i++) {
+      let cell = this.cells(aColIndex, i);
+      if (cell)
+        cell._height = void 0;
+    }
+    if (trigerEvent && this.onColResize) {
+      if (this.resizeTimer)
+        clearTimeout(this.resizeTimer);
+      this.resizeTimer = setTimeout(() => {
+        this.onColResize(this, aColIndex, width);
+      }, 50);
+    }
+    this.enableUpdateTimer(true, true);
+  }
+  _updateTableMergedCells() {
+    console.dir("### _updateTableMergedCells");
+  }
+  sort(col, descending) {
+    let currRow = this.data.data[this._row];
+    if (this.editorMode)
+      this.hideEditor();
+    this._rowHeights = [];
+    if (this.data.data.length > this._rowCount)
+      this.data.data.length = this._rowCount;
+    if (col >= 0)
+      this.data.sort(col, descending);
+    this.sortingDescending = descending || false;
+    this.sortingCol = col;
+    if (currRow)
+      this._row = this.data.data.indexOf(currRow);
+    this.enableUpdateTimer();
+  }
+  getEditor(col, cell) {
+    let editor = this.createElement("input", this);
+    editor.setAttribute("autocomplete", "disabled");
+    editor.className = "grid_edit";
+    this.appendChild(editor);
+    return editor;
+  }
+  handleEditControlChange(event) {
+    console.dir("## handleEditControlChange");
+  }
+  _handleDblClick(event, stopPropagation) {
+    return true;
+  }
+  colLeft() {
+    let aRow = this._row;
+    let aCol = this._col - 1;
+    while (aCol > this._fixedCol) {
+      let column = this.cols(aCol);
+      if (column && column.visible === false)
+        aCol--;
+      else
+        break;
+    }
+    ;
+    if (aCol < this._colCount) {
+      let cell = this.data.cells(aCol, aRow);
+      if (cell && cell.mergeRect) {
+        if (cell.mergeRect.startRow != aRow) {
+          aRow = cell.mergeRect.endRow + 1;
+        }
+        ;
+        this.setCurrCell(aCol, aRow, true);
+      } else
+        this.setCurrCell(aCol, aRow, true);
+    }
+    ;
+  }
+  colRight() {
+    let aRow = this._row;
+    let aCol = this._col + 1;
+    while (aCol < this._colCount - 1) {
+      let column = this.cols(aCol);
+      if (column && column.visible === false)
+        aCol++;
+      else
+        break;
+    }
+    ;
+    if (aCol < this._colCount) {
+      let cell = this.data.cells(aCol, aRow);
+      if (cell && cell.mergeRect) {
+        if (cell.mergeRect.startRow != aRow) {
+          aRow = cell.mergeRect.endRow + 1;
+        }
+        this.setCurrCell(aCol, aRow, true);
+      } else
+        this.setCurrCell(aCol, aRow, true);
+    }
+    ;
+  }
+  autoAddRow() {
+    if (!this._readOnly && !this.options._rowSelect && this.options._autoAddRow && this._row == this._rowCount - 1) {
+      let emptyRow = this.checkEmptyRow(this._row);
+      if (!emptyRow) {
+        this._rowCount = this._rowCount + 1;
+        this.setCurrCell(this._col, this._row + 1, true);
+        let cell = this.data.getCell(0, this._row);
+        if (this._dataBindingContext) {
+          cell._newRow = true;
+          let rd = this._dataBindingContext["append"]();
+          this.setObject(0, this._row, rd);
+          this._skipRefreshData = true;
+          if (this._bindingRecordSet)
+            this._bindingRecordSet["current"] = rd;
+          this._dataBindingContext["current"] = rd;
+        }
+        this._updateTotalRowHeight();
+        this.enableUpdateTimer();
+      }
+    }
+  }
+  rowDown(disableAutoAddRow) {
+    let aCol = this._col;
+    let aRow = this._row + 1;
+    while (aRow < this._rowCount - 1 && this.gridRows.rows[aRow] && this.gridRows.rows[aRow]._visible == false) {
+      aRow++;
+    }
+    if (this.gridRows.rows[aRow] && this.gridRows.rows[aRow]._visible == false)
+      aRow = this._row;
+    this.gridRows.rows[aRow] && this.gridRows.rows[aRow]._visible == false;
+    if (!disableAutoAddRow)
+      this.autoAddRow();
+    if (aRow < this._rowCount) {
+      let cell = this.data.cells(aCol, aRow);
+      if (cell && cell.mergeRect) {
+        if (cell.mergeRect.startRow != aRow) {
+          aRow = cell.mergeRect.endRow + 1;
+        }
+        this.setCurrCell(aCol, aRow, true);
+      } else
+        this.setCurrCell(aCol, aRow, true);
+    }
+    ;
+  }
+  calcBottomRow(topRowIdx) {
+    if (topRowIdx == this._rowCount - 1)
+      return topRowIdx;
+    let row = topRowIdx;
+    let height = this._scrollBox.clientHeight;
+    if (this.layout == "card") {
+    } else {
+      for (let i = 0; i < this._fixedRow; i++)
+        height = height - this.getRowHeight(i) - 0.8;
+      height = height - this.getRowHeight(row);
+      while (row < this._rowCount - 1) {
+        let h = this.getRowHeight(row - 1) + 0.8;
+        height = height - h;
+        if (height <= 0)
+          return row;
+        row++;
+      }
+      ;
+    }
+    ;
+    return row;
+  }
+  calcLeftCol(colIdx) {
+    if (colIdx == this._fixedCol)
+      return colIdx;
+    let col = colIdx;
+    let width = this._scrollBox.clientWidth;
+    for (let i = 0; i < this._fixedCol; i++)
+      width = width - this.getColWidth(i) - 0.8;
+    width = width - this.getColWidth(col) - 0.8;
+    while (col > this._fixedCol - 1) {
+      let w = this.getColWidth(col - 1) + 0.8;
+      width = width - w;
+      if (width <= 0) {
+        return col;
+      }
+      col--;
+    }
+    return col;
+  }
+  rowUp() {
+    let aCol = this._col;
+    let aRow = this._row - 1;
+    let cell = this.data.cells(aCol, aRow);
+    if (cell && cell.mergeRect) {
+      if (cell.mergeRect.endRow != aRow) {
+        aRow = cell.mergeRect.startRow - 1;
+      }
+      ;
+      this.setCurrCell(aCol, aRow, true);
+    } else
+      this.setCurrCell(aCol, aRow, true);
+  }
+  restoreOrigCellValue() {
+    if (this.origValue != void 0) {
+      if (this.editorMode)
+        this.editor.value = this.origValue;
+      else
+        this._currCell.div.textContent = this.origValue;
+    }
+    ;
+  }
+  _handleKeyDown(event, stopPropagation) {
+    if (!this.editorMode)
+      this.edit.focus();
+    if (!this.enabled)
+      return false;
+    else if (event.keyCode == 229) {
+      setTimeout(() => {
+      }, 10);
+      return true;
+    }
+    ;
+    let keyCode = event.keyCode;
+    switch (keyCode) {
+      case 9: {
+        if (event.shiftKey)
+          this.colLeft();
+        else
+          this.colRight();
+        return true;
+      }
+      case 13: {
+        if (this.editorMode) {
+          if (!event.shiftKey) {
+            this.hideEditor(true);
+            this.colRight();
+          }
+        } else {
+          this.setCurrCell(this._col + 1, this._row, true);
+        }
+        return true;
+      }
+      case 32: {
+        let col = this.cols(this._col);
+        let cell = this.cells(this._col, this._row);
+        if (cell && cell.checkBox || col && (col.checkBox || col.radioButton)) {
+          if (this._currCell) {
+            this.toggleCellValue(col, cell);
+            this._updateCell(this._currCell, cell, col);
+          }
+          ;
+          event.stopPropagation();
+        }
+        break;
+      }
+      case 33: {
+        let bottomRow = this.calcBottomRow(this._topRow);
+        let row = this.calcTopRow(bottomRow);
+        row = this.calcTopRow(row);
+        this.setCurrCell(this._col, row);
+        return true;
+      }
+      case 34: {
+        let bottomRow = this.calcBottomRow(this._topRow);
+        let row = this.calcBottomRow(bottomRow);
+        this.setCurrCell(this._col, row);
+        return true;
+      }
+      case 35: {
+        if (!this.editorMode) {
+          if (event.ctrlKey) {
+            this.setCurrCell(this._colCount - 1, this._rowCount - 1);
+          } else
+            this.setCurrCell(this._colCount - 1, this._row);
+        }
+        return true;
+      }
+      case 36: {
+        if (!this.editorMode) {
+          if (event.ctrlKey)
+            this.setCurrCell(this._fixedCol, this._fixedRow);
+          else
+            this.setCurrCell(this._fixedCol, this._row);
+        }
+        return true;
+      }
+      case 38: {
+        this.rowUp();
+        return true;
+      }
+      case 40: {
+        if (this.editorMode) {
+          this.hideEditor(true);
+        }
+        this.rowDown();
+        return true;
+      }
+      default: {
+        let col = this.cols(this._col);
+        let cell = this.cells(this._col, this._row);
+        if (cell && cell.checkBox || col && (col.checkBox || col.radioButton))
+          event.stopPropagation();
+      }
+    }
+    ;
+    if (this.editorMode) {
+      switch (keyCode) {
+        case 27:
+          this.restoreOrigCellValue();
+          this.hideEditor();
+          this.focus();
+          return true;
+        case 37:
+          return;
+        case 39:
+          return;
+      }
+      ;
+    } else {
+      switch (keyCode) {
+        case 37:
+          this.colLeft();
+          return true;
+        case 39:
+          this.colRight();
+          return true;
+      }
+    }
+    ;
+  }
+  _handleBlur(event, stopPropagation) {
+    return true;
+  }
+  showEditor(inputValue) {
+    let column = this.columns.getColumn(this._col);
+    let contextReadonly = false;
+    if (this._dataBindingContext) {
+      contextReadonly = this._dataBindingContext["readOnly"] || this._dataBindingContext["_context"]["options"]["_readOnly"];
+    }
+    if (!column._file && contextReadonly)
+      return;
+    if (!column._file && this.checkCellReadOnly())
+      return;
+    let cell = this.data.cells(this._col, this._row);
+    this._currCell = this.getTableCellByActualIndex(this._col, this._row);
+    if (this._currCell && !this.editorMode) {
+      let top = this._currCell.offsetTop - 1;
+      this.editorMode = true;
+      this.origValue = this._currCell.div.innerHTML || "";
+      if (this.editor) {
+        this.editor.owner = null;
+        this.editor["onChange"] = null;
+        this.editor["onDblClick"] = null;
+        this.editor["onKeyDown"] = null;
+        this.editor["onHideDropDownPanel"] = null;
+      }
+      let editor;
+      if (this.onGetEditControl) {
+        editor = this.onGetEditControl(this, cell);
+        if (editor)
+          this.appendChild(editor);
+      }
+      if (!editor) {
+        editor = this.getEditor(this._col, cell);
+      }
+      if (editor) {
+        editor.onchange = this.handleEditControlChange.bind(this);
+        editor.ondblclick = this._handleDblClick.bind(this);
+        editor.onkeydown = this._handleKeyDown.bind(this);
+        editor.onblur = this._handleBlur.bind(this);
+        this.editor = editor;
+        editor.style.position = "absolute";
+        editor.style.display = "block";
+        editor.value = this.edit.value;
+        editor.focus();
+        if (cell.mergeRect) {
+          let w = 0;
+          let h = 0;
+          for (let i = cell.mergeRect.startCol; i < cell.mergeRect.endCol; i++)
+            w += this.getColWidth(i);
+          editor.style.width = w - 1 + "px";
+          for (let i = cell.mergeRect.startCol; i < cell.mergeRect.endCol; i++)
+            h += this.getRowHeight(i) + 0.8;
+          editor.style.height = h - 1 + "px";
+          this.editor["setTop"](this._currCell.offsetTop + 1);
+          this.editor["setLeft"](this._currCell.offsetLeft + 1);
+        } else {
+          editor.style.width = this.getColWidth(this._col) - 2 + "px";
+          editor.style.height = this.getRowHeight(this._row) - 2 + "px";
+          editor.style.top = this._currCell.offsetTop + 2 + "px";
+          editor.style.left = this._currCell.offsetLeft + 2 + "px";
+        }
+      }
+      if (this.onEditModeChanged) {
+        this.onEditModeChanged(this);
+      }
+      ;
+      this.editor = editor;
+      let self = this;
+      setTimeout(() => {
+        if (editor) {
+          editor.style.zIndex = "9999";
+        }
+        ;
+      }, 10);
+    } else
+      this.edit.value = "";
+  }
+  _handleMouseDown(event) {
+    if (!this.enabled)
+      return true;
+    let target = event.target;
+    if (target && target.isSpliter)
+      return true;
+    let aCol = 0;
+    let aRow = 0;
+    if (target == this.editor) {
+      return true;
+    } else {
+      let rect = this.getBoundingClientRect();
+      let x = getCursorPosX(event) - rect.left;
+      let y = getCursorPosY(event) - rect.top;
+      if (x > this._scrollBox.clientWidth || y > this._scrollBox.clientHeight)
+        return true;
+      for (let row = 0; row < this._table.rows.length; row++) {
+        let tableCell = this.tableCells[row][0];
+        if (tableCell.offsetTop + tableCell.clientHeight >= y) {
+          let r = this.tableCells[row];
+          for (let col = 0; col < r.length; col++) {
+            tableCell = r[col];
+            if (tableCell && tableCell.offsetLeft + tableCell.clientWidth >= x && tableCell.offsetTop + tableCell.clientHeight >= y) {
+              let tableCellDiv = tableCell == null ? void 0 : tableCell.div;
+              aCol = this.getActualColIdx(col);
+              aRow = this.getActualRowIdx(row);
+              let cell = this.cells(aCol, aRow);
+              this.lastClickCell = cell;
+              let elms = tableCellDiv.querySelectorAll("button");
+              if (elms.length > 0) {
+                let offsetX = x - tableCell.offsetLeft;
+                for (let i = 0; i < elms.length; i++) {
+                  if (elms[i].offsetLeft + elms[i].clientWidth > offsetX) {
+                    this.setCurrCell(aCol, aRow, true);
+                    let btn;
+                    if (Array.isArray(cell._value))
+                      btn = cell._value[i];
+                    else
+                      btn = cell._value;
+                    if (this.onButtonClick) {
+                      this.onButtonClick(this, cell, btn);
+                    }
+                    if (this.onCellClick) {
+                      this.onCellClick(this, cell);
+                    }
+                  }
+                }
+                return true;
+              }
+              let column = this.columns.getColumn(aCol);
+              if (column && (cell && cell._checkBox || column._checkBox || column._radioButton)) {
+                if (aRow >= this._fixedRow || !cell.readOnly && cell._checkBox) {
+                  this.toggleCellValue(column, cell);
+                  this._updateCell(tableCell, cell, column);
+                  this.setCurrCell(aCol, aRow, true);
+                } else if (this.options._sortOnClick && column._sortable) {
+                  if (aCol == this.sortingCol)
+                    this.sort(aCol, !this.sortingDescending);
+                  else
+                    this.sort(aCol);
+                }
+              } else if (aCol == this._col && aRow == this._row) {
+                if (!this.editorMode) {
+                  let cell2 = this.data.cells(aCol, aRow);
+                  this.edit.value = cell2._displayValue || cell2._value || "";
+                  this.showEditor();
+                }
+              } else if (aRow < this._fixedRow) {
+                application.globalEvents.abortEvent(event);
+                if (this.editorMode)
+                  this.hideEditor();
+                if (this.options._sortOnClick) {
+                  if (aCol == this.sortingCol)
+                    this.sort(aCol, !this.sortingDescending);
+                  else
+                    this.sort(aCol);
+                }
+              } else {
+                this.setCurrCell(aCol, aRow, true);
+              }
+              if (cell && this.onCellClick)
+                this.onCellClick(this, cell);
+              break;
+            }
+          }
+          if (aRow != void 0)
+            break;
+        }
+      }
+    }
+    if (aRow == void 0 && this.editorMode) {
+      this.hideEditor(true);
+    }
+    if (!this.editorMode) {
+      this.edit.focus();
+    }
+    ;
+    return true;
+  }
+  _updateCell(tableCell, cell, column) {
+    let tableCellDiv = tableCell == null ? void 0 : tableCell.div;
+    let _cell = cell;
+    let _column = column;
+    let _tableCell = tableCell;
+    let withDispValue = false;
+    let disp;
+    if (tableCellDiv) {
+      tableCell.style.display = "";
+      if (cell._encrypted)
+        tableCellDiv.style.color = "green";
+      else
+        tableCellDiv.style.color = "";
+      tableCellDiv.style.display = "";
+      if (cell) {
+        _cell._tableCell = tableCellDiv;
+        let font = {
+          "bold": this.font.bold,
+          "color": this.font.color,
+          "italic": this.font.italic,
+          "name": this.font.name,
+          "size": this.font.size,
+          "underline": this.font.underline
+        };
+        let value;
+        if (this.onDisplayCell) {
+          disp = {
+            "button": _cell._button,
+            "checkBox": _cell._checkBox,
+            "col": _cell._col,
+            "color": _cell._color,
+            "dataType": _cell._dataType,
+            "font": font,
+            "formula": _cell._formula,
+            "horizontalAlign": _cell._horizontalAlign,
+            "html": _cell._html,
+            "image": _cell._image,
+            "object": _cell._object,
+            "readOnly": _cell._readOnly,
+            "row": _cell._row,
+            "text": _cell._text,
+            "value": _cell._value,
+            "visible": _cell._visible
+          };
+          try {
+            this.onDisplayCell(this, disp);
+            if (disp.value != _cell._value) {
+              _cell._displayValue = disp["value"];
+              withDispValue = true;
+            }
+            value = disp["value"];
+          } catch (e) {
+            value = "";
+          }
+        } else if (column && _column._formula) {
+          if (this.formula) {
+            this.formulaCell = cell;
+            value = this.formula["parse"](column._formula)["result"];
+          } else {
+          }
+        } else
+          value = _cell._value;
+        let c = (_cell ? _cell._color : "") || (_column ? _column._color : "");
+        tableCell.classList.remove("bg-warning", "bg-success", "bg-info", "bg-danger", "bg-highlight");
+        if (c) {
+          if (["warning", "success", "info", "danger", "highlight"].indexOf(c) > -1)
+            tableCell.classList.add("bg-" + c);
+          else
+            tableCell.style.backgroundColor = c;
+        } else
+          tableCellDiv.style.backgroundColor = "";
+        let align;
+        if (_cell._horizontalAlign != void 0)
+          align = _cell._horizontalAlign;
+        else if (_column && _column._horizontalAlign != void 0) {
+          align = _column._horizontalAlign;
+        }
+        if (align != void 0) {
+          switch (align) {
+            case 0:
+              tableCellDiv.style.textAlign = "center";
+              break;
+            case 1:
+              tableCellDiv.style.textAlign = "left";
+              break;
+            case 2:
+              tableCellDiv.style.textAlign = "right";
+              break;
+          }
+        }
+        if (!_cell.visible)
+          tableCellDiv.style.display = "none";
+        else
+          tableCellDiv.style.display = "";
+        if (_column && _column._type == "image" && _cell._file && _cell._file["url"]) {
+          tableCellDiv.classList.add("image");
+          tableCellDiv.style.height = this._defaultRowHeight + "px";
+          tableCellDiv.innerHTML = '<img src="' + withDispValue ? _cell._displayValue : _cell._file["url"] + '?size=t" style="max-height:100%;max-width=100%"/>';
+        } else if (disp && disp.image) {
+          tableCellDiv.classList.add("image");
+          tableCellDiv.style.height = this._defaultRowHeight + "px";
+          tableCellDiv.innerHTML = '<img src="' + withDispValue ? value : disp.value + '"/>';
+        } else if (disp && disp.html) {
+          tableCellDiv.innerHTML = withDispValue ? value : application.xssSanitize(disp.value);
+        } else if (_cell && (_cell.image || _cell._dataType == 5) || _column && _column._dataType == 5) {
+          tableCellDiv.classList.add("image");
+          tableCellDiv.style.height = this._defaultRowHeight + "px";
+          tableCellDiv.innerHTML = '<img src="' + withDispValue ? value : _cell._value + '"/>';
+        } else if (_cell && (_cell.html || _cell._dataType == 6) || _column && _column._dataType == 6) {
+          tableCellDiv.innerHTML = withDispValue ? value : application.xssSanitize(_cell._value);
+        } else if (value && !Array.isArray(value) && !(value instanceof Date) && typeof value == "object") {
+          if (Array.isArray(value)) {
+            let html = "";
+            for (let i = 0; i < value.length; i++)
+              html += "<button>" + (value[i]["caption"] || "...") + "</button>";
+            tableCellDiv.innerHTML = html;
+          } else
+            tableCellDiv.innerHTML = "<button>" + (value["caption"] || "...") + "</button>";
+        } else if (_column && _column._button) {
+          tableCellDiv.innerHTML = "<button>" + (value || "...") + "</button>";
+        } else if (_cell && _cell._checkBox || _column && _column._checkBox) {
+          if (value)
+            tableCellDiv.className = "check_box_checked";
+          else
+            tableCellDiv.className = "check_box_unchecked";
+          tableCellDiv.style.position = "relative";
+          tableCellDiv.style.margin = "auto";
+          tableCellDiv.style.top = (this._defaultRowHeight - 13) / 2 + "px";
+          tableCellDiv.style.left = "1px";
+          tableCellDiv.style["height"] = "100%";
+          tableCellDiv.style["width"] = "13px";
+        } else if (_column && _column._radioButton) {
+          if (value)
+            tableCellDiv.className = "radio_button.checked";
+          else
+            tableCellDiv.className = "radio_button.unchecked";
+          tableCellDiv.style.position = "relative";
+          tableCellDiv.style.margin = "auto";
+          tableCellDiv.style.top = (this._defaultRowHeight - 13) / 2 + "px";
+          tableCellDiv.style.left = "1px";
+          tableCellDiv.style["height"] = "100%";
+          tableCellDiv.style["width"] = "13px";
+        } else {
+          if (_cell._dispValue && tableCell.classList.contains("grid_fixed_cell")) {
+            tableCellDiv.textContent = _cell._dispValue;
+          } else if (withDispValue) {
+            tableCellDiv.textContent = value;
+          } else if (_cell.row < this._fixedRow) {
+            tableCellDiv.textContent = value;
+          } else {
+            if (column && _column._type == "lookupDetail") {
+              let rd;
+              if (_cell._record)
+                rd = _cell._record;
+              else {
+                let record = this.getObject(0, _cell._row);
+                if (record) {
+                  let rs = record[_column._lookupTable];
+                  if (rs) {
+                    rd = rs.first;
+                    _cell._field = _column._lookupField;
+                    let v1 = _column._lookupDetailValue;
+                    switch (_column._lookupDetailType) {
+                      case "date":
+                        v1 = new Date(v1);
+                        v1.setHours(0, 0, 0, 0);
+                        break;
+                      case "numeric":
+                        if (typeof v1 == "string")
+                          v1 = parseFloat(v1);
+                        break;
+                    }
+                    while (rd) {
+                      let v2 = rd[_column._lookupField];
+                      switch (_column._lookupDetailType) {
+                        case "date":
+                          v2 = new Date(rd[_column._lookupDetailField]);
+                          v2.setHours(0, 0, 0, 0);
+                          break;
+                        case "numeric":
+                          if (typeof v2 == "string")
+                            v2 = parseFloat(v2);
+                          break;
+                      }
+                      if (v1 == v2)
+                        break;
+                      else if (_column._lookupDetailType == "date" && v1.getTime() == v2.getTime())
+                        break;
+                      rd = rs["next"];
+                    }
+                  }
+                }
+              }
+              if (rd) {
+                _cell._value = rd[_column._lookupField];
+                _cell._record = rd;
+                tableCellDiv.textContent = rd[_column._lookupField];
+              }
+            } else if (column && _column._type == "listOfValue" && _column._listOfValue) {
+              let lsv = this._listOfValue[_column._listOfValue];
+              if (lsv != void 0)
+                tableCellDiv.textContent = lsv[value] || value;
+              else
+                tableCellDiv.textContent = value;
+            } else if (column && (_column._type == "lookup" || _column._type == "lookupCombo")) {
+            } else if (_column && _column._type == "{userAccount}") {
+            } else {
+              let type = typeof value;
+              if (type != "undefined") {
+                if (type == "number")
+                  tableCellDiv.textContent = parseNumber(value.toPrecision(12)).toString();
+                else {
+                  tableCellDiv.textContent = value;
+                }
+              } else
+                tableCellDiv.textContent = "";
+            }
+          }
+        }
+      } else {
+        if (cell && _cell._checkBox || column && _column._checkBox) {
+          tableCellDiv.className = "check_box_unchecked";
+          tableCellDiv.style.position = "relative";
+          tableCellDiv.style.top = "1px";
+          tableCellDiv.style.left = "1px";
+          tableCellDiv.style["height"] = "13px";
+          tableCellDiv.style["width"] = "13px";
+        } else if (column && _column._radioButton) {
+          tableCellDiv.className = "radio_button.unchecked";
+          tableCellDiv.style.position = "relative";
+          tableCellDiv.style.top = "1px";
+          tableCellDiv.style.left = "1px";
+          tableCellDiv.style["height"] = "13px";
+          tableCellDiv.style["width"] = "13px";
+        } else
+          tableCellDiv.textContent = "";
+      }
+    }
+  }
+  checkCellReadOnly(col, row) {
+    if (!this._enabled || this._readOnly || this.options._rowSelect)
+      return true;
+    else {
+      if (col == void 0)
+        col = this._col;
+      if (row == void 0)
+        row = this._row;
+      if ((col < this._fixedCol || row < this._fixedRow) && this.layout != "card")
+        return true;
+      let column = this.cols(col);
+      if (column._readOnly)
+        return true;
+      else {
+        let record = this.getObject(0, row);
+        if (record && record["_isReadOnly"])
+          return true;
+        let cell = this.data.cells(col, row);
+        if (cell)
+          return cell.readOnly || !cell.visible;
+        else
+          return false;
+      }
+      ;
+    }
+    ;
+  }
+  toggleCellValue(column, cell) {
+    if (!this.checkCellReadOnly(cell.col, cell.row)) {
+      cell._value = !cell._value;
+      if (this._dataBindingContext) {
+        let record = this.getObject(0, cell._row);
+        let field = this.getObject(cell._col, 0);
+        if (!record && field) {
+          record = this._dataBindingContext["append"]();
+          this.setObject(0, cell._row, record);
+        }
+        if (record && field) {
+          record[field] = cell._value;
+        }
+        this.enableUpdateTimer();
+      }
+      this.updateBindingData(cell, column);
+      if (this.onCellChange)
+        this.onCellChange(this, cell, !cell._value, cell._value);
+    }
+  }
+  _handleMouseMove(event) {
+    if (application.globalEvents._leftMouseButtonDown) {
+    }
+    if (this._colResizing) {
+      let pos = getCursorPosX(event);
+      this.setColWidth(this.resizeCol, this.origColWidth + (pos - this.mouseDownPosX), true);
+      this.showData(100);
+      this.highlightCurrCell();
+      return true;
+    }
+    return true;
+  }
+  _handleMouseUp(event) {
+    if (this._colResizing) {
+      this._colResizing = false;
+      this._updateTableSplitter();
+    }
+    return true;
+  }
+  _handleColumnResizeStart(event) {
+    if (this.editorMode) {
+      this.hideEditor(true);
+    }
+    ;
+    let pos = getCursorPosX(event);
+    this.mouseDownPosX = pos;
+    this.resizeCol = this.getActualColIdx(event.target.cellIndex);
+    this.origColWidth = this.getColWidth(this.resizeCol);
+    this._colResizing = true;
+  }
+  _updateTableSplitter() {
+    let splitter;
+    for (let i = this.tableSplitters.length - 1; i < this.visibleColCount; i++) {
+      splitter = this.tableSplitters[i];
+      if (splitter)
+        splitter.style.display = "none";
+    }
+    ;
+    for (let col = 0; col < this.visibleColCount; col++) {
+      splitter = this.tableSplitters[col];
+      if (!splitter) {
+        splitter = this.createElement("div", this);
+        this.tableSplitters[col] = splitter;
+        splitter.isSpliter = true;
+        splitter.owner = this;
+        splitter.cellIndex = col;
+        splitter.onmousedown = this._handleColumnResizeStart.bind(this);
+        this.appendChild(splitter);
+        splitter.style.zIndex = 5;
+        splitter.style.cursor = "e-resize";
+        splitter.style.position = "absolute";
+        splitter.style.top = "0px";
+        splitter.style.width = "6px";
+      }
+      ;
+      let colIdx = this.getActualColIdx(col);
+      let left = this.getColRight(colIdx);
+      let height = 0;
+      for (let row = 0; row < this._fixedRow; row++) {
+        height = height + this.getRowHeight(row) + 0.8;
+      }
+      splitter.style.left = left + "px";
+      if (this._fixedCol > 0 && col == this._fixedCol - 1)
+        splitter.style.height = this.heightValue + "px";
+      else
+        splitter.style.height = height + "px";
+      splitter.style.display = "";
+    }
+  }
+  _showDataInternalGrid() {
+    if (!this._table)
+      return;
+    for (let r = 0; r < this._fixedRow; r++) {
+      for (let c = 0; c < this._fixedCol; c++) {
+        let tableCell = this.getTableCell(c, r);
+        let column = null;
+        if (this.columns)
+          column = this.columns.getColumn(c);
+        if (tableCell) {
+          let cell = this.data.cells(c, r);
+          this._updateCell(tableCell, cell, column);
+        }
+      }
+    }
+    for (let r = 0; r < this._fixedRow; r++) {
+      for (let c = this._fixedCol; c < this.visibleColCount; c++) {
+        let tableCell = this.getTableCell(c, r);
+        if (tableCell) {
+          let cell = this.data.cells(this.getActualColIdx(c), r);
+          if (cell)
+            tableCell.cell = cell;
+          this._updateCell(tableCell, cell);
+        }
+      }
+    }
+    for (let r = this._fixedRow; r < this.visibleRowCount; r++) {
+      for (let c = 0; c < this._fixedCol; c++) {
+        let column = this.columns.getColumn(c);
+        let tableCell = this.getTableCell(c, r);
+        if (tableCell) {
+          let cell = this.data.cells(c, this.getActualRowIdx(r));
+          if (cell)
+            tableCell.cell = cell;
+          this._updateCell(tableCell, cell, column);
+        }
+      }
+    }
+    for (let c = this._fixedCol; c < this.visibleColCount; c++) {
+      let colIdx = this.getActualColIdx(c);
+      let _column = this.columns.getColumn(colIdx);
+      if (_column && (_column._type == "lookup" || _column._type == "lookupCombo")) {
+      }
+    }
+    for (let r = this._fixedRow; r < this.visibleRowCount; r++) {
+      let rowIdx = this.getActualRowIdx(r);
+      for (let c = this._fixedCol; c < this.visibleColCount; c++) {
+        let colIdx = this.getActualColIdx(c);
+        let column = this.columns.getColumn(colIdx);
+        let tableCell = this.getTableCell(c, r);
+        if (tableCell) {
+          let cell = this.data.cells(colIdx, rowIdx);
+          tableCell.cell = cell;
+          this._updateCell(tableCell, cell, column);
+        }
+        ;
+      }
+      ;
+    }
+    ;
+    if (this.options._autoRowHeight) {
+      for (let r = 0; r < this.visibleRowCount; r++) {
+        if (this._table.rows[r].clientHeight > this._defaultRowHeight) {
+          for (let c = 0; c < this.visibleColCount; c++) {
+            let tableCell = this.getTableCell(c, r);
+            if (tableCell && tableCell.cell) {
+              let cell = tableCell.cell;
+              let row2 = this.getActualRowIdx(r);
+              if (!cell._height) {
+                cell._height = tableCell.div.clientHeight + 3;
+              }
+              if (!this._rowHeights[row2] || this._rowHeights[row2] < cell._height) {
+                this._rowHeights[row2] = cell._height;
+              }
+            }
+          }
+        }
+      }
+    }
+    ;
+    let row = this._table.rows[0];
+    if (row) {
+      if (row.cells.length > this._colCount - this._leftCol + this._fixedCol) {
+        for (let r = 0; r < this._table.rows.length; r++) {
+          let row2 = this._table.rows[r];
+          for (let c = this._colCount - this._leftCol + this._fixedCol; c < row2.cells.length; c++) {
+            row2.cells[c].style.display = "none";
+          }
+          ;
+        }
+        ;
+      }
+      ;
+    }
+    ;
+    if (this._table.rows.length > this._rowCount - this._topRow + this._fixedRow) {
+      for (let c = this._rowCount - this._topRow + this._fixedRow; c < this._table.rows.length; c++) {
+        if (c > -1) {
+          this._table.rows[c].style.display = "none";
+        }
+        ;
+      }
+      ;
+    }
+    ;
+    this.highlightCurrCell();
+  }
+  showDataInternal() {
+    this.showDataFlag = false;
+    if (!this.showDataInternalFlag) {
+      this.showDataInternalFlag = true;
+      try {
+        if (this.layout == "card") {
+        } else
+          this._showDataInternalGrid();
+      } finally {
+        this.showDataInternalFlag = false;
+      }
+      ;
+    }
+    ;
+  }
+  _updateTableInternal(updateRowHeightFlag, updateColWidthFlag) {
+    if (!this._updateTableInternalFlag) {
+      this._updateTableInternalFlag = true;
+      try {
+        if (this.layout == "card") {
+        } else {
+          if (updateRowHeightFlag) {
+            this._updateTotalRowHeight();
+          }
+          ;
+          if (updateColWidthFlag) {
+            this._updateTotalColWidth();
+          }
+          ;
+          this.tableCells = [[]];
+          if (this._totalColWidth < this.width)
+            this.placeHolder.style.width = "100%";
+          else
+            this.placeHolder.style.width = this._totalColWidth + "px";
+          this.placeHolder.style.height = this._totalRowHeight + "px";
+          this._updateTableRows();
+          this._updateTableCols();
+          this._updateTableMergedCells();
+          this._updateTableSplitter();
+        }
+      } catch (err) {
+      } finally {
+        this._updateTableInternalFlag = false;
+      }
+      ;
+    }
+    ;
+  }
+  enableUpdateTimer(updateRowHeightFlag, updateColWidthFlag) {
+    updateRowHeightFlag = updateRowHeightFlag || false;
+    updateColWidthFlag = updateColWidthFlag || false;
+    clearTimeout(this._updateTableTimer);
+    this._updateTableTimer = setTimeout(() => {
+      if (this._scrollBox.clientWidth) {
+        this._updateTableTimer = void 0;
+        this._sorting = false;
+        if (updateRowHeightFlag)
+          this._rowHeights = [];
+        this._updateTableInternal(updateRowHeightFlag, updateColWidthFlag);
+        this.showDataInternal();
+      } else {
+        this._updateTableTimer = setTimeout(() => {
+          this._sorting = false;
+          if (updateRowHeightFlag)
+            this._rowHeights = [];
+          this._updateTableInternal(updateRowHeightFlag, updateColWidthFlag);
+          this.showDataInternal();
+        }, 100);
+      }
+    }, 10);
+  }
+};
+DataGrid = __decorateClass([
+  customElements2("i-data-grid")
+], DataGrid);
+
+// packages/markdown/src/style/markdown.css.ts
+var Theme14 = theme_exports.ThemeVars;
 cssRule("i-markdown", {
   display: "inline-block",
-  color: Theme11.text.primary,
-  fontFamily: Theme11.typography.fontFamily,
-  fontSize: Theme11.typography.fontSize,
+  color: Theme14.text.primary,
+  fontFamily: Theme14.typography.fontFamily,
+  fontSize: Theme14.typography.fontSize,
   $nest: {
     h1: {
       fontSize: "48px",
@@ -17035,10 +21453,11 @@ cssRule("i-markdown", {
         "thead": {
           background: "#FFF"
         },
-        "th, td": {
+        "th": {
           padding: "10px"
         },
         "td": {
+          padding: "10px",
           borderTop: "1px solid #393939"
         },
         "tbody": {
@@ -17165,783 +21584,197 @@ Markdown = __decorateClass([
   customElements2("i-markdown")
 ], Markdown);
 
-// packages/tab/src/style/tab.css.ts
-var Theme12 = theme_exports.ThemeVars;
-cssRule("i-tabs", {
-  display: "block",
-  $nest: {
-    ".tabs-nav-wrap": {
-      display: "flex",
-      flex: "none",
-      overflow: "hidden"
-    },
-    "&:not(.vertical) .tabs-nav-wrap": {
-      $nest: {
-        "&:hover": {
-          overflowX: "auto",
-          overflowY: "hidden"
-        },
-        "&::-webkit-scrollbar-thumb": {
-          background: "#4b4b4b",
-          borderRadius: "5px"
-        },
-        "&::-webkit-scrollbar": {
-          height: "3px"
-        }
-      }
-    },
-    ".tabs-nav": {
-      position: "relative",
-      display: "flex",
-      flex: "none",
-      overflow: "hidden",
-      whiteSpace: "nowrap",
-      borderBottom: `1px solid #252525`,
-      margin: 0
-    },
-    "&.vertical": {
-      display: "flex",
-      $nest: {
-        ".tabs-nav": {
-          display: "flex",
-          flexDirection: "column"
-        },
-        ".tabs-nav:hover": {
-          overflowY: "auto"
-        },
-        ".tabs-nav::-webkit-scrollbar-thumb": {
-          background: "#4b4b4b",
-          borderRadius: "5px"
-        },
-        ".tabs-nav::-webkit-scrollbar": {
-          width: "3px"
-        }
-      }
-    },
-    "i-tab": {
-      position: "relative",
-      display: "inline-flex",
-      overflow: "hidden",
-      color: "rgba(255, 255, 255, 0.55)",
-      background: "#2e2e2e",
-      marginBottom: "-1px",
-      border: `1px solid #252525`,
-      alignItems: "center",
-      font: "inherit",
-      textAlign: "center",
-      minHeight: "36px",
-      $nest: {
-        "&:not(.disabled):hover": {
-          cursor: "pointer",
-          color: "#fff"
-        },
-        "&:not(.disabled).active.border": {
-          borderColor: `${Theme12.divider} ${Theme12.divider} #fff`,
-          borderBottomWidth: "1.5px"
-        },
-        ".tab-item": {
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          cursor: "pointer",
-          padding: "0.5rem 1rem",
-          gap: "5px",
-          $nest: {
-            "i-image": {
-              display: "flex"
-            }
-          }
-        }
-      }
-    },
-    "i-tab:not(.disabled).active": {
-      backgroundColor: "#1d1d1d",
-      borderBottomColor: "transparent",
-      color: "#fff"
-    },
-    ".tabs-content": {
-      position: "relative",
-      overflow: "hidden",
-      display: "flex",
-      width: "100%",
-      height: "100%",
-      minHeight: "200px",
-      $nest: {
-        "&::after": {
-          clear: "both"
-        },
-        "i-label .f1yauex0": {
-          whiteSpace: "normal"
-        },
-        ".content-pane": {
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          flex: "none"
-        }
-      }
-    },
-    "span.close": {
-      width: "18px",
-      height: "18px",
-      marginLeft: "5px",
-      marginRight: "-5px",
-      borderRadius: "5px",
-      lineHeight: "18px",
-      fontSize: "18px",
-      visibility: "hidden",
-      opacity: 0,
-      $nest: {
-        "&:hover": {
-          background: "rgba(78, 78, 78, 0.48)"
-        }
-      }
-    },
-    ".tabs-nav:not(.is-closable) span.close": {
-      display: "none"
-    },
-    ".tabs-nav.is-closable i-tab:not(.disabled):hover span.close, .tabs-nav.is-closable i-tab:not(.disabled).active span.close": {
-      visibility: "visible",
-      opacity: 1
-    }
-  }
-});
-var getTabMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
-  for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
-    if (mediaQueryRule) {
-      const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
-      const ruleObj = styleObj["$nest"][mediaQueryRule];
-      styleObj["$nest"][mediaQueryRule] = {
-        ...ruleObj,
-        $nest: {
-          ...nestObj,
-          ".tabs-nav": {}
-        }
-      };
-      if (mediaQuery.properties.mode) {
-        const mode = mediaQuery.properties.mode;
-        styleObj["$nest"][mediaQueryRule]["display"] = mode === "vertical" ? "flex !important" : "block !important";
-        if (mode === "horizontal") {
-          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["flexDirection"] = "row !important";
-          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["width"] = "100%";
-          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["justifyContent"] = "center";
-        } else {
-          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["flexDirection"] = "column !important";
-          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["width"] = "auto";
-          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["justifyContent"] = "start";
-        }
-      }
-      if (typeof mediaQuery.properties.visible === "boolean") {
-        const visible = mediaQuery.properties.visible;
-        styleObj["$nest"][mediaQueryRule]["display"] = visible ? "block !important" : "none !important";
-      }
-    }
-  }
-  return style(styleObj);
-};
-
-// packages/tab/src/tab.ts
-var Tabs = class extends Container {
-  constructor(parent, options) {
-    super(parent, options);
-    this.accumTabIndex = 0;
-    this.dragStartHandler = this.dragStartHandler.bind(this);
-    this.dragOverHandler = this.dragOverHandler.bind(this);
-    this.dropHandler = this.dropHandler.bind(this);
-  }
-  get activeTab() {
-    return this._tabs[this.activeTabIndex];
-  }
-  get activeTabIndex() {
-    return this._activeTabIndex;
-  }
-  set activeTabIndex(index) {
-    var _a;
-    if (index < 0 || this._activeTabIndex === index)
-      return;
-    const prevTab = this._tabs[this._activeTabIndex];
-    if (prevTab) {
-      prevTab.classList.remove("active");
-      this.contentPanes[this._activeTabIndex].style.display = "none";
-    }
-    this._activeTabIndex = index;
-    (_a = this.activeTab) == null ? void 0 : _a.classList.add("active");
-    if (this.contentPanes[index])
-      this.contentPanes[index].style.display = "";
-  }
-  get items() {
-    return this._tabs;
-  }
-  get closable() {
-    return this._closable;
-  }
-  set closable(value) {
-    this._closable = value;
-    if (value) {
-      this.tabsNavElm.classList.add("is-closable");
-    } else {
-      this.tabsNavElm.classList.remove("is-closable");
-    }
-  }
-  get draggable() {
-    return this._draggable;
-  }
-  set draggable(value) {
-    if (this._draggable === value)
-      return;
-    this._draggable = value;
-    if (this.draggable) {
-      this.tabsNavElm.ondragover = this.dragOverHandler;
-      this.tabsNavElm.ondrop = this.dropHandler;
-    } else {
-      this.tabsNavElm.ondragover = null;
-      this.tabsNavElm.ondrop = null;
-    }
-    this.handleTagDrag(this._tabs);
-  }
-  get mode() {
-    const isVertical = this.classList.contains("vertical");
-    return isVertical ? "vertical" : "horizontal";
-  }
-  set mode(type) {
-    if (type === "vertical") {
-      this.classList.add("vertical");
-    } else {
-      this.classList.remove("vertical");
-    }
-  }
-  get mediaQueries() {
-    return this._mediaQueries;
-  }
-  set mediaQueries(value) {
-    this._mediaQueries = value;
-    let style2 = getTabMediaQueriesStyleClass(this._mediaQueries);
-    this._mediaStyle && this.classList.remove(this._mediaStyle);
-    this._mediaStyle = style2;
-    this.classList.add(style2);
-  }
-  add(options) {
-    const tab = new Tab(this, options);
-    if (options == null ? void 0 : options.children) {
-      tab.append(options == null ? void 0 : options.children);
-    }
-    if (this.draggable) {
-      this.handleTagDrag([tab]);
-    }
-    this.appendTab(tab);
-    this.activeTabIndex = tab.index;
-    return tab;
-  }
-  delete(tab) {
-    const index = this._tabs.findIndex((t) => t.id === tab.id);
-    const activeIndex = this.activeTabIndex;
-    if (index >= 0) {
-      this._tabs.splice(index, 1);
-      const pane = this.contentPanes[index];
-      this.contentPanes.splice(index, 1);
-      pane.remove();
-      if (activeIndex >= index) {
-        let newActiveIndex = activeIndex > index ? activeIndex - 1 : this._tabs[activeIndex] ? activeIndex : this._tabs.length - 1;
-        this._activeTabIndex = newActiveIndex;
-        if (this.activeTab) {
-          this.activeTab.classList.add("active");
-          this.contentPanes[newActiveIndex].style.display = "";
-        }
-      }
-    }
-    tab.remove();
-  }
-  appendTab(tab) {
-    tab._container = this.tabsContentElm;
-    tab.parent = this;
-    this._tabs.push(tab);
-    if (!tab.id)
-      tab.id = `tab-${this.accumTabIndex++}`;
-    this.tabsNavElm.appendChild(tab);
-    const contentPane = this.createElement("div", this.tabsContentElm);
-    tab._contentElm = contentPane;
-    contentPane.classList.add("content-pane");
-    contentPane.style.display = "none";
-    this.contentPanes.push(contentPane);
-    const children = tab.children;
-    for (let i = 0; i < children.length; i++) {
-      if (children[i].classList.contains("tab-item"))
-        continue;
-      if (children[i] instanceof Control) {
-        children[i].parent = tab;
-      }
-    }
-    ;
-  }
-  handleTagDrag(tabs) {
-    tabs.forEach((tab) => {
-      if (this.draggable) {
-        tab.setAttribute("draggable", "true");
-        tab.ondragstart = this.dragStartHandler;
-      } else {
-        tab.removeAttribute("draggable");
-        tab.ondragstart = null;
-      }
-    });
-  }
-  _handleClick(event) {
-    return super._handleClick(event, true);
-  }
-  dragStartHandler(event) {
-    if (!(event.target instanceof Tab))
-      return;
-    this.curDragTab = event.target;
-  }
-  dragOverHandler(event) {
-    event.preventDefault();
-  }
-  dropHandler(event) {
-    event.preventDefault();
-    if (!this.curDragTab)
-      return;
-    const target = event.target;
-    const dropTab = target instanceof Tab ? target : target.closest("i-tab");
-    if (dropTab && !this.curDragTab.isSameNode(dropTab)) {
-      const curActiveTab = this.activeTab;
-      const dragIndex = this.curDragTab.index;
-      const dropIndex = dropTab.index;
-      const [dragTab] = this._tabs.splice(dragIndex, 1);
-      this._tabs.splice(dropIndex, 0, dragTab);
-      const [dragContent] = this.contentPanes.splice(dragIndex, 1);
-      this.contentPanes.splice(dropIndex, 0, dragContent);
-      if (dragIndex > dropIndex) {
-        this.tabsNavElm.insertBefore(this.curDragTab, dropTab);
-      } else {
-        dropTab.after(this.curDragTab);
-      }
-      this.activeTabIndex = curActiveTab.index;
-      if (this.onChanged)
-        this.onChanged(this, this.activeTab);
-    }
-    this.curDragTab = null;
-  }
-  refresh() {
-    if (this.dock) {
-      super.refresh(true);
-      const height = this.mode === "horizontal" ? this.clientHeight - this.tabsNavElm.clientHeight : this.clientHeight;
-      this.tabsContentElm.style.height = height + "px";
-      this.refreshControls();
-    }
-  }
-  init() {
-    super.init();
-    if (!this.tabsNavElm) {
-      this.contentPanes = [];
-      this._tabs = [];
-      const _tabs = [];
-      this.childNodes.forEach((node) => {
-        if (node instanceof Tab) {
-          _tabs.push(node);
-        } else {
-          node.remove();
-        }
-      });
-      const tabsNavWrapElm = this.createElement("div", this);
-      tabsNavWrapElm.classList.add("tabs-nav-wrap");
-      tabsNavWrapElm.addEventListener("wheel", (event) => {
-        if (this.mode !== "horizontal")
-          return;
-        event.preventDefault();
-        tabsNavWrapElm.scrollLeft += event.deltaY;
-      });
-      this.tabsNavElm = this.createElement("div", tabsNavWrapElm);
-      this.tabsNavElm.classList.add("tabs-nav");
-      this.tabsContentElm = this.createElement("div", this);
-      this.tabsContentElm.classList.add("tabs-content");
-      this.closable = this.getAttribute("closable", true) || false;
-      this.mode = this.getAttribute("mode", true) || "horizontal";
-      for (const tab of _tabs) {
-        this.appendTab(tab);
-      }
-      this.draggable = this.getAttribute("draggable", true) || false;
-      const activeTabIndex = this.getAttribute("activeTabIndex", true);
-      if (this._tabs.length)
-        this.activeTabIndex = activeTabIndex || 0;
-      this.mediaQueries = this.getAttribute("mediaQueries", true, []);
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Tabs = __decorateClass([
-  customElements2("i-tabs")
-], Tabs);
-var Tab = class extends Container {
-  active() {
-    this._parent.activeTabIndex = this.index;
-  }
-  addChildControl(control) {
-    if (this._contentElm)
-      this._contentElm.appendChild(control);
-  }
-  removeChildControl(control) {
-    if (this._contentElm && this._contentElm.contains(control))
-      this._contentElm.removeChild(control);
-  }
-  get caption() {
-    return this.captionElm.innerHTML;
-  }
-  set caption(value) {
-    this.captionElm.innerHTML = value;
-  }
-  close() {
-    this.handleCloseTab();
-  }
-  get index() {
-    return this._parent.items.findIndex((t) => t.id === this.id);
-  }
-  get icon() {
-    if (!this._icon) {
-      this._icon = Icon.create({
-        width: 16,
-        height: 16
-      }, this);
-    }
-    ;
-    return this._icon;
-  }
-  set icon(elm) {
-    if (this._icon)
-      this.tabContainer.removeChild(this._icon);
-    this._icon = elm;
-    if (this._icon)
-      this.tabContainer.prepend(this._icon);
-  }
-  get innerHTML() {
-    return this._contentElm.innerHTML;
-  }
-  set innerHTML(value) {
-    this._contentElm.innerHTML = value;
-  }
-  get font() {
-    return {
-      color: this.captionElm.style.color,
-      name: this.captionElm.style.fontFamily,
-      size: this.captionElm.style.fontSize,
-      bold: this.captionElm.style.fontStyle.indexOf("bold") >= 0,
-      style: this.captionElm.style.fontStyle,
-      transform: this.captionElm.style.textTransform,
-      weight: this.captionElm.style.fontWeight
-    };
-  }
-  set font(value) {
-    if (this.captionElm) {
-      this.captionElm.style.color = value.color || "";
-      this.captionElm.style.fontSize = value.size || "";
-      this.captionElm.style.fontFamily = value.name || "";
-      this.captionElm.style.fontStyle = value.style || "";
-      this.captionElm.style.textTransform = value.transform || "none";
-      this.captionElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
-    }
-  }
-  _handleClick(event) {
-    if (!this._parent || !this.enabled || this._parent.activeTab.isSameNode(this))
-      return false;
-    if (this._parent) {
-      if (this._parent.activeTab != this)
-        this._parent.activeTabIndex = this.index;
-      if (this._parent.onChanged)
-        this._parent.onChanged(this._parent, this._parent.activeTab);
-    }
-    return super._handleClick(event);
-  }
-  handleCloseTab(event) {
-    if (event) {
-      event.stopPropagation();
-      event.preventDefault();
-    }
-    if (!this._parent || !this.enabled || event && !this._parent.closable)
-      return;
-    const isActiveChange = this._parent.activeTab.isSameNode(this);
-    if (this._parent.onCloseTab)
-      this._parent.onCloseTab(this._parent, this);
-    this._parent.delete(this);
-    if (isActiveChange && this._parent.onChanged)
-      this._parent.onChanged(this._parent, this._parent.activeTab);
-  }
-  init() {
-    if (!this.captionElm) {
-      super.init();
-      this.tabContainer = this.createElement("div", this);
-      this.tabContainer.classList.add("tab-item");
-      this.captionElm = this.createElement("div", this.tabContainer);
-      this.caption = this.getAttribute("caption", true) || "";
-      const font = this.getAttribute("font", true);
-      if (font)
-        this.font = font;
-      const icon = this.getAttribute("icon", true);
-      if (icon) {
-        icon.height = icon.height || "16px";
-        icon.width = icon.width || "16px";
-        this.icon = new Icon(void 0, icon);
-      }
-      ;
-      const closeButton = this.createElement("span", this.tabContainer);
-      closeButton.classList.add("close");
-      closeButton.innerHTML = "&times;";
-      closeButton.onclick = this.handleCloseTab.bind(this);
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Tab = __decorateClass([
-  customElements2("i-tab")
-], Tab);
-
-// packages/markdown-editor/src/style/markdown-editor.css.ts
-var Theme13 = theme_exports.ThemeVars;
-cssRule("i-markdown-editor", {
-  display: "block",
-  $nest: {
-    ".editor-container": {
-      marginRight: "auto",
-      marginLeft: "auto"
-    },
-    ".editor-tabs": {
-      display: "block",
-      position: "relative",
-      border: `1px solid ${Theme13.divider}`,
-      borderRadius: "6px",
-      $nest: {
-        ".tabs": {
-          backgroundColor: Theme13.background.paper,
-          borderBottom: `1px solid ${Theme13.divider}`,
-          borderTopLeftRadius: "6px",
-          borderTopRightRadius: "6px",
-          marginBottom: 0,
-          zIndex: 1,
-          $nest: {
-            "i-tab": {
-              display: "inline-block",
-              padding: "12px 16px",
-              textDecoration: "none",
-              backgroundColor: "transparent",
-              border: "1px solid transparent",
-              borderBottom: 0,
-              borderRadius: 0,
-              transition: "color .2s cubic-bezier(0.3, 0, 0.5, 1)",
-              cursor: "pointer",
-              $nest: {
-                ".tab-link": {
-                  display: "none"
-                },
-                "&::after": {
-                  content: "none!important"
-                },
-                "i-icon": {
-                  display: "inline-block",
-                  verticalAlign: "middle",
-                  fill: Theme13.text.secondary
-                },
-                "span": {
-                  marginLeft: "6px",
-                  fontSize: "14px",
-                  lineHeight: "23px",
-                  color: Theme13.text.secondary,
-                  verticalAlign: "middle"
-                },
-                "&.active": {
-                  borderTopLeftRadius: "6px",
-                  borderTopRightRadius: "6px",
-                  backgroundColor: Theme13.colors.primary.main,
-                  borderColor: Theme13.divider,
-                  $nest: {
-                    "&:first-of-type": {
-                      borderColor: "transparent",
-                      borderTopRightRadius: 0,
-                      borderRightColor: Theme13.divider
-                    },
-                    "i-icon": {
-                      fill: Theme13.text.primary
-                    },
-                    "span": {
-                      fontWeight: 600,
-                      color: Theme13.text.primary
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "#preview": {
-          padding: "32px 85px"
-        }
-      }
-    }
-  }
-});
-
 // packages/markdown-editor/src/markdown-editor.ts
+RequireJS.config({
+  paths: {
+    "tui-color-picker": `${LibPath}lib/tui-editor/tui-color-picker.min.js`
+  }
+});
+var libs2 = [`${LibPath}lib/tui-editor/toastui-editor-all.min.js`];
+var libPlugin = [`${LibPath}lib/tui-editor/toastui-editor-plugin-color-syntax.min.js`];
+var editorCSS = [
+  { name: "toastui-editor", href: `${LibPath}lib/tui-editor/toastui-editor.min.css` },
+  { name: "tui-color-picker", href: `${LibPath}lib/tui-editor/tui-color-picker.min.css` },
+  { name: "toastui-editor-plugin-color-syntax", href: `${LibPath}lib/tui-editor/toastui-editor-plugin-color-syntax.min.css` }
+];
 var MarkdownEditor = class extends Control {
   constructor(parent, options) {
-    super(parent, options, {
-      width: "100%",
-      height: "auto"
-    });
+    super(parent, options);
+    this._mode = "markdown";
+    this._previewStyle = "vertical";
+    this._value = "";
+    this._viewer = false;
+    this._heightValue = "500px";
   }
-  onViewPreview() {
-    const value = this.mdEditor.value;
-    this.mdPreviewer.load(value);
+  get mode() {
+    return this._mode;
   }
-  getValue() {
-    return this.mdEditor.value;
-  }
-  setValue(value) {
-    this.mdEditor.value = value;
-    if (this.tabs.activeTabIndex === 1) {
-      this.mdPreviewer.load(value);
+  set mode(value) {
+    this._mode = value;
+    if (this.viewer)
+      return;
+    if (this.editorObj) {
+      this.editorObj.changeMode(value, false);
     }
   }
-  init() {
+  get previewStyle() {
+    return this._previewStyle;
+  }
+  set previewStyle(value) {
+    this._previewStyle = value;
+    if (this.viewer)
+      return;
+    if (this.editorObj) {
+      this.editorObj.changePreviewStyle(value);
+    }
+  }
+  get viewer() {
+    return this._viewer;
+  }
+  set viewer(value) {
+    if (this._viewer === value)
+      return;
+    this._viewer = value;
+    if (!this.editor)
+      return;
+    this.renderEditor();
+  }
+  get value() {
+    return this._value;
+  }
+  set value(value) {
+    this._value = value;
+    const targetObj = this.viewer ? this.viewerObj : this.editorObj;
+    if (targetObj) {
+      targetObj.setMarkdown(value);
+    }
+  }
+  get height() {
+    return this._heightValue;
+  }
+  set height(value) {
+    this._heightValue = value;
+    if (this.viewer)
+      return;
+    if (this.editorObj) {
+      this.editorObj.setHeight(value);
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  async loadLib() {
+    return new Promise((resolve, reject) => {
+      RequireJS.require(libs2, async (marked) => {
+        resolve(marked);
+      });
+    });
+  }
+  async loadPlugin() {
+    return new Promise((resolve, reject) => {
+      RequireJS.require(libPlugin, async (marked) => {
+        resolve(marked);
+      });
+    });
+  }
+  addCSS(href, name) {
+    const css = document.head.querySelector(`[name="${name}"]`);
+    if (css)
+      return;
+    let link = document.createElement("link");
+    link.setAttribute("type", "text/css");
+    link.setAttribute("rel", "stylesheet");
+    link.setAttribute("name", name);
+    link.href = href;
+    document.head.append(link);
+  }
+  async initEditor() {
+    for (const item of editorCSS) {
+      this.addCSS(item.href, item.name);
+    }
+    this.editor = await this.loadLib();
+    this.plugin = await this.loadPlugin();
+    try {
+      this.renderEditor();
+    } catch (e) {
+    }
+  }
+  renderEditor() {
+    if (this.viewer) {
+      if (this.editorObj) {
+        this.editorObj.destroy();
+      }
+      if (!this.elm) {
+        this.elm = this.createElement("div", this);
+      } else {
+        this.elm.innerHTML = "";
+        this.elm.style.height = "auto";
+      }
+      this.viewerObj = this.editor.factory({
+        el: this.elm,
+        viewer: true,
+        initialValue: this.value,
+        plugins: [this.plugin]
+      });
+    } else {
+      if (this.viewerObj) {
+        this.viewerObj.destroy();
+      }
+      if (!this.elm) {
+        this.elm = this.createElement("div", this);
+      } else {
+        this.elm.innerHTML = "";
+      }
+      this.editorObj = new this.editor({
+        el: this.elm,
+        previewStyle: this.previewStyle,
+        height: this.height,
+        initialEditType: this.mode,
+        initialValue: this.value,
+        plugins: [this.plugin]
+      });
+    }
+  }
+  getMarkdownValue() {
+    if (this.editorObj && !this.viewer) {
+      return this.editorObj.getMarkdown();
+    }
+    return "";
+  }
+  async init() {
     super.init();
-    const container = this.createElement("div", this);
-    container.classList.add("editor-container");
-    this.tabs = new Tabs(void 0, {
-      width: "auto"
-    });
-    container.appendChild(this.tabs);
-    this.mdEditor = new CodeEditor(void 0, {
-      width: "100%",
-      height: "646px",
-      language: "markdown"
-    });
-    this.editTab = this.tabs.add({
-      caption: "Edit file",
-      icon: {
-        name: "code",
-        width: "16px",
-        height: "16px",
-        fill: "currentColor"
-      },
-      children: this.mdEditor
-    });
-    this.mdPreviewer = new Markdown();
-    this.previewTab = this.tabs.add({
-      caption: "Preview",
-      icon: {
-        name: "eye",
-        width: "16px",
-        height: "16px",
-        fill: "currentColor"
-      },
-      children: this.mdPreviewer
-    });
-    this.previewTab.onClick = this.onViewPreview.bind(this);
-    this.tabs.activeTabIndex = 0;
+    const mode = this.getAttribute("mode", true, "");
+    if (mode) {
+      this._mode = mode;
+    }
+    const previewStyle = this.getAttribute("previewStyle", true, "");
+    if (previewStyle) {
+      this._previewStyle = previewStyle;
+    }
+    const value = this.getAttribute("value", true, "");
+    if (value) {
+      this._value = value;
+    }
+    const viewer = this.getAttribute("viewer", true, null);
+    if (viewer !== null) {
+      this.viewer = viewer;
+    }
+    const height = this.getAttribute("height", true, "");
+    if (height) {
+      this._heightValue = height;
+    }
+    const width = this.getAttribute("width", true, "");
+    if (width) {
+      this.width = width;
+    }
+    this.initEditor();
   }
 };
 MarkdownEditor = __decorateClass([
   customElements2("i-markdown-editor")
 ], MarkdownEditor);
-
-// packages/link/src/style/link.css.ts
-var Theme14 = theme_exports.ThemeVars;
-cssRule("i-link", {
-  display: "block",
-  cursor: "pointer",
-  textTransform: "inherit",
-  $nest: {
-    "&:hover *": {
-      color: Theme14.colors.primary.dark
-    },
-    "> a": {
-      display: "inline",
-      transition: "all .3s",
-      textDecoration: "underline",
-      color: "inherit",
-      fontSize: "inherit",
-      fontWeight: "inherit",
-      fontFamily: "inherit",
-      textTransform: "inherit"
-    }
-  }
-});
-
-// packages/link/src/link.ts
-var Link = class extends Control {
-  constructor(parent, options) {
-    super(parent, options, {
-      target: "_blank"
-    });
-  }
-  get href() {
-    return this._href;
-  }
-  set href(value) {
-    this._href = typeof value === "string" ? value : "";
-    if (this._linkElm)
-      this._linkElm.href = this._href;
-  }
-  get target() {
-    return this._target;
-  }
-  set target(value) {
-    this._target = value;
-    if (this._linkElm)
-      this._linkElm.target = value;
-  }
-  append(children) {
-    if (!this._linkElm) {
-      this._linkElm = this.createElement("a", this);
-    }
-    this._linkElm.appendChild(children);
-  }
-  _handleClick(event, stopPropagation) {
-    event.preventDefault();
-    window.open(this._linkElm.href, this._linkElm.target);
-    return super._handleClick(event);
-  }
-  addChildControl(control) {
-    if (this._linkElm)
-      this._linkElm.appendChild(control);
-  }
-  removeChildControl(control) {
-    if (this._linkElm && this._linkElm.contains(control))
-      this._linkElm.removeChild(control);
-  }
-  init() {
-    if (!this.initialized) {
-      super.init();
-      if (!this._linkElm)
-        this._linkElm = this.createElement("a", this);
-      this.classList.add("i-link");
-      const hrefAttr = this.getAttribute("href", true);
-      hrefAttr && (this.href = hrefAttr);
-      const targetAttr = this.getAttribute("target", true);
-      targetAttr && (this._linkElm.target = targetAttr);
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Link = __decorateClass([
-  customElements2("i-link")
-], Link);
 
 // packages/modal/src/style/modal.css.ts
 var Theme15 = theme_exports.ThemeVars;
@@ -18363,604 +22196,6 @@ var Modal = class extends Container {
 Modal = __decorateClass([
   customElements2("i-modal")
 ], Modal);
-
-// packages/layout/src/style/panel.css.ts
-var panelStyle = style({
-  display: "block",
-  clear: "both",
-  position: "relative"
-});
-var overflowStyle = style({
-  overflow: "hidden"
-});
-var vStackStyle = style({
-  display: "flex",
-  flexDirection: "column"
-});
-var hStackStyle = style({
-  display: "flex",
-  flexDirection: "row"
-});
-var gridStyle = style({
-  display: "grid"
-});
-var getStackDirectionStyleClass = (direction) => {
-  return style({
-    display: "flex",
-    flexDirection: direction == "vertical" ? "column" : "row"
-  });
-};
-var getStackMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
-  for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
-    if (mediaQueryRule) {
-      styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
-      if (mediaQuery.properties.direction) {
-        styleObj["$nest"][mediaQueryRule]["flexDirection"] = mediaQuery.properties.direction == "vertical" ? "column" : "row";
-      }
-      if (mediaQuery.properties.justifyContent) {
-        styleObj["$nest"][mediaQueryRule]["justifyContent"] = mediaQuery.properties.justifyContent;
-      }
-      if (mediaQuery.properties.alignItems) {
-        styleObj["$nest"][mediaQueryRule]["alignItems"] = mediaQuery.properties.alignItems;
-      }
-      if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
-        const width = mediaQuery.properties.width;
-        styleObj["$nest"][mediaQueryRule]["width"] = typeof width === "string" ? `${width} !important` : `${width}px !important`;
-      }
-      if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
-        const height = mediaQuery.properties.height;
-        styleObj["$nest"][mediaQueryRule]["height"] = typeof height === "string" ? `${height} !important` : `${height}px !important`;
-      }
-      if (mediaQuery.properties.gap !== void 0 && mediaQuery.properties.gap !== null) {
-        const gap = mediaQuery.properties.gap;
-        styleObj["$nest"][mediaQueryRule]["gap"] = typeof gap === "string" ? `${gap} !important` : `${gap}px !important`;
-      }
-      if (mediaQuery.properties.position) {
-        styleObj["$nest"][mediaQueryRule]["position"] = `${mediaQuery.properties.position} !important`;
-      }
-      if (mediaQuery.properties.top !== null && mediaQuery.properties.top !== void 0) {
-        styleObj["$nest"][mediaQueryRule]["top"] = `${mediaQuery.properties.top} !important`;
-      }
-      if (typeof mediaQuery.properties.visible === "boolean") {
-        const visible = mediaQuery.properties.visible;
-        styleObj["$nest"][mediaQueryRule]["display"] = visible ? "flex !important" : "none !important";
-      }
-    }
-  }
-  return style(styleObj);
-};
-var justifyContentStartStyle = style({
-  justifyContent: "flex-start"
-});
-var justifyContentCenterStyle = style({
-  justifyContent: "center"
-});
-var justifyContentEndStyle = style({
-  justifyContent: "flex-end"
-});
-var justifyContentSpaceBetweenStyle = style({
-  justifyContent: "space-between"
-});
-var alignItemsStretchStyle = style({
-  alignItems: "stretch"
-});
-var alignItemsStartStyle = style({
-  alignItems: "flex-start"
-});
-var alignItemsCenterStyle = style({
-  alignItems: "center"
-});
-var alignItemsEndStyle = style({
-  alignItems: "flex-end"
-});
-var getTemplateColumnsStyleClass = (columns) => {
-  return style({
-    gridTemplateColumns: columns.join(" ")
-  });
-};
-var getTemplateRowsStyleClass = (rows) => {
-  return style({
-    gridTemplateRows: rows.join(" ")
-  });
-};
-var getTemplateAreasStyleClass = (templateAreas) => {
-  let templateAreasStr = "";
-  for (let i = 0; i < templateAreas.length; i++) {
-    templateAreasStr += '"' + templateAreas[i].join(" ") + '" ';
-  }
-  return style({
-    gridTemplateAreas: templateAreasStr
-  });
-};
-var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
-  for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
-    if (mediaQueryRule) {
-      styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
-      if (mediaQuery.properties.templateColumns) {
-        const templateColumnsStr = mediaQuery.properties.templateColumns.join(" ");
-        styleObj["$nest"][mediaQueryRule]["gridTemplateColumns"] = `${templateColumnsStr} !important`;
-      }
-      if (mediaQuery.properties.templateRows) {
-        const templateRowsStr = mediaQuery.properties.templateRows.join(" ");
-        styleObj["$nest"][mediaQueryRule]["gridTemplateRows"] = `${templateRowsStr} !important`;
-      }
-      if (mediaQuery.properties.templateAreas) {
-        let templateAreasStr = "";
-        for (let i = 0; i < mediaQuery.properties.templateAreas.length; i++) {
-          templateAreasStr += '"' + mediaQuery.properties.templateAreas[i].join(" ") + '" ';
-        }
-        styleObj["$nest"][mediaQueryRule]["gridTemplateAreas"] = `${templateAreasStr} !important`;
-      }
-      if (mediaQuery.properties.display) {
-        styleObj["$nest"][mediaQueryRule]["display"] = mediaQuery.properties.display;
-      }
-      if (mediaQuery.properties.gap) {
-        const gap = mediaQuery.properties.gap;
-        if (gap.row) {
-          styleObj["$nest"][mediaQueryRule]["rowGap"] = typeof gap.row === "string" ? gap.row : `${gap.row}px`;
-        }
-        if (gap.column) {
-          styleObj["$nest"][mediaQueryRule]["columnGap"] = typeof gap.column === "string" ? gap.column : `${gap.column}px`;
-        }
-      }
-      if (typeof mediaQuery.properties.visible === "boolean") {
-        const visible = mediaQuery.properties.visible;
-        const display = mediaQuery.properties.display || "grid";
-        styleObj["$nest"][mediaQueryRule]["display"] = visible ? display + " !important" : "none !important";
-      }
-    }
-  }
-  return style(styleObj);
-};
-
-// packages/layout/src/stack.ts
-var StackLayout = class extends Container {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-  get direction() {
-    return this._direction;
-  }
-  set direction(value) {
-    this._direction = value;
-    if (value) {
-      let style2 = getStackDirectionStyleClass(value);
-      this.classList.add(style2);
-    }
-  }
-  get justifyContent() {
-    return this._justifyContent;
-  }
-  set justifyContent(value) {
-    this._justifyContent = value || "start";
-    switch (this._justifyContent) {
-      case "start":
-        this.classList.add(justifyContentStartStyle);
-        break;
-      case "center":
-        this.classList.add(justifyContentCenterStyle);
-        break;
-      case "end":
-        this.classList.add(justifyContentEndStyle);
-        break;
-      case "space-between":
-        this.classList.add(justifyContentSpaceBetweenStyle);
-        break;
-    }
-  }
-  get alignItems() {
-    return this._alignItems;
-  }
-  set alignItems(value) {
-    this._alignItems = value || "stretch";
-    switch (this._alignItems) {
-      case "stretch":
-        this.classList.add(alignItemsStretchStyle);
-        break;
-      case "start":
-        this.classList.add(alignItemsStartStyle);
-        break;
-      case "center":
-        this.classList.add(alignItemsCenterStyle);
-        break;
-      case "end":
-        this.classList.add(alignItemsEndStyle);
-        break;
-    }
-  }
-  get gap() {
-    return this._gap;
-  }
-  set gap(value) {
-    this._gap = value || "initial";
-    if (typeof this._gap === "number") {
-      this.style.gap = this._gap + "px";
-    } else {
-      this.style.gap = this._gap;
-    }
-  }
-  get wrap() {
-    return this._wrap;
-  }
-  set wrap(value) {
-    if (!value)
-      return;
-    this._wrap = value;
-    this.style.flexWrap = this._wrap;
-  }
-  get mediaQueries() {
-    return this._mediaQueries;
-  }
-  set mediaQueries(value) {
-    this._mediaQueries = value;
-    let style2 = getStackMediaQueriesStyleClass(this._mediaQueries);
-    this._mediaStyle && this.classList.remove(this._mediaStyle);
-    this._mediaStyle = style2;
-    this.classList.add(style2);
-  }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
-  init() {
-    super.init();
-    this.setAttributeToProperty("direction");
-    this.setAttributeToProperty("justifyContent");
-    this.setAttributeToProperty("alignItems");
-    this.setAttributeToProperty("gap");
-    this.setAttributeToProperty("wrap");
-    this.setAttributeToProperty("mediaQueries");
-  }
-};
-StackLayout = __decorateClass([
-  customElements2("i-stack")
-], StackLayout);
-var HStack = class extends StackLayout {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  get horizontalAlignment() {
-    return this._horizontalAlignment;
-  }
-  set horizontalAlignment(value) {
-    this._horizontalAlignment = value || "start";
-    this.justifyContent = value;
-  }
-  get verticalAlignment() {
-    return this._verticalAlignment;
-  }
-  set verticalAlignment(value) {
-    this._verticalAlignment = value || "stretch";
-    this.alignItems = value;
-  }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
-  init() {
-    super.init();
-    this.direction = "horizontal";
-    this.setAttributeToProperty("horizontalAlignment");
-    this.setAttributeToProperty("verticalAlignment");
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-HStack = __decorateClass([
-  customElements2("i-hstack")
-], HStack);
-var VStack = class extends StackLayout {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  get horizontalAlignment() {
-    return this._horizontalAlignment;
-  }
-  set horizontalAlignment(value) {
-    this._horizontalAlignment = value || "stretch";
-    this.alignItems = value;
-  }
-  get verticalAlignment() {
-    return this._verticalAlignment;
-  }
-  set verticalAlignment(value) {
-    this._verticalAlignment = value || "start";
-    this.justifyContent = value;
-  }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
-  init() {
-    super.init();
-    this.direction = "vertical";
-    this.setAttributeToProperty("horizontalAlignment");
-    this.setAttributeToProperty("verticalAlignment");
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-VStack = __decorateClass([
-  customElements2("i-vstack")
-], VStack);
-
-// packages/layout/src/panel.ts
-var Panel = class extends Container {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  init() {
-    super.init();
-    this.classList.add(panelStyle);
-    if (this.dock) {
-      this.classList.add(overflowStyle);
-    }
-  }
-  connectedCallback() {
-    if (this.connected) {
-      return;
-    }
-    super.connectedCallback();
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Panel = __decorateClass([
-  customElements2("i-panel")
-], Panel);
-
-// packages/layout/src/grid.ts
-var GridLayout = class extends Container {
-  constructor(parent, options) {
-    super(parent, options);
-    this._styleClassMap = {};
-    this.removeStyleClass = this.removeStyleClass.bind(this);
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-  get templateColumns() {
-    return this._templateColumns;
-  }
-  set templateColumns(columns) {
-    this._templateColumns = columns;
-    this.removeStyleClass("columns");
-    if (columns) {
-      let style2 = getTemplateColumnsStyleClass(columns);
-      this._styleClassMap["columns"] = style2;
-      this.classList.add(style2);
-    }
-  }
-  get templateRows() {
-    return this._templateRows;
-  }
-  set templateRows(rows) {
-    this._templateRows = rows;
-    this.removeStyleClass("rows");
-    if (rows) {
-      let style2 = getTemplateRowsStyleClass(rows);
-      this._styleClassMap["rows"] = style2;
-      this.classList.add(style2);
-    }
-  }
-  get templateAreas() {
-    return this._templateAreas;
-  }
-  set templateAreas(value) {
-    this._templateAreas = value;
-    this.removeStyleClass("areas");
-    if (value) {
-      let style2 = getTemplateAreasStyleClass(value);
-      this._styleClassMap["areas"] = style2;
-      this.classList.add(style2);
-    }
-  }
-  get autoColumnSize() {
-    return this._autoColumnSize;
-  }
-  set autoColumnSize(value) {
-    this._autoColumnSize = value;
-    if (value) {
-      this.style.gridAutoColumns = value;
-    }
-  }
-  get autoRowSize() {
-    return this._autoRowSize;
-  }
-  set autoRowSize(value) {
-    this._autoRowSize = value;
-    if (value) {
-      this.style.gridAutoRows = value;
-    }
-  }
-  get columnsPerRow() {
-    return this._columnsPerRow;
-  }
-  set columnsPerRow(value) {
-    this._columnsPerRow = value;
-    this.style.gridTemplateColumns = `repeat(${this._columnsPerRow}, 1fr)`;
-  }
-  get gap() {
-    return this._gap;
-  }
-  set gap(value) {
-    this._gap = value;
-    if (value) {
-      if (value.row) {
-        if (typeof value.row == "number") {
-          this.style.rowGap = value.row + "px";
-        } else {
-          this.style.rowGap = value.row;
-        }
-      }
-      if (value.column) {
-        if (typeof value.column == "number") {
-          this.style.columnGap = value.column + "px";
-        } else {
-          this.style.columnGap = value.column;
-        }
-      }
-    }
-  }
-  get horizontalAlignment() {
-    return this._horizontalAlignment;
-  }
-  set horizontalAlignment(value) {
-    this._horizontalAlignment = value;
-    this.style.justifyItems = value;
-  }
-  get verticalAlignment() {
-    return this._verticalAlignment;
-  }
-  set verticalAlignment(value) {
-    this._verticalAlignment = value;
-    this.style.alignItems = value;
-  }
-  get autoFillInHoles() {
-    return this._autoFillInHoles;
-  }
-  set autoFillInHoles(value) {
-    this._autoFillInHoles = value;
-    this.style.gridAutoFlow = this._autoFillInHoles ? "dense" : "row";
-  }
-  get mediaQueries() {
-    return this._mediaQueries;
-  }
-  set mediaQueries(value) {
-    this._mediaQueries = value;
-    let style2 = getGridLayoutMediaQueriesStyleClass(this._mediaQueries);
-    this._mediaStyle && this.classList.remove(this._mediaStyle);
-    this._mediaStyle = style2;
-    this.classList.add(style2);
-  }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (this.id == "thisPnl") {
-      console.log(propertyName, prop);
-    }
-    if (prop)
-      this[propertyName] = prop;
-  }
-  removeStyleClass(name) {
-    if (this._styleClassMap && this._styleClassMap[name]) {
-      this.classList.remove(this._styleClassMap[name]);
-      delete this._styleClassMap[name];
-    }
-  }
-  init() {
-    super.init();
-    this._styleClassMap = {};
-    this.classList.add(gridStyle);
-    this.setAttributeToProperty("templateColumns");
-    this.setAttributeToProperty("templateRows");
-    this.setAttributeToProperty("templateAreas");
-    this.setAttributeToProperty("gap");
-    this.setAttributeToProperty("horizontalAlignment");
-    this.setAttributeToProperty("verticalAlignment");
-    this.setAttributeToProperty("columnsPerRow");
-    this.setAttributeToProperty("autoFillInHoles");
-    this.setAttributeToProperty("autoColumnSize");
-    this.setAttributeToProperty("autoRowSize");
-    this.setAttributeToProperty("mediaQueries");
-  }
-};
-GridLayout = __decorateClass([
-  customElements2("i-grid-layout")
-], GridLayout);
-
-// packages/layout/src/card.ts
-var CardLayout = class extends GridLayout {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-  get cardMinWidth() {
-    return this._cardMinWidth;
-  }
-  set cardMinWidth(value) {
-    this._cardMinWidth = value;
-    this.updateGridTemplateColumns();
-  }
-  get columnsPerRow() {
-    return this._columnsPerRow;
-  }
-  set columnsPerRow(value) {
-    this._columnsPerRow = value;
-    this.updateGridTemplateColumns();
-  }
-  get cardHeight() {
-    return this._cardHeight;
-  }
-  set cardHeight(value) {
-    this._cardHeight = typeof value == "number" ? value + "px" : value;
-    this.style.gridAutoRows = this._cardHeight;
-  }
-  updateGridTemplateColumns() {
-    if (this.cardMinWidth && this.columnsPerRow) {
-      let minmaxFirstParam = this.gap && this.gap.column ? `max(${this.cardMinWidth}, calc(100%/${this.columnsPerRow} - ${this.gap.column}))` : `max(${this.cardMinWidth}, 100%/${this.columnsPerRow})`;
-      this.style.gridTemplateColumns = `repeat(auto-fill, minmax(${minmaxFirstParam}, 1fr))`;
-    } else if (this.cardMinWidth) {
-      this.style.gridTemplateColumns = `repeat(auto-fill, minmax(min(${this.cardMinWidth}, 100%), 1fr))`;
-    } else if (this.columnsPerRow) {
-      this.style.gridTemplateColumns = `repeat(${this.columnsPerRow}, 1fr)`;
-    }
-  }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
-  init() {
-    super.init();
-    this.autoRowSize = "1fr";
-    this.setAttributeToProperty("cardMinWidth");
-    this.setAttributeToProperty("cardHeight");
-  }
-};
-CardLayout = __decorateClass([
-  customElements2("i-card-layout")
-], CardLayout);
 
 // packages/menu/src/style/menu.css.ts
 var Theme17 = theme_exports.ThemeVars;
@@ -19661,7 +22896,7 @@ var Module = class extends Container {
         if (value == null ? void 0 : value.__target) {
           let target = value.__target;
           let paths = value.__path;
-          let targetValue = this.getValue(target, paths);
+          let targetValue = this.getAttributeValue(target, paths);
           let observable3 = getObservable(target, paths);
           if (isObservable(observable3)) {
             if (paths.length > 0)
@@ -19728,120 +22963,14 @@ Module = __decorateClass([
   customElements2("i-module")
 ], Module);
 
-// packages/label/src/style/label.css.ts
-var Theme18 = theme_exports.ThemeVars;
-var captionStyle2 = style({
-  display: "inline-block",
-  color: Theme18.text.primary,
-  fontFamily: Theme18.typography.fontFamily,
-  fontSize: Theme18.typography.fontSize
-});
-
-// packages/label/src/label.ts
-var Label = class extends Control {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  get caption() {
-    return this.captionSpan.innerHTML;
-  }
-  set caption(value) {
-    this.captionSpan.innerHTML = value || "";
-  }
-  get link() {
-    if (!this._link) {
-      this._link = new Link(this, {
-        href: "#",
-        target: "_blank",
-        font: this.font
-      });
-      this._link.append(this.captionSpan);
-      this.appendChild(this._link);
-    }
-    return this._link;
-  }
-  set link(value) {
-    if (this._link) {
-      this._link.prepend(this.captionSpan);
-      this._link.remove();
-    }
-    this._link = value;
-    if (this._link) {
-      this._link.append(this.captionSpan);
-      this.appendChild(this._link);
-    }
-  }
-  set height(value) {
-    this.setPosition("height", value);
-    if (this.captionSpan)
-      this.captionSpan.style.height = value + "px";
-  }
-  set width(value) {
-    this.setPosition("width", value);
-    if (this.captionSpan)
-      this.captionSpan.style.width = value + "px";
-  }
-  get wordBreak() {
-    return this.style.wordBreak;
-  }
-  set wordBreak(value) {
-    this.style.wordBreak = value;
-  }
-  get overflowWrap() {
-    return this.style.overflowWrap;
-  }
-  set overflowWrap(value) {
-    this.style.overflowWrap = value;
-  }
-  init() {
-    if (!this.captionSpan) {
-      let childNodes = [];
-      for (let i = 0; i < this.childNodes.length; i++) {
-        childNodes.push(this.childNodes[i]);
-      }
-      this.captionSpan = this.createElement("span", this);
-      this.classList.add(captionStyle2);
-      this.caption = this.getAttribute("caption", true) || "";
-      if (childNodes && childNodes.length) {
-        for (let i = 0; i < childNodes.length; i++) {
-          this.captionSpan.appendChild(childNodes[i]);
-        }
-      }
-      const linkAttr = this.getAttribute("link", true);
-      if (linkAttr) {
-        const link = new Link(this, {
-          ...linkAttr,
-          font: this.font
-        });
-        this.link = link;
-      }
-      const wordBreak = this.getAttribute("wordBreak", true);
-      if (wordBreak)
-        this.wordBreak = wordBreak;
-      const overflowWrap = this.getAttribute("overflowWrap", true);
-      if (overflowWrap)
-        this.overflowWrap = overflowWrap;
-      super.init();
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Label = __decorateClass([
-  customElements2("i-label")
-], Label);
-
 // packages/tree-view/src/style/treeView.css.ts
-var Theme19 = theme_exports.ThemeVars;
+var Theme18 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme19.typography.fontFamily,
-  fontSize: Theme19.typography.fontSize,
+  fontFamily: Theme18.typography.fontFamily,
+  fontSize: Theme18.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -19875,7 +23004,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme19.text.primary,
+      color: Theme18.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
@@ -19909,7 +23038,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme19.divider}`,
+          borderLeft: `1px solid ${Theme18.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -19918,12 +23047,12 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme19.action.selected,
-          border: `1px solid ${Theme19.colors.info.dark}`,
-          color: Theme19.text.primary
+          backgroundColor: Theme18.action.selected,
+          border: `1px solid ${Theme18.colors.info.dark}`,
+          color: Theme18.text.primary
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme19.action.hover,
+          backgroundColor: Theme18.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -19951,8 +23080,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme19.colors.primary.main,
-          color: Theme19.colors.primary.contrastText,
+          background: Theme18.colors.primary.main,
+          color: Theme18.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -19993,7 +23122,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme19.divider}`,
+          borderLeft: `1px solid ${Theme18.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -20009,15 +23138,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme19.divider}`,
-          borderLeft: `1px solid ${Theme19.divider}`,
+          borderBottom: `1px solid ${Theme18.divider}`,
+          borderLeft: `1px solid ${Theme18.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme19.divider}`,
-          borderRight: `0.5px solid ${Theme19.divider}`,
+          borderTop: `1px solid ${Theme18.divider}`,
+          borderRight: `0.5px solid ${Theme18.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -20036,7 +23165,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme19.colors.primary.main}`
+          borderBottom: `2px solid ${Theme18.colors.primary.main}`
         }
       }
     },
@@ -20063,11 +23192,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme20 = theme_exports.ThemeVars;
+var Theme19 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme20.text.secondary,
+  fill: Theme19.text.secondary,
   width: 12,
   height: 12
 };
@@ -20531,11 +23660,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme21 = theme_exports.ThemeVars;
+var Theme20 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme21.typography.fontFamily,
-  fontSize: Theme21.typography.fontSize,
+  fontFamily: Theme20.typography.fontFamily,
+  fontSize: Theme20.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -20956,7 +24085,7 @@ ScatterLineChart = __decorateClass([
 ], ScatterLineChart);
 
 // packages/upload/src/style/upload.css.ts
-var Theme22 = theme_exports.ThemeVars;
+var Theme21 = theme_exports.ThemeVars;
 cssRule("i-upload", {
   margin: "1rem 0",
   listStyle: "none",
@@ -20969,7 +24098,7 @@ cssRule("i-upload", {
   $nest: {
     ".i-upload-wrapper": {
       position: "relative",
-      border: `2px dashed ${Theme22.divider}`,
+      border: `2px dashed ${Theme21.divider}`,
       width: "100%",
       display: "flex",
       flexDirection: "column",
@@ -20989,8 +24118,8 @@ cssRule("i-upload", {
       marginTop: "4rem"
     },
     ".i-upload-dragger_active": {
-      border: `2px dashed ${Theme22.colors.primary.main}`,
-      backgroundColor: Theme22.colors.info.light,
+      border: `2px dashed ${Theme21.colors.primary.main}`,
+      backgroundColor: Theme21.colors.info.light,
       opacity: "0.8"
     },
     'input[type="file"]': {
@@ -21015,7 +24144,7 @@ cssRule("i-upload", {
     },
     ".i-upload_preview-crop": {
       position: "absolute",
-      border: `1px dashed ${Theme22.background.paper}`,
+      border: `1px dashed ${Theme21.background.paper}`,
       width: 150,
       height: 150,
       left: "50%",
@@ -21101,7 +24230,7 @@ cssRule("i-upload", {
 });
 
 // packages/upload/src/upload.ts
-var Theme23 = theme_exports.ThemeVars;
+var Theme22 = theme_exports.ThemeVars;
 var fileId = 1;
 var genFileId = () => Date.now() + fileId++;
 var UploadDrag = class extends Control {
@@ -21186,7 +24315,7 @@ var UploadDrag = class extends Control {
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-drag_area");
       this._labelElm = this.createElement("span", this._wrapperElm);
-      this._labelElm.style.color = Theme23.text.primary;
+      this._labelElm.style.color = Theme22.text.primary;
       this.caption = this.getAttribute("caption", true);
       this.disabled = this.getAttribute("disabled", true);
       this.addEventListener("dragenter", this.handleOnDragEnter.bind(this));
@@ -21359,7 +24488,7 @@ var Upload = class extends Control {
         const removeIcon = new Icon(void 0, {
           width: 12,
           height: 12,
-          fill: Theme23.action.active,
+          fill: Theme22.action.active,
           name: "trash"
         });
         itemElm.appendChild(removeIcon);
@@ -21382,7 +24511,7 @@ var Upload = class extends Control {
     this._previewRemoveElm.classList.add("i-upload_preview-remove");
     this._previewRemoveElm.onclick = this.handleRemoveImagePreview;
     const span = this.createElement("span", this._previewRemoveElm);
-    span.style.fontFamily = Theme23.typography.fontFamily;
+    span.style.fontFamily = Theme22.typography.fontFamily;
     span.innerHTML = "Click to remove";
   }
   handleRemove(file) {
@@ -21487,6 +24616,550 @@ var Upload = class extends Control {
 Upload = __decorateClass([
   customElements2("i-upload")
 ], Upload);
+
+// packages/tab/src/style/tab.css.ts
+var Theme23 = theme_exports.ThemeVars;
+cssRule("i-tabs", {
+  display: "block",
+  $nest: {
+    ".tabs-nav-wrap": {
+      display: "flex",
+      flex: "none",
+      overflow: "hidden"
+    },
+    "&:not(.vertical) .tabs-nav-wrap": {
+      $nest: {
+        "&:hover": {
+          overflowX: "auto",
+          overflowY: "hidden"
+        },
+        "&::-webkit-scrollbar-thumb": {
+          background: "#4b4b4b",
+          borderRadius: "5px"
+        },
+        "&::-webkit-scrollbar": {
+          height: "3px"
+        }
+      }
+    },
+    ".tabs-nav": {
+      position: "relative",
+      display: "flex",
+      flex: "none",
+      overflow: "hidden",
+      whiteSpace: "nowrap",
+      borderBottom: `1px solid #252525`,
+      margin: 0
+    },
+    "&.vertical": {
+      display: "flex",
+      $nest: {
+        ".tabs-nav": {
+          display: "flex",
+          flexDirection: "column"
+        },
+        ".tabs-nav:hover": {
+          overflowY: "auto"
+        },
+        ".tabs-nav::-webkit-scrollbar-thumb": {
+          background: "#4b4b4b",
+          borderRadius: "5px"
+        },
+        ".tabs-nav::-webkit-scrollbar": {
+          width: "3px"
+        }
+      }
+    },
+    "i-tab": {
+      position: "relative",
+      display: "inline-flex",
+      overflow: "hidden",
+      color: "rgba(255, 255, 255, 0.55)",
+      background: "#2e2e2e",
+      marginBottom: "-1px",
+      border: `1px solid #252525`,
+      alignItems: "center",
+      font: "inherit",
+      textAlign: "center",
+      minHeight: "36px",
+      $nest: {
+        "&:not(.disabled):hover": {
+          cursor: "pointer",
+          color: "#fff"
+        },
+        "&:not(.disabled).active.border": {
+          borderColor: `${Theme23.divider} ${Theme23.divider} #fff`,
+          borderBottomWidth: "1.5px"
+        },
+        ".tab-item": {
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          cursor: "pointer",
+          padding: "0.5rem 1rem",
+          gap: "5px",
+          $nest: {
+            "i-image": {
+              display: "flex"
+            }
+          }
+        }
+      }
+    },
+    "i-tab:not(.disabled).active": {
+      backgroundColor: "#1d1d1d",
+      borderBottomColor: "transparent",
+      color: "#fff"
+    },
+    ".tabs-content": {
+      position: "relative",
+      overflow: "hidden",
+      display: "flex",
+      width: "100%",
+      height: "100%",
+      minHeight: "200px",
+      $nest: {
+        "&::after": {
+          clear: "both"
+        },
+        "i-label .f1yauex0": {
+          whiteSpace: "normal"
+        },
+        ".content-pane": {
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          flex: "none"
+        }
+      }
+    },
+    "span.close": {
+      width: "18px",
+      height: "18px",
+      marginLeft: "5px",
+      marginRight: "-5px",
+      borderRadius: "5px",
+      lineHeight: "18px",
+      fontSize: "18px",
+      visibility: "hidden",
+      opacity: 0,
+      $nest: {
+        "&:hover": {
+          background: "rgba(78, 78, 78, 0.48)"
+        }
+      }
+    },
+    ".tabs-nav:not(.is-closable) span.close": {
+      display: "none"
+    },
+    ".tabs-nav.is-closable i-tab:not(.disabled):hover span.close, .tabs-nav.is-closable i-tab:not(.disabled).active span.close": {
+      visibility: "visible",
+      opacity: 1
+    }
+  }
+});
+var getTabMediaQueriesStyleClass = (mediaQueries) => {
+  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  for (let mediaQuery of mediaQueries) {
+    let mediaQueryRule;
+    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
+    } else if (mediaQuery.minWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
+    } else if (mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
+    }
+    if (mediaQueryRule) {
+      const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
+      const ruleObj = styleObj["$nest"][mediaQueryRule];
+      styleObj["$nest"][mediaQueryRule] = {
+        ...ruleObj,
+        $nest: {
+          ...nestObj,
+          ".tabs-nav": {}
+        }
+      };
+      if (mediaQuery.properties.mode) {
+        const mode = mediaQuery.properties.mode;
+        styleObj["$nest"][mediaQueryRule]["display"] = mode === "vertical" ? "flex !important" : "block !important";
+        if (mode === "horizontal") {
+          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["flexDirection"] = "row !important";
+          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["width"] = "100%";
+          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["justifyContent"] = "center";
+        } else {
+          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["flexDirection"] = "column !important";
+          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["width"] = "auto";
+          styleObj["$nest"][mediaQueryRule]["$nest"][".tabs-nav"]["justifyContent"] = "start";
+        }
+      }
+      if (typeof mediaQuery.properties.visible === "boolean") {
+        const visible = mediaQuery.properties.visible;
+        styleObj["$nest"][mediaQueryRule]["display"] = visible ? "block !important" : "none !important";
+      }
+    }
+  }
+  return style(styleObj);
+};
+
+// packages/tab/src/tab.ts
+var Tabs = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+    this.accumTabIndex = 0;
+    this.dragStartHandler = this.dragStartHandler.bind(this);
+    this.dragOverHandler = this.dragOverHandler.bind(this);
+    this.dropHandler = this.dropHandler.bind(this);
+  }
+  get activeTab() {
+    return this._tabs[this.activeTabIndex];
+  }
+  get activeTabIndex() {
+    return this._activeTabIndex;
+  }
+  set activeTabIndex(index) {
+    var _a;
+    if (index < 0 || this._activeTabIndex === index)
+      return;
+    const prevTab = this._tabs[this._activeTabIndex];
+    if (prevTab) {
+      prevTab.classList.remove("active");
+      this.contentPanes[this._activeTabIndex].style.display = "none";
+    }
+    this._activeTabIndex = index;
+    (_a = this.activeTab) == null ? void 0 : _a.classList.add("active");
+    if (this.contentPanes[index])
+      this.contentPanes[index].style.display = "";
+  }
+  get items() {
+    return this._tabs;
+  }
+  get closable() {
+    return this._closable;
+  }
+  set closable(value) {
+    this._closable = value;
+    if (value) {
+      this.tabsNavElm.classList.add("is-closable");
+    } else {
+      this.tabsNavElm.classList.remove("is-closable");
+    }
+  }
+  get draggable() {
+    return this._draggable;
+  }
+  set draggable(value) {
+    if (this._draggable === value)
+      return;
+    this._draggable = value;
+    if (this.draggable) {
+      this.tabsNavElm.ondragover = this.dragOverHandler;
+      this.tabsNavElm.ondrop = this.dropHandler;
+    } else {
+      this.tabsNavElm.ondragover = null;
+      this.tabsNavElm.ondrop = null;
+    }
+    this.handleTagDrag(this._tabs);
+  }
+  get mode() {
+    const isVertical = this.classList.contains("vertical");
+    return isVertical ? "vertical" : "horizontal";
+  }
+  set mode(type) {
+    if (type === "vertical") {
+      this.classList.add("vertical");
+    } else {
+      this.classList.remove("vertical");
+    }
+  }
+  get mediaQueries() {
+    return this._mediaQueries;
+  }
+  set mediaQueries(value) {
+    this._mediaQueries = value;
+    let style2 = getTabMediaQueriesStyleClass(this._mediaQueries);
+    this._mediaStyle && this.classList.remove(this._mediaStyle);
+    this._mediaStyle = style2;
+    this.classList.add(style2);
+  }
+  add(options) {
+    const tab = new Tab(this, options);
+    if (options == null ? void 0 : options.children) {
+      tab.append(options == null ? void 0 : options.children);
+    }
+    if (this.draggable) {
+      this.handleTagDrag([tab]);
+    }
+    this.appendTab(tab);
+    this.activeTabIndex = tab.index;
+    return tab;
+  }
+  delete(tab) {
+    const index = this._tabs.findIndex((t) => t.id === tab.id);
+    const activeIndex = this.activeTabIndex;
+    if (index >= 0) {
+      this._tabs.splice(index, 1);
+      const pane = this.contentPanes[index];
+      this.contentPanes.splice(index, 1);
+      pane.remove();
+      if (activeIndex >= index) {
+        let newActiveIndex = activeIndex > index ? activeIndex - 1 : this._tabs[activeIndex] ? activeIndex : this._tabs.length - 1;
+        this._activeTabIndex = newActiveIndex;
+        if (this.activeTab) {
+          this.activeTab.classList.add("active");
+          this.contentPanes[newActiveIndex].style.display = "";
+        }
+      }
+    }
+    tab.remove();
+  }
+  appendTab(tab) {
+    tab._container = this.tabsContentElm;
+    tab.parent = this;
+    this._tabs.push(tab);
+    if (!tab.id)
+      tab.id = `tab-${this.accumTabIndex++}`;
+    this.tabsNavElm.appendChild(tab);
+    const contentPane = this.createElement("div", this.tabsContentElm);
+    tab._contentElm = contentPane;
+    contentPane.classList.add("content-pane");
+    contentPane.style.display = "none";
+    this.contentPanes.push(contentPane);
+    const children = tab.children;
+    for (let i = 0; i < children.length; i++) {
+      if (children[i].classList.contains("tab-item"))
+        continue;
+      if (children[i] instanceof Control) {
+        children[i].parent = tab;
+      }
+    }
+    ;
+  }
+  handleTagDrag(tabs) {
+    tabs.forEach((tab) => {
+      if (this.draggable) {
+        tab.setAttribute("draggable", "true");
+        tab.ondragstart = this.dragStartHandler;
+      } else {
+        tab.removeAttribute("draggable");
+        tab.ondragstart = null;
+      }
+    });
+  }
+  _handleClick(event) {
+    return super._handleClick(event, true);
+  }
+  dragStartHandler(event) {
+    if (!(event.target instanceof Tab))
+      return;
+    this.curDragTab = event.target;
+  }
+  dragOverHandler(event) {
+    event.preventDefault();
+  }
+  dropHandler(event) {
+    event.preventDefault();
+    if (!this.curDragTab)
+      return;
+    const target = event.target;
+    const dropTab = target instanceof Tab ? target : target.closest("i-tab");
+    if (dropTab && !this.curDragTab.isSameNode(dropTab)) {
+      const curActiveTab = this.activeTab;
+      const dragIndex = this.curDragTab.index;
+      const dropIndex = dropTab.index;
+      const [dragTab] = this._tabs.splice(dragIndex, 1);
+      this._tabs.splice(dropIndex, 0, dragTab);
+      const [dragContent] = this.contentPanes.splice(dragIndex, 1);
+      this.contentPanes.splice(dropIndex, 0, dragContent);
+      if (dragIndex > dropIndex) {
+        this.tabsNavElm.insertBefore(this.curDragTab, dropTab);
+      } else {
+        dropTab.after(this.curDragTab);
+      }
+      this.activeTabIndex = curActiveTab.index;
+      if (this.onChanged)
+        this.onChanged(this, this.activeTab);
+    }
+    this.curDragTab = null;
+  }
+  refresh() {
+    if (this.dock) {
+      super.refresh(true);
+      const height = this.mode === "horizontal" ? this.clientHeight - this.tabsNavElm.clientHeight : this.clientHeight;
+      this.tabsContentElm.style.height = height + "px";
+      this.refreshControls();
+    }
+  }
+  init() {
+    super.init();
+    if (!this.tabsNavElm) {
+      this.contentPanes = [];
+      this._tabs = [];
+      const _tabs = [];
+      this.childNodes.forEach((node) => {
+        if (node instanceof Tab) {
+          _tabs.push(node);
+        } else {
+          node.remove();
+        }
+      });
+      const tabsNavWrapElm = this.createElement("div", this);
+      tabsNavWrapElm.classList.add("tabs-nav-wrap");
+      tabsNavWrapElm.addEventListener("wheel", (event) => {
+        if (this.mode !== "horizontal")
+          return;
+        event.preventDefault();
+        tabsNavWrapElm.scrollLeft += event.deltaY;
+      });
+      this.tabsNavElm = this.createElement("div", tabsNavWrapElm);
+      this.tabsNavElm.classList.add("tabs-nav");
+      this.tabsContentElm = this.createElement("div", this);
+      this.tabsContentElm.classList.add("tabs-content");
+      this.closable = this.getAttribute("closable", true) || false;
+      this.mode = this.getAttribute("mode", true) || "horizontal";
+      for (const tab of _tabs) {
+        this.appendTab(tab);
+      }
+      this.draggable = this.getAttribute("draggable", true) || false;
+      const activeTabIndex = this.getAttribute("activeTabIndex", true);
+      if (this._tabs.length)
+        this.activeTabIndex = activeTabIndex || 0;
+      this.mediaQueries = this.getAttribute("mediaQueries", true, []);
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Tabs = __decorateClass([
+  customElements2("i-tabs")
+], Tabs);
+var Tab = class extends Container {
+  active() {
+    this._parent.activeTabIndex = this.index;
+  }
+  addChildControl(control) {
+    if (this._contentElm)
+      this._contentElm.appendChild(control);
+  }
+  removeChildControl(control) {
+    if (this._contentElm && this._contentElm.contains(control))
+      this._contentElm.removeChild(control);
+  }
+  get caption() {
+    return this.captionElm.innerHTML;
+  }
+  set caption(value) {
+    this.captionElm.innerHTML = value;
+  }
+  close() {
+    this.handleCloseTab();
+  }
+  get index() {
+    return this._parent.items.findIndex((t) => t.id === this.id);
+  }
+  get icon() {
+    if (!this._icon) {
+      this._icon = Icon.create({
+        width: 16,
+        height: 16
+      }, this);
+    }
+    ;
+    return this._icon;
+  }
+  set icon(elm) {
+    if (this._icon)
+      this.tabContainer.removeChild(this._icon);
+    this._icon = elm;
+    if (this._icon)
+      this.tabContainer.prepend(this._icon);
+  }
+  get innerHTML() {
+    return this._contentElm.innerHTML;
+  }
+  set innerHTML(value) {
+    this._contentElm.innerHTML = value;
+  }
+  get font() {
+    return {
+      color: this.captionElm.style.color,
+      name: this.captionElm.style.fontFamily,
+      size: this.captionElm.style.fontSize,
+      bold: this.captionElm.style.fontStyle.indexOf("bold") >= 0,
+      style: this.captionElm.style.fontStyle,
+      transform: this.captionElm.style.textTransform,
+      weight: this.captionElm.style.fontWeight
+    };
+  }
+  set font(value) {
+    if (this.captionElm) {
+      this.captionElm.style.color = value.color || "";
+      this.captionElm.style.fontSize = value.size || "";
+      this.captionElm.style.fontFamily = value.name || "";
+      this.captionElm.style.fontStyle = value.style || "";
+      this.captionElm.style.textTransform = value.transform || "none";
+      this.captionElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
+    }
+  }
+  _handleClick(event) {
+    if (!this._parent || !this.enabled || this._parent.activeTab.isSameNode(this))
+      return false;
+    if (this._parent) {
+      if (this._parent.activeTab != this)
+        this._parent.activeTabIndex = this.index;
+      if (this._parent.onChanged)
+        this._parent.onChanged(this._parent, this._parent.activeTab);
+    }
+    return super._handleClick(event);
+  }
+  handleCloseTab(event) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (!this._parent || !this.enabled || event && !this._parent.closable)
+      return;
+    const isActiveChange = this._parent.activeTab.isSameNode(this);
+    if (this._parent.onCloseTab)
+      this._parent.onCloseTab(this._parent, this);
+    this._parent.delete(this);
+    if (isActiveChange && this._parent.onChanged)
+      this._parent.onChanged(this._parent, this._parent.activeTab);
+  }
+  init() {
+    if (!this.captionElm) {
+      super.init();
+      this.tabContainer = this.createElement("div", this);
+      this.tabContainer.classList.add("tab-item");
+      this.captionElm = this.createElement("div", this.tabContainer);
+      this.caption = this.getAttribute("caption", true) || "";
+      const font = this.getAttribute("font", true);
+      if (font)
+        this.font = font;
+      const icon = this.getAttribute("icon", true);
+      if (icon) {
+        icon.height = icon.height || "16px";
+        icon.width = icon.width || "16px";
+        this.icon = new Icon(void 0, icon);
+      }
+      ;
+      const closeButton = this.createElement("span", this.tabContainer);
+      closeButton.classList.add("close");
+      closeButton.innerHTML = "&times;";
+      closeButton.onclick = this.handleCloseTab.bind(this);
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Tab = __decorateClass([
+  customElements2("i-tab")
+], Tab);
 
 // packages/iframe/src/iframe.ts
 var Iframe = class extends Control {
@@ -23450,38 +27123,6 @@ var CarouselItem = class extends Container {
 CarouselItem = __decorateClass([
   customElements2("i-carousel-item")
 ], CarouselItem);
-
-// packages/ipfs/src/index.ts
-var src_exports2 = {};
-__export(src_exports2, {
-  hashContent: () => hashContent,
-  hashItems: () => hashItems,
-  parse: () => parse
-});
-var import_ipfs_utils = __toModule(require("@ijstech/ipfs-utils"));
-function parse(cid) {
-  return import_ipfs_utils.default.parse(cid);
-}
-async function hashItems(items, version) {
-  return await import_ipfs_utils.default.hashItems(items || [], version);
-}
-async function hashContent(content, version) {
-  if (version == void 0)
-    version = 1;
-  if (content.length == 0) {
-    return await import_ipfs_utils.default.hashContent("", version);
-  }
-  let result;
-  if (version == 1) {
-    result = await import_ipfs_utils.default.hashFile(content, version, {
-      rawLeaves: true,
-      maxChunkSize: 1048576,
-      maxChildrenPerNode: 1024
-    });
-  } else
-    result = await import_ipfs_utils.default.hashFile(content, version);
-  return result.cid;
-}
 
 // packages/moment/src/index.ts
 RequireJS.config({

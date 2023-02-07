@@ -3693,8 +3693,10 @@ declare module "packages/base/src/component" {
         size?: string;
         color?: string;
         bold?: boolean;
+        italic?: boolean;
         style?: FontStyle;
         transform?: TextTransform;
+        underline?: boolean;
         weight?: number | string;
     }
     export interface ISpace {
@@ -3745,7 +3747,7 @@ declare module "packages/base/src/component" {
         connectedCallback(): void;
         disconnectCallback(): void;
         createElement(tagName: string, parentElm?: HTMLElement): HTMLElement;
-        getValue(target: any, paths: string[], idx?: number): any;
+        getAttributeValue(target: any, paths: string[], idx?: number): any;
         getAttribute(name: string, removeAfter?: boolean, defaultValue?: any): any;
         getPositionAttribute(name: string, removeAfter?: boolean, defaultValue?: any): number;
         getStyleAttribute(name: string, removeAfter?: boolean, defaultValue?: any): string;
@@ -3945,8 +3947,14 @@ declare module "packages/base/src/control" {
         protected _controls: Control[];
         protected _enabled: boolean;
         protected _onClick: notifyEventCallback;
-        protected _onDblClick: notifyEventCallback;
         protected _onContextMenu: notifyEventCallback;
+        protected _onDblClick: notifyEventCallback;
+        protected _onFocus: notifyEventCallback;
+        protected _onKeyDown: notifyEventCallback;
+        protected _onKeyUp: notifyEventCallback;
+        protected _onMouseDown: notifyEventCallback;
+        protected _onMouseMove: notifyEventCallback;
+        protected _onMouseUp: notifyEventCallback;
         protected _visible: boolean;
         protected _margin: SpaceValue;
         protected _padding: SpaceValue;
@@ -3995,9 +4003,15 @@ declare module "packages/base/src/control" {
         set dock(value: DockStyle);
         get enabled(): boolean;
         set enabled(value: boolean);
-        _handleClick(event: Event, stopPropagation?: boolean): boolean;
-        _handleContextMenu(event: Event, stopPropagation?: boolean): boolean;
-        _handleDblClick(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleClick(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleContextMenu(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleDblClick(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleFocus(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleKeyDown(event: Event, stopPropagation?: boolean): boolean | undefined;
+        protected _handleKeyUp(event: Event, stopPropagation?: boolean): boolean | undefined;
+        protected _handleMouseDown(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleMouseMove(event: Event, stopPropagation?: boolean): boolean;
+        protected _handleMouseUp(event: Event, stopPropagation?: boolean): boolean | undefined;
         get maxWidth(): number | string;
         set maxWidth(value: number | string);
         get minWidth(): string | number;
@@ -4019,6 +4033,7 @@ declare module "packages/base/src/control" {
         protected setPosition(prop: any, value: any): void;
         get height(): number | string;
         set height(value: number | string);
+        get heightValue(): number;
         get left(): number | string;
         set left(value: number | string);
         set right(value: number | string);
@@ -4029,6 +4044,7 @@ declare module "packages/base/src/control" {
         set visible(value: boolean);
         get width(): number | string;
         set width(value: number | string);
+        get widthValue(): number;
         get stack(): IStack;
         set stack(value: IStack);
         get grid(): IGrid;
@@ -4265,7 +4281,9 @@ declare module "packages/checkbox/src/index" {
 }
 declare module "packages/application/src/globalEvent" {
     export class GlobalEvents {
+        _leftMouseButtonDown: boolean;
         constructor();
+        abortEvent(event: Event): void;
         private _handleClick;
         private _handleMouseDown;
         private _handleMouseMove;
@@ -4287,104 +4305,27 @@ declare module "packages/application/src/globalEvent" {
 declare module "packages/application/src/styles/index.css" {
     export const applicationStyle: string;
 }
-declare module "packages/application/src/index" {
-    import { Module } from "packages/module/src/index";
-    import { EventBus } from "packages/application/src/event-bus";
-    import { GlobalEvents } from "packages/application/src/globalEvent";
-    export interface IHasDependencies {
-        assets?: string;
-        rootDir?: string;
-        main?: string;
-        moduleDir?: string;
-        dependencies?: {
-            [name: string]: string;
-        };
-        modules?: {
-            [name: string]: {
-                path: string;
-                dependencies: string[];
-            };
-        };
-        script?: string;
-    }
-    export interface IModuleRoute extends IHasDependencies {
-        url: string;
-        module: string;
-        default?: boolean;
-    }
-    export interface IModuleMenuItem {
-        text: string;
-        to: string;
-        isToExternal?: boolean;
-        img?: string;
-        subItems?: IModuleMenuItem[];
-        isDisabled?: boolean;
-        supportedChainIds?: number[];
-        env?: string[];
-    }
-    export interface IModuleOptions extends IHasDependencies {
-        codeCID?: string;
-        name?: string;
-        main?: string;
-        type?: number;
-        version?: string;
-        root?: string;
-        routes?: IModuleRoute[];
-        params?: any;
-        menuItems?: IModuleMenuItem[];
-        env?: string;
-    }
-    export enum IpfsDataType {
-        Raw = 0,
-        Directory = 1,
-        File = 2,
-        Metadata = 3,
-        Symlink = 4,
-        HAMTShard = 5
-    }
-    export type IIPFSDirectoryInfo = IIPFSDirectoryFileInfo[];
-    export interface IIPFSDirectoryFileInfo {
+declare module "packages/ipfs/src/index" {
+    export interface ICidInfo {
         cid: string;
+        links?: ICidInfo[];
         name: string;
         size: number;
-        type: string;
+        type?: 'dir' | 'file';
     }
-    class Application {
-        private static _instance;
-        private modules;
-        private modulesId;
-        private scripts;
-        globalEvents: GlobalEvents;
-        private id;
-        currentModulePath: string;
-        currentModuleDir: string;
-        LibHost: string;
-        private packages;
-        _assets: {
-            [name: string]: any;
+    export function parse(cid: string): {
+        code: number;
+        version: number;
+        multihash: {
+            code: number;
+            size: number;
+            digest: Uint8Array;
+            bytes: Uint8Array;
         };
-        private _initOptions;
-        private constructor();
-        get EventBus(): EventBus;
-        static get Instance(): Application;
-        assets(name: string): any;
-        private verifyScript;
-        private getScript;
-        loadScript(modulePath: string, script: string): Promise<boolean>;
-        getContent(modulePath: string): Promise<string>;
-        fetchDirectoryInfoByCID(ipfsCid: string): Promise<IIPFSDirectoryInfo>;
-        getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
-        loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
-            [name: string]: any;
-        } | null>;
-        loadModule(modulePath: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
-        private getModulePath;
-        newModule(module: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
-        copyToClipboard(value: string): Promise<boolean>;
-    }
-    export const application: Application;
-    export { EventBus, IEventBus } from "packages/application/src/event-bus";
-    export default application;
+        bytes: Uint8Array;
+    };
+    export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
+    export function hashContent(content: string, version?: number): Promise<string>;
 }
 declare module "packages/image/src/style/image.css" { }
 declare module "packages/image/src/image" {
@@ -4506,6 +4447,1130 @@ declare module "packages/button/src/button" {
 }
 declare module "packages/button/src/index" {
     export { Button, ButtonElement } from "packages/button/src/button";
+}
+declare module "packages/layout/src/style/panel.css" {
+    import { IGridLayoutMediaQuery, IStackMediaQuery, StackDirectionType } from "packages/layout/src/index";
+    export const panelStyle: string;
+    export const overflowStyle: string;
+    export const vStackStyle: string;
+    export const hStackStyle: string;
+    export const gridStyle: string;
+    export const getStackDirectionStyleClass: (direction: StackDirectionType) => string;
+    export const getStackMediaQueriesStyleClass: (mediaQueries: IStackMediaQuery[]) => string;
+    export const justifyContentStartStyle: string;
+    export const justifyContentCenterStyle: string;
+    export const justifyContentEndStyle: string;
+    export const justifyContentSpaceBetweenStyle: string;
+    export const alignItemsStretchStyle: string;
+    export const alignItemsStartStyle: string;
+    export const alignItemsCenterStyle: string;
+    export const alignItemsEndStyle: string;
+    export const getTemplateColumnsStyleClass: (columns: string[]) => string;
+    export const getTemplateRowsStyleClass: (rows: string[]) => string;
+    export const getTemplateAreasStyleClass: (templateAreas: string[][]) => string;
+    export const getSpacingValue: (value: string | number) => string;
+    export const getGridLayoutMediaQueriesStyleClass: (mediaQueries: IGridLayoutMediaQuery[]) => string;
+}
+declare module "packages/layout/src/stack" {
+    import { Container, ContainerElement, IMediaQuery, IBackground, PositionType, IControlMediaQueryProps } from "packages/base/src/index";
+    export interface IStackMediaQueryProps extends IControlMediaQueryProps {
+        direction?: StackDirectionType;
+        width?: number | string;
+        height?: number | string;
+        gap?: number | string;
+        background?: IBackground;
+        justifyContent?: StackJustifyContentType;
+        alignItems?: StackAlignItemsType;
+        position?: PositionType;
+        top?: number | string;
+    }
+    export type IStackMediaQuery = IMediaQuery<IStackMediaQueryProps>;
+    export type StackWrapType = 'nowrap' | 'wrap' | 'wrap-reverse' | 'initial' | 'inherit';
+    export type StackDirectionType = 'horizontal' | 'vertical';
+    export type StackJustifyContentType = "start" | "center" | "end" | "space-between";
+    export type StackAlignItemsType = "stretch" | "start" | "center" | "end";
+    export interface StackLayoutElement extends ContainerElement {
+        gap?: number | string;
+        wrap?: StackWrapType;
+        direction?: StackDirectionType;
+        justifyContent?: StackJustifyContentType;
+        alignItems?: StackAlignItemsType;
+        mediaQueries?: IStackMediaQuery[];
+    }
+    export type HStackHAlignmentType = StackJustifyContentType;
+    export type HStackVAlignmentType = StackAlignItemsType;
+    export type VStackHAlignmentType = StackAlignItemsType;
+    export type VStackVAlignmentType = StackJustifyContentType;
+    export interface HStackElement extends StackLayoutElement {
+        horizontalAlignment?: HStackHAlignmentType;
+        verticalAlignment?: HStackVAlignmentType;
+    }
+    export interface VStackElement extends StackLayoutElement {
+        horizontalAlignment?: VStackHAlignmentType;
+        verticalAlignment?: VStackVAlignmentType;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-stack']: StackLayoutElement;
+            }
+        }
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-hstack']: HStackElement;
+            }
+        }
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-vstack']: VStackElement;
+            }
+        }
+    }
+    export type StackLayoutAlignmentType<T extends StackDirectionType> = T extends 'horizontal' ? HStackHAlignmentType : VStackHAlignmentType;
+    export type StackVerticalAlignmentType<T extends StackDirectionType> = T extends 'horizontal' ? HStackVAlignmentType : VStackVAlignmentType;
+    export class StackLayout extends Container {
+        private _gap;
+        private _wrap;
+        private _direction;
+        private _justifyContent;
+        private _alignItems;
+        private _mediaQueries;
+        constructor(parent?: Container, options?: any);
+        static create(options?: StackLayoutElement, parent?: Container): Promise<StackLayout>;
+        get direction(): StackDirectionType;
+        set direction(value: StackDirectionType);
+        get justifyContent(): StackJustifyContentType;
+        set justifyContent(value: StackJustifyContentType);
+        get alignItems(): StackAlignItemsType;
+        set alignItems(value: StackAlignItemsType);
+        get gap(): number | string;
+        set gap(value: number | string);
+        get wrap(): StackWrapType;
+        set wrap(value: StackWrapType);
+        get mediaQueries(): IStackMediaQuery[];
+        set mediaQueries(value: IStackMediaQuery[]);
+        protected setAttributeToProperty<P extends keyof StackLayout>(propertyName: P): void;
+        protected init(): void;
+    }
+    export class HStack extends StackLayout {
+        private _horizontalAlignment;
+        private _verticalAlignment;
+        constructor(parent?: Container, options?: any);
+        get horizontalAlignment(): HStackHAlignmentType;
+        set horizontalAlignment(value: HStackHAlignmentType);
+        get verticalAlignment(): HStackVAlignmentType;
+        set verticalAlignment(value: HStackVAlignmentType);
+        protected setAttributeToProperty<P extends keyof HStack>(propertyName: P): void;
+        protected init(): void;
+        static create(options?: HStackElement, parent?: Container): Promise<HStack>;
+    }
+    export class VStack extends StackLayout {
+        private _horizontalAlignment;
+        private _verticalAlignment;
+        constructor(parent?: Container, options?: any);
+        get horizontalAlignment(): VStackHAlignmentType;
+        set horizontalAlignment(value: VStackHAlignmentType);
+        get verticalAlignment(): VStackVAlignmentType;
+        set verticalAlignment(value: VStackVAlignmentType);
+        protected setAttributeToProperty<P extends keyof VStack>(propertyName: P): void;
+        init(): void;
+        static create(options?: VStackElement, parent?: Container): Promise<VStack>;
+    }
+}
+declare module "packages/layout/src/panel" {
+    import { Control, Container, ContainerElement } from "packages/base/src/index";
+    export interface PanelElement extends ContainerElement {
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-panel']: PanelElement;
+            }
+        }
+    }
+    export class Panel extends Container {
+        constructor(parent?: Control, options?: any);
+        protected init(): void;
+        connectedCallback(): void;
+        static create(options?: PanelElement, parent?: Control): Promise<Panel>;
+    }
+}
+declare module "packages/layout/src/grid" {
+    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, IControlMediaQueryProps } from "packages/base/src/index";
+    export interface IGap {
+        row?: string | number;
+        column?: string | number;
+    }
+    export interface IGridLayoutMediaQueryProps extends IControlMediaQueryProps {
+        templateColumns?: string[];
+        templateRows?: string[];
+        templateAreas?: string[][];
+        display?: DisplayType;
+        gap?: IGap;
+        background?: IBackground;
+    }
+    export type IGridLayoutMediaQuery = IMediaQuery<IGridLayoutMediaQueryProps>;
+    export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
+    export type GridLayoutVerticalAlignmentType = "stretch" | "start" | "end" | "center" | "baseline";
+    export interface GridLayoutElement extends ControlElement {
+        templateColumns?: string[];
+        templateRows?: string[];
+        templateAreas?: string[][];
+        display?: DisplayType;
+        autoColumnSize?: string;
+        autoRowSize?: string;
+        columnsPerRow?: number;
+        gap?: IGap;
+        horizontalAlignment?: GridLayoutHorizontalAlignmentType;
+        verticalAlignment?: GridLayoutVerticalAlignmentType;
+        autoFillInHoles?: boolean;
+        mediaQueries?: IGridLayoutMediaQuery[];
+    }
+    export class GridLayout extends Container {
+        private _templateColumns;
+        private _templateRows;
+        private _templateAreas;
+        private _autoColumnSize;
+        private _autoRowSize;
+        protected _columnsPerRow: number;
+        private _gap;
+        private _horizontalAlignment;
+        private _verticalAlignment;
+        private _autoFillInHoles;
+        private _mediaQueries;
+        private _styleClassMap;
+        constructor(parent?: Control, options?: any);
+        static create(options?: GridLayoutElement, parent?: Container): Promise<GridLayout>;
+        get templateColumns(): string[];
+        set templateColumns(columns: string[]);
+        get templateRows(): string[];
+        set templateRows(rows: string[]);
+        get templateAreas(): string[][];
+        set templateAreas(value: string[][]);
+        get autoColumnSize(): string;
+        set autoColumnSize(value: string);
+        get autoRowSize(): string;
+        set autoRowSize(value: string);
+        get columnsPerRow(): number;
+        set columnsPerRow(value: number);
+        get gap(): IGap;
+        set gap(value: IGap);
+        get horizontalAlignment(): GridLayoutHorizontalAlignmentType;
+        set horizontalAlignment(value: GridLayoutHorizontalAlignmentType);
+        get verticalAlignment(): GridLayoutVerticalAlignmentType;
+        set verticalAlignment(value: GridLayoutVerticalAlignmentType);
+        get autoFillInHoles(): boolean;
+        set autoFillInHoles(value: boolean);
+        get mediaQueries(): IGridLayoutMediaQuery[];
+        set mediaQueries(value: IGridLayoutMediaQuery[]);
+        protected setAttributeToProperty<P extends keyof GridLayout>(propertyName: P): void;
+        protected removeStyleClass(name: string): void;
+        protected init(): void;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-grid-layout']: GridLayoutElement;
+            }
+        }
+    }
+}
+declare module "packages/layout/src/card" {
+    import { Container } from "packages/base/src/index";
+    import { GridLayout, GridLayoutElement } from "packages/layout/src/grid";
+    export interface CardLayoutElement extends GridLayoutElement {
+        cardMinWidth?: number | string;
+        cardHeight?: number | string;
+    }
+    export class CardLayout extends GridLayout {
+        private _cardMinWidth;
+        private _cardHeight;
+        constructor(parent?: Container, options?: any);
+        static create(options?: CardLayoutElement, parent?: Container): Promise<CardLayout>;
+        get cardMinWidth(): number | string;
+        set cardMinWidth(value: number | string);
+        get columnsPerRow(): number;
+        set columnsPerRow(value: number);
+        get cardHeight(): number | string;
+        set cardHeight(value: number | string);
+        updateGridTemplateColumns(): void;
+        protected setAttributeToProperty<P extends keyof CardLayout>(propertyName: P): void;
+        protected init(): void;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-card-layout']: CardLayoutElement;
+            }
+        }
+    }
+}
+declare module "packages/layout/src/index" {
+    export { StackDirectionType, StackLayout, VStack, VStackElement, HStack, HStackElement, IStackMediaQuery } from "packages/layout/src/stack";
+    export { Panel, PanelElement } from "packages/layout/src/panel";
+    export { CardLayout, CardLayoutElement } from "packages/layout/src/card";
+    export { IGridLayoutMediaQuery, GridLayout, GridLayoutElement } from "packages/layout/src/grid";
+}
+declare module "packages/tab/src/style/tab.css" {
+    import { ITabMediaQuery } from "packages/tab/src/tab";
+    export const getTabMediaQueriesStyleClass: (mediaQueries: ITabMediaQuery[]) => string;
+}
+declare module "packages/tab/src/tab" {
+    import { Control, Container, ContainerElement, IFont, IMediaQuery, IControlMediaQueryProps } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import "packages/tab/src/style/tab.css";
+    type TabModeType = "horizontal" | "vertical";
+    type TabsEventCallback = (target: Tabs, activeTab: Tab) => void;
+    type TabCloseEventCallback = (target: Tabs, tab: Tab) => void;
+    export interface TabsElement extends ContainerElement {
+        activeTabIndex?: number;
+        closable?: boolean;
+        draggable?: boolean;
+        mode?: TabModeType;
+        mediaQueries?: ITabMediaQuery[];
+        onChanged?: TabsEventCallback;
+        onCloseTab?: TabCloseEventCallback;
+    }
+    export interface TabElement extends ContainerElement {
+        caption?: string;
+        icon?: IconElement;
+        font?: IFont;
+    }
+    export interface ITab extends TabElement {
+        children?: Control | Container;
+    }
+    export interface ITabMediaQueryProps extends IControlMediaQueryProps {
+        mode?: TabModeType;
+    }
+    export type ITabMediaQuery = IMediaQuery<ITabMediaQueryProps>;
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-tabs']: TabsElement;
+                ['i-tab']: TabElement;
+            }
+        }
+    }
+    export class Tabs extends Container {
+        private tabsNavElm;
+        private tabsContentElm;
+        private contentPanes;
+        private _tabs;
+        private _activeTabIndex;
+        private _closable;
+        private _draggable;
+        private _mediaQueries;
+        private accumTabIndex;
+        private curDragTab;
+        onChanged: TabsEventCallback;
+        onCloseTab: TabCloseEventCallback;
+        constructor(parent?: Container, options?: any);
+        get activeTab(): Tab;
+        get activeTabIndex(): number;
+        set activeTabIndex(index: number);
+        get items(): Tab[];
+        get closable(): boolean;
+        set closable(value: boolean);
+        get draggable(): boolean;
+        set draggable(value: boolean);
+        get mode(): TabModeType;
+        set mode(type: TabModeType);
+        get mediaQueries(): ITabMediaQuery[];
+        set mediaQueries(value: ITabMediaQuery[]);
+        add(options?: ITab): Tab;
+        delete(tab: Tab): void;
+        private appendTab;
+        private handleTagDrag;
+        _handleClick(event: Event): boolean;
+        private dragStartHandler;
+        private dragOverHandler;
+        private dropHandler;
+        refresh(): void;
+        protected init(): void;
+        static create(options?: TabsElement, parent?: Container): Promise<Tabs>;
+    }
+    export class Tab extends Container {
+        private tabContainer;
+        private captionElm;
+        private _contentElm;
+        private _icon;
+        protected _parent: Tabs;
+        active(): void;
+        protected addChildControl(control: Control): void;
+        protected removeChildControl(control: Control): void;
+        get caption(): string;
+        set caption(value: string);
+        close(): void;
+        get index(): number;
+        get icon(): Icon;
+        set icon(elm: Icon);
+        get innerHTML(): string;
+        set innerHTML(value: string);
+        get font(): IFont;
+        set font(value: IFont);
+        _handleClick(event: Event): boolean;
+        private handleCloseTab;
+        init(): void;
+        static create(options?: TabElement, parent?: Control): Promise<Tab>;
+    }
+}
+declare module "packages/tab/src/index" {
+    export { Tabs, TabsElement, Tab, TabElement } from "packages/tab/src/tab";
+}
+declare module "packages/combo-box/src/style/combo-box.css" {
+    export let ItemListStyle: string;
+}
+declare module "packages/combo-box/src/combo-box" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import "packages/combo-box/src/style/combo-box.css";
+    export interface IComboItem {
+        value: string;
+        label: string;
+        isNew?: boolean;
+    }
+    type ModeType = 'single' | 'multiple' | 'tags';
+    export interface ComboBoxElement extends ControlElement {
+        selectedItem?: IComboItem | IComboItem[];
+        items?: IComboItem[];
+        icon?: IconElement;
+        mode?: ModeType;
+        placeholder?: string;
+        onChanged?: notifyEventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ["i-combo-box"]: ComboBoxElement;
+            }
+        }
+    }
+    export class ComboBox extends Control {
+        private _selectedItem;
+        private _caption;
+        private _captionWidth;
+        private _items;
+        private _icon;
+        private _mode;
+        private _searchStr;
+        private newItem;
+        private isListShown;
+        private captionSpanElm;
+        private labelElm;
+        private inputWrapElm;
+        private inputElm;
+        private iconElm;
+        private listElm;
+        private callback;
+        onChanged: notifyEventCallback;
+        constructor(parent?: Control, options?: any);
+        get value(): IComboItem | IComboItem[];
+        set value(value: IComboItem | IComboItem[]);
+        get selectedItem(): IComboItem | IComboItem[];
+        set selectedItem(value: IComboItem | IComboItem[]);
+        get caption(): string;
+        set caption(value: string);
+        get captionWidth(): number | string;
+        set captionWidth(value: number | string);
+        get items(): IComboItem[];
+        set items(items: IComboItem[]);
+        get icon(): Icon;
+        set icon(value: Icon);
+        get searchStr(): string;
+        set searchStr(str: string);
+        get placeholder(): string;
+        set placeholder(value: string);
+        get mode(): ModeType;
+        set mode(value: ModeType);
+        get isMulti(): boolean;
+        private isValueValid;
+        private getItemIndex;
+        private openList;
+        calculatePositon(): void;
+        private closeList;
+        private toggleList;
+        private escapeRegExp;
+        private renderItems;
+        private add;
+        private handleRemove;
+        private onItemClick;
+        clear(): void;
+        protected init(): void;
+        disconnectCallback(): void;
+        static create(options?: ComboBoxElement, parent?: Control): Promise<ComboBox>;
+    }
+}
+declare module "packages/combo-box/src/index" {
+    export { ComboBox, ComboBoxElement, IComboItem } from "packages/combo-box/src/combo-box";
+}
+declare module "packages/datepicker/src/style/datepicker.css" { }
+declare module "packages/datepicker/src/datepicker" {
+    import { ControlElement, Control, notifyEventCallback } from "packages/base/src/index";
+    import "packages/datepicker/src/style/datepicker.css";
+    import Moment from 'moment';
+    type dateType = 'date' | 'dateTime' | 'time';
+    export interface DatepickerElement extends ControlElement {
+        caption?: string;
+        captionWidth?: number | string;
+        value?: Moment.Moment;
+        placeholder?: string;
+        type?: dateType;
+        dateTimeFormat?: string;
+        onChanged?: notifyEventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-datepicker']: DatepickerElement;
+            }
+        }
+    }
+    export class Datepicker extends Control {
+        private _value?;
+        private _caption;
+        private _captionWidth;
+        private _iconWidth;
+        private _dateTimeFormat;
+        private _type;
+        private _placeholder;
+        private callback;
+        private captionSpanElm;
+        private labelElm;
+        private inputElm;
+        private toggleElm;
+        private toggleIconElm;
+        private datepickerElm;
+        onChanged: notifyEventCallback;
+        constructor(parent?: Control, options?: any);
+        _handleClick(event: Event): boolean;
+        get caption(): string;
+        set caption(value: string);
+        get captionWidth(): number;
+        set captionWidth(value: number | string);
+        get height(): number;
+        set height(value: number | string);
+        get width(): number;
+        set width(value: number | string);
+        get value(): Moment.Moment | undefined;
+        set value(value: Moment.Moment | undefined);
+        get defaultDateTimeFormat(): string;
+        get dateTimeFormat(): string;
+        set dateTimeFormat(format: string);
+        get datepickerFormat(): string;
+        get maxLength(): number;
+        set enabled(value: boolean);
+        get placeholder(): string;
+        set placeholder(value: string);
+        private get formatString();
+        private _onDatePickerChange;
+        private _dateInputMask;
+        private _onBlur;
+        private updateValue;
+        private clear;
+        protected init(): void;
+        static create(options?: DatepickerElement, parent?: Control): Promise<Datepicker>;
+    }
+}
+declare module "packages/datepicker/src/index" {
+    export { Datepicker, DatepickerElement } from "packages/datepicker/src/datepicker";
+}
+declare module "packages/range/src/style/range.css" { }
+declare module "packages/range/src/range" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import "packages/range/src/style/range.css";
+    export interface RangeElement extends ControlElement {
+        caption?: string;
+        captionWidth?: number | string;
+        value?: number;
+        min?: number;
+        max?: number;
+        step?: number;
+        stepDots?: boolean | number;
+        tooltipFormatter?: any;
+        tooltipVisible?: boolean;
+        onChanged?: notifyEventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-range']: RangeElement;
+            }
+        }
+    }
+    export class Range extends Control {
+        private _value;
+        private _caption;
+        private _captionWidth;
+        private tooltipFormatter;
+        private _tooltipVisible;
+        private captionSpanElm;
+        private labelElm;
+        private inputElm;
+        private inputContainerElm;
+        private tooltipElm;
+        onChanged: notifyEventCallback;
+        onMouseUp: any;
+        onKeyUp: any;
+        private callback;
+        constructor(parent?: Control, options?: any);
+        get caption(): string;
+        set caption(value: string);
+        get captionWidth(): number;
+        set captionWidth(value: number | string);
+        get value(): number;
+        set value(value: number);
+        get width(): number;
+        set width(value: number | string);
+        set enabled(value: boolean);
+        get tooltipVisible(): boolean;
+        set tooltipVisible(value: boolean);
+        private onSliderChange;
+        private onUpdateTooltip;
+        protected init(): void;
+        static create(options?: RangeElement, parent?: Control): Promise<Range>;
+    }
+}
+declare module "packages/range/src/index" {
+    export { Range, RangeElement } from "packages/range/src/range";
+}
+declare module "packages/radio/src/radio.css" {
+    export const captionStyle: string;
+}
+declare module "packages/radio/src/radio" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    export interface RadioElement extends ControlElement {
+        caption?: string;
+        captionWidth?: number | string;
+        value?: string;
+    }
+    export interface RadioGroupElement extends ControlElement {
+        selectedValue?: string;
+        radioItems?: RadioElement[];
+        onChanged?: notifyEventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-radio-group']: RadioGroupElement;
+            }
+        }
+    }
+    export class Radio extends Control {
+        private _value;
+        private _caption;
+        private _captionWidth;
+        private labelElm;
+        private inputElm;
+        private captionSpanElm;
+        constructor(parent?: Control, options?: any);
+        get value(): string;
+        set value(value: string);
+        get caption(): string;
+        set caption(value: string);
+        get captionWidth(): number | string;
+        set captionWidth(value: number | string);
+        _handleClick(event: Event): boolean;
+        protected init(): void;
+        static create(options?: RadioElement, parent?: Control): Promise<Radio>;
+    }
+    export class RadioGroup extends Control {
+        private _selectedValue;
+        private _radioItems;
+        private _group;
+        private name;
+        onChanged: notifyEventCallback;
+        constructor(parent?: Control, options?: any);
+        get selectedValue(): string;
+        set selectedValue(value: string);
+        get radioItems(): RadioElement[];
+        set radioItems(value: RadioElement[]);
+        private renderUI;
+        private appendItem;
+        private _handleChange;
+        add(options: RadioElement): Promise<Radio>;
+        delete(index: number): void;
+        protected init(): void;
+        static create(options?: RadioGroupElement, parent?: Control): Promise<RadioGroup>;
+    }
+}
+declare module "packages/radio/src/index" {
+    export { Radio, RadioElement, RadioGroup, RadioGroupElement } from "packages/radio/src/radio";
+}
+declare module "packages/input/src/style/input.css" { }
+declare module "packages/input/src/input" {
+    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Checkbox, CheckboxElement } from "packages/checkbox/src/index";
+    import { ComboBox, ComboBoxElement } from "packages/combo-box/src/index";
+    import { Datepicker, DatepickerElement } from "packages/datepicker/src/index";
+    import { Range, RangeElement } from "packages/range/src/index";
+    import { Radio, RadioElement } from "packages/radio/src/index";
+    import "packages/input/src/style/input.css";
+    export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text' | 'color';
+    type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
+    type actionCallback = (target: Input) => void;
+    type changeCallback = (target: Input, val: string) => void;
+    type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
+    export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
+        caption?: string;
+        captionWidth?: number | string;
+        inputType?: InputType;
+        value?: any;
+        placeholder?: string;
+        readOnly?: boolean;
+        showClearButton?: boolean;
+        rows?: number;
+        multiline?: boolean;
+        resize?: resizeType;
+        onChanged?: notifyEventCallback;
+        onKeyDown?: notifyEventCallback;
+        onKeyUp?: notifyEventCallback;
+        onMouseUp?: changeCallback;
+        onBlur?: actionCallback;
+        onFocus?: actionCallback;
+        onClearClick?: actionCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-input']: InputElement;
+            }
+        }
+    }
+    export class Input extends Control {
+        private _value;
+        private _caption;
+        private _captionWidth;
+        private _inputType;
+        private _placeholder;
+        private _readOnly;
+        private _showClearButton;
+        private _clearBtnWidth;
+        private _rows;
+        private _multiline;
+        private _resize;
+        private captionSpanElm;
+        private labelElm;
+        private inputElm;
+        private _inputControl;
+        private clearIconElm;
+        onMouseUp: changeCallback;
+        onKeyDown: notifyEventCallback;
+        onKeyUp: notifyEventCallback;
+        onChanged: notifyEventCallback;
+        onBlur: actionCallback;
+        onFocus: actionCallback;
+        onClearClick: actionCallback;
+        constructor(parent?: Control, options?: any);
+        get caption(): string;
+        set caption(value: string);
+        get captionWidth(): number | string;
+        set captionWidth(value: number | string);
+        get height(): number;
+        set height(value: number | string);
+        get value(): any;
+        set value(value: any);
+        get width(): number | string;
+        set width(value: number | string);
+        get readOnly(): boolean;
+        set readOnly(value: boolean);
+        get inputType(): InputType;
+        set inputType(type: InputType);
+        get inputControl(): InputControlType;
+        set enabled(value: boolean);
+        set placeholder(value: string);
+        get rows(): number;
+        set rows(value: number);
+        get multiline(): boolean;
+        set multiline(value: boolean);
+        get resize(): resizeType;
+        set resize(value: resizeType);
+        private _createInputElement;
+        private _inputCallback;
+        private _handleChange;
+        private _handleInputKeyDown;
+        private _handleInputKeyUp;
+        private _handleOnBlur;
+        private _handleOnFocus;
+        private _clearValue;
+        protected init(): void;
+        static create(options?: InputElement, parent?: Control): Promise<Input>;
+    }
+}
+declare module "packages/input/src/index" {
+    export { Input, InputElement } from "packages/input/src/input";
+}
+declare module "packages/link/src/style/link.css" { }
+declare module "packages/link/src/link" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import "packages/link/src/style/link.css";
+    type TagertType = '_self' | '_blank' | '_parent' | '_top';
+    export interface LinkElement extends ControlElement {
+        href?: string;
+        target?: TagertType;
+    }
+    export class Link extends Control {
+        private _href;
+        private _target;
+        private _linkElm;
+        constructor(parent?: Control, options?: any);
+        get href(): string;
+        set href(value: string);
+        get target(): TagertType;
+        set target(value: TagertType);
+        append(children: Control | HTMLElement): void;
+        _handleClick(event: Event, stopPropagation?: boolean): boolean;
+        protected addChildControl(control: Control): void;
+        protected removeChildControl(control: Control): void;
+        protected init(): void;
+        static create(options?: LinkElement, parent?: Control): Promise<Link>;
+    }
+}
+declare module "packages/link/src/index" {
+    export { Link, LinkElement } from "packages/link/src/link";
+}
+declare module "packages/label/src/style/label.css" {
+    export const captionStyle: string;
+}
+declare module "packages/label/src/label" {
+    import { Control, ControlElement } from "packages/base/src/index";
+    import { Link, LinkElement } from "packages/link/src/index";
+    type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
+    type OverflowWrapType = 'normal' | 'break-word' | 'anywhere' | 'inherit' | 'initial' | 'revert' | 'unset';
+    export interface LabelElement extends ControlElement {
+        caption?: string;
+        link?: LinkElement;
+        wordBreak?: WordBreakType;
+        overflowWrap?: OverflowWrapType;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-label']: LabelElement;
+            }
+        }
+    }
+    export class Label extends Control {
+        private captionSpan;
+        private _link;
+        constructor(parent?: Control, options?: any);
+        get caption(): string;
+        set caption(value: string);
+        get link(): Link;
+        set link(value: Link);
+        set height(value: number);
+        set width(value: number);
+        get wordBreak(): WordBreakType;
+        set wordBreak(value: WordBreakType);
+        get overflowWrap(): OverflowWrapType;
+        set overflowWrap(value: OverflowWrapType);
+        protected init(): void;
+        static create(options?: LabelElement, parent?: Control): Promise<Label>;
+    }
+}
+declare module "packages/label/src/index" {
+    export { Label, LabelElement } from "packages/label/src/label";
+}
+declare module "packages/application/src/jsonUI" {
+    import { Control } from "packages/base/src/index";
+    type IDataSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
+    type IDataSchema4Type = string | number | boolean | IDataSchema4Object | IDataSchema4Array | null;
+    interface IDataSchema4Object {
+        [key: string]: IDataSchema4Type;
+    }
+    interface IDataSchema4Array extends Array<IDataSchema4Type> {
+    }
+    type IDataSchema4Version = string;
+    interface IDataSchema4 {
+        id?: string | undefined;
+        $ref?: string | undefined;
+        $schema?: IDataSchema4Version | undefined;
+        title?: string | undefined;
+        description?: string | undefined;
+        default?: IDataSchema4Type | undefined;
+        multipleOf?: number | undefined;
+        maximum?: number | undefined;
+        exclusiveMaximum?: boolean | undefined;
+        minimum?: number | undefined;
+        exclusiveMinimum?: boolean | undefined;
+        maxLength?: number | undefined;
+        minLength?: number | undefined;
+        pattern?: string | undefined;
+        additionalItems?: boolean | IDataSchema4 | undefined;
+        items?: IDataSchema4 | IDataSchema4[] | undefined;
+        maxItems?: number | undefined;
+        minItems?: number | undefined;
+        uniqueItems?: boolean | undefined;
+        maxProperties?: number | undefined;
+        minProperties?: number | undefined;
+        required?: boolean | string[] | undefined;
+        additionalProperties?: boolean | IDataSchema4 | undefined;
+        definitions?: {
+            [k: string]: IDataSchema4;
+        } | undefined;
+        properties?: {
+            [k: string]: IDataSchema4;
+        } | undefined;
+        patternProperties?: {
+            [k: string]: IDataSchema4;
+        } | undefined;
+        dependencies?: {
+            [k: string]: IDataSchema4 | string[];
+        } | undefined;
+        enum?: IDataSchema4Type[] | undefined;
+        type?: IDataSchema4TypeName | IDataSchema4TypeName[] | undefined;
+        allOf?: IDataSchema4[] | undefined;
+        anyOf?: IDataSchema4[] | undefined;
+        oneOf?: IDataSchema4[] | undefined;
+        not?: IDataSchema4 | undefined;
+        extends?: string | string[] | undefined;
+        [k: string]: any;
+        format?: string | undefined;
+    }
+    type IDataSchema6TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
+    type IDataSchema6Type = string | number | boolean | IDataSchema6Object | IDataSchema6Array | null;
+    interface IDataSchema6Object {
+        [key: string]: IDataSchema6Type;
+    }
+    interface IDataSchema6Array extends Array<IDataSchema6Type> {
+    }
+    type IDataSchema6Version = string;
+    type IDataSchema6Definition = IDataSchema6 | boolean;
+    interface IDataSchema6 {
+        $id?: string | undefined;
+        $ref?: string | undefined;
+        $schema?: IDataSchema6Version | undefined;
+        multipleOf?: number | undefined;
+        maximum?: number | undefined;
+        exclusiveMaximum?: number | undefined;
+        minimum?: number | undefined;
+        exclusiveMinimum?: number | undefined;
+        maxLength?: number | undefined;
+        minLength?: number | undefined;
+        pattern?: string | undefined;
+        items?: IDataSchema6Definition | IDataSchema6Definition[] | undefined;
+        additionalItems?: IDataSchema6Definition | undefined;
+        maxItems?: number | undefined;
+        minItems?: number | undefined;
+        uniqueItems?: boolean | undefined;
+        contains?: IDataSchema6Definition | undefined;
+        maxProperties?: number | undefined;
+        minProperties?: number | undefined;
+        required?: string[] | undefined;
+        properties?: {
+            [k: string]: IDataSchema6Definition;
+        } | undefined;
+        patternProperties?: {
+            [k: string]: IDataSchema6Definition;
+        } | undefined;
+        additionalProperties?: IDataSchema6Definition | undefined;
+        dependencies?: {
+            [k: string]: IDataSchema6Definition | string[];
+        } | undefined;
+        propertyNames?: IDataSchema6Definition | undefined;
+        enum?: IDataSchema6Type[] | undefined;
+        const?: IDataSchema6Type | undefined;
+        type?: IDataSchema6TypeName | IDataSchema6TypeName[] | undefined;
+        allOf?: IDataSchema6Definition[] | undefined;
+        anyOf?: IDataSchema6Definition[] | undefined;
+        oneOf?: IDataSchema6Definition[] | undefined;
+        not?: IDataSchema6Definition | undefined;
+        definitions?: {
+            [k: string]: IDataSchema6Definition;
+        } | undefined;
+        title?: string | undefined;
+        description?: string | undefined;
+        default?: IDataSchema6Type | undefined;
+        examples?: IDataSchema6Type[] | undefined;
+        format?: string | undefined;
+    }
+    type IDataSchema7TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
+    type IDataSchema7Type = string | number | boolean | IDataSchema7Object | IDataSchema7Array | null;
+    interface IDataSchema7Object {
+        [key: string]: IDataSchema7Type;
+    }
+    interface IDataSchema7Array extends Array<IDataSchema7Type> {
+    }
+    type IDataSchema7Version = string;
+    type IDataSchema7Definition = IDataSchema7 | boolean;
+    interface IDataSchema7 {
+        $id?: string | undefined;
+        $ref?: string | undefined;
+        $schema?: IDataSchema7Version | undefined;
+        $comment?: string | undefined;
+        $defs?: {
+            [key: string]: IDataSchema7Definition;
+        } | undefined;
+        type?: IDataSchema7TypeName | IDataSchema7TypeName[] | undefined;
+        enum?: IDataSchema7Type[] | undefined;
+        const?: IDataSchema7Type | undefined;
+        multipleOf?: number | undefined;
+        maximum?: number | undefined;
+        exclusiveMaximum?: number | undefined;
+        minimum?: number | undefined;
+        exclusiveMinimum?: number | undefined;
+        maxLength?: number | undefined;
+        minLength?: number | undefined;
+        pattern?: string | undefined;
+        items?: IDataSchema7Definition | IDataSchema7Definition[] | undefined;
+        additionalItems?: IDataSchema7Definition | undefined;
+        maxItems?: number | undefined;
+        minItems?: number | undefined;
+        uniqueItems?: boolean | undefined;
+        contains?: IDataSchema7 | undefined;
+        maxProperties?: number | undefined;
+        minProperties?: number | undefined;
+        required?: string[] | undefined;
+        properties?: {
+            [key: string]: IDataSchema7Definition;
+        } | undefined;
+        patternProperties?: {
+            [key: string]: IDataSchema7Definition;
+        } | undefined;
+        additionalProperties?: IDataSchema7Definition | undefined;
+        dependencies?: {
+            [key: string]: IDataSchema7Definition | string[];
+        } | undefined;
+        propertyNames?: IDataSchema7Definition | undefined;
+        if?: IDataSchema7Definition | undefined;
+        then?: IDataSchema7Definition | undefined;
+        else?: IDataSchema7Definition | undefined;
+        allOf?: IDataSchema7Definition[] | undefined;
+        anyOf?: IDataSchema7Definition[] | undefined;
+        oneOf?: IDataSchema7Definition[] | undefined;
+        not?: IDataSchema7Definition | undefined;
+        format?: string | undefined;
+        contentMediaType?: string | undefined;
+        contentEncoding?: string | undefined;
+        definitions?: {
+            [key: string]: IDataSchema7Definition;
+        } | undefined;
+        title?: string | undefined;
+        description?: string | undefined;
+        default?: IDataSchema7Type | undefined;
+        readOnly?: boolean | undefined;
+        writeOnly?: boolean | undefined;
+        examples?: IDataSchema7Type | undefined;
+    }
+    interface ValidationResult {
+        valid: boolean;
+        errors: ValidationError[];
+    }
+    interface ValidationError {
+        property: string;
+        message: string;
+    }
+    export type IDataSchema = IDataSchema4 | IDataSchema6 | IDataSchema7;
+    export const DataSchemaValidator: {
+        checkPropertyChange: (value: any, schema: IDataSchema, property: string) => ValidationResult | null;
+        mustBeValid: (result: ValidationResult) => void;
+        validate: (instance: any, schema: IDataSchema, options: any) => ValidationResult | null;
+    };
+    export function renderUI(target: Control, jsonSchema: IDataSchema, callback: (result: boolean, data: any) => void, data?: any, options?: any): Promise<void>;
+}
+declare module "packages/application/src/index" {
+    import { Module } from "packages/module/src/index";
+    import { EventBus } from "packages/application/src/event-bus";
+    import { GlobalEvents } from "packages/application/src/globalEvent";
+    export interface IHasDependencies {
+        assets?: string;
+        rootDir?: string;
+        main?: string;
+        moduleDir?: string;
+        dependencies?: {
+            [name: string]: string;
+        };
+        modules?: {
+            [name: string]: {
+                path: string;
+                dependencies: string[];
+            };
+        };
+        script?: string;
+    }
+    export interface IModuleRoute extends IHasDependencies {
+        url: string;
+        module: string;
+        default?: boolean;
+    }
+    export interface IModuleMenuItem {
+        text: string;
+        to: string;
+        isToExternal?: boolean;
+        img?: string;
+        subItems?: IModuleMenuItem[];
+        isDisabled?: boolean;
+        supportedChainIds?: number[];
+        env?: string[];
+    }
+    export interface IModuleOptions extends IHasDependencies {
+        codeCID?: string;
+        name?: string;
+        main?: string;
+        type?: number;
+        version?: string;
+        root?: string;
+        routes?: IModuleRoute[];
+        params?: any;
+        menuItems?: IModuleMenuItem[];
+        env?: string;
+    }
+    export enum IpfsDataType {
+        Raw = 0,
+        Directory = 1,
+        File = 2,
+        Metadata = 3,
+        Symlink = 4,
+        HAMTShard = 5
+    }
+    export type IIPFSDirectoryInfo = IIPFSDirectoryFileInfo[];
+    export interface IIPFSDirectoryFileInfo {
+        cid: string;
+        name: string;
+        size: number;
+        type: string;
+    }
+    class Application {
+        private static _instance;
+        private modules;
+        private modulesId;
+        private scripts;
+        globalEvents: GlobalEvents;
+        private id;
+        currentModulePath: string;
+        currentModuleDir: string;
+        LibHost: string;
+        private packages;
+        _assets: {
+            [name: string]: any;
+        };
+        private _initOptions;
+        private constructor();
+        get EventBus(): EventBus;
+        static get Instance(): Application;
+        assets(name: string): any;
+        private verifyScript;
+        private getScript;
+        loadScript(modulePath: string, script: string): Promise<boolean>;
+        getContent(modulePath: string): Promise<string>;
+        fetchDirectoryInfoByCID(ipfsCid: string): Promise<IIPFSDirectoryInfo>;
+        getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
+        loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
+            [name: string]: any;
+        } | null>;
+        loadModule(modulePath: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
+        private getModulePath;
+        newModule(module: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
+        copyToClipboard(value: string): Promise<boolean>;
+        xssSanitize(value: string): string;
+    }
+    export const application: Application;
+    export { EventBus, IEventBus } from "packages/application/src/event-bus";
+    export { IDataSchema, renderUI, DataSchemaValidator } from "packages/application/src/jsonUI";
+    export default application;
 }
 declare module "packages/code-editor/src/editor.api" {
     global {
@@ -7572,388 +8637,347 @@ declare module "packages/code-editor/src/index" {
     export { CodeDiffEditor, CodeDiffEditorElement } from "packages/code-editor/src/diff-editor";
     export { LanguageType } from "packages/code-editor/src/monaco";
 }
-declare module "packages/combo-box/src/style/combo-box.css" {
-    export let ItemListStyle: string;
-}
-declare module "packages/combo-box/src/combo-box" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
-    import { Icon, IconElement } from "packages/icon/src/index";
-    import "packages/combo-box/src/style/combo-box.css";
-    export interface IComboItem {
-        value: string;
-        label: string;
-        isNew?: boolean;
-    }
-    type ModeType = 'single' | 'multiple' | 'tags';
-    export interface ComboBoxElement extends ControlElement {
-        selectedItem?: IComboItem | IComboItem[];
-        items?: IComboItem[];
-        icon?: IconElement;
-        mode?: ModeType;
-        placeholder?: string;
-        onChanged?: notifyEventCallback;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ["i-combo-box"]: ComboBoxElement;
-            }
-        }
-    }
-    export class ComboBox extends Control {
-        private _selectedItem;
-        private _caption;
-        private _captionWidth;
-        private _items;
-        private _icon;
-        private _mode;
-        private _searchStr;
-        private newItem;
-        private isListShown;
-        private captionSpanElm;
-        private labelElm;
-        private inputWrapElm;
-        private inputElm;
-        private iconElm;
-        private listElm;
-        private callback;
-        onChanged: notifyEventCallback;
-        constructor(parent?: Control, options?: any);
-        get value(): IComboItem | IComboItem[];
-        set value(value: IComboItem | IComboItem[]);
-        get selectedItem(): IComboItem | IComboItem[];
-        set selectedItem(value: IComboItem | IComboItem[]);
-        get caption(): string;
-        set caption(value: string);
-        get captionWidth(): number | string;
-        set captionWidth(value: number | string);
-        get items(): IComboItem[];
-        set items(items: IComboItem[]);
-        get icon(): Icon;
-        set icon(value: Icon);
-        get searchStr(): string;
-        set searchStr(str: string);
-        get placeholder(): string;
-        set placeholder(value: string);
-        get mode(): ModeType;
-        set mode(value: ModeType);
-        get isMulti(): boolean;
-        private isValueValid;
-        private getItemIndex;
-        private openList;
-        calculatePositon(): void;
-        private closeList;
-        private toggleList;
-        private escapeRegExp;
-        private renderItems;
-        private add;
-        private handleRemove;
-        private onItemClick;
-        clear(): void;
-        protected init(): void;
-        disconnectCallback(): void;
-        static create(options?: ComboBoxElement, parent?: Control): Promise<ComboBox>;
-    }
-}
-declare module "packages/combo-box/src/index" {
-    export { ComboBox, ComboBoxElement, IComboItem } from "packages/combo-box/src/combo-box";
-}
-declare module "packages/datepicker/src/style/datepicker.css" { }
-declare module "packages/datepicker/src/datepicker" {
-    import { ControlElement, Control, notifyEventCallback } from "packages/base/src/index";
-    import "packages/datepicker/src/style/datepicker.css";
-    import Moment from 'moment';
-    type dateType = 'date' | 'dateTime' | 'time';
-    export interface DatepickerElement extends ControlElement {
+declare module "packages/data-grid/src/style/dataGrid.css" { }
+declare module "packages/data-grid/src/dataGrid" {
+    import { Control, Container, ControlElement } from "packages/base/src/index";
+    import "packages/data-grid/src/style/dataGrid.css";
+    export interface IDataGridElement extends ControlElement {
         caption?: string;
-        captionWidth?: number | string;
-        value?: Moment.Moment;
-        placeholder?: string;
-        type?: dateType;
-        dateTimeFormat?: string;
-        onChanged?: notifyEventCallback;
     }
     global {
         namespace JSX {
             interface IntrinsicElements {
-                ['i-datepicker']: DatepickerElement;
+                ['i-data-grid']: IDataGridElement;
             }
         }
     }
-    export class Datepicker extends Control {
-        private _value?;
-        private _caption;
-        private _captionWidth;
-        private _iconWidth;
-        private _dateTimeFormat;
-        private _type;
-        private _placeholder;
-        private callback;
-        private captionSpanElm;
-        private labelElm;
-        private inputElm;
-        private toggleElm;
-        private toggleIconElm;
-        private datepickerElm;
-        onChanged: notifyEventCallback;
-        constructor(parent?: Control, options?: any);
-        _handleClick(event: Event): boolean;
-        get caption(): string;
-        set caption(value: string);
-        get captionWidth(): number;
-        set captionWidth(value: number | string);
-        get height(): number;
-        set height(value: number | string);
-        get width(): number;
-        set width(value: number | string);
-        get value(): Moment.Moment | undefined;
-        set value(value: Moment.Moment | undefined);
-        get defaultDateTimeFormat(): string;
-        get dateTimeFormat(): string;
-        set dateTimeFormat(format: string);
-        get datepickerFormat(): string;
-        get maxLength(): number;
-        set enabled(value: boolean);
-        get placeholder(): string;
-        set placeholder(value: string);
-        private get formatString();
-        private _onDatePickerChange;
-        private _dateInputMask;
-        private _onFocus;
-        private _onBlur;
-        private updateValue;
-        private clear;
-        protected init(): void;
-        static create(options?: DatepickerElement, parent?: Control): Promise<Datepicker>;
+    interface IDataGrid {
+        colCount: number;
+        columns: {
+            [colIdx: number]: any;
+        };
+        rowHeights: any[];
+        getColWidth(col: number): number;
+        setColWidth(col: number, value: number): void;
+        enableUpdateTimer(): void;
     }
-}
-declare module "packages/datepicker/src/index" {
-    export { Datepicker, DatepickerElement } from "packages/datepicker/src/datepicker";
-}
-declare module "packages/range/src/style/range.css" { }
-declare module "packages/range/src/range" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
-    import "packages/range/src/style/range.css";
-    export interface RangeElement extends ControlElement {
-        caption?: string;
-        captionWidth?: number | string;
-        value?: number;
-        min?: number;
-        max?: number;
-        step?: number;
-        stepDots?: boolean | number;
-        tooltipFormatter?: any;
-        tooltipVisible?: boolean;
-        onChanged?: notifyEventCallback;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-range']: RangeElement;
-            }
-        }
-    }
-    export class Range extends Control {
-        private _value;
-        private _caption;
-        private _captionWidth;
-        private tooltipFormatter;
-        private _tooltipVisible;
-        private captionSpanElm;
-        private labelElm;
-        private inputElm;
-        private inputContainerElm;
-        private tooltipElm;
-        onChanged: notifyEventCallback;
-        onMouseUp: any;
-        onKeyUp: any;
-        private callback;
-        constructor(parent?: Control, options?: any);
-        get caption(): string;
-        set caption(value: string);
-        get captionWidth(): number;
-        set captionWidth(value: number | string);
-        get value(): number;
-        set value(value: number);
-        get width(): number;
-        set width(value: number | string);
-        set enabled(value: boolean);
-        get tooltipVisible(): boolean;
-        set tooltipVisible(value: boolean);
-        private onSliderChange;
-        private onUpdateTooltip;
-        protected init(): void;
-        static create(options?: RangeElement, parent?: Control): Promise<Range>;
-    }
-}
-declare module "packages/range/src/index" {
-    export { Range, RangeElement } from "packages/range/src/range";
-}
-declare module "packages/radio/src/radio.css" {
-    export const captionStyle: string;
-}
-declare module "packages/radio/src/radio" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
-    export interface RadioElement extends ControlElement {
-        caption?: string;
-        captionWidth?: number | string;
-        value?: string;
-    }
-    export interface RadioGroupElement extends ControlElement {
-        selectedValue?: string;
-        radioItems?: RadioElement[];
-        onChanged?: notifyEventCallback;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-radio-group']: RadioGroupElement;
-            }
-        }
-    }
-    export class Radio extends Control {
-        private _value;
-        private _caption;
-        private _captionWidth;
-        private labelElm;
-        private inputElm;
-        private captionSpanElm;
-        constructor(parent?: Control, options?: any);
-        get value(): string;
-        set value(value: string);
-        get caption(): string;
-        set caption(value: string);
-        get captionWidth(): number | string;
-        set captionWidth(value: number | string);
-        _handleClick(event: Event): boolean;
-        protected init(): void;
-        static create(options?: RadioElement, parent?: Control): Promise<Radio>;
-    }
-    export class RadioGroup extends Control {
-        private _selectedValue;
-        private _radioItems;
-        private _group;
-        private name;
-        onChanged: notifyEventCallback;
-        constructor(parent?: Control, options?: any);
-        get selectedValue(): string;
-        set selectedValue(value: string);
-        get radioItems(): RadioElement[];
-        set radioItems(value: RadioElement[]);
-        private renderUI;
-        private appendItem;
-        private _handleChange;
-        add(options: RadioElement): Promise<Radio>;
-        delete(index: number): void;
-        protected init(): void;
-        static create(options?: RadioGroupElement, parent?: Control): Promise<RadioGroup>;
-    }
-}
-declare module "packages/radio/src/index" {
-    export { Radio, RadioElement, RadioGroup, RadioGroupElement } from "packages/radio/src/radio";
-}
-declare module "packages/input/src/style/input.css" { }
-declare module "packages/input/src/input" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
-    import { Checkbox, CheckboxElement } from "packages/checkbox/src/index";
-    import { ComboBox, ComboBoxElement } from "packages/combo-box/src/index";
-    import { Datepicker, DatepickerElement } from "packages/datepicker/src/index";
-    import { Range, RangeElement } from "packages/range/src/index";
-    import { Radio, RadioElement } from "packages/radio/src/index";
-    import "packages/input/src/style/input.css";
-    export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text' | 'color';
-    type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
-    type actionCallback = (target: Input) => void;
-    type changeCallback = (target: Input, val: string) => void;
-    type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
-    export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
-        caption?: string;
-        captionWidth?: number | string;
-        inputType?: InputType;
-        value?: any;
-        placeholder?: string;
-        readOnly?: boolean;
-        showClearButton?: boolean;
-        rows?: number;
-        multiline?: boolean;
-        resize?: resizeType;
-        onChanged?: notifyEventCallback;
-        onKeyDown?: notifyEventCallback;
-        onKeyUp?: notifyEventCallback;
-        onMouseUp?: changeCallback;
-        onBlur?: actionCallback;
-        onFocus?: actionCallback;
-        onClearClick?: actionCallback;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-input']: InputElement;
-            }
-        }
-    }
-    export class Input extends Control {
-        private _value;
-        private _caption;
-        private _captionWidth;
-        private _inputType;
-        private _placeholder;
+    class TGridCell {
+        private grid;
+        private _col;
+        private _row;
+        private _visible;
+        private _dataType;
+        private _button;
+        private _checkBox;
+        private _color;
+        private _formula;
+        private _hint;
+        private _horizontalAlign;
+        private _html;
+        private _image;
+        private _object;
         private _readOnly;
-        private _showClearButton;
-        private _clearBtnWidth;
-        private _rows;
-        private _multiline;
-        private _resize;
-        private captionSpanElm;
-        private labelElm;
-        private inputElm;
-        private _inputControl;
-        private clearIconElm;
-        onMouseUp: changeCallback;
-        onKeyDown: notifyEventCallback;
-        onKeyUp: notifyEventCallback;
-        onChanged: notifyEventCallback;
-        onBlur: actionCallback;
-        onFocus: actionCallback;
-        onClearClick: actionCallback;
-        constructor(parent?: Control, options?: any);
-        get caption(): string;
-        set caption(value: string);
-        get captionWidth(): number | string;
-        set captionWidth(value: number | string);
-        get height(): number;
-        set height(value: number | string);
-        get value(): any;
-        set value(value: any);
-        get width(): number | string;
-        set width(value: number | string);
+        private _text;
+        private _value;
+        mergeRect: any;
+        constructor(grid: DataGrid, col: number, row: number);
+        get button(): boolean;
+        set button(value: boolean);
+        get checkBox(): boolean;
+        set checkBox(value: boolean);
+        get col(): number;
+        set col(value: number);
+        get color(): string;
+        set color(value: string);
+        get dataType(): number;
+        set dataType(value: number);
+        get displayValue(): any;
+        get formula(): any;
+        set formula(value: any);
+        get hint(): string;
+        set hint(value: string);
+        get horizontalAlign(): boolean;
+        set horizontalAlign(value: boolean);
+        get html(): string;
+        set html(value: string);
+        get image(): string;
+        set image(value: string);
+        get object(): any;
+        set object(value: any);
         get readOnly(): boolean;
         set readOnly(value: boolean);
-        get inputType(): InputType;
-        set inputType(type: InputType);
-        get inputControl(): InputControlType;
-        set enabled(value: boolean);
-        set placeholder(value: string);
-        get rows(): number;
-        set rows(value: number);
-        get multiline(): boolean;
-        set multiline(value: boolean);
-        get resize(): resizeType;
-        set resize(value: resizeType);
-        private _createInputElement;
-        private _inputCallback;
-        private _handleChange;
-        private _handleInputKeyDown;
-        private _handleInputKeyUp;
-        private _handleOnBlur;
-        private _handleOnFocus;
-        private _clearValue;
-        protected init(): void;
-        static create(options?: InputElement, parent?: Control): Promise<Input>;
+        get row(): number;
+        set row(value: number);
+        get text(): string;
+        set text(value: string);
+        get value(): any;
+        set value(value: any);
+        get visible(): boolean;
+        set visible(value: boolean);
+    }
+    class TGridColumn {
+        private grid;
+        private _colIdx;
+        private _dataType;
+        private _visible;
+        private _resizable;
+        private _sortable;
+        private _color;
+        private _horizontalAlign;
+        private _type;
+        private _readOnly;
+        private _lookupContext;
+        private _lookupTable;
+        private _suggestTable;
+        private _lookupField;
+        private _lookupDetailField;
+        private _lookupDetailValue;
+        private _lookupDetailType;
+        private _listOfValue;
+        private _format;
+        private _formula;
+        private _displayUserName;
+        private _binding;
+        private _checkBox;
+        private _button;
+        private _radioButton;
+        private _rows;
+        constructor(grid: IDataGrid, colIdx: number);
+        get asJSON(): any;
+        set asJSON(value: any);
+        get binding(): any;
+        set binding(value: any);
+        get button(): boolean;
+        set button(value: boolean);
+        get checkBox(): boolean;
+        set checkBox(value: boolean);
+        get colIdx(): number;
+        set colIdx(value: number);
+        get color(): string;
+        set color(value: string);
+        get dataType(): number;
+        set dataType(value: number);
+        get default(): boolean;
+        get format(): string;
+        set format(value: string);
+        get formula(): string;
+        set formula(value: string);
+        get horizontalAlign(): number;
+        set horizontalAlign(value: number);
+        get radioButton(): boolean;
+        set radioButton(value: boolean);
+        get readOnly(): boolean;
+        set readOnly(value: boolean);
+        get resizable(): boolean;
+        set resizable(value: boolean);
+        get sortable(): boolean;
+        set sortable(value: boolean);
+        get type(): string;
+        set type(value: string);
+        get visible(): boolean;
+        set visible(value: boolean);
+        get width(): number;
+        set width(value: number);
+    }
+    class TGridColumns {
+        private grid;
+        private columns;
+        private count;
+        constructor(grid: DataGrid);
+        clear(): void;
+        deleteCol(aCol: number): void;
+        getColumn(index: number): TGridColumn;
+        insertCol(colIdx: number): void;
+        loadFromJSON(value: any): void;
+        _loadFromJSON(value: any): void;
+        saveToJSON(): any[] | undefined;
+        setColCount(value: number): void;
+        updateColIndex(): void;
+    }
+    export type TGridLayout = 'grid' | 'card';
+    export class DataGrid extends Control {
+        private _colResizing;
+        private _listOfValue;
+        private _defaultRowHeight;
+        private _defaultColWidth;
+        private _layout;
+        private mergeRect;
+        private tableCells;
+        private tableSplitters;
+        private selectedCells;
+        private selectedCellsHighlight;
+        private placeHolder;
+        private _table;
+        private edit;
+        private cellHighlight;
+        private selectedRangeHighlight;
+        private _scrollBox;
+        private tableContainer;
+        private data;
+        columns: TGridColumns;
+        private gridRows;
+        private _colCount;
+        private _rowCount;
+        private editor;
+        private editorMode;
+        private _cardPanel;
+        private colWidths;
+        private _rowHeights;
+        private mouseDownPosX;
+        private resizeCol;
+        private origColWidth;
+        private _fixedCol;
+        private _fixedRow;
+        private _leftCol;
+        private _topRow;
+        private _row;
+        private _col;
+        private _readOnly;
+        private _scrollLeft;
+        private _scrollTop;
+        private _dataBindingContext;
+        private dataBinding;
+        private _skipRefreshData;
+        private _bindingRecordSet;
+        private showDataInternalFlag;
+        private _updateTableTimer;
+        private _sorting;
+        private _setScrollLeftInterval;
+        private _setScrollTopInterval;
+        private _restScrollboxHandler;
+        private scrollHorizontalTimer;
+        private scrollVerticalTimer;
+        private _updateTableInternalFlag;
+        private _totalColWidth;
+        private _totalRowHeight;
+        private visibleRowCount;
+        private visibleColCount;
+        private _needUpdate;
+        private showDataFlag;
+        private _showDataTimeout;
+        private _refreshDataTimeout;
+        private _destroyed;
+        private sortingCol;
+        private sortingDescending;
+        private _currCell;
+        private resizeTimer;
+        private lastClickCell;
+        private formula;
+        private formulaCell;
+        private origValue;
+        onSort: any;
+        onRowChange: any;
+        onCellSelect: any;
+        onColResize: any;
+        onButtonClick: any;
+        onCellClick: any;
+        onCellChange: any;
+        onDisplayCell: any;
+        onEditModeChanged: any;
+        onGetEditControl: any;
+        onKeyDown: any;
+        static create(options?: IDataGridElement, parent?: Container): Promise<DataGrid>;
+        constructor(parent?: Control, options?: IDataGridElement);
+        get fixedCol(): number;
+        set fixedCol(value: number);
+        get fixedRow(): number;
+        set fixedRow(value: number);
+        get layout(): TGridLayout;
+        set layout(value: TGridLayout);
+        init(): Promise<void>;
+        private _init;
+        calcTopRow(rowIdx: number): number;
+        cells(aCol: number, aRow: number, refresh?: boolean): TGridCell;
+        get col(): number;
+        set col(value: number);
+        get row(): number;
+        set row(value: number);
+        get colCount(): number;
+        set colCount(value: number);
+        get readOnly(): boolean;
+        set readOnly(value: boolean);
+        get rowCount(): number;
+        set rowCount(value: number);
+        get topRow(): number;
+        set topRow(value: number);
+        private _updateRowHeights;
+        setObject(aCol: number, aRow: number, aObject: any): void;
+        private setJSONValue;
+        private updateBindingData;
+        private _updateCurrCellValue;
+        private hideEditor;
+        checkEmptyRow(row: number): boolean;
+        setRowCount(aRowCount: number): void;
+        refresh(): void;
+        deleteRow(row: number): void;
+        getObject(aCol: number, aRow: number): any;
+        getValue(col: number, row: number): any;
+        setScrollLeft(): void;
+        setScrollLeftInternal(): void;
+        setScrollTop(): void;
+        setScrollTopInternal(): void;
+        setLeftCol(aLeftCol: number, skipSetScroll?: boolean): void;
+        private setTopRow;
+        showData(interval: number): void;
+        getTableCellByActualIndex(aColIdx: number, aRowIdx: number): HTMLTableCellElement | undefined;
+        getTableCell(aColIdx: number, aRowIdx: number): any;
+        highlightCurrCell(): "none" | undefined;
+        setCurrCell(aCol: number, aRow: number, triggerEvent?: boolean): void;
+        private highlightSelectedCell;
+        private _updateLanguage;
+        private _updateListOfValues;
+        private _handleScrollHorizontal;
+        _handleScrollVertical(sender: HTMLElement): void;
+        private _handleScroll;
+        private _handleFileDrop;
+        private _handleDragOver;
+        private _handleInput;
+        protected _handleMouseWheel(event: WheelEvent, delta: number): void;
+        private getColLeft;
+        private getColRight;
+        getColWidth(col: number): number;
+        private getRowHeight;
+        private _updateTotalRowHeight;
+        private _updateTotalColWidth;
+        private _updateTableRows;
+        private getActualColIdx;
+        private getActualRowIdx;
+        cols(colIdx: number): TGridColumn;
+        private _updateTableCellDiv;
+        private _updateTableCols;
+        setColWidth(aColIndex: number, width: number, trigerEvent?: boolean): void;
+        private _updateTableMergedCells;
+        sort(col: number, descending?: boolean): void;
+        private getEditor;
+        private handleEditControlChange;
+        protected _handleDblClick(event: Event, stopPropagation?: boolean): boolean;
+        protected colLeft(): void;
+        protected colRight(): void;
+        protected autoAddRow(): void;
+        protected rowDown(disableAutoAddRow?: boolean): void;
+        protected calcBottomRow(topRowIdx: number): number;
+        protected calcLeftCol(colIdx: number): number;
+        protected rowUp(): void;
+        protected restoreOrigCellValue(): void;
+        protected _handleKeyDown(event: KeyboardEvent, stopPropagation?: boolean): boolean | undefined;
+        protected _handleBlur(event: Event, stopPropagation?: boolean): boolean;
+        private showEditor;
+        protected _handleMouseDown(event: MouseEvent): boolean;
+        private _updateCell;
+        private checkCellReadOnly;
+        private toggleCellValue;
+        protected _handleMouseMove(event: MouseEvent): boolean;
+        protected _handleMouseUp(event: Event): boolean;
+        private _handleColumnResizeStart;
+        private _updateTableSplitter;
+        private _showDataInternalGrid;
+        private showDataInternal;
+        private _updateTableInternal;
+        enableUpdateTimer(updateRowHeightFlag?: boolean, updateColWidthFlag?: boolean): void;
     }
 }
-declare module "packages/input/src/index" {
-    export { Input, InputElement } from "packages/input/src/input";
+declare module "packages/data-grid/src/index" {
+    export { DataGrid } from "packages/data-grid/src/dataGrid";
 }
 declare module "packages/markdown/src/style/markdown.css" { }
 declare module "packages/markdown/src/markdown" {
@@ -7986,169 +9010,57 @@ declare module "packages/markdown/src/markdown" {
 declare module "packages/markdown/src/index" {
     export { Markdown, MarkdownElement } from "packages/markdown/src/markdown";
 }
-declare module "packages/tab/src/style/tab.css" {
-    import { ITabMediaQuery } from "packages/tab/src/tab";
-    export const getTabMediaQueriesStyleClass: (mediaQueries: ITabMediaQuery[]) => string;
-}
-declare module "packages/tab/src/tab" {
-    import { Control, Container, ContainerElement, IFont, IMediaQuery, IControlMediaQueryProps } from "packages/base/src/index";
-    import { Icon, IconElement } from "packages/icon/src/index";
-    import "packages/tab/src/style/tab.css";
-    type TabModeType = "horizontal" | "vertical";
-    type TabsEventCallback = (target: Tabs, activeTab: Tab) => void;
-    type TabCloseEventCallback = (target: Tabs, tab: Tab) => void;
-    export interface TabsElement extends ContainerElement {
-        activeTabIndex?: number;
-        closable?: boolean;
-        draggable?: boolean;
-        mode?: TabModeType;
-        mediaQueries?: ITabMediaQuery[];
-        onChanged?: TabsEventCallback;
-        onCloseTab?: TabCloseEventCallback;
-    }
-    export interface TabElement extends ContainerElement {
-        caption?: string;
-        icon?: IconElement;
-        font?: IFont;
-    }
-    export interface ITab extends TabElement {
-        children?: Control | Container;
-    }
-    export interface ITabMediaQueryProps extends IControlMediaQueryProps {
-        mode?: TabModeType;
-    }
-    export type ITabMediaQuery = IMediaQuery<ITabMediaQueryProps>;
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-tabs']: TabsElement;
-                ['i-tab']: TabElement;
-            }
-        }
-    }
-    export class Tabs extends Container {
-        private tabsNavElm;
-        private tabsContentElm;
-        private contentPanes;
-        private _tabs;
-        private _activeTabIndex;
-        private _closable;
-        private _draggable;
-        private _mediaQueries;
-        private accumTabIndex;
-        private curDragTab;
-        onChanged: TabsEventCallback;
-        onCloseTab: TabCloseEventCallback;
-        constructor(parent?: Container, options?: any);
-        get activeTab(): Tab;
-        get activeTabIndex(): number;
-        set activeTabIndex(index: number);
-        get items(): Tab[];
-        get closable(): boolean;
-        set closable(value: boolean);
-        get draggable(): boolean;
-        set draggable(value: boolean);
-        get mode(): TabModeType;
-        set mode(type: TabModeType);
-        get mediaQueries(): ITabMediaQuery[];
-        set mediaQueries(value: ITabMediaQuery[]);
-        add(options?: ITab): Tab;
-        delete(tab: Tab): void;
-        private appendTab;
-        private handleTagDrag;
-        _handleClick(event: Event): boolean;
-        private dragStartHandler;
-        private dragOverHandler;
-        private dropHandler;
-        refresh(): void;
-        protected init(): void;
-        static create(options?: TabsElement, parent?: Container): Promise<Tabs>;
-    }
-    export class Tab extends Container {
-        private tabContainer;
-        private captionElm;
-        private _contentElm;
-        private _icon;
-        protected _parent: Tabs;
-        active(): void;
-        protected addChildControl(control: Control): void;
-        protected removeChildControl(control: Control): void;
-        get caption(): string;
-        set caption(value: string);
-        close(): void;
-        get index(): number;
-        get icon(): Icon;
-        set icon(elm: Icon);
-        get innerHTML(): string;
-        set innerHTML(value: string);
-        get font(): IFont;
-        set font(value: IFont);
-        _handleClick(event: Event): boolean;
-        private handleCloseTab;
-        init(): void;
-        static create(options?: TabElement, parent?: Control): Promise<Tab>;
-    }
-}
-declare module "packages/tab/src/index" {
-    export { Tabs, TabsElement, Tab, TabElement } from "packages/tab/src/tab";
-}
-declare module "packages/markdown-editor/src/style/markdown-editor.css" { }
 declare module "packages/markdown-editor/src/markdown-editor" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import "packages/markdown-editor/src/style/markdown-editor.css";
+    import { Container, Control, ControlElement } from "packages/base/src/index";
     export interface MarkdownEditorElement extends ControlElement {
+        mode?: 'wysiwyg' | 'markdown';
+        previewStyle?: 'tab' | 'vertical';
+        value?: string;
+        viewer?: boolean;
+        width?: string;
+        height?: string;
     }
     global {
         namespace JSX {
             interface IntrinsicElements {
-                ['i-markdown-editor']: MarkdownEditorElement;
+                ["i-markdown-editor"]: MarkdownEditorElement;
             }
         }
     }
     export class MarkdownEditor extends Control {
-        private mdEditor;
-        private mdPreviewer;
-        private tabs;
-        private editTab;
-        private previewTab;
-        constructor(parent?: Control, options?: any);
-        private onViewPreview;
-        getValue(): string;
-        setValue(value: string): void;
-        protected init(): void;
+        private editor;
+        private plugin;
+        private editorObj;
+        private viewerObj;
+        private elm;
+        private _mode;
+        private _previewStyle;
+        private _value;
+        private _viewer;
+        private _heightValue;
+        get mode(): 'wysiwyg' | 'markdown';
+        set mode(value: 'wysiwyg' | 'markdown');
+        get previewStyle(): 'tab' | 'vertical';
+        set previewStyle(value: 'tab' | 'vertical');
+        get viewer(): boolean;
+        set viewer(value: boolean);
+        get value(): string;
+        set value(value: string);
+        get height(): string;
+        set height(value: string);
+        static create(options?: MarkdownEditorElement, parent?: Container): Promise<MarkdownEditor>;
+        constructor(parent?: Control, options?: MarkdownEditorElement);
+        loadLib(): Promise<unknown>;
+        loadPlugin(): Promise<unknown>;
+        private addCSS;
+        private initEditor;
+        private renderEditor;
+        getMarkdownValue(): any;
+        protected init(): Promise<void>;
     }
 }
 declare module "packages/markdown-editor/src/index" {
     export { MarkdownEditor, MarkdownEditorElement } from "packages/markdown-editor/src/markdown-editor";
-}
-declare module "packages/link/src/style/link.css" { }
-declare module "packages/link/src/link" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import "packages/link/src/style/link.css";
-    type TagertType = '_self' | '_blank' | '_parent' | '_top';
-    export interface LinkElement extends ControlElement {
-        href?: string;
-        target?: TagertType;
-    }
-    export class Link extends Control {
-        private _href;
-        private _target;
-        private _linkElm;
-        constructor(parent?: Control, options?: any);
-        get href(): string;
-        set href(value: string);
-        get target(): TagertType;
-        set target(value: TagertType);
-        append(children: Control | HTMLElement): void;
-        _handleClick(event: Event, stopPropagation?: boolean): boolean;
-        protected addChildControl(control: Control): void;
-        protected removeChildControl(control: Control): void;
-        protected init(): void;
-        static create(options?: LinkElement, parent?: Control): Promise<Link>;
-    }
-}
-declare module "packages/link/src/index" {
-    export { Link, LinkElement } from "packages/link/src/link";
 }
 declare module "packages/modal/src/style/modal.css" {
     export const wrapperStyle: string;
@@ -8231,273 +9143,6 @@ declare module "packages/modal/src/modal" {
 }
 declare module "packages/modal/src/index" {
     export { Modal, ModalElement, modalPopupPlacementType } from "packages/modal/src/modal";
-}
-declare module "packages/layout/src/style/panel.css" {
-    import { IGridLayoutMediaQuery, IStackMediaQuery, StackDirectionType } from "packages/layout/src/index";
-    export const panelStyle: string;
-    export const overflowStyle: string;
-    export const vStackStyle: string;
-    export const hStackStyle: string;
-    export const gridStyle: string;
-    export const getStackDirectionStyleClass: (direction: StackDirectionType) => string;
-    export const getStackMediaQueriesStyleClass: (mediaQueries: IStackMediaQuery[]) => string;
-    export const justifyContentStartStyle: string;
-    export const justifyContentCenterStyle: string;
-    export const justifyContentEndStyle: string;
-    export const justifyContentSpaceBetweenStyle: string;
-    export const alignItemsStretchStyle: string;
-    export const alignItemsStartStyle: string;
-    export const alignItemsCenterStyle: string;
-    export const alignItemsEndStyle: string;
-    export const getTemplateColumnsStyleClass: (columns: string[]) => string;
-    export const getTemplateRowsStyleClass: (rows: string[]) => string;
-    export const getTemplateAreasStyleClass: (templateAreas: string[][]) => string;
-    export const getSpacingValue: (value: string | number) => string;
-    export const getGridLayoutMediaQueriesStyleClass: (mediaQueries: IGridLayoutMediaQuery[]) => string;
-}
-declare module "packages/layout/src/stack" {
-    import { Container, ContainerElement, IMediaQuery, IBackground, PositionType, IControlMediaQueryProps } from "packages/base/src/index";
-    export interface IStackMediaQueryProps extends IControlMediaQueryProps {
-        direction?: StackDirectionType;
-        width?: number | string;
-        height?: number | string;
-        gap?: number | string;
-        background?: IBackground;
-        justifyContent?: StackJustifyContentType;
-        alignItems?: StackAlignItemsType;
-        position?: PositionType;
-        top?: number | string;
-    }
-    export type IStackMediaQuery = IMediaQuery<IStackMediaQueryProps>;
-    export type StackWrapType = 'nowrap' | 'wrap' | 'wrap-reverse' | 'initial' | 'inherit';
-    export type StackDirectionType = 'horizontal' | 'vertical';
-    export type StackJustifyContentType = "start" | "center" | "end" | "space-between";
-    export type StackAlignItemsType = "stretch" | "start" | "center" | "end";
-    export interface StackLayoutElement extends ContainerElement {
-        gap?: number | string;
-        wrap?: StackWrapType;
-        direction?: StackDirectionType;
-        justifyContent?: StackJustifyContentType;
-        alignItems?: StackAlignItemsType;
-        mediaQueries?: IStackMediaQuery[];
-    }
-    export type HStackHAlignmentType = StackJustifyContentType;
-    export type HStackVAlignmentType = StackAlignItemsType;
-    export type VStackHAlignmentType = StackAlignItemsType;
-    export type VStackVAlignmentType = StackJustifyContentType;
-    export interface HStackElement extends StackLayoutElement {
-        horizontalAlignment?: HStackHAlignmentType;
-        verticalAlignment?: HStackVAlignmentType;
-    }
-    export interface VStackElement extends StackLayoutElement {
-        horizontalAlignment?: VStackHAlignmentType;
-        verticalAlignment?: VStackVAlignmentType;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-stack']: StackLayoutElement;
-            }
-        }
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-hstack']: HStackElement;
-            }
-        }
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-vstack']: VStackElement;
-            }
-        }
-    }
-    export type StackLayoutAlignmentType<T extends StackDirectionType> = T extends 'horizontal' ? HStackHAlignmentType : VStackHAlignmentType;
-    export type StackVerticalAlignmentType<T extends StackDirectionType> = T extends 'horizontal' ? HStackVAlignmentType : VStackVAlignmentType;
-    export class StackLayout extends Container {
-        private _gap;
-        private _wrap;
-        private _direction;
-        private _justifyContent;
-        private _alignItems;
-        private _mediaQueries;
-        constructor(parent?: Container, options?: any);
-        static create(options?: StackLayoutElement, parent?: Container): Promise<StackLayout>;
-        get direction(): StackDirectionType;
-        set direction(value: StackDirectionType);
-        get justifyContent(): StackJustifyContentType;
-        set justifyContent(value: StackJustifyContentType);
-        get alignItems(): StackAlignItemsType;
-        set alignItems(value: StackAlignItemsType);
-        get gap(): number | string;
-        set gap(value: number | string);
-        get wrap(): StackWrapType;
-        set wrap(value: StackWrapType);
-        get mediaQueries(): IStackMediaQuery[];
-        set mediaQueries(value: IStackMediaQuery[]);
-        protected setAttributeToProperty<P extends keyof StackLayout>(propertyName: P): void;
-        protected init(): void;
-    }
-    export class HStack extends StackLayout {
-        private _horizontalAlignment;
-        private _verticalAlignment;
-        constructor(parent?: Container, options?: any);
-        get horizontalAlignment(): HStackHAlignmentType;
-        set horizontalAlignment(value: HStackHAlignmentType);
-        get verticalAlignment(): HStackVAlignmentType;
-        set verticalAlignment(value: HStackVAlignmentType);
-        protected setAttributeToProperty<P extends keyof HStack>(propertyName: P): void;
-        protected init(): void;
-        static create(options?: HStackElement, parent?: Container): Promise<HStack>;
-    }
-    export class VStack extends StackLayout {
-        private _horizontalAlignment;
-        private _verticalAlignment;
-        constructor(parent?: Container, options?: any);
-        get horizontalAlignment(): VStackHAlignmentType;
-        set horizontalAlignment(value: VStackHAlignmentType);
-        get verticalAlignment(): VStackVAlignmentType;
-        set verticalAlignment(value: VStackVAlignmentType);
-        protected setAttributeToProperty<P extends keyof VStack>(propertyName: P): void;
-        init(): void;
-        static create(options?: VStackElement, parent?: Container): Promise<VStack>;
-    }
-}
-declare module "packages/layout/src/panel" {
-    import { Control, Container, ContainerElement } from "packages/base/src/index";
-    export interface PanelElement extends ContainerElement {
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-panel']: PanelElement;
-            }
-        }
-    }
-    export class Panel extends Container {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-        connectedCallback(): void;
-        static create(options?: PanelElement, parent?: Control): Promise<Panel>;
-    }
-}
-declare module "packages/layout/src/grid" {
-    import { Control, ControlElement, Container, IMediaQuery, DisplayType, IBackground, IControlMediaQueryProps } from "packages/base/src/index";
-    export interface IGap {
-        row?: string | number;
-        column?: string | number;
-    }
-    export interface IGridLayoutMediaQueryProps extends IControlMediaQueryProps {
-        templateColumns?: string[];
-        templateRows?: string[];
-        templateAreas?: string[][];
-        display?: DisplayType;
-        gap?: IGap;
-        background?: IBackground;
-    }
-    export type IGridLayoutMediaQuery = IMediaQuery<IGridLayoutMediaQueryProps>;
-    export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
-    export type GridLayoutVerticalAlignmentType = "stretch" | "start" | "end" | "center" | "baseline";
-    export interface GridLayoutElement extends ControlElement {
-        templateColumns?: string[];
-        templateRows?: string[];
-        templateAreas?: string[][];
-        display?: DisplayType;
-        autoColumnSize?: string;
-        autoRowSize?: string;
-        columnsPerRow?: number;
-        gap?: IGap;
-        horizontalAlignment?: GridLayoutHorizontalAlignmentType;
-        verticalAlignment?: GridLayoutVerticalAlignmentType;
-        autoFillInHoles?: boolean;
-        mediaQueries?: IGridLayoutMediaQuery[];
-    }
-    export class GridLayout extends Container {
-        private _templateColumns;
-        private _templateRows;
-        private _templateAreas;
-        private _autoColumnSize;
-        private _autoRowSize;
-        protected _columnsPerRow: number;
-        private _gap;
-        private _horizontalAlignment;
-        private _verticalAlignment;
-        private _autoFillInHoles;
-        private _mediaQueries;
-        private _styleClassMap;
-        constructor(parent?: Control, options?: any);
-        static create(options?: GridLayoutElement, parent?: Container): Promise<GridLayout>;
-        get templateColumns(): string[];
-        set templateColumns(columns: string[]);
-        get templateRows(): string[];
-        set templateRows(rows: string[]);
-        get templateAreas(): string[][];
-        set templateAreas(value: string[][]);
-        get autoColumnSize(): string;
-        set autoColumnSize(value: string);
-        get autoRowSize(): string;
-        set autoRowSize(value: string);
-        get columnsPerRow(): number;
-        set columnsPerRow(value: number);
-        get gap(): IGap;
-        set gap(value: IGap);
-        get horizontalAlignment(): GridLayoutHorizontalAlignmentType;
-        set horizontalAlignment(value: GridLayoutHorizontalAlignmentType);
-        get verticalAlignment(): GridLayoutVerticalAlignmentType;
-        set verticalAlignment(value: GridLayoutVerticalAlignmentType);
-        get autoFillInHoles(): boolean;
-        set autoFillInHoles(value: boolean);
-        get mediaQueries(): IGridLayoutMediaQuery[];
-        set mediaQueries(value: IGridLayoutMediaQuery[]);
-        protected setAttributeToProperty<P extends keyof GridLayout>(propertyName: P): void;
-        protected removeStyleClass(name: string): void;
-        protected init(): void;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-grid-layout']: GridLayoutElement;
-            }
-        }
-    }
-}
-declare module "packages/layout/src/card" {
-    import { Container } from "packages/base/src/index";
-    import { GridLayout, GridLayoutElement } from "packages/layout/src/grid";
-    export interface CardLayoutElement extends GridLayoutElement {
-        cardMinWidth?: number | string;
-        cardHeight?: number | string;
-    }
-    export class CardLayout extends GridLayout {
-        private _cardMinWidth;
-        private _cardHeight;
-        constructor(parent?: Container, options?: any);
-        static create(options?: CardLayoutElement, parent?: Container): Promise<CardLayout>;
-        get cardMinWidth(): number | string;
-        set cardMinWidth(value: number | string);
-        get columnsPerRow(): number;
-        set columnsPerRow(value: number);
-        get cardHeight(): number | string;
-        set cardHeight(value: number | string);
-        updateGridTemplateColumns(): void;
-        protected setAttributeToProperty<P extends keyof CardLayout>(propertyName: P): void;
-        protected init(): void;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-card-layout']: CardLayoutElement;
-            }
-        }
-    }
-}
-declare module "packages/layout/src/index" {
-    export { StackDirectionType, StackLayout, VStack, VStackElement, HStack, HStackElement, IStackMediaQuery } from "packages/layout/src/stack";
-    export { Panel, PanelElement } from "packages/layout/src/panel";
-    export { CardLayout, CardLayoutElement } from "packages/layout/src/card";
-    export { IGridLayoutMediaQuery, GridLayout, GridLayoutElement } from "packages/layout/src/grid";
 }
 declare module "packages/menu/src/style/menu.css" {
     export const menuStyle: string;
@@ -8601,48 +9246,6 @@ declare module "packages/menu/src/menu" {
 }
 declare module "packages/menu/src/index" {
     export { Menu, IMenuItem, MenuElement } from "packages/menu/src/menu";
-}
-declare module "packages/label/src/style/label.css" {
-    export const captionStyle: string;
-}
-declare module "packages/label/src/label" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Link, LinkElement } from "packages/link/src/index";
-    type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
-    type OverflowWrapType = 'normal' | 'break-word' | 'anywhere' | 'inherit' | 'initial' | 'revert' | 'unset';
-    export interface LabelElement extends ControlElement {
-        caption?: string;
-        link?: LinkElement;
-        wordBreak?: WordBreakType;
-        overflowWrap?: OverflowWrapType;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-label']: LabelElement;
-            }
-        }
-    }
-    export class Label extends Control {
-        private captionSpan;
-        private _link;
-        constructor(parent?: Control, options?: any);
-        get caption(): string;
-        set caption(value: string);
-        get link(): Link;
-        set link(value: Link);
-        set height(value: number);
-        set width(value: number);
-        get wordBreak(): WordBreakType;
-        set wordBreak(value: WordBreakType);
-        get overflowWrap(): OverflowWrapType;
-        set overflowWrap(value: OverflowWrapType);
-        protected init(): void;
-        static create(options?: LabelElement, parent?: Control): Promise<Label>;
-    }
-}
-declare module "packages/label/src/index" {
-    export { Label, LabelElement } from "packages/label/src/label";
 }
 declare module "packages/tree-view/src/style/treeView.css" { }
 declare module "packages/tree-view/src/treeView" {
@@ -9596,28 +10199,6 @@ declare module "packages/carousel/src/carousel" {
 declare module "packages/carousel/src/index" {
     export { CarouselSlider } from "packages/carousel/src/carousel";
 }
-declare module "packages/ipfs/src/index" {
-    export interface ICidInfo {
-        cid: string;
-        links?: ICidInfo[];
-        name: string;
-        size: number;
-        type?: 'dir' | 'file';
-    }
-    export function parse(cid: string): {
-        code: number;
-        version: number;
-        multihash: {
-            code: number;
-            size: number;
-            digest: Uint8Array;
-            bytes: Uint8Array;
-        };
-        bytes: Uint8Array;
-    };
-    export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
-    export function hashContent(content: string, version?: number): Promise<string>;
-}
 declare module "packages/moment/src/index" {
     import Moment from 'moment';
     var moment: typeof Moment;
@@ -9654,10 +10235,11 @@ declare module "packages/video/src/index" {
 declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "packages/base/src/index";
-    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem } from "packages/application/src/index";
+    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IDataSchema, DataSchemaValidator, renderUI } from "packages/application/src/index";
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
     export { ComboBox, IComboItem } from "packages/combo-box/src/index";
+    export { DataGrid } from "packages/data-grid/src/index";
     export { Input } from "packages/input/src/index";
     export { Icon, IconName } from "packages/icon/src/index";
     export { Image } from "packages/image/src/index";
