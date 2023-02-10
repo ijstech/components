@@ -5276,21 +5276,21 @@ declare module "packages/label/src/index" {
 }
 declare module "packages/application/src/jsonUI" {
     import { Control } from "packages/base/src/index";
-    type IDataSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
-    type IDataSchema4Type = string | number | boolean | IDataSchema4Object | IDataSchema4Array | null;
-    interface IDataSchema4Object {
-        [key: string]: IDataSchema4Type;
+    type IJSONSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
+    type IJSONSchema4Type = string | number | boolean | IJSONSchema4Object | IJSONSchema4Array | null;
+    interface IJSONSchema4Object {
+        [key: string]: IJSONSchema4Type;
     }
-    interface IDataSchema4Array extends Array<IDataSchema4Type> {
+    interface IJSONSchema4Array extends Array<IJSONSchema4Type> {
     }
-    type IDataSchema4Version = string;
-    interface IDataSchema4 {
+    type IJSONSchema4Version = string;
+    interface IJSONSchema4 {
         id?: string | undefined;
         $ref?: string | undefined;
-        $schema?: IDataSchema4Version | undefined;
+        $schema?: IJSONSchema4Version | undefined;
         title?: string | undefined;
         description?: string | undefined;
-        default?: IDataSchema4Type | undefined;
+        default?: IJSONSchema4Type | undefined;
         multipleOf?: number | undefined;
         maximum?: number | undefined;
         exclusiveMaximum?: boolean | undefined;
@@ -5299,50 +5299,50 @@ declare module "packages/application/src/jsonUI" {
         maxLength?: number | undefined;
         minLength?: number | undefined;
         pattern?: string | undefined;
-        additionalItems?: boolean | IDataSchema4 | undefined;
-        items?: IDataSchema4 | IDataSchema4[] | undefined;
+        additionalItems?: boolean | IJSONSchema4 | undefined;
+        items?: IJSONSchema4 | IJSONSchema4[] | undefined;
         maxItems?: number | undefined;
         minItems?: number | undefined;
         uniqueItems?: boolean | undefined;
         maxProperties?: number | undefined;
         minProperties?: number | undefined;
         required?: boolean | string[] | undefined;
-        additionalProperties?: boolean | IDataSchema4 | undefined;
+        additionalProperties?: boolean | IJSONSchema4 | undefined;
         definitions?: {
-            [k: string]: IDataSchema4;
+            [k: string]: IJSONSchema4;
         } | undefined;
         properties?: {
-            [k: string]: IDataSchema4;
+            [k: string]: IJSONSchema4;
         } | undefined;
         patternProperties?: {
-            [k: string]: IDataSchema4;
+            [k: string]: IJSONSchema4;
         } | undefined;
         dependencies?: {
-            [k: string]: IDataSchema4 | string[];
+            [k: string]: IJSONSchema4 | string[];
         } | undefined;
-        enum?: IDataSchema4Type[] | undefined;
-        type?: IDataSchema4TypeName | IDataSchema4TypeName[] | undefined;
-        allOf?: IDataSchema4[] | undefined;
-        anyOf?: IDataSchema4[] | undefined;
-        oneOf?: IDataSchema4[] | undefined;
-        not?: IDataSchema4 | undefined;
+        enum?: IJSONSchema4Type[] | undefined;
+        type?: IJSONSchema4TypeName | IJSONSchema4TypeName[] | undefined;
+        allOf?: IJSONSchema4[] | undefined;
+        anyOf?: IJSONSchema4[] | undefined;
+        oneOf?: IJSONSchema4[] | undefined;
+        not?: IJSONSchema4 | undefined;
         extends?: string | string[] | undefined;
         [k: string]: any;
         format?: string | undefined;
     }
-    type IDataSchema6TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
-    type IDataSchema6Type = string | number | boolean | IDataSchema6Object | IDataSchema6Array | null;
-    interface IDataSchema6Object {
-        [key: string]: IDataSchema6Type;
+    type IJSONSchema6TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
+    type IJSONSchema6Type = string | number | boolean | IJSONSchema6Object | IJSONSchema6Array | null;
+    interface IJSONSchema6Object {
+        [key: string]: IJSONSchema6Type;
     }
-    interface IDataSchema6Array extends Array<IDataSchema6Type> {
+    interface IJSONSchema6Array extends Array<IJSONSchema6Type> {
     }
-    type IDataSchema6Version = string;
-    type IDataSchema6Definition = IDataSchema6 | boolean;
-    interface IDataSchema6 {
+    type IJSONSchema6Version = string;
+    type IJSONSchema6Definition = IJSONSchema6 | boolean;
+    interface IJSONSchema6 {
         $id?: string | undefined;
         $ref?: string | undefined;
-        $schema?: IDataSchema6Version | undefined;
+        $schema?: IJSONSchema6Version | undefined;
         multipleOf?: number | undefined;
         maximum?: number | undefined;
         exclusiveMaximum?: number | undefined;
@@ -5351,62 +5351,62 @@ declare module "packages/application/src/jsonUI" {
         maxLength?: number | undefined;
         minLength?: number | undefined;
         pattern?: string | undefined;
-        items?: IDataSchema6Definition | IDataSchema6Definition[] | undefined;
-        additionalItems?: IDataSchema6Definition | undefined;
+        items?: IJSONSchema6Definition | IJSONSchema6Definition[] | undefined;
+        additionalItems?: IJSONSchema6Definition | undefined;
         maxItems?: number | undefined;
         minItems?: number | undefined;
         uniqueItems?: boolean | undefined;
-        contains?: IDataSchema6Definition | undefined;
+        contains?: IJSONSchema6Definition | undefined;
         maxProperties?: number | undefined;
         minProperties?: number | undefined;
         required?: string[] | undefined;
         properties?: {
-            [k: string]: IDataSchema6Definition;
+            [k: string]: IJSONSchema6Definition;
         } | undefined;
         patternProperties?: {
-            [k: string]: IDataSchema6Definition;
+            [k: string]: IJSONSchema6Definition;
         } | undefined;
-        additionalProperties?: IDataSchema6Definition | undefined;
+        additionalProperties?: IJSONSchema6Definition | undefined;
         dependencies?: {
-            [k: string]: IDataSchema6Definition | string[];
+            [k: string]: IJSONSchema6Definition | string[];
         } | undefined;
-        propertyNames?: IDataSchema6Definition | undefined;
-        enum?: IDataSchema6Type[] | undefined;
-        const?: IDataSchema6Type | undefined;
-        type?: IDataSchema6TypeName | IDataSchema6TypeName[] | undefined;
-        allOf?: IDataSchema6Definition[] | undefined;
-        anyOf?: IDataSchema6Definition[] | undefined;
-        oneOf?: IDataSchema6Definition[] | undefined;
-        not?: IDataSchema6Definition | undefined;
+        propertyNames?: IJSONSchema6Definition | undefined;
+        enum?: IJSONSchema6Type[] | undefined;
+        const?: IJSONSchema6Type | undefined;
+        type?: IJSONSchema6TypeName | IJSONSchema6TypeName[] | undefined;
+        allOf?: IJSONSchema6Definition[] | undefined;
+        anyOf?: IJSONSchema6Definition[] | undefined;
+        oneOf?: IJSONSchema6Definition[] | undefined;
+        not?: IJSONSchema6Definition | undefined;
         definitions?: {
-            [k: string]: IDataSchema6Definition;
+            [k: string]: IJSONSchema6Definition;
         } | undefined;
         title?: string | undefined;
         description?: string | undefined;
-        default?: IDataSchema6Type | undefined;
-        examples?: IDataSchema6Type[] | undefined;
+        default?: IJSONSchema6Type | undefined;
+        examples?: IJSONSchema6Type[] | undefined;
         format?: string | undefined;
     }
-    type IDataSchema7TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
-    type IDataSchema7Type = string | number | boolean | IDataSchema7Object | IDataSchema7Array | null;
-    interface IDataSchema7Object {
-        [key: string]: IDataSchema7Type;
+    type IJSONSchema7TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
+    type IJSONSchema7Type = string | number | boolean | IJSONSchema7Object | IJSONSchema7Array | null;
+    interface IJSONSchema7Object {
+        [key: string]: IJSONSchema7Type;
     }
-    interface IDataSchema7Array extends Array<IDataSchema7Type> {
+    interface IJSONSchema7Array extends Array<IJSONSchema7Type> {
     }
-    type IDataSchema7Version = string;
-    type IDataSchema7Definition = IDataSchema7 | boolean;
-    interface IDataSchema7 {
+    type IJSONSchema7Version = string;
+    type IJSONSchema7Definition = IJSONSchema7 | boolean;
+    interface IJSONSchema7 {
         $id?: string | undefined;
         $ref?: string | undefined;
-        $schema?: IDataSchema7Version | undefined;
+        $schema?: IJSONSchema7Version | undefined;
         $comment?: string | undefined;
         $defs?: {
-            [key: string]: IDataSchema7Definition;
+            [key: string]: IJSONSchema7Definition;
         } | undefined;
-        type?: IDataSchema7TypeName | IDataSchema7TypeName[] | undefined;
-        enum?: IDataSchema7Type[] | undefined;
-        const?: IDataSchema7Type | undefined;
+        type?: IJSONSchema7TypeName | IJSONSchema7TypeName[] | undefined;
+        enum?: IJSONSchema7Type[] | undefined;
+        const?: IJSONSchema7Type | undefined;
         multipleOf?: number | undefined;
         maximum?: number | undefined;
         exclusiveMaximum?: number | undefined;
@@ -5415,45 +5415,45 @@ declare module "packages/application/src/jsonUI" {
         maxLength?: number | undefined;
         minLength?: number | undefined;
         pattern?: string | undefined;
-        items?: IDataSchema7Definition | IDataSchema7Definition[] | undefined;
-        additionalItems?: IDataSchema7Definition | undefined;
+        items?: IJSONSchema7Definition | IJSONSchema7Definition[] | undefined;
+        additionalItems?: IJSONSchema7Definition | undefined;
         maxItems?: number | undefined;
         minItems?: number | undefined;
         uniqueItems?: boolean | undefined;
-        contains?: IDataSchema7 | undefined;
+        contains?: IJSONSchema7 | undefined;
         maxProperties?: number | undefined;
         minProperties?: number | undefined;
         required?: string[] | undefined;
         properties?: {
-            [key: string]: IDataSchema7Definition;
+            [key: string]: IJSONSchema7Definition;
         } | undefined;
         patternProperties?: {
-            [key: string]: IDataSchema7Definition;
+            [key: string]: IJSONSchema7Definition;
         } | undefined;
-        additionalProperties?: IDataSchema7Definition | undefined;
+        additionalProperties?: IJSONSchema7Definition | undefined;
         dependencies?: {
-            [key: string]: IDataSchema7Definition | string[];
+            [key: string]: IJSONSchema7Definition | string[];
         } | undefined;
-        propertyNames?: IDataSchema7Definition | undefined;
-        if?: IDataSchema7Definition | undefined;
-        then?: IDataSchema7Definition | undefined;
-        else?: IDataSchema7Definition | undefined;
-        allOf?: IDataSchema7Definition[] | undefined;
-        anyOf?: IDataSchema7Definition[] | undefined;
-        oneOf?: IDataSchema7Definition[] | undefined;
-        not?: IDataSchema7Definition | undefined;
+        propertyNames?: IJSONSchema7Definition | undefined;
+        if?: IJSONSchema7Definition | undefined;
+        then?: IJSONSchema7Definition | undefined;
+        else?: IJSONSchema7Definition | undefined;
+        allOf?: IJSONSchema7Definition[] | undefined;
+        anyOf?: IJSONSchema7Definition[] | undefined;
+        oneOf?: IJSONSchema7Definition[] | undefined;
+        not?: IJSONSchema7Definition | undefined;
         format?: string | undefined;
         contentMediaType?: string | undefined;
         contentEncoding?: string | undefined;
         definitions?: {
-            [key: string]: IDataSchema7Definition;
+            [key: string]: IJSONSchema7Definition;
         } | undefined;
         title?: string | undefined;
         description?: string | undefined;
-        default?: IDataSchema7Type | undefined;
+        default?: IJSONSchema7Type | undefined;
         readOnly?: boolean | undefined;
         writeOnly?: boolean | undefined;
-        examples?: IDataSchema7Type | undefined;
+        examples?: IJSONSchema7Type | undefined;
     }
     interface ValidationResult {
         valid: boolean;
@@ -5463,13 +5463,24 @@ declare module "packages/application/src/jsonUI" {
         property: string;
         message: string;
     }
-    export type IDataSchema = IDataSchema4 | IDataSchema6 | IDataSchema7;
+    export type IDataSchema = IJSONSchema4 | IJSONSchema6 | IJSONSchema7;
     export const DataSchemaValidator: {
         checkPropertyChange: (value: any, schema: IDataSchema, property: string) => ValidationResult | null;
         mustBeValid: (result: ValidationResult) => void;
         validate: (instance: any, schema: IDataSchema, options: any) => ValidationResult | null;
     };
-    export function renderUI(target: Control, jsonSchema: IDataSchema, callback: (result: boolean, data: any) => void, data?: any, options?: any): Promise<void>;
+    export interface IRenderUIOptions {
+        columnsPerRow?: number;
+        showClearButton?: boolean;
+        clearButtonCaption?: string;
+        confirmButtonCaption?: string;
+        confirmButtonBackgroundColor?: string;
+        confirmButtonFontColor?: string;
+        columnWidth?: string | number;
+        clearButtonBackgroundColor?: string;
+        clearButtonFontColor?: string;
+    }
+    export function renderUI(target: Control, jsonSchema: IDataSchema, callback: (result: boolean, data: any) => void, data?: any, options?: IRenderUIOptions): void;
 }
 declare module "packages/application/src/index" {
     import { Module } from "packages/module/src/index";
@@ -5561,15 +5572,15 @@ declare module "packages/application/src/index" {
         loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
             [name: string]: any;
         } | null>;
-        loadModule(modulePath: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
+        loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
         private getModulePath;
-        newModule(module: string, options?: IHasDependencies, forceInit?: boolean): Promise<Module | null>;
+        newModule(module: string, options?: IHasDependencies): Promise<Module | null>;
         copyToClipboard(value: string): Promise<boolean>;
         xssSanitize(value: string): string;
     }
     export const application: Application;
     export { EventBus, IEventBus } from "packages/application/src/event-bus";
-    export { IDataSchema, renderUI, DataSchemaValidator } from "packages/application/src/jsonUI";
+    export { IDataSchema, IRenderUIOptions, renderUI, DataSchemaValidator } from "packages/application/src/jsonUI";
     export default application;
 }
 declare module "packages/code-editor/src/editor.api" {
@@ -9014,11 +9025,18 @@ declare module "packages/markdown-editor/src/markdown-editor" {
     import { Container, Control, ControlElement } from "packages/base/src/index";
     export interface MarkdownEditorElement extends ControlElement {
         mode?: 'wysiwyg' | 'markdown';
+        theme?: 'light' | 'dark';
         previewStyle?: 'tab' | 'vertical';
         value?: string;
         viewer?: boolean;
         width?: string;
         height?: string;
+        toolbarItems?: any[];
+        plugins?: any[];
+        widgetRules?: {
+            rule: string | object;
+            toDOM: (text: string) => any;
+        }[];
     }
     global {
         namespace JSX {
@@ -9029,17 +9047,23 @@ declare module "packages/markdown-editor/src/markdown-editor" {
     }
     export class MarkdownEditor extends Control {
         private editor;
-        private plugin;
+        private editorPlugins;
         private editorObj;
         private viewerObj;
         private elm;
+        private _theme;
         private _mode;
         private _previewStyle;
         private _value;
         private _viewer;
         private _heightValue;
+        private _toolbarItems;
+        private _customPlugins;
+        private _widgetRules;
         get mode(): 'wysiwyg' | 'markdown';
         set mode(value: 'wysiwyg' | 'markdown');
+        get theme(): 'light' | 'dark';
+        set theme(value: 'light' | 'dark');
         get previewStyle(): 'tab' | 'vertical';
         set previewStyle(value: 'tab' | 'vertical');
         get viewer(): boolean;
@@ -9048,14 +9072,29 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         set value(value: string);
         get height(): string;
         set height(value: string);
+        get toolbarItems(): any[];
+        set toolbarItems(items: any[]);
+        get plugins(): any[];
+        set plugins(plugins: any[]);
+        get widgetRules(): {
+            rule: string | object;
+            toDOM: (text: string) => any;
+        }[];
+        set widgetRules(rules: {
+            rule: string | object;
+            toDOM: (text: string) => any;
+        }[]);
         static create(options?: MarkdownEditorElement, parent?: Container): Promise<MarkdownEditor>;
         constructor(parent?: Control, options?: MarkdownEditorElement);
-        loadLib(): Promise<unknown>;
-        loadPlugin(): Promise<unknown>;
+        private loadLib;
+        private loadPlugin;
+        private loadPlugins;
         private addCSS;
         private initEditor;
         private renderEditor;
         getMarkdownValue(): any;
+        getEditorElm(): any;
+        getViewerElm(): any;
         protected init(): Promise<void>;
     }
 }
@@ -10235,7 +10274,7 @@ declare module "packages/video/src/index" {
 declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "packages/base/src/index";
-    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IDataSchema, DataSchemaValidator, renderUI } from "packages/application/src/index";
+    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IDataSchema, IRenderUIOptions, DataSchemaValidator, renderUI } from "packages/application/src/index";
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
     export { ComboBox, IComboItem } from "packages/combo-box/src/index";
