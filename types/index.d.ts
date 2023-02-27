@@ -4325,7 +4325,7 @@ declare module "packages/ipfs/src/index" {
         bytes: Uint8Array;
     };
     export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
-    export function hashContent(content: string, version?: number): Promise<string>;
+    export function hashContent(content: string, version?: number): Promise<ICidInfo>;
     export function hashFile(file: File, version?: number): Promise<{
         cid: string;
         size: number;
@@ -4549,6 +4549,7 @@ declare module "packages/upload/src/upload" {
         toBase64: (file: File) => Promise<unknown>;
         preview(uri: string): void;
         clear(): void;
+        upload(endpoint: string): Promise<void>;
         addFiles(): void;
         addFolder(): void;
         protected init(): void;
@@ -4997,6 +4998,18 @@ declare module "packages/upload/src/upload-modal" {
         serverUrl?: string;
         onUploaded?: UploadedCallback;
     }
+    export interface IIPFSItem {
+        cid: string;
+        name: string;
+        size: number;
+        type: 'dir' | 'file';
+        links?: IIPFSItem[];
+    }
+    export interface IUploadResult {
+        success: boolean;
+        error?: string;
+        data?: IIPFSItem;
+    }
     export class UploadModal extends Control {
         private _uploadModalElm;
         private _closeBtnElm;
@@ -5043,7 +5056,7 @@ declare module "packages/upload/src/upload-modal" {
     }
 }
 declare module "packages/upload/src/index" {
-    export { Upload, UploadElement } from "packages/upload/src/upload";
+    export { Upload, UploadElement, UploadRawFile } from "packages/upload/src/upload";
     export { UploadModal } from "packages/upload/src/upload-modal";
 }
 declare module "packages/tab/src/style/tab.css" {
@@ -5855,6 +5868,7 @@ declare module "packages/application/src/index" {
     import { Module } from "packages/module/src/index";
     import { EventBus } from "packages/application/src/event-bus";
     import { GlobalEvents } from "packages/application/src/globalEvent";
+    import { ICidInfo } from "packages/ipfs/src/index";
     export interface IHasDependencies {
         assets?: string;
         rootDir?: string;
@@ -5906,13 +5920,10 @@ declare module "packages/application/src/index" {
         Symlink = 4,
         HAMTShard = 5
     }
-    export type IIPFSDirectory = IIPFSItem[];
-    export interface IIPFSItem {
-        cid: string;
-        name: string;
-        size: number;
-        type: 'dir' | 'file';
-        links?: IIPFSItem[];
+    export interface IUploadResult {
+        success: boolean;
+        error?: string;
+        data?: ICidInfo;
     }
     class Application {
         private static _instance;
@@ -5935,13 +5946,15 @@ declare module "packages/application/src/index" {
         static get Instance(): Application;
         assets(name: string): any;
         postData(endpoint: string, data: any): Promise<any>;
-        upload(): Promise<void>;
-        uploadFileContent(fileName: string, content: string, endpoint?: string): Promise<void>;
+        showUploadModal(): Promise<void>;
+        uploadData(fileName: string, content: string, endpoint?: string): Promise<IUploadResult>;
+        uploadFile(extensions?: string | string[]): Promise<IUploadResult>;
+        private uploadToIPFS;
         private verifyScript;
         private getScript;
         loadScript(modulePath: string, script: string): Promise<boolean>;
         getContent(modulePath: string): Promise<string>;
-        fetchDirectoryInfoByCID(ipfsCid: string): Promise<IIPFSItem[]>;
+        fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
         getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
         loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
             [name: string]: any;

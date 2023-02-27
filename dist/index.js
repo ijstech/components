@@ -17879,7 +17879,10 @@ function parse(cid) {
   return import_ipfs_utils.default.parse(cid);
 }
 async function hashItems(items, version) {
-  return await import_ipfs_utils.default.hashItems(items || [], version);
+  let result = await import_ipfs_utils.default.hashItems(items || [], version);
+  result.type = "dir";
+  result.links = items;
+  return result;
 }
 async function hashContent(content, version) {
   if (version == void 0)
@@ -17896,7 +17899,8 @@ async function hashContent(content, version) {
     });
   } else
     result = await import_ipfs_utils.default.hashFile(content, version);
-  return result.cid;
+  result.type = "file";
+  return result;
 }
 async function hashFile(file, version) {
   if (version == void 0)
@@ -18942,6 +18946,11 @@ var Upload = class extends Control {
     this._dt = new DataTransfer();
     this.isPreviewing = false;
     this._fileList = [];
+  }
+  async upload(endpoint) {
+    let cid = await hashFiles(this._fileList);
+    let result = await application.postData(endpoint, cid);
+    console.dir(result);
   }
   addFiles() {
   }
@@ -24566,6 +24575,7 @@ function convertFieldNameToLabel(name) {
 }
 
 // packages/application/src/index.ts
+var API_IPFS_BASEURL = "/api/ipfs/v0";
 var IpfsDataType;
 (function(IpfsDataType2) {
   IpfsDataType2[IpfsDataType2["Raw"] = 0] = "Raw";
@@ -24621,13 +24631,91 @@ var Application = class {
     });
     return response.json();
   }
-  async upload() {
+  async showUploadModal() {
     if (!this._uploadModal)
       this._uploadModal = new UploadModal();
     this._uploadModal.show();
   }
-  async uploadFileContent(fileName, content, endpoint) {
-    endpoint = endpoint || "/ipfs";
+  async uploadData(fileName, content, endpoint) {
+    let cid = await hashContent(content);
+    let item = {
+      cid: cid.cid,
+      name: fileName,
+      size: cid.size,
+      type: "file"
+    };
+    let dir = await hashItems([item]);
+    let { data } = await this.postData(`${API_IPFS_BASEURL}/upload`, dir);
+    if ((data == null ? void 0 : data[dir.cid]) && (data == null ? void 0 : data[cid.cid])) {
+      let dirStatus = await this.uploadToIPFS(data[dir.cid], JSON.stringify(dir), dir.cid);
+      let fileStatus = await this.uploadToIPFS(data[cid.cid], content, fileName);
+      if (dirStatus == 200 && fileStatus == 200)
+        return { success: true, data: dir };
+      else
+        return { success: false, error: `Failed to upload file. Status code: ${fileStatus}` };
+    } else
+      return { success: false };
+  }
+  async uploadFile(extensions) {
+    return new Promise(async (resolve, reject) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      if (extensions) {
+        const accept = Array.isArray(extensions) ? extensions.map((ext) => `.${ext}`).join(",") : `.${extensions}`;
+        input.accept = accept;
+      }
+      ;
+      input.addEventListener("change", async () => {
+        var _a;
+        const file = (_a = input.files) == null ? void 0 : _a[0];
+        if (file) {
+          file.path = `/${file.name}`;
+          file.cid = await hashFile(file);
+          let dir = await hashFiles([file]);
+          let { data } = await this.postData(`${API_IPFS_BASEURL}/upload`, dir);
+          if (data == null ? void 0 : data[file.cid.cid]) {
+            let result = await this.uploadToIPFS(data[file.cid.cid], file, file.name);
+          }
+          ;
+          if (data == null ? void 0 : data[dir.cid]) {
+            let result = await this.uploadToIPFS(data[dir.cid], JSON.stringify(dir), dir.cid);
+          }
+          ;
+          resolve({
+            success: true,
+            data
+          });
+        } else {
+          reject({ success: false, error: "No file selected" });
+        }
+      });
+      input.click();
+    });
+  }
+  async uploadToIPFS(url, data, fileName) {
+    return new Promise(async (resolve) => {
+      if (typeof data == "string") {
+        let result = await fetch(url, {
+          method: "PUT",
+          body: data
+        });
+        resolve(result.status);
+      } else {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          let result = await fetch(url, {
+            method: "PUT",
+            body: reader.result
+          });
+          resolve(result.status);
+        };
+        reader.onerror = () => {
+          resolve(0);
+        };
+        reader.readAsArrayBuffer(data);
+      }
+      ;
+    });
   }
   async verifyScript(modulePath, script) {
     try {
