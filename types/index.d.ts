@@ -4330,7 +4330,7 @@ declare module "packages/ipfs/src/index" {
         cid: string;
         size: number;
     }>;
-    export interface IFile {
+    export interface IFile extends File {
         path?: string;
         cid?: {
             cid: string;
@@ -4986,7 +4986,7 @@ declare module "packages/upload/src/upload-modal" {
         FAILED = 2,
         UPLOADING = 3
     }
-    type UploadedCallback = (target: UploadModal, cid: string) => void;
+    type UploadedCallback = (target: UploadModal, file: File, cid: string) => void;
     global {
         namespace JSX {
             interface IntrinsicElements {
@@ -5028,6 +5028,7 @@ declare module "packages/upload/src/upload-modal" {
         private currentRequest;
         private currentPage;
         private currentFilterStatus;
+        private files;
         private fileListData;
         constructor(parent?: Control, options?: any);
         get serverUrl(): string;
@@ -5047,7 +5048,7 @@ declare module "packages/upload/src/upload-modal" {
         private onChangeFile;
         private onRemove;
         private onRemoveFile;
-        private uploadRequest;
+        private getDirItems;
         private onUpload;
         private reset;
         private toggle;
@@ -5843,6 +5844,7 @@ declare module "packages/application/src/jsonUI" {
     }
     interface ValidationError {
         property: string;
+        scope: string;
         message: string;
     }
     export type IDataSchema = IJSONSchema4 | IJSONSchema6 | IJSONSchema7;
@@ -5947,9 +5949,12 @@ declare module "packages/application/src/index" {
         assets(name: string): any;
         postData(endpoint: string, data: any): Promise<any>;
         showUploadModal(): Promise<void>;
+        getUploadUrl(item: ICidInfo): Promise<{
+            [cid: string]: string;
+        }>;
         uploadData(fileName: string, content: string, endpoint?: string): Promise<IUploadResult>;
         uploadFile(extensions?: string | string[]): Promise<IUploadResult>;
-        private uploadToIPFS;
+        upload(url: string, data: File | string): Promise<number>;
         private verifyScript;
         private getScript;
         loadScript(modulePath: string, script: string): Promise<boolean>;
