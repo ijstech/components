@@ -24762,7 +24762,7 @@ var Application = class {
           ;
           resolve({
             success: true,
-            data
+            data: dir
           });
         } else {
           reject({ success: false, error: "No file selected" });
