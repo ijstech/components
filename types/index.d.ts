@@ -5927,6 +5927,10 @@ declare module "packages/application/src/index" {
         error?: string;
         data?: ICidInfo;
     }
+    export interface IUploadItem {
+        cid: ICidInfo;
+        data?: string;
+    }
     class Application {
         private static _instance;
         private modules;
@@ -5952,8 +5956,9 @@ declare module "packages/application/src/index" {
         getUploadUrl(item: ICidInfo): Promise<{
             [cid: string]: string;
         }>;
-        uploadData(fileName: string, content: string, endpoint?: string): Promise<IUploadResult>;
+        uploadData(fileName: string, content: string): Promise<IUploadResult>;
         uploadFile(extensions?: string | string[]): Promise<IUploadResult>;
+        uploadTo(targetCid: string, items: IUploadItem[]): Promise<ICidInfo | undefined>;
         upload(url: string, data: File | string): Promise<number>;
         private verifyScript;
         private getScript;
