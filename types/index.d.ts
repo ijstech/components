@@ -5958,7 +5958,7 @@ declare module "packages/application/src/index" {
         }>;
         uploadData(fileName: string, content: string): Promise<IUploadResult>;
         uploadFile(extensions?: string | string[]): Promise<IUploadResult>;
-        uploadTo(targetCid: string, items: IUploadItem[]): Promise<ICidInfo | undefined>;
+        uploadTo(targetCid: string, items: IUploadItem[]): Promise<IUploadResult>;
         upload(url: string, data: File | string): Promise<number>;
         private verifyScript;
         private getScript;

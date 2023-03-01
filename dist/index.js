@@ -24815,7 +24815,10 @@ var Application = class {
           throw new Error(`File upload failed: ${newCid.cid}`);
       }
       ;
-      return newCid;
+      return {
+        success: true,
+        data: newCid
+      };
     }
     ;
     throw new Error(`Target CID not found: ${targetCid}`);
