@@ -24989,13 +24989,14 @@ var Application = class {
   }
   async newModule(module2, options) {
     if (options) {
-      this._initOptions = options;
-      if (!this._assets && this._initOptions.assets)
-        this._assets = await this.loadPackage(this._initOptions.assets) || {};
-      if (this._initOptions.dependencies) {
-        for (let p in this._initOptions.dependencies) {
-          if (p != this._initOptions.main)
-            await this.loadPackage(p, this._initOptions.dependencies[p]);
+      if (!this._initOptions)
+        this._initOptions = options;
+      if (!this._assets && options.assets)
+        this._assets = await this.loadPackage(options.assets) || {};
+      if (options.dependencies) {
+        for (let p in options.dependencies) {
+          if (p != options.main)
+            await this.loadPackage(p, options.dependencies[p]);
         }
         ;
       }
@@ -25058,6 +25059,7 @@ var Application = class {
         ;
       }
     }
+    ;
     return null;
   }
   async copyToClipboard(value) {
