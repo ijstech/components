@@ -3980,6 +3980,7 @@ declare module "packages/base/src/control" {
         constructor(parent?: Control, options?: any, defaults?: any);
         private getMarginStyle;
         private getPaddingStyle;
+        protected xssSanitize(value: string): string;
         get margin(): ISpace;
         set margin(value: ISpace);
         protected get marginStyle(): (side: BorderStylesSideType) => number;
@@ -4464,6 +4465,7 @@ declare module "packages/upload/src/style/upload.css" { }
 declare module "packages/upload/src/upload" {
     import { Control, ControlElement } from "packages/base/src/index";
     import "packages/upload/src/style/upload.css";
+    type beforeDropCallback = (target: Upload) => void;
     type changedCallback = (target: Upload, files: UploadRawFile[]) => void;
     type removedCallback = (target: Upload, file?: File) => void;
     type uploadingCallback = (target: Upload, file: File) => Promise<boolean>;
@@ -4484,6 +4486,7 @@ declare module "packages/upload/src/upload" {
         draggable?: boolean;
         caption?: string;
         showFileList?: boolean;
+        onBeforeDrop?: beforeDropCallback;
         onChanged?: changedCallback;
         onRemoved?: removedCallback;
         onAdded?: addedCallback;
@@ -4493,6 +4496,7 @@ declare module "packages/upload/src/upload" {
         fileList?: File[];
         caption?: string;
         disabled?: boolean;
+        onBeforeDrop?: any;
         onDrop?: any;
     }
     global {
@@ -4518,6 +4522,7 @@ declare module "packages/upload/src/upload" {
         private _draggable;
         private _multiple;
         private isPreviewing;
+        onBeforeDrop: beforeDropCallback;
         onChanged: changedCallback;
         onRemoved: removedCallback;
         onAdded: addedCallback;
@@ -4979,6 +4984,7 @@ declare module "packages/layout/src/index" {
 declare module "packages/upload/src/style/upload-modal.css" { }
 declare module "packages/upload/src/upload-modal" {
     import { Control, ControlElement } from "packages/base/src/index";
+    import { ICidInfo } from "packages/ipfs/src/index";
     import "packages/upload/src/style/upload-modal.css";
     export enum FILE_STATUS {
         LISTED = 0,
@@ -4986,16 +4992,18 @@ declare module "packages/upload/src/upload-modal" {
         FAILED = 2,
         UPLOADING = 3
     }
+    type BeforeUploadedCallback = (target: UploadModal, data: ICidInfo) => void;
     type UploadedCallback = (target: UploadModal, file: File, cid: string) => void;
     global {
         namespace JSX {
             interface IntrinsicElements {
-                ["i-upload-modal"]: UploadModalElement;
+                ['i-upload-modal']: UploadModalElement;
             }
         }
     }
     export interface UploadModalElement extends ControlElement {
         serverUrl?: string;
+        onBeforeUploaded: BeforeUploadedCallback;
         onUploaded?: UploadedCallback;
     }
     export interface IIPFSItem {
@@ -5015,6 +5023,8 @@ declare module "packages/upload/src/upload-modal" {
         private _closeBtnElm;
         private _uploadBoxElm;
         private _fileUploader;
+        private _fileIcon;
+        private _dragLabelElm;
         private _statusFilterElm;
         private _filterBarElm;
         private _filterActionsElm;
@@ -5023,6 +5033,7 @@ declare module "packages/upload/src/upload-modal" {
         private _notePnlElm;
         private _paginationElm;
         private _serverUrl;
+        onBeforeUploaded: BeforeUploadedCallback;
         onUploaded: UploadedCallback;
         private isForcedCancelled;
         private currentRequest;
@@ -5035,12 +5046,14 @@ declare module "packages/upload/src/upload-modal" {
         set serverUrl(value: string);
         show(): Promise<void>;
         hide(): void;
+        private onBeforeDrop;
         private onBeforeUpload;
         private filteredFileListData;
         private numPages;
         private setCurrentPage;
         private renderFilterBar;
         private renderFileList;
+        private getPagination;
         private renderPagination;
         private onChangeCurrentFilterStatus;
         private onClear;
@@ -5170,7 +5183,7 @@ declare module "packages/combo-box/src/style/combo-box.css" {
     export let ItemListStyle: string;
 }
 declare module "packages/combo-box/src/combo-box" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Control, ControlElement, notifyEventCallback, IBorder, Border } from "packages/base/src/index";
     import { Icon, IconElement } from "packages/icon/src/index";
     import "packages/combo-box/src/style/combo-box.css";
     export interface IComboItem {
@@ -5232,6 +5245,8 @@ declare module "packages/combo-box/src/combo-box" {
         get mode(): ModeType;
         set mode(value: ModeType);
         get isMulti(): boolean;
+        set border(value: IBorder);
+        get border(): Border;
         private isValueValid;
         private getItemIndex;
         private openList;
@@ -5254,9 +5269,10 @@ declare module "packages/combo-box/src/index" {
 }
 declare module "packages/datepicker/src/style/datepicker.css" { }
 declare module "packages/datepicker/src/datepicker" {
-    import { ControlElement, Control, notifyEventCallback } from "packages/base/src/index";
+    import { ControlElement, Control, notifyEventCallback, IBorder, Border } from "packages/base/src/index";
     import "packages/datepicker/src/style/datepicker.css";
     import Moment from 'moment';
+    type actionCallback = (target: Datepicker) => void;
     type dateType = 'date' | 'dateTime' | 'time';
     export interface DatepickerElement extends ControlElement {
         caption?: string;
@@ -5290,6 +5306,7 @@ declare module "packages/datepicker/src/datepicker" {
         private toggleIconElm;
         private datepickerElm;
         onChanged: notifyEventCallback;
+        onBlur: actionCallback;
         constructor(parent?: Control, options?: any);
         _handleClick(event: Event): boolean;
         get caption(): string;
@@ -5300,6 +5317,8 @@ declare module "packages/datepicker/src/datepicker" {
         set height(value: number | string);
         get width(): number;
         set width(value: number | string);
+        set border(value: IBorder);
+        get border(): Border;
         get value(): Moment.Moment | undefined;
         set value(value: Moment.Moment | undefined);
         get defaultDateTimeFormat(): string;
@@ -5307,16 +5326,17 @@ declare module "packages/datepicker/src/datepicker" {
         set dateTimeFormat(format: string);
         get datepickerFormat(): string;
         get maxLength(): number;
+        get enabled(): boolean;
         set enabled(value: boolean);
         get placeholder(): string;
         set placeholder(value: string);
         private get formatString();
         private _onDatePickerChange;
-        private _dateInputMask;
         private _onBlur;
         private updateValue;
         private clear;
         protected init(): void;
+        protected _handleBlur(event: Event, stopPropagation?: boolean): boolean;
         static create(options?: DatepickerElement, parent?: Control): Promise<Datepicker>;
     }
 }
@@ -5370,6 +5390,7 @@ declare module "packages/range/src/range" {
         set value(value: number);
         get width(): number;
         set width(value: number | string);
+        get enabled(): boolean;
         set enabled(value: boolean);
         get tooltipVisible(): boolean;
         set tooltipVisible(value: boolean);
@@ -5447,7 +5468,7 @@ declare module "packages/radio/src/index" {
 }
 declare module "packages/input/src/style/input.css" { }
 declare module "packages/input/src/input" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Control, ControlElement, notifyEventCallback, IBorder, Border } from "packages/base/src/index";
     import { Checkbox, CheckboxElement } from "packages/checkbox/src/index";
     import { ComboBox, ComboBoxElement } from "packages/combo-box/src/index";
     import { Datepicker, DatepickerElement } from "packages/datepicker/src/index";
@@ -5525,6 +5546,7 @@ declare module "packages/input/src/input" {
         get inputType(): InputType;
         set inputType(type: InputType);
         get inputControl(): InputControlType;
+        get enabled(): boolean;
         set enabled(value: boolean);
         set placeholder(value: string);
         get rows(): number;
@@ -5533,12 +5555,14 @@ declare module "packages/input/src/input" {
         set multiline(value: boolean);
         get resize(): resizeType;
         set resize(value: resizeType);
+        set border(value: IBorder);
+        get border(): Border;
         private _createInputElement;
         private _inputCallback;
         private _handleChange;
         private _handleInputKeyDown;
         private _handleInputKeyUp;
-        private _handleOnBlur;
+        protected _handleBlur(event: Event, stopPropagation?: boolean): boolean;
         private _handleOnFocus;
         private _clearValue;
         protected init(): void;
@@ -5854,6 +5878,10 @@ declare module "packages/application/src/jsonUI" {
         validate: (instance: any, schema: IDataSchema, options: any) => ValidationResult | null;
     };
     export interface IRenderUIOptions {
+        jsonSchema: IDataSchema;
+        data?: any;
+        jsonUISchema?: IUISchema;
+        hideConfirmButton?: boolean;
         columnsPerRow?: number;
         showClearButton?: boolean;
         clearButtonCaption?: string;
@@ -5863,18 +5891,33 @@ declare module "packages/application/src/jsonUI" {
         columnWidth?: string | number;
         clearButtonBackgroundColor?: string;
         clearButtonFontColor?: string;
+        dateFormat?: string;
+        timeFormat?: string;
+        dateTimeFormat?: string;
     }
-    export function renderUI(target: Control, jsonSchema: IDataSchema, callback: (result: boolean, data: any) => void, jsonUISchema?: IUISchema, data?: any, options?: IRenderUIOptions): void;
+    export function renderUI(target: Control, options: IRenderUIOptions, confirmCallback?: (result: boolean, data: any) => void, valueChangedCallback?: (data: any, errMsg: string) => void): void;
 }
 declare module "packages/application/src/index" {
     import { Module } from "packages/module/src/index";
     import { EventBus } from "packages/application/src/event-bus";
     import { GlobalEvents } from "packages/application/src/globalEvent";
     import { ICidInfo } from "packages/ipfs/src/index";
+    export interface IGeo {
+        enabled: boolean;
+        apiUrl?: string;
+        blockedCountries: string[];
+        moduleOnBlocking: string;
+    }
+    export interface IGeoInfo {
+        country: string;
+        timezone: string;
+    }
     export interface IHasDependencies {
         assets?: string;
+        ipfs?: string;
         rootDir?: string;
         main?: string;
+        geo?: IGeo;
         moduleDir?: string;
         dependencies?: {
             [name: string]: string;
@@ -5929,7 +5972,7 @@ declare module "packages/application/src/index" {
     }
     export interface IUploadItem {
         cid: ICidInfo;
-        data?: string;
+        data?: File | string;
     }
     class Application {
         private static _instance;
@@ -5945,8 +5988,10 @@ declare module "packages/application/src/index" {
         _assets: {
             [name: string]: any;
         };
-        private _initOptions;
+        private _initOptions?;
         private _uploadModal;
+        private cidItems;
+        geoInfo: IGeoInfo;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -5960,13 +6005,14 @@ declare module "packages/application/src/index" {
         uploadFile(extensions?: string | string[]): Promise<IUploadResult>;
         uploadTo(targetCid: string, items: IUploadItem[]): Promise<IUploadResult>;
         upload(url: string, data: File | string): Promise<number>;
+        private getCidItem;
         private verifyScript;
         private getScript;
         loadScript(modulePath: string, script: string): Promise<boolean>;
         getContent(modulePath: string): Promise<string>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
         getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;
-        loadPackage(packageName: string, modulePath?: string, options?: IHasDependencies): Promise<{
+        loadPackage(packageName: string, modulePath?: string): Promise<{
             [name: string]: any;
         } | null>;
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
