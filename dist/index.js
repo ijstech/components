@@ -5208,21 +5208,21 @@ function BufferBigIntNotDefined () {
   };
 
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/util/minimal.js#L402
-  util_configure = function () {
-    var Buffer = util_Buffer;
-    if (!Buffer) {
-      util_Buffer_from = util_Buffer_allocUnsafe = null;
-      return;
-    }
-    util_Buffer_from = Buffer.from !== Uint8Array.from && Buffer.from ||
-      function Buffer_from(value, encoding) {
-        return new Buffer(value, encoding);
-      };
-    util_Buffer_allocUnsafe = Buffer.allocUnsafe ||
-      function Buffer_allocUnsafe(size) {
-        return new Buffer(size);
-      };
-  };
+  // util_configure = function () {
+  //   var Buffer = util_Buffer;
+  //   if (!Buffer) {
+  //     util_Buffer_from = util_Buffer_allocUnsafe = null;
+  //     return;
+  //   }
+  //   util_Buffer_from = Buffer.from !== Uint8Array.from && Buffer.from ||
+  //     function Buffer_from(value, encoding) {
+  //       return new Buffer(value, encoding);
+  //     };
+  //   util_Buffer_allocUnsafe = Buffer.allocUnsafe ||
+  //     function Buffer_allocUnsafe(size) {
+  //       return new Buffer(size);
+  //     };
+  // };
 
   protobuf.rpc = {};
   protobuf.roots = {};
@@ -5230,7 +5230,7 @@ function BufferBigIntNotDefined () {
 
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/index-minimal.js#L29
   function configure() {
-    util_configure();
+    // util_configure();
     Writer._configure(BufferWriter);
     Reader._configure(BufferReader);
   }
@@ -5937,7 +5937,7 @@ function BufferBigIntNotDefined () {
   const from = ({ name, code, encode }) => new Hasher(name, code, encode)
 
   //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/sha2.js#L7
-  s_sha256 = from({
+  const s_sha256 = from({
     name: 'sha2-256',
     code: 18,
     //encode: (input) => coerce(crypto__default["default"].createHash('sha256').update(input).digest())
@@ -19594,7 +19594,6 @@ var GlobalEvents = class {
   _handleFocus(event) {
     let control = getControl(event.target);
     if (control) {
-      event.preventDefault();
       event.stopPropagation();
       if (control.enabled && control._handleFocus)
         control._handleFocus(event);
@@ -19603,7 +19602,6 @@ var GlobalEvents = class {
   _handleBlur(event) {
     let control = getControl(event.target);
     if (control) {
-      event.preventDefault();
       event.stopPropagation();
       if (control.enabled && control._handleBlur)
         control._handleBlur(event);
@@ -22284,11 +22282,19 @@ var UploadModal = class extends Control {
     this.files = [];
     this.fileListData = [];
   }
-  get serverUrl() {
-    return this._serverUrl;
+  get rootCid() {
+    return this._rootCid;
   }
-  set serverUrl(value) {
-    this._serverUrl = value;
+  set rootCid(value) {
+    console.log("set rootCid: ", value);
+    this._rootCid = value;
+  }
+  get parentDir() {
+    return this._parentDir;
+  }
+  set parentDir(value) {
+    console.log("set parentDir: ", value);
+    this._parentDir = value;
   }
   async show() {
     await this.init();
@@ -22529,23 +22535,21 @@ var UploadModal = class extends Control {
     }
     return result;
   }
-  async onUpload(rootDirCID) {
+  async onUpload() {
     return new Promise(async (resolve, reject) => {
-      var _a, _b, _c, _d;
+      var _a, _b, _c, _d, _e;
       if (!this.fileListData.length)
         reject();
       this._uploadBtnElm.caption = "Uploading files to IPFS...";
       this.isForcedCancelled = false;
-      const cidItem = await hashFiles(this.files);
+      const cidItems = await hashFiles(this.files);
       console.dir("### IPFS Upload ###");
-      console.log("cidItem: ", cidItem);
-      let dirItems = this.getDirItems(cidItem);
+      console.log("cidItems: ", cidItems);
+      let dirItems = this.getDirItems(cidItems);
       console.log("dirItems: ", dirItems);
-      if (this.onBeforeUploaded)
-        this.onBeforeUploaded(this, cidItem);
-      if (rootDirCID) {
-        const oldRootDirCID = cidItem.cid;
-        dirItems = dirItems.filter((dirItem) => dirItem.cid !== oldRootDirCID);
+      if (this.parentDir && this.rootCid) {
+        const oldParentDirCID = cidItems.cid;
+        dirItems = dirItems.filter((dirItem) => dirItem.cid !== oldParentDirCID);
         const items = [];
         for (let i = 0; i < dirItems.length; i++) {
           let item = dirItems[i];
@@ -22553,16 +22557,35 @@ var UploadModal = class extends Control {
         }
         for (let i = 0; i < this.fileListData.length; i++) {
           const file = this.fileListData[i];
-          items.push({ cid: cidItem, data: file.file });
+          const cidItem = (_a = cidItems.links) == null ? void 0 : _a.find((cidItem2) => {
+            var _a2;
+            return cidItem2.cid === ((_a2 = file.file.cid) == null ? void 0 : _a2.cid);
+          });
+          if (cidItem)
+            items.push({ cid: cidItem, data: file.file });
         }
         try {
-          let result = await application.uploadTo(rootDirCID, items);
-          console.log("uploadTo fileListData result: ", result);
+          const uploadResult = await application.uploadTo(this.parentDir.cid, items);
+          console.log("uploadToResult: ", uploadResult);
+          if (uploadResult && uploadResult.data) {
+            uploadResult.data.name = this.parentDir.name;
+            console.log("uploadToResult before sync: ", this.parentDir);
+            const syncResult = await application.uploadTo(this.rootCid, [
+              { cid: uploadResult.data }
+            ]);
+            console.log("syncResult: ", syncResult);
+            if (syncResult && syncResult.data) {
+              if (this.onBeforeUploaded)
+                this.onBeforeUploaded(this, syncResult.data);
+            }
+          }
         } catch (err) {
           console.log("Error! ", err);
         }
       } else {
-        let uploadUrl = await application.getUploadUrl(cidItem);
+        if (this.onBeforeUploaded)
+          this.onBeforeUploaded(this, cidItems);
+        let uploadUrl = await application.getUploadUrl(cidItems);
         for (let i = 0; i < dirItems.length; i++) {
           let item = dirItems[i];
           if (uploadUrl[item.cid]) {
@@ -22574,18 +22597,18 @@ var UploadModal = class extends Control {
             break;
           } else {
             const file = this.fileListData[i];
-            file.url = `/ipfs/${cidItem.cid}${file.file.path || file.file.name}`;
-            if ([1, 3].includes(file.status) || !((_a = file.file.cid) == null ? void 0 : _a.cid)) {
+            file.url = `/ipfs/${cidItems.cid}${file.file.path || file.file.name}`;
+            if ([1, 3].includes(file.status) || !((_b = file.file.cid) == null ? void 0 : _b.cid)) {
               continue;
             }
             this.fileListData[i].status = 3;
             this.renderFilterBar();
-            if (uploadUrl[(_b = file.file.cid) == null ? void 0 : _b.cid]) {
+            if (uploadUrl[(_c = file.file.cid) == null ? void 0 : _c.cid]) {
               try {
-                let result = await application.upload(uploadUrl[(_c = file.file.cid) == null ? void 0 : _c.cid], file.file);
+                let result = await application.upload(uploadUrl[(_d = file.file.cid) == null ? void 0 : _d.cid], file.file);
                 console.log("uploaded fileListData result: ", result);
                 if (this.onUploaded)
-                  this.onUploaded(this, file.file, (_d = file.file.cid) == null ? void 0 : _d.cid);
+                  this.onUploaded(this, file.file, (_e = file.file.cid) == null ? void 0 : _e.cid);
                 this.fileListData[i].status = 1;
                 this.renderFilterBar();
                 this.renderFileList();
@@ -22625,7 +22648,8 @@ var UploadModal = class extends Control {
   async init() {
     if (!this.initialized) {
       super.init();
-      this.serverUrl = this.getAttribute("serverUrl", true);
+      this.rootCid = this.getAttribute("rootCid", true);
+      this.parentDir = this.getAttribute("parentDir", true);
       this._uploadModalElm = await Modal.create({
         showBackdrop: true,
         closeOnBackdropClick: false,
@@ -25127,24 +25151,33 @@ var validate = (instance, schema, options) => {
     return schema2.type;
   }
   var errors = [];
-  function checkProp(value, schema2, path, scope, i) {
-    const parsedPath = path.split(".");
-    let parsedScope = scope.split("/");
-    let parentProp = "";
-    if (parsedScope.length > 1) {
-      parsedScope = parsedScope.splice(0, parsedScope.length - 2);
-      parentProp = parsedScope[parsedScope.length - 1].split("_")[0];
-    }
-    let idxOfArray = -1;
-    parsedPath.forEach((value2) => {
-      if (value2.includes(parentProp)) {
-        let matches = value2.match(/\[(.*?)\]/);
-        if (matches)
-          idxOfArray = parseInt(matches[1]) + 1;
+  function checkProp(value, schema2, path, scope, i, isNonObjArrayItem) {
+    if (isNonObjArrayItem && typeof i === "number") {
+      if (typeof value === "object") {
+        value = value[Object.keys(value)[0]];
+        if (isNaN(value) && (schema2.type === "number" || schema2.type === "integer"))
+          value = "";
       }
-    });
-    if (idxOfArray > 0 && getType(schema2) != "object") {
-      scope = scope + "_" + idxOfArray;
+      scope = scope + "_" + (i + 1).toString();
+    } else {
+      const parsedPath = path.split(".");
+      let parsedScope = scope.split("/");
+      let parentProp = "";
+      if (parsedScope.length > 1) {
+        parsedScope = parsedScope.splice(0, parsedScope.length - 2);
+        parentProp = parsedScope[parsedScope.length - 1].split("_")[0];
+      }
+      let idxOfArray = -1;
+      parsedPath.forEach((value2) => {
+        if (value2.includes(parentProp)) {
+          let matches = value2.match(/\[(.*?)\]/);
+          if (matches)
+            idxOfArray = parseInt(matches[1]) + 1;
+        }
+      });
+      if (idxOfArray > 0 && getType(schema2) != "object") {
+        scope = scope + "_" + idxOfArray;
+      }
     }
     var l;
     path += path ? typeof i == "number" ? "[" + i + "]" : typeof i == "undefined" ? "" : "." + i : i;
@@ -25169,7 +25202,7 @@ var validate = (instance, schema, options) => {
     }
     function checkType(type, value2, scope2) {
       if (type) {
-        if (typeof type == "string" && type != "any" && (type == "null" ? value2 !== null : typeof value2 != type) && !(value2 instanceof Array && type == "array") && !(type == "integer" && value2 % 1 === 0)) {
+        if (type != "any" && (type == "null" ? value2 !== null : typeof value2 != type) && !(value2 instanceof Array && type == "array") && typeof type == "string" && !(type == "integer" && value2 % 1 === 0)) {
           return [{
             property: path,
             scope: scope2,
@@ -25223,9 +25256,11 @@ var validate = (instance, schema, options) => {
                 propDef = schema2.items[i];
               if (options.coerce)
                 value[i] = options.coerce(value[i], propDef);
-              var errors2 = checkProp(value[i], propDef, path, scope, i);
-              if (errors2)
-                errors.concat(errors2);
+              if (schema2.items.type == "object") {
+                var errors2 = checkProp(value[i], propDef, path, scope, i);
+                if (errors2)
+                  errors.concat(errors2);
+              }
             }
           }
           if (schema2.minItems && value.length < schema2.minItems) {
@@ -25236,6 +25271,11 @@ var validate = (instance, schema, options) => {
           }
         } else if (schema2.properties || schema2.additionalProperties) {
           errors.concat(checkObj(value, schema2.properties, path, schema2.additionalProperties, scope));
+        }
+        if (schema2.items && schema2.items.type != "object") {
+          for (let i2 = 0; i2 < value.length; i2++) {
+            checkProp(value[i2], schema2.items, path, scope, i2, true);
+          }
         }
         if (schema2.pattern && typeof value == "string" && !value.match(schema2.pattern)) {
           addError("does not match the regex pattern " + schema2.pattern, scope);
@@ -25762,43 +25802,55 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               updateIndex(props[propertyName].items.properties, newIdx, currentIdx, currentScope, newScope, subIndex + _currentItemIdx);
             }
           }
-          const tempControl = controls[currentScope];
-          controls[newScope] = tempControl;
-          if (controls[newScope].id) {
-            controls[newScope].id = newScope;
-          } else if (controls[newScope].getAttribute("object-field-idx")) {
-            controls[newScope].setAttribute("object-field-idx", `${finalIndex}`);
-            controls[newScope]["options"]["object-field-idx"] = `${finalIndex}`;
-          } else if (controls[newScope].getAttribute("array-field-idx")) {
-            controls[newScope].setAttribute("array-field-idx", `${finalIndex}`);
-            controls[newScope]["options"]["array-field-idx"] = `${finalIndex}`;
-          }
           const parentLayout = controls[newScope].closest("[array-item-idx");
           if (parentLayout) {
             parentLayout.setAttribute("array-item-idx", `${newIdx}`);
             parentLayout["options"]["array-item-idx"] = `${newIdx}`;
           }
-          const tempErrMsg = errorMsgs[currentScope];
-          if (tempErrMsg) {
-            errorMsgs[newScope] = tempErrMsg;
-            controls[newScope].onChanged = () => validateOnValueChanged(newScope);
-          }
-          const tempDescription = descriptions[currentScope];
-          if (tempDescription) {
-            descriptions[newScope] = tempDescription;
-          }
-          delete descriptions[currentScope];
-          delete errorMsgs[currentScope];
-          delete controls[currentScope];
+          updateSingleIndex(currentScope, newScope, finalIndex);
         }
       };
-      if (isVertical) {
+      const updateNonObjIndex = (newIdx, currentIdx, prefixScope) => {
+        const currentScope = `${prefixScope}_${currentIdx}`;
+        const newScope = `${prefixScope}_${newIdx}`;
+        updateSingleIndex(currentScope, newScope);
+      };
+      const updateSingleIndex = (currentScope, newScope, finalIndex) => {
+        const tempControl = controls[currentScope];
+        controls[newScope] = tempControl;
+        if (controls[newScope].id) {
+          controls[newScope].id = newScope;
+        } else if (controls[newScope].getAttribute("object-field-idx") && finalIndex != void 0) {
+          controls[newScope].setAttribute("object-field-idx", `${finalIndex}`);
+          controls[newScope]["options"]["object-field-idx"] = `${finalIndex}`;
+        } else if (controls[newScope].getAttribute("array-field-idx") && finalIndex != void 0) {
+          controls[newScope].setAttribute("array-field-idx", `${finalIndex}`);
+          controls[newScope]["options"]["array-field-idx"] = `${finalIndex}`;
+        }
+        const tempErrMsg = errorMsgs[currentScope];
+        if (tempErrMsg) {
+          errorMsgs[newScope] = tempErrMsg;
+          controls[newScope].onChanged = () => validateOnValueChanged(newScope);
+        }
+        const tempDescription = descriptions[currentScope];
+        if (tempDescription) {
+          descriptions[newScope] = tempDescription;
+        }
+        delete descriptions[currentScope];
+        delete errorMsgs[currentScope];
+        delete controls[currentScope];
+      };
+      const isObject = _items.type === "object";
+      if (!isObject)
+        isVertical = true;
+      if (isVertical && _items.type) {
         const addCard = () => {
           const index = groupPnl.querySelectorAll(":scope > i-panel > [role='row']").length + 1;
           const arrIndex = groupPnl.getAttribute("array-field-idx") || idx;
           const newIdxScope = idx !== void 0 ? `${scope}_${arrIndex}` : scope;
+          const gridSize = isObject ? ["1fr", "3fr"] : ["3fr", "1fr"];
           const gridLayout = new GridLayout(pnlItems, {
-            templateColumns: ["1fr", "3fr"],
+            templateColumns: gridSize,
             border: {
               bottom: {
                 width: 1,
@@ -25820,7 +25872,16 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
           gridLayout.position = "relative";
           gridLayout.setAttribute("role", "row");
           gridLayout.setAttribute("array-item-idx", `${index}`);
-          if (typeof _items === "object" && _items.type === "object" && _items.properties) {
+          if (isObject == false) {
+            if (schema.required === true) {
+              _items.required = true;
+            }
+            const control = renderForm(_items, `${idxScope}`, true, index);
+            if (control) {
+              control.setAttribute("object-field-idx", `${index}`);
+              gridLayout.append(control);
+            }
+          } else if (typeof _items === "object" && _items.type === "object" && _items.properties) {
             for (const propertyName in _items.properties) {
               let property = schema.items.properties[propertyName];
               if (!(property == null ? void 0 : property.required) && (arrRequired.includes(propertyName) || itemsRequired.includes(propertyName))) {
@@ -25845,28 +25906,47 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               gridLayout.append(hStack2);
               gridLayout.append(control);
             }
-            const btnDelete = new Icon(gridLayout, {
-              name: "times",
-              fill: "#ff0000",
-              width: "1rem",
-              height: "1rem",
-              top: 5,
-              right: 5
-            });
-            btnDelete.position = "absolute";
-            btnDelete.classList.add("pointer");
-            btnDelete.onClick = () => {
-              let currentIdx = Number(gridLayout.getAttribute("array-item-idx") || "1");
-              let newIdx = Number(gridLayout.getAttribute("array-item-idx") || "1");
-              let idxItem = groupPnl.querySelectorAll(":scope > i-panel > [role='row']").length;
-              while (newIdx < idxItem) {
-                currentIdx++;
-                updateIndex(_items.properties, newIdx, currentIdx, newIdxScope);
-                newIdx = Number(currentIdx);
-              }
-              gridLayout.remove();
-            };
           }
+          const btnDelete = new Icon(void 0, {
+            name: "times",
+            fill: "#ff0000",
+            width: "1rem",
+            height: "1rem"
+          });
+          if (!isObject) {
+            const hStack2 = new HStack(gridLayout, {
+              height: "40px",
+              padding: {
+                top: 10,
+                bottom: 10,
+                left: 15,
+                right: 15
+              }
+            });
+            hStack2.verticalAlignment = "center";
+            hStack2.horizontalAlignment = "end";
+            hStack2.append(btnDelete);
+          } else {
+            btnDelete.style.top = "5px";
+            btnDelete.style.right = "5px";
+            gridLayout.append(btnDelete);
+          }
+          btnDelete.position = "absolute";
+          btnDelete.classList.add("pointer");
+          btnDelete.onClick = () => {
+            let currentIdx = Number(gridLayout.getAttribute("array-item-idx") || "1");
+            let newIdx = Number(gridLayout.getAttribute("array-item-idx") || "1");
+            let idxItem = groupPnl.querySelectorAll(":scope > i-panel > [role='row']").length;
+            while (newIdx < idxItem) {
+              currentIdx++;
+              if (isObject)
+                updateIndex(_items.properties, newIdx, currentIdx, newIdxScope);
+              else
+                updateNonObjIndex(newIdx, currentIdx, newIdxScope);
+              newIdx = Number(currentIdx);
+            }
+            gridLayout.remove();
+          };
         };
         btnAdd.onClick = () => {
           addCard();
@@ -26292,6 +26372,15 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               }
             }
           }
+        }
+      } else {
+        const grid = controls[idxScope];
+        const btnAdd = grid.querySelector("[role='add']");
+        for (let i = 0; i < data.length; i++) {
+          if (btnAdd && i > 0)
+            btnAdd.onClick(btnAdd);
+          if (typeof schema.items != "boolean" && typeof schema.items != "undefined")
+            setData(schema.items, data[i], `${scope}_${i + 1}`);
         }
       }
     } else {
@@ -26783,8 +26872,8 @@ var Application = class {
     return;
   }
   async verifyScript(modulePath, script) {
-    var _a;
-    if ((_a = this._initOptions) == null ? void 0 : _a.ipfs) {
+    var _a, _b;
+    if (((_a = this._initOptions) == null ? void 0 : _a.ipfs) && typeof ((_b = this._initOptions) == null ? void 0 : _b.ipfs) == "string") {
       try {
         let paths = modulePath.split("/");
         let cid = await this.getCidItem("/ipfs", this._initOptions.ipfs, paths);
@@ -30477,33 +30566,30 @@ cssRule("i-markdown", {
       marginTop: "0",
       fontSize: "15px"
     },
-    "p > img": {
-      width: "50%",
-      float: "left",
+    "p:has(img)": {
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: "16px",
       $nest: {
         "@media (max-width: 700px)": {
-          width: "100%"
+          flexWrap: "wrap"
         }
       }
     },
-    "p img:nth-child(odd)": {
-      paddingRight: "6px",
-      $nest: {
-        "@media (max-width: 700px)": {
-          padding: "0"
-        }
-      }
+    ".img-caption": {
+      display: "block",
+      textAlign: "center",
+      color: "rgba(136,153,168,1.00)",
+      fontSize: 14,
+      fontWeight: 400,
+      lineHeight: "18px",
+      paddingTop: "6px"
     },
-    "p img:nth-child(even)": {
-      paddingLeft: "6px",
-      $nest: {
-        "@media (max-width: 700px)": {
-          padding: "0"
-        }
-      }
-    },
-    "p img:only-child": {
-      width: "100%"
+    "p img": {
+      width: "100%",
+      borderRadius: "5px"
     },
     "p a": {
       display: "contents"
@@ -30616,9 +30702,27 @@ var Markdown = class extends Control {
     super();
     this.gitbookProcess = true;
   }
+  getRenderer() {
+    const renderer = {
+      image(href, title, text) {
+        if (href === null) {
+          return text;
+        }
+        var out = '<span><img style="width: 100%;" src="' + href + '" alt="' + text + '"';
+        if (title) {
+          out += ' title="' + title + '"';
+        }
+        out += '><span class="img-caption">' + text + "</span></span>";
+        return out;
+      }
+    };
+    return renderer;
+  }
   async load(text) {
     if (!this.marked)
       this.marked = await this.loadLib();
+    let renderer = this.getRenderer();
+    this.marked.use({ renderer });
     text = await this.marked.parse(text);
     text = await this.processText(text);
     this.innerHTML = text;
@@ -31207,7 +31311,8 @@ var Menu = class extends Control {
     this._oldWidth = newWidth;
   }
   handleResize() {
-    setTimeout(() => {
+    clearTimeout(this.resizeTimeout);
+    this.resizeTimeout = setTimeout(() => {
       this.onResize();
     }, 200);
   }

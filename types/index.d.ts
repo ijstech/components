@@ -995,6 +995,11 @@ declare module "packages/style/src/theme" {
             disabled: string;
             hint: string;
         };
+        docs: {
+            background: string;
+            text0: string;
+            text1: string;
+        };
         typography: {
             fontFamily: string;
             fontSize: string;
@@ -5002,7 +5007,8 @@ declare module "packages/upload/src/upload-modal" {
         }
     }
     export interface UploadModalElement extends ControlElement {
-        serverUrl?: string;
+        rootCid?: string;
+        parentDir?: Partial<ICidInfo>;
         onBeforeUploaded: BeforeUploadedCallback;
         onUploaded?: UploadedCallback;
     }
@@ -5032,7 +5038,8 @@ declare module "packages/upload/src/upload-modal" {
         private _uploadBtnElm;
         private _notePnlElm;
         private _paginationElm;
-        private _serverUrl;
+        private _rootCid;
+        private _parentDir;
         onBeforeUploaded: BeforeUploadedCallback;
         onUploaded: UploadedCallback;
         private isForcedCancelled;
@@ -5042,8 +5049,10 @@ declare module "packages/upload/src/upload-modal" {
         private files;
         private fileListData;
         constructor(parent?: Control, options?: any);
-        get serverUrl(): string;
-        set serverUrl(value: string);
+        get rootCid(): string;
+        set rootCid(value: string);
+        get parentDir(): Partial<ICidInfo>;
+        set parentDir(value: Partial<ICidInfo>);
         show(): Promise<void>;
         hide(): void;
         private onBeforeDrop;
@@ -9454,6 +9463,7 @@ declare module "packages/markdown/src/markdown" {
         gitbookProcess: boolean;
         fileRoot: string;
         constructor();
+        private getRenderer;
         load(text: string): Promise<string>;
         beforeRender(text: string): Promise<void>;
         processText(text: string): Promise<string>;
@@ -9585,6 +9595,7 @@ declare module "packages/menu/src/menu" {
         onItemClick: (target: Menu, item: MenuItem) => void;
         private _oldWidth;
         private itemsWidth;
+        private resizeTimeout;
         get mode(): MenuMode;
         set mode(value: MenuMode);
         get data(): IMenuItem[];
