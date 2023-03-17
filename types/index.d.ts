@@ -6017,7 +6017,7 @@ declare module "packages/application/src/index" {
         private getCidItem;
         private verifyScript;
         private getScript;
-        loadScript(modulePath: string, script: string): Promise<boolean>;
+        loadScript(modulePath: string, script?: string): Promise<boolean>;
         getContent(modulePath: string): Promise<string>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
         getModule(modulePath: string, options?: IModuleOptions): Promise<Module | null>;

@@ -26910,8 +26910,11 @@ var Application = class {
     try {
       if (this.scripts[modulePath])
         return true;
-      if (await this.verifyScript(modulePath, script)) {
+      if (!script)
+        script = await this.getContent(modulePath);
+      if (script && await this.verifyScript(modulePath, script)) {
         this.scripts[modulePath] = script;
+        await import(`data:text/javascript,${encodeURIComponent(script)}`);
         return true;
       }
       ;
