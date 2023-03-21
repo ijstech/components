@@ -3745,7 +3745,9 @@ declare module "packages/base/src/component" {
         protected options: any;
         protected defaults: any;
         protected _ready: boolean;
-        protected _readyCallback: any;
+        private _readyInit;
+        protected _readyCallback: any[];
+        protected isReadyCallbackQueued: boolean;
         initialized: boolean;
         protected attrs: any;
         constructor(parent?: Component, options?: any, defaults?: any);
@@ -3758,7 +3760,8 @@ declare module "packages/base/src/component" {
         getStyleAttribute(name: string, removeAfter?: boolean, defaultValue?: any): string;
         get id(): string;
         set id(value: string);
-        protected ready(): Promise<void>;
+        ready(): Promise<void>;
+        protected executeReadyCallback(): void;
         protected init(): void;
     }
 }
@@ -5354,7 +5357,7 @@ declare module "packages/datepicker/src/index" {
 }
 declare module "packages/range/src/style/range.css" { }
 declare module "packages/range/src/range" {
-    import { Control, ControlElement, notifyEventCallback } from "packages/base/src/index";
+    import { Control, ControlElement, notifyEventCallback, Types } from "packages/base/src/index";
     import "packages/range/src/style/range.css";
     export interface RangeElement extends ControlElement {
         caption?: string;
@@ -5366,6 +5369,7 @@ declare module "packages/range/src/range" {
         stepDots?: boolean | number;
         tooltipFormatter?: any;
         tooltipVisible?: boolean;
+        trackColor?: Types.Color;
         onChanged?: notifyEventCallback;
     }
     global {
@@ -5379,8 +5383,9 @@ declare module "packages/range/src/range" {
         private _value;
         private _caption;
         private _captionWidth;
-        private tooltipFormatter;
         private _tooltipVisible;
+        private _trackColor;
+        private tooltipFormatter;
         private captionSpanElm;
         private labelElm;
         private inputElm;
@@ -5403,6 +5408,8 @@ declare module "packages/range/src/range" {
         set enabled(value: boolean);
         get tooltipVisible(): boolean;
         set tooltipVisible(value: boolean);
+        get trackColor(): Types.Color;
+        set trackColor(value: Types.Color);
         private onSliderChange;
         private onUpdateTooltip;
         protected init(): void;

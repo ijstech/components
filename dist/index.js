@@ -17250,6 +17250,7 @@ function initObservables(target) {
 var Component = class extends HTMLElement {
   constructor(parent, options, defaults) {
     super();
+    this._readyCallback = [];
     this.attrs = {};
     this.options = options || {};
     this.defaults = defaults || {};
@@ -17259,8 +17260,10 @@ var Component = class extends HTMLElement {
     if (this.connected)
       return;
     this.connected = true;
-    if (!this.initialized)
+    if (!this._readyInit) {
+      this._readyInit = true;
       this.init();
+    }
   }
   disconnectCallback() {
     this.connected = false;
@@ -17337,23 +17340,35 @@ var Component = class extends HTMLElement {
     return new Promise((resolve) => {
       if (this._ready)
         return resolve();
-      this._readyCallback = resolve;
-      this.init();
+      this._readyCallback.push(resolve);
+      if (!this._readyInit) {
+        this._readyInit = true;
+        this.init();
+      }
+      ;
     });
   }
+  executeReadyCallback() {
+    this._ready = true;
+    let callbacks = this._readyCallback;
+    this._readyCallback = [];
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i]();
+    }
+    ;
+  }
   init() {
-    this.initialized = true;
-    if (this.options["class"]) {
-      this.setAttribute("class", this.options["class"]);
-    }
-    if (this._ready === void 0) {
-      this._ready = true;
-      if (this._readyCallback) {
-        let callback = this._readyCallback;
-        delete this._readyCallback;
-        callback();
+    if (!this.initialized) {
+      this.initialized = true;
+      if (this.options["class"]) {
+        this.setAttribute("class", this.options["class"]);
       }
+      if (!this.isReadyCallbackQueued) {
+        this.executeReadyCallback();
+      }
+      ;
     }
+    ;
   }
 };
 
@@ -18088,8 +18103,7 @@ var Border = class {
     if (options) {
       if (options.width || options.style || options.color || options.radius) {
         this.updateAllSidesProps(options);
-      }
-      if (options.top || options.right || options.bottom || options.left) {
+      } else if (options.top || options.right || options.bottom || options.left) {
         if (options.top)
           this._top = options.top;
         if (options.right)
@@ -23562,10 +23576,11 @@ var ComboBox = class extends Control {
   }
   set border(value) {
     super.border = value;
-    if (this.inputWrapElm && this.border.style)
-      this.inputWrapElm.style.borderStyle = "none";
-    if (this.iconElm && this.border.style)
-      this.iconElm.style.borderStyle = "none";
+    const hasBorderSide = this.border.bottom || this.border.top || this.border.left || this.border.right;
+    if (this.border.style || hasBorderSide) {
+      this.inputWrapElm && (this.inputWrapElm.style.borderStyle = "none");
+      this.iconElm && (this.iconElm.style.borderStyle = "none");
+    }
   }
   get border() {
     return super.border;
@@ -23995,8 +24010,11 @@ var Datepicker = class extends Control {
     super.border = value;
     if (this.border.width !== void 0)
       this.width = this._width;
-    if (this.toggleElm && this.border.style)
-      this.toggleElm.style.borderStyle = "none";
+    const hasBorderSide = this.border.bottom || this.border.top || this.border.left || this.border.right;
+    if (hasBorderSide || this.border.style) {
+      this.toggleElm && (this.toggleElm.style.borderStyle = "none");
+      this.inputElm && (this.inputElm.style.borderStyle = "none");
+    }
   }
   get border() {
     return super.border;
@@ -24180,7 +24198,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       background: "#d3d3d3",
-      backgroundImage: `linear-gradient(${Theme17.colors.info.main}, ${Theme17.colors.info.main})`,
+      backgroundImage: `linear-gradient(var(--track-color, ${Theme17.colors.info.main}), var(--track-color, ${Theme17.colors.info.main}))`,
       backgroundSize: "0% 100%",
       backgroundRepeat: "no-repeat !important",
       borderRadius: "0.5rem",
@@ -24215,7 +24233,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       marginTop: "-5px",
-      backgroundColor: Theme17.colors.info.main,
+      backgroundColor: `var(--track-color, ${Theme17.colors.info.main})`,
       borderRadius: "0.5rem",
       height: "1rem",
       width: "1rem"
@@ -24324,7 +24342,8 @@ var Range = class extends Control {
   set captionWidth(value) {
     this._captionWidth = value;
     this.setElementPosition(this.labelElm, "width", value);
-    const width = this.width - this.captionWidth;
+    const captionWidth = this.caption ? this.captionWidth : 0;
+    const width = this.width - captionWidth;
     this.inputContainerElm.style.width = `${width}px`;
   }
   get value() {
@@ -24348,7 +24367,9 @@ var Range = class extends Control {
   set width(value) {
     this.setPosition("width", value);
     const width = typeof value === "string" ? value : `${value}px`;
-    const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
+    let captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
+    if (!this.caption)
+      captionWidth = "0px";
     this.inputContainerElm.style.width = `calc(${width} - ${captionWidth})`;
   }
   get enabled() {
@@ -24364,6 +24385,16 @@ var Range = class extends Control {
   set tooltipVisible(value) {
     this._tooltipVisible = value;
     this.tooltipElm.style.display = value ? "block" : "none";
+  }
+  get trackColor() {
+    return this._trackColor;
+  }
+  set trackColor(value) {
+    this._trackColor = value;
+    if (value)
+      this.style.setProperty("--track-color", value);
+    else
+      this.style.removeProperty("--track-color");
   }
   onSliderChange(event) {
     this.value = +this.inputElm.value;
@@ -24421,15 +24452,15 @@ var Range = class extends Control {
       this.tooltipElm = this.createElement("span", this.inputContainerElm);
       this.tooltipElm.classList.add("tooltip");
       this.tooltipVisible = tooltipVisible || this.tooltipFormatter || false;
+      this.captionWidth = this.getAttribute("captionWidth", true, 40);
+      this.caption = this.getAttribute("caption", true);
       if (stepDots) {
         this.classList.add("--step");
         const stepContainer = this.createElement("div", this);
         stepContainer.classList.add("slider-step");
+        stepContainer.style.width = "100%";
         if (this.caption) {
-          stepContainer.style.width = Number(this._width) - this.captionWidth + "px";
-          stepContainer.style.marginLeft = this.captionWidth + "px";
-        } else {
-          stepContainer.style.width = "100%";
+          stepContainer.style.paddingLeft = this.captionWidth + "px";
         }
         const dotNums = typeof stepDots === "boolean" ? (max - min) / (step || 1) + 1 : stepDots;
         for (let i = 0; i < dotNums; i++) {
@@ -24437,12 +24468,13 @@ var Range = class extends Control {
           dotElm.classList.add("step-dot");
         }
       }
-      this.captionWidth = this.getAttribute("captionWidth", true, 40);
-      this.caption = this.getAttribute("caption", true);
       this.value = this.getAttribute("value", true, 0);
       if (this._value > 0) {
         this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
       }
+      const trackColor = this.getAttribute("trackColor", true);
+      if (trackColor !== void 0)
+        this.trackColor = trackColor;
       this.onUpdateTooltip(true);
       super.init();
     }
@@ -24853,6 +24885,8 @@ var Input = class extends Control {
         this.inputElm.style.borderStyle = this.border.style;
       if (this.border.color)
         this.inputElm.style.borderColor = this.border.color;
+      if (this.border.bottom || this.border.top || this.border.left || this.border.right)
+        this.inputElm.style.borderStyle = "none";
     }
   }
   get border() {
@@ -24930,6 +24964,7 @@ var Input = class extends Control {
           stepDots: this.getAttribute("stepDots", true),
           tooltipFormatter: this.getAttribute("tooltipFormatter", true),
           tooltipVisible: this.getAttribute("tooltipVisible", true),
+          trackColor: this.getAttribute("trackColor", true),
           parentCallback: this._inputCallback
         });
         this._inputControl.onChanged = this.onChanged;
