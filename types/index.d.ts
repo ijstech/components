@@ -4246,6 +4246,7 @@ declare module "packages/checkbox/src/checkbox" {
         indeterminate?: boolean;
         caption?: string;
         captionWidth?: number | string;
+        readOnly?: boolean;
         onChanged?: notifyEventCallback;
     }
     global {
@@ -4260,6 +4261,7 @@ declare module "packages/checkbox/src/checkbox" {
         private _captionWidth;
         private _indeterminate;
         private _checked;
+        private _readOnly;
         private wrapperElm;
         private inputSpanElm;
         private captionSpanElm;
@@ -4279,6 +4281,8 @@ declare module "packages/checkbox/src/checkbox" {
         set checked(value: boolean);
         get value(): any;
         set value(data: any);
+        get readOnly(): boolean;
+        set readOnly(value: boolean);
         private _handleChange;
         private addClass;
         protected init(): void;
@@ -4383,91 +4387,6 @@ declare module "packages/image/src/image" {
 }
 declare module "packages/image/src/index" {
     export { Image, ImageElement } from "packages/image/src/image";
-}
-declare module "packages/icon/src/style/icon.css" { }
-declare module "packages/icon/src/icon" {
-    import { Control, ControlElement, Types } from "packages/base/src/index";
-    import { Image, ImageElement } from "packages/image/src/index";
-    import "packages/icon/src/style/icon.css";
-    export type IconName = "" | "ad" | "address-book" | "address-card" | "adjust" | "air-freshener" | "align-center" | "align-justify" | "align-left" | "align-right" | "allergies" | "ambulance" | "american-sign-language-interpreting" | "anchor" | "angle-double-down" | "angle-double-left" | "angle-double-right" | "angle-double-up" | "angle-down" | "angle-left" | "angle-right" | "angle-up" | "angry" | "ankh" | "apple-alt" | "archive" | "archway" | "arrow-alt-circle-down" | "arrow-alt-circle-left" | "arrow-alt-circle-right" | "arrow-alt-circle-up" | "arrow-circle-down" | "arrow-circle-left" | "arrow-circle-right" | "arrow-circle-up" | "arrow-down" | "arrow-left" | "arrow-right" | "arrow-up" | "arrows-alt" | "arrows-alt-h" | "arrows-alt-v" | "assistive-listening-systems" | "asterisk" | "at" | "atlas" | "atom" | "audio-description" | "award" | "baby" | "baby-carriage" | "backspace" | "backward" | "bacon" | "bacteria" | "bacterium" | "bahai" | "balance-scale" | "balance-scale-left" | "balance-scale-right" | "ban" | "band-aid" | "barcode" | "bars" | "baseball-ball" | "basketball-ball" | "bath" | "battery-empty" | "battery-full" | "battery-half" | "battery-quarter" | "battery-three-quarters" | "bed" | "beer" | "bell" | "bell-slash" | "bezier-curve" | "bible" | "bicycle" | "biking" | "binoculars" | "biohazard" | "birthday-cake" | "blender" | "blender-phone" | "blind" | "blog" | "bold" | "bolt" | "bomb" | "bone" | "bong" | "book" | "book-dead" | "book-medical" | "book-open" | "book-reader" | "bookmark" | "border-all" | "border-none" | "border-style" | "bowling-ball" | "box" | "box-open" | "box-tissue" | "boxes" | "braille" | "brain" | "bread-slice" | "briefcase" | "briefcase-medical" | "broadcast-tower" | "broom" | "brush" | "bug" | "building" | "bullhorn" | "bullseye" | "burn" | "bus" | "bus-alt" | "business-time" | "calculator" | "calendar" | "calendar-alt" | "calendar-check" | "calendar-day" | "calendar-minus" | "calendar-plus" | "calendar-times" | "calendar-week" | "camera" | "camera-retro" | "campground" | "candy-cane" | "cannabis" | "capsules" | "car" | "car-alt" | "car-battery" | "car-crash" | "car-side" | "caravan" | "caret-down" | "caret-left" | "caret-right" | "caret-square-down" | "caret-square-left" | "caret-square-right" | "caret-square-up" | "caret-up" | "carrot" | "cart-arrow-down" | "cart-plus" | "cash-register" | "cat" | "certificate" | "chair" | "chalkboard" | "chalkboard-teacher" | "charging-station" | "chart-area" | "chart-bar" | "chart-line" | "chart-pie" | "check" | "check-circle" | "check-double" | "check-square" | "cheese" | "chess" | "chess-bishop" | "chess-board" | "chess-king" | "chess-knight" | "chess-pawn" | "chess-queen" | "chess-rook" | "chevron-circle-down" | "chevron-circle-left" | "chevron-circle-right" | "chevron-circle-up" | "chevron-down" | "chevron-left" | "chevron-right" | "chevron-up" | "child" | "church" | "circle" | "circle-notch" | "city" | "clinic-medical" | "clipboard" | "clipboard-check" | "clipboard-list" | "clock" | "clone" | "closed-captioning" | "cloud" | "cloud-download-alt" | "cloud-meatball" | "cloud-moon" | "cloud-moon-rain" | "cloud-rain" | "cloud-showers-heavy" | "cloud-sun" | "cloud-sun-rain" | "cloud-upload-alt" | "cocktail" | "code" | "code-branch" | "coffee" | "cog" | "cogs" | "coins" | "columns" | "comment" | "comment-alt" | "comment-dollar" | "comment-dots" | "comment-medical" | "comment-slash" | "comments" | "comments-dollar" | "compact-disc" | "compass" | "compress" | "compress-alt" | "compress-arrows-alt" | "concierge-bell" | "cookie" | "cookie-bite" | "copy" | "copyright" | "couch" | "credit-card" | "crop" | "crop-alt" | "cross" | "crosshairs" | "crow" | "crown" | "crutch" | "cube" | "cubes" | "cut" | "database" | "deaf" | "democrat" | "desktop" | "dharmachakra" | "diagnoses" | "dice" | "dice-d20" | "dice-d6" | "dice-five" | "dice-four" | "dice-one" | "dice-six" | "dice-three" | "dice-two" | "digital-tachograph" | "directions" | "disease" | "divide" | "dizzy" | "dna" | "dog" | "dollar-sign" | "dolly" | "dolly-flatbed" | "donate" | "door-closed" | "door-open" | "dot-circle" | "dove" | "download" | "drafting-compass" | "dragon" | "draw-polygon" | "drum" | "drum-steelpan" | "drumstick-bite" | "dumbbell" | "dumpster" | "dumpster-fire" | "dungeon" | "edit" | "egg" | "eject" | "ellipsis-h" | "ellipsis-v" | "envelope" | "envelope-open" | "envelope-open-text" | "envelope-square" | "equals" | "eraser" | "ethernet" | "euro-sign" | "exchange-alt" | "exclamation" | "exclamation-circle" | "exclamation-triangle" | "expand" | "expand-alt" | "expand-arrows-alt" | "external-link-alt" | "external-link-square-alt" | "eye" | "eye-dropper" | "eye-slash" | "fan" | "fast-backward" | "fast-forward" | "faucet" | "fax" | "feather" | "feather-alt" | "female" | "fighter-jet" | "file" | "file-alt" | "file-archive" | "file-audio" | "file-code" | "file-contract" | "file-csv" | "file-download" | "file-excel" | "file-export" | "file-image" | "file-import" | "file-invoice" | "file-invoice-dollar" | "file-medical" | "file-medical-alt" | "file-pdf" | "file-powerpoint" | "file-prescription" | "file-signature" | "file-upload" | "file-video" | "file-word" | "fill" | "fill-drip" | "film" | "filter" | "fingerprint" | "fire" | "fire-alt" | "fire-extinguisher" | "first-aid" | "fish" | "fist-raised" | "flag" | "flag-checkered" | "flag-usa" | "flask" | "flushed" | "folder" | "folder-minus" | "folder-open" | "folder-plus" | "font" | "font-awesome-logo-full" | "football-ball" | "forward" | "frog" | "frown" | "frown-open" | "funnel-dollar" | "futbol" | "gamepad" | "gas-pump" | "gavel" | "gem" | "genderless" | "ghost" | "gift" | "gifts" | "glass-cheers" | "glass-martini" | "glass-martini-alt" | "glass-whiskey" | "glasses" | "globe" | "globe-africa" | "globe-americas" | "globe-asia" | "globe-europe" | "golf-ball" | "gopuram" | "graduation-cap" | "greater-than" | "greater-than-equal" | "grimace" | "grin" | "grin-alt" | "grin-beam" | "grin-beam-sweat" | "grin-hearts" | "grin-squint" | "grin-squint-tears" | "grin-stars" | "grin-tears" | "grin-tongue" | "grin-tongue-squint" | "grin-tongue-wink" | "grin-wink" | "grip-horizontal" | "grip-lines" | "grip-lines-vertical" | "grip-vertical" | "guitar" | "h-square" | "hamburger" | "hammer" | "hamsa" | "hand-holding" | "hand-holding-heart" | "hand-holding-medical" | "hand-holding-usd" | "hand-holding-water" | "hand-lizard" | "hand-middle-finger" | "hand-paper" | "hand-peace" | "hand-point-down" | "hand-point-left" | "hand-point-right" | "hand-point-up" | "hand-pointer" | "hand-rock" | "hand-scissors" | "hand-sparkles" | "hand-spock" | "hands" | "hands-helping" | "hands-wash" | "handshake" | "handshake-alt-slash" | "handshake-slash" | "hanukiah" | "hard-hat" | "hashtag" | "hat-cowboy" | "hat-cowboy-side" | "hat-wizard" | "hdd" | "head-side-cough" | "head-side-cough-slash" | "head-side-mask" | "head-side-virus" | "heading" | "headphones" | "headphones-alt" | "headset" | "heart" | "heart-broken" | "heartbeat" | "helicopter" | "highlighter" | "hiking" | "hippo" | "history" | "hockey-puck" | "holly-berry" | "home" | "horse" | "horse-head" | "hospital" | "hospital-alt" | "hospital-symbol" | "hospital-user" | "hot-tub" | "hotdog" | "hotel" | "hourglass" | "hourglass-end" | "hourglass-half" | "hourglass-start" | "house-damage" | "house-user" | "hryvnia" | "i-cursor" | "ice-cream" | "icicles" | "icons" | "id-badge" | "id-card" | "id-card-alt" | "igloo" | "image" | "images" | "inbox" | "indent" | "industry" | "infinity" | "info" | "info-circle" | "italic" | "jedi" | "joint" | "journal-whills" | "kaaba" | "key" | "keyboard" | "khanda" | "kiss" | "kiss-beam" | "kiss-wink-heart" | "kiwi-bird" | "landmark" | "language" | "laptop" | "laptop-code" | "laptop-house" | "laptop-medical" | "laugh" | "laugh-beam" | "laugh-squint" | "laugh-wink" | "layer-group" | "leaf" | "lemon" | "less-than" | "less-than-equal" | "level-down-alt" | "level-up-alt" | "life-ring" | "lightbulb" | "link" | "lira-sign" | "list" | "list-alt" | "list-ol" | "list-ul" | "location-arrow" | "lock" | "lock-open" | "long-arrow-alt-down" | "long-arrow-alt-left" | "long-arrow-alt-right" | "long-arrow-alt-up" | "low-vision" | "luggage-cart" | "lungs" | "lungs-virus" | "magic" | "magnet" | "mail-bulk" | "male" | "map" | "map-marked" | "map-marked-alt" | "map-marker" | "map-marker-alt" | "map-pin" | "map-signs" | "marker" | "mars" | "mars-double" | "mars-stroke" | "mars-stroke-h" | "mars-stroke-v" | "mask" | "medal" | "medkit" | "meh" | "meh-blank" | "meh-rolling-eyes" | "memory" | "menorah" | "mercury" | "meteor" | "microchip" | "microphone" | "microphone-alt" | "microphone-alt-slash" | "microphone-slash" | "microscope" | "minus" | "minus-circle" | "minus-square" | "mitten" | "mobile" | "mobile-alt" | "money-bill" | "money-bill-alt" | "money-bill-wave" | "money-bill-wave-alt" | "money-check" | "money-check-alt" | "monument" | "moon" | "mortar-pestle" | "mosque" | "motorcycle" | "mountain" | "mouse" | "mouse-pointer" | "mug-hot" | "music" | "network-wired" | "neuter" | "newspaper" | "not-equal" | "notes-medical" | "object-group" | "object-ungroup" | "oil-can" | "om" | "otter" | "outdent" | "pager" | "paint-brush" | "paint-roller" | "palette" | "pallet" | "paper-plane" | "paperclip" | "parachute-box" | "paragraph" | "parking" | "passport" | "pastafarianism" | "paste" | "pause" | "pause-circle" | "paw" | "peace" | "pen" | "pen-alt" | "pen-fancy" | "pen-nib" | "pen-square" | "pencil-alt" | "pencil-ruler" | "people-arrows" | "people-carry" | "pepper-hot" | "percent" | "percentage" | "person-booth" | "phone" | "phone-alt" | "phone-slash" | "phone-square" | "phone-square-alt" | "phone-volume" | "photo-video" | "piggy-bank" | "pills" | "pizza-slice" | "place-of-worship" | "plane" | "plane-arrival" | "plane-departure" | "plane-slash" | "play" | "play-circle" | "plug" | "plus" | "plus-circle" | "plus-square" | "podcast" | "poll" | "poll-h" | "poo" | "poo-storm" | "poop" | "portrait" | "pound-sign" | "power-off" | "pray" | "praying-hands" | "prescription" | "prescription-bottle" | "prescription-bottle-alt" | "print" | "procedures" | "project-diagram" | "pump-medical" | "pump-soap" | "puzzle-piece" | "qrcode" | "question" | "question-circle" | "quidditch" | "quote-left" | "quote-right" | "quran" | "radiation" | "radiation-alt" | "rainbow" | "random" | "receipt" | "record-vinyl" | "recycle" | "redo" | "redo-alt" | "registered" | "remove-format" | "reply" | "reply-all" | "republican" | "restroom" | "retweet" | "ribbon" | "ring" | "road" | "robot" | "rocket" | "route" | "rss" | "rss-square" | "ruble-sign" | "ruler" | "ruler-combined" | "ruler-horizontal" | "ruler-vertical" | "running" | "rupee-sign" | "sad-cry" | "sad-tear" | "satellite" | "satellite-dish" | "save" | "school" | "screwdriver" | "scroll" | "sd-card" | "search" | "search-dollar" | "search-location" | "search-minus" | "search-plus" | "seedling" | "server" | "shapes" | "share" | "share-alt" | "share-alt-square" | "share-square" | "shekel-sign" | "shield-alt" | "shield-virus" | "ship" | "shipping-fast" | "shoe-prints" | "shopping-bag" | "shopping-basket" | "shopping-cart" | "shower" | "shuttle-van" | "sign" | "sign-in-alt" | "sign-language" | "sign-out-alt" | "signal" | "signature" | "sim-card" | "sink" | "sitemap" | "skating" | "skiing" | "skiing-nordic" | "skull" | "skull-crossbones" | "slash" | "sleigh" | "sliders-h" | "smile" | "smile-beam" | "smile-wink" | "smog" | "smoking" | "smoking-ban" | "sms" | "snowboarding" | "snowflake" | "snowman" | "snowplow" | "soap" | "socks" | "solar-panel" | "sort" | "sort-alpha-down" | "sort-alpha-down-alt" | "sort-alpha-up" | "sort-alpha-up-alt" | "sort-amount-down" | "sort-amount-down-alt" | "sort-amount-up" | "sort-amount-up-alt" | "sort-down" | "sort-numeric-down" | "sort-numeric-down-alt" | "sort-numeric-up" | "sort-numeric-up-alt" | "sort-up" | "spa" | "space-shuttle" | "spell-check" | "spider" | "spinner" | "splotch" | "spray-can" | "square" | "square-full" | "square-root-alt" | "stamp" | "star" | "star-and-crescent" | "star-half" | "star-half-alt" | "star-of-david" | "star-of-life" | "step-backward" | "step-forward" | "stethoscope" | "sticky-note" | "stop" | "stop-circle" | "stopwatch" | "stopwatch-20" | "store" | "store-alt" | "store-alt-slash" | "store-slash" | "stream" | "street-view" | "strikethrough" | "stroopwafel" | "subscript" | "subway" | "suitcase" | "suitcase-rolling" | "sun" | "superscript" | "surprise" | "swatchbook" | "swimmer" | "swimming-pool" | "synagogue" | "sync" | "sync-alt" | "syringe" | "table" | "table-tennis" | "tablet" | "tablet-alt" | "tablets" | "tachometer-alt" | "tag" | "tags" | "tape" | "tasks" | "taxi" | "teeth" | "teeth-open" | "temperature-high" | "temperature-low" | "tenge" | "terminal" | "text-height" | "text-width" | "th" | "th-large" | "th-list" | "theater-masks" | "thermometer" | "thermometer-empty" | "thermometer-full" | "thermometer-half" | "thermometer-quarter" | "thermometer-three-quarters" | "thumbs-down" | "thumbs-up" | "thumbtack" | "ticket-alt" | "times" | "times-circle" | "tint" | "tint-slash" | "tired" | "toggle-off" | "toggle-on" | "toilet" | "toilet-paper" | "toilet-paper-slash" | "toolbox" | "tools" | "tooth" | "torah" | "torii-gate" | "tractor" | "trademark" | "traffic-light" | "trailer" | "train" | "tram" | "transgender" | "transgender-alt" | "trash" | "trash-alt" | "trash-restore" | "trash-restore-alt" | "tree" | "trophy" | "truck" | "truck-loading" | "truck-monster" | "truck-moving" | "truck-pickup" | "tshirt" | "tty" | "tv" | "umbrella" | "umbrella-beach" | "underline" | "undo" | "undo-alt" | "universal-access" | "university" | "unlink" | "unlock" | "unlock-alt" | "upload" | "user" | "user-alt" | "user-alt-slash" | "user-astronaut" | "user-check" | "user-circle" | "user-clock" | "user-cog" | "user-edit" | "user-friends" | "user-graduate" | "user-injured" | "user-lock" | "user-md" | "user-minus" | "user-ninja" | "user-nurse" | "user-plus" | "user-secret" | "user-shield" | "user-slash" | "user-tag" | "user-tie" | "user-times" | "users" | "users-cog" | "users-slash" | "utensil-spoon" | "utensils" | "vector-square" | "venus" | "venus-double" | "venus-mars" | "vest" | "vest-patches" | "vial" | "vials" | "video" | "video-slash" | "vihara" | "virus" | "virus-slash" | "viruses" | "voicemail" | "volleyball-ball" | "volume-down" | "volume-mute" | "volume-off" | "volume-up" | "vote-yea" | "vr-cardboard" | "walking" | "wallet" | "warehouse" | "water" | "wave-square" | "weight" | "weight-hanging" | "wheelchair" | "wifi" | "wind" | "window-close" | "window-maximize" | "window-minimize" | "window-restore" | "wine-bottle" | "wine-glass" | "wine-glass-alt" | "won-sign" | "wrench" | "x-ray" | "yen-sign" | "yin-yang";
-    export interface IconElement extends ControlElement {
-        name?: IconName;
-        fill?: Types.Color;
-        image?: ImageElement;
-        spin?: boolean;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-icon']: IconElement;
-            }
-        }
-    }
-    export class Icon extends Control {
-        private svgElm;
-        private _name;
-        private _size;
-        private _image;
-        private _spin;
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-        get fill(): Types.Color;
-        set fill(color: Types.Color);
-        get name(): IconName;
-        set name(value: IconName);
-        get image(): Image;
-        set image(image: Image);
-        get spin(): boolean;
-        set spin(value: boolean);
-        private _updateIcon;
-        static create(options?: IconElement, parent?: Control): Promise<Icon>;
-    }
-}
-declare module "packages/icon/src/index" {
-    export { IconName, Icon, IconElement } from "packages/icon/src/icon";
-}
-declare module "packages/button/src/style/button.css" { }
-declare module "packages/button/src/button" {
-    import { Control, Container, ControlElement } from "packages/base/src/index";
-    import { Icon, IconElement } from "packages/icon/src/index";
-    import "packages/button/src/style/button.css";
-    export interface ButtonElement extends ControlElement {
-        caption?: string;
-        icon?: IconElement;
-        rightIcon?: IconElement;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-button']: ButtonElement;
-            }
-        }
-    }
-    export class Button extends Control {
-        private captionElm;
-        private _icon;
-        private _rightIcon;
-        static create(options?: ButtonElement, parent?: Container): Promise<Button>;
-        constructor(parent?: Control, options?: ButtonElement);
-        get caption(): string;
-        set caption(value: string);
-        get icon(): Icon;
-        set icon(value: Icon);
-        get rightIcon(): Icon;
-        set rightIcon(value: Icon);
-        get enabled(): boolean;
-        set enabled(value: boolean);
-        private get isSpinning();
-        private prependIcon;
-        private appendIcon;
-        private updateButton;
-        _handleClick(event: Event): boolean;
-        refresh(): void;
-        protected init(): void;
-    }
-}
-declare module "packages/button/src/index" {
-    export { Button, ButtonElement } from "packages/button/src/button";
 }
 declare module "packages/upload/src/style/upload.css" { }
 declare module "packages/upload/src/upload" {
@@ -5209,6 +5128,7 @@ declare module "packages/combo-box/src/combo-box" {
         items?: IComboItem[];
         icon?: IconElement;
         mode?: ModeType;
+        readOnly?: boolean;
         placeholder?: string;
         onChanged?: notifyEventCallback;
     }
@@ -5226,6 +5146,7 @@ declare module "packages/combo-box/src/combo-box" {
         private _items;
         private _icon;
         private _mode;
+        private _readOnly;
         private _searchStr;
         private newItem;
         private isListShown;
@@ -5259,6 +5180,8 @@ declare module "packages/combo-box/src/combo-box" {
         get isMulti(): boolean;
         set border(value: IBorder);
         get border(): Border;
+        get readOnly(): boolean;
+        set readOnly(value: boolean);
         private isValueValid;
         private getItemIndex;
         private openList;
@@ -6041,6 +5964,162 @@ declare module "packages/application/src/index" {
     export { EventBus, IEventBus } from "packages/application/src/event-bus";
     export { IDataSchema, IUISchema, IRenderUIOptions, renderUI, DataSchemaValidator } from "packages/application/src/jsonUI";
     export default application;
+}
+declare module "packages/icon/src/style/icon.css" { }
+declare module "packages/icon/src/icon" {
+    import { Control, ControlElement, Types } from "packages/base/src/index";
+    import { Image, ImageElement } from "packages/image/src/index";
+    import "packages/icon/src/style/icon.css";
+    export type IconName = "" | "ad" | "address-book" | "address-card" | "adjust" | "air-freshener" | "align-center" | "align-justify" | "align-left" | "align-right" | "allergies" | "ambulance" | "american-sign-language-interpreting" | "anchor" | "angle-double-down" | "angle-double-left" | "angle-double-right" | "angle-double-up" | "angle-down" | "angle-left" | "angle-right" | "angle-up" | "angry" | "ankh" | "apple-alt" | "archive" | "archway" | "arrow-alt-circle-down" | "arrow-alt-circle-left" | "arrow-alt-circle-right" | "arrow-alt-circle-up" | "arrow-circle-down" | "arrow-circle-left" | "arrow-circle-right" | "arrow-circle-up" | "arrow-down" | "arrow-left" | "arrow-right" | "arrow-up" | "arrows-alt" | "arrows-alt-h" | "arrows-alt-v" | "assistive-listening-systems" | "asterisk" | "at" | "atlas" | "atom" | "audio-description" | "award" | "baby" | "baby-carriage" | "backspace" | "backward" | "bacon" | "bacteria" | "bacterium" | "bahai" | "balance-scale" | "balance-scale-left" | "balance-scale-right" | "ban" | "band-aid" | "barcode" | "bars" | "baseball-ball" | "basketball-ball" | "bath" | "battery-empty" | "battery-full" | "battery-half" | "battery-quarter" | "battery-three-quarters" | "bed" | "beer" | "bell" | "bell-slash" | "bezier-curve" | "bible" | "bicycle" | "biking" | "binoculars" | "biohazard" | "birthday-cake" | "blender" | "blender-phone" | "blind" | "blog" | "bold" | "bolt" | "bomb" | "bone" | "bong" | "book" | "book-dead" | "book-medical" | "book-open" | "book-reader" | "bookmark" | "border-all" | "border-none" | "border-style" | "bowling-ball" | "box" | "box-open" | "box-tissue" | "boxes" | "braille" | "brain" | "bread-slice" | "briefcase" | "briefcase-medical" | "broadcast-tower" | "broom" | "brush" | "bug" | "building" | "bullhorn" | "bullseye" | "burn" | "bus" | "bus-alt" | "business-time" | "calculator" | "calendar" | "calendar-alt" | "calendar-check" | "calendar-day" | "calendar-minus" | "calendar-plus" | "calendar-times" | "calendar-week" | "camera" | "camera-retro" | "campground" | "candy-cane" | "cannabis" | "capsules" | "car" | "car-alt" | "car-battery" | "car-crash" | "car-side" | "caravan" | "caret-down" | "caret-left" | "caret-right" | "caret-square-down" | "caret-square-left" | "caret-square-right" | "caret-square-up" | "caret-up" | "carrot" | "cart-arrow-down" | "cart-plus" | "cash-register" | "cat" | "certificate" | "chair" | "chalkboard" | "chalkboard-teacher" | "charging-station" | "chart-area" | "chart-bar" | "chart-line" | "chart-pie" | "check" | "check-circle" | "check-double" | "check-square" | "cheese" | "chess" | "chess-bishop" | "chess-board" | "chess-king" | "chess-knight" | "chess-pawn" | "chess-queen" | "chess-rook" | "chevron-circle-down" | "chevron-circle-left" | "chevron-circle-right" | "chevron-circle-up" | "chevron-down" | "chevron-left" | "chevron-right" | "chevron-up" | "child" | "church" | "circle" | "circle-notch" | "city" | "clinic-medical" | "clipboard" | "clipboard-check" | "clipboard-list" | "clock" | "clone" | "closed-captioning" | "cloud" | "cloud-download-alt" | "cloud-meatball" | "cloud-moon" | "cloud-moon-rain" | "cloud-rain" | "cloud-showers-heavy" | "cloud-sun" | "cloud-sun-rain" | "cloud-upload-alt" | "cocktail" | "code" | "code-branch" | "coffee" | "cog" | "cogs" | "coins" | "columns" | "comment" | "comment-alt" | "comment-dollar" | "comment-dots" | "comment-medical" | "comment-slash" | "comments" | "comments-dollar" | "compact-disc" | "compass" | "compress" | "compress-alt" | "compress-arrows-alt" | "concierge-bell" | "cookie" | "cookie-bite" | "copy" | "copyright" | "couch" | "credit-card" | "crop" | "crop-alt" | "cross" | "crosshairs" | "crow" | "crown" | "crutch" | "cube" | "cubes" | "cut" | "database" | "deaf" | "democrat" | "desktop" | "dharmachakra" | "diagnoses" | "dice" | "dice-d20" | "dice-d6" | "dice-five" | "dice-four" | "dice-one" | "dice-six" | "dice-three" | "dice-two" | "digital-tachograph" | "directions" | "disease" | "divide" | "dizzy" | "dna" | "dog" | "dollar-sign" | "dolly" | "dolly-flatbed" | "donate" | "door-closed" | "door-open" | "dot-circle" | "dove" | "download" | "drafting-compass" | "dragon" | "draw-polygon" | "drum" | "drum-steelpan" | "drumstick-bite" | "dumbbell" | "dumpster" | "dumpster-fire" | "dungeon" | "edit" | "egg" | "eject" | "ellipsis-h" | "ellipsis-v" | "envelope" | "envelope-open" | "envelope-open-text" | "envelope-square" | "equals" | "eraser" | "ethernet" | "euro-sign" | "exchange-alt" | "exclamation" | "exclamation-circle" | "exclamation-triangle" | "expand" | "expand-alt" | "expand-arrows-alt" | "external-link-alt" | "external-link-square-alt" | "eye" | "eye-dropper" | "eye-slash" | "fan" | "fast-backward" | "fast-forward" | "faucet" | "fax" | "feather" | "feather-alt" | "female" | "fighter-jet" | "file" | "file-alt" | "file-archive" | "file-audio" | "file-code" | "file-contract" | "file-csv" | "file-download" | "file-excel" | "file-export" | "file-image" | "file-import" | "file-invoice" | "file-invoice-dollar" | "file-medical" | "file-medical-alt" | "file-pdf" | "file-powerpoint" | "file-prescription" | "file-signature" | "file-upload" | "file-video" | "file-word" | "fill" | "fill-drip" | "film" | "filter" | "fingerprint" | "fire" | "fire-alt" | "fire-extinguisher" | "first-aid" | "fish" | "fist-raised" | "flag" | "flag-checkered" | "flag-usa" | "flask" | "flushed" | "folder" | "folder-minus" | "folder-open" | "folder-plus" | "font" | "font-awesome-logo-full" | "football-ball" | "forward" | "frog" | "frown" | "frown-open" | "funnel-dollar" | "futbol" | "gamepad" | "gas-pump" | "gavel" | "gem" | "genderless" | "ghost" | "gift" | "gifts" | "glass-cheers" | "glass-martini" | "glass-martini-alt" | "glass-whiskey" | "glasses" | "globe" | "globe-africa" | "globe-americas" | "globe-asia" | "globe-europe" | "golf-ball" | "gopuram" | "graduation-cap" | "greater-than" | "greater-than-equal" | "grimace" | "grin" | "grin-alt" | "grin-beam" | "grin-beam-sweat" | "grin-hearts" | "grin-squint" | "grin-squint-tears" | "grin-stars" | "grin-tears" | "grin-tongue" | "grin-tongue-squint" | "grin-tongue-wink" | "grin-wink" | "grip-horizontal" | "grip-lines" | "grip-lines-vertical" | "grip-vertical" | "guitar" | "h-square" | "hamburger" | "hammer" | "hamsa" | "hand-holding" | "hand-holding-heart" | "hand-holding-medical" | "hand-holding-usd" | "hand-holding-water" | "hand-lizard" | "hand-middle-finger" | "hand-paper" | "hand-peace" | "hand-point-down" | "hand-point-left" | "hand-point-right" | "hand-point-up" | "hand-pointer" | "hand-rock" | "hand-scissors" | "hand-sparkles" | "hand-spock" | "hands" | "hands-helping" | "hands-wash" | "handshake" | "handshake-alt-slash" | "handshake-slash" | "hanukiah" | "hard-hat" | "hashtag" | "hat-cowboy" | "hat-cowboy-side" | "hat-wizard" | "hdd" | "head-side-cough" | "head-side-cough-slash" | "head-side-mask" | "head-side-virus" | "heading" | "headphones" | "headphones-alt" | "headset" | "heart" | "heart-broken" | "heartbeat" | "helicopter" | "highlighter" | "hiking" | "hippo" | "history" | "hockey-puck" | "holly-berry" | "home" | "horse" | "horse-head" | "hospital" | "hospital-alt" | "hospital-symbol" | "hospital-user" | "hot-tub" | "hotdog" | "hotel" | "hourglass" | "hourglass-end" | "hourglass-half" | "hourglass-start" | "house-damage" | "house-user" | "hryvnia" | "i-cursor" | "ice-cream" | "icicles" | "icons" | "id-badge" | "id-card" | "id-card-alt" | "igloo" | "image" | "images" | "inbox" | "indent" | "industry" | "infinity" | "info" | "info-circle" | "italic" | "jedi" | "joint" | "journal-whills" | "kaaba" | "key" | "keyboard" | "khanda" | "kiss" | "kiss-beam" | "kiss-wink-heart" | "kiwi-bird" | "landmark" | "language" | "laptop" | "laptop-code" | "laptop-house" | "laptop-medical" | "laugh" | "laugh-beam" | "laugh-squint" | "laugh-wink" | "layer-group" | "leaf" | "lemon" | "less-than" | "less-than-equal" | "level-down-alt" | "level-up-alt" | "life-ring" | "lightbulb" | "link" | "lira-sign" | "list" | "list-alt" | "list-ol" | "list-ul" | "location-arrow" | "lock" | "lock-open" | "long-arrow-alt-down" | "long-arrow-alt-left" | "long-arrow-alt-right" | "long-arrow-alt-up" | "low-vision" | "luggage-cart" | "lungs" | "lungs-virus" | "magic" | "magnet" | "mail-bulk" | "male" | "map" | "map-marked" | "map-marked-alt" | "map-marker" | "map-marker-alt" | "map-pin" | "map-signs" | "marker" | "mars" | "mars-double" | "mars-stroke" | "mars-stroke-h" | "mars-stroke-v" | "mask" | "medal" | "medkit" | "meh" | "meh-blank" | "meh-rolling-eyes" | "memory" | "menorah" | "mercury" | "meteor" | "microchip" | "microphone" | "microphone-alt" | "microphone-alt-slash" | "microphone-slash" | "microscope" | "minus" | "minus-circle" | "minus-square" | "mitten" | "mobile" | "mobile-alt" | "money-bill" | "money-bill-alt" | "money-bill-wave" | "money-bill-wave-alt" | "money-check" | "money-check-alt" | "monument" | "moon" | "mortar-pestle" | "mosque" | "motorcycle" | "mountain" | "mouse" | "mouse-pointer" | "mug-hot" | "music" | "network-wired" | "neuter" | "newspaper" | "not-equal" | "notes-medical" | "object-group" | "object-ungroup" | "oil-can" | "om" | "otter" | "outdent" | "pager" | "paint-brush" | "paint-roller" | "palette" | "pallet" | "paper-plane" | "paperclip" | "parachute-box" | "paragraph" | "parking" | "passport" | "pastafarianism" | "paste" | "pause" | "pause-circle" | "paw" | "peace" | "pen" | "pen-alt" | "pen-fancy" | "pen-nib" | "pen-square" | "pencil-alt" | "pencil-ruler" | "people-arrows" | "people-carry" | "pepper-hot" | "percent" | "percentage" | "person-booth" | "phone" | "phone-alt" | "phone-slash" | "phone-square" | "phone-square-alt" | "phone-volume" | "photo-video" | "piggy-bank" | "pills" | "pizza-slice" | "place-of-worship" | "plane" | "plane-arrival" | "plane-departure" | "plane-slash" | "play" | "play-circle" | "plug" | "plus" | "plus-circle" | "plus-square" | "podcast" | "poll" | "poll-h" | "poo" | "poo-storm" | "poop" | "portrait" | "pound-sign" | "power-off" | "pray" | "praying-hands" | "prescription" | "prescription-bottle" | "prescription-bottle-alt" | "print" | "procedures" | "project-diagram" | "pump-medical" | "pump-soap" | "puzzle-piece" | "qrcode" | "question" | "question-circle" | "quidditch" | "quote-left" | "quote-right" | "quran" | "radiation" | "radiation-alt" | "rainbow" | "random" | "receipt" | "record-vinyl" | "recycle" | "redo" | "redo-alt" | "registered" | "remove-format" | "reply" | "reply-all" | "republican" | "restroom" | "retweet" | "ribbon" | "ring" | "road" | "robot" | "rocket" | "route" | "rss" | "rss-square" | "ruble-sign" | "ruler" | "ruler-combined" | "ruler-horizontal" | "ruler-vertical" | "running" | "rupee-sign" | "sad-cry" | "sad-tear" | "satellite" | "satellite-dish" | "save" | "school" | "screwdriver" | "scroll" | "sd-card" | "search" | "search-dollar" | "search-location" | "search-minus" | "search-plus" | "seedling" | "server" | "shapes" | "share" | "share-alt" | "share-alt-square" | "share-square" | "shekel-sign" | "shield-alt" | "shield-virus" | "ship" | "shipping-fast" | "shoe-prints" | "shopping-bag" | "shopping-basket" | "shopping-cart" | "shower" | "shuttle-van" | "sign" | "sign-in-alt" | "sign-language" | "sign-out-alt" | "signal" | "signature" | "sim-card" | "sink" | "sitemap" | "skating" | "skiing" | "skiing-nordic" | "skull" | "skull-crossbones" | "slash" | "sleigh" | "sliders-h" | "smile" | "smile-beam" | "smile-wink" | "smog" | "smoking" | "smoking-ban" | "sms" | "snowboarding" | "snowflake" | "snowman" | "snowplow" | "soap" | "socks" | "solar-panel" | "sort" | "sort-alpha-down" | "sort-alpha-down-alt" | "sort-alpha-up" | "sort-alpha-up-alt" | "sort-amount-down" | "sort-amount-down-alt" | "sort-amount-up" | "sort-amount-up-alt" | "sort-down" | "sort-numeric-down" | "sort-numeric-down-alt" | "sort-numeric-up" | "sort-numeric-up-alt" | "sort-up" | "spa" | "space-shuttle" | "spell-check" | "spider" | "spinner" | "splotch" | "spray-can" | "square" | "square-full" | "square-root-alt" | "stamp" | "star" | "star-and-crescent" | "star-half" | "star-half-alt" | "star-of-david" | "star-of-life" | "step-backward" | "step-forward" | "stethoscope" | "sticky-note" | "stop" | "stop-circle" | "stopwatch" | "stopwatch-20" | "store" | "store-alt" | "store-alt-slash" | "store-slash" | "stream" | "street-view" | "strikethrough" | "stroopwafel" | "subscript" | "subway" | "suitcase" | "suitcase-rolling" | "sun" | "superscript" | "surprise" | "swatchbook" | "swimmer" | "swimming-pool" | "synagogue" | "sync" | "sync-alt" | "syringe" | "table" | "table-tennis" | "tablet" | "tablet-alt" | "tablets" | "tachometer-alt" | "tag" | "tags" | "tape" | "tasks" | "taxi" | "teeth" | "teeth-open" | "temperature-high" | "temperature-low" | "tenge" | "terminal" | "text-height" | "text-width" | "th" | "th-large" | "th-list" | "theater-masks" | "thermometer" | "thermometer-empty" | "thermometer-full" | "thermometer-half" | "thermometer-quarter" | "thermometer-three-quarters" | "thumbs-down" | "thumbs-up" | "thumbtack" | "ticket-alt" | "times" | "times-circle" | "tint" | "tint-slash" | "tired" | "toggle-off" | "toggle-on" | "toilet" | "toilet-paper" | "toilet-paper-slash" | "toolbox" | "tools" | "tooth" | "torah" | "torii-gate" | "tractor" | "trademark" | "traffic-light" | "trailer" | "train" | "tram" | "transgender" | "transgender-alt" | "trash" | "trash-alt" | "trash-restore" | "trash-restore-alt" | "tree" | "trophy" | "truck" | "truck-loading" | "truck-monster" | "truck-moving" | "truck-pickup" | "tshirt" | "tty" | "tv" | "umbrella" | "umbrella-beach" | "underline" | "undo" | "undo-alt" | "universal-access" | "university" | "unlink" | "unlock" | "unlock-alt" | "upload" | "user" | "user-alt" | "user-alt-slash" | "user-astronaut" | "user-check" | "user-circle" | "user-clock" | "user-cog" | "user-edit" | "user-friends" | "user-graduate" | "user-injured" | "user-lock" | "user-md" | "user-minus" | "user-ninja" | "user-nurse" | "user-plus" | "user-secret" | "user-shield" | "user-slash" | "user-tag" | "user-tie" | "user-times" | "users" | "users-cog" | "users-slash" | "utensil-spoon" | "utensils" | "vector-square" | "venus" | "venus-double" | "venus-mars" | "vest" | "vest-patches" | "vial" | "vials" | "video" | "video-slash" | "vihara" | "virus" | "virus-slash" | "viruses" | "voicemail" | "volleyball-ball" | "volume-down" | "volume-mute" | "volume-off" | "volume-up" | "vote-yea" | "vr-cardboard" | "walking" | "wallet" | "warehouse" | "water" | "wave-square" | "weight" | "weight-hanging" | "wheelchair" | "wifi" | "wind" | "window-close" | "window-maximize" | "window-minimize" | "window-restore" | "wine-bottle" | "wine-glass" | "wine-glass-alt" | "won-sign" | "wrench" | "x-ray" | "yen-sign" | "yin-yang";
+    export interface IconElement extends ControlElement {
+        name?: IconName;
+        fill?: Types.Color;
+        image?: ImageElement;
+        spin?: boolean;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-icon']: IconElement;
+            }
+        }
+    }
+    export class Icon extends Control {
+        private svgElm;
+        private _name;
+        private _size;
+        private _image;
+        private _spin;
+        constructor(parent?: Control, options?: any);
+        protected init(): void;
+        get fill(): Types.Color;
+        set fill(color: Types.Color);
+        get name(): IconName;
+        set name(value: IconName);
+        get image(): Image;
+        set image(image: Image);
+        get spin(): boolean;
+        set spin(value: boolean);
+        private _updateIcon;
+        static create(options?: IconElement, parent?: Control): Promise<Icon>;
+    }
+}
+declare module "packages/icon/src/index" {
+    export { IconName, Icon, IconElement } from "packages/icon/src/icon";
+}
+declare module "packages/button/src/style/button.css" { }
+declare module "packages/button/src/button" {
+    import { Control, Container, ControlElement } from "packages/base/src/index";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    import "packages/button/src/style/button.css";
+    export interface ButtonElement extends ControlElement {
+        caption?: string;
+        icon?: IconElement;
+        rightIcon?: IconElement;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-button']: ButtonElement;
+            }
+        }
+    }
+    export class Button extends Control {
+        private captionElm;
+        private _icon;
+        private _rightIcon;
+        static create(options?: ButtonElement, parent?: Container): Promise<Button>;
+        constructor(parent?: Control, options?: ButtonElement);
+        get caption(): string;
+        set caption(value: string);
+        get icon(): Icon;
+        set icon(value: Icon);
+        get rightIcon(): Icon;
+        set rightIcon(value: Icon);
+        get enabled(): boolean;
+        set enabled(value: boolean);
+        private get isSpinning();
+        private prependIcon;
+        private appendIcon;
+        private updateButton;
+        _handleClick(event: Event): boolean;
+        refresh(): void;
+        protected init(): void;
+    }
+}
+declare module "packages/button/src/index" {
+    export { Button, ButtonElement } from "packages/button/src/button";
+}
+declare module "packages/alert/src/style/alert.css" { }
+declare module "packages/alert/src/alert" {
+    import { Control, Container, ControlElement } from "packages/base/src/index";
+    import "packages/alert/src/style/alert.css";
+    export interface AlertElement extends ControlElement {
+        status: "warning" | "success" | "error" | "loading" | "confirm";
+        title?: string;
+        content?: string;
+        link?: {
+            caption: string;
+            href: string;
+        };
+        onClose?: any;
+        onConfirm?: any;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ["i-alert"]: ControlElement;
+            }
+        }
+    }
+    export interface IAlertMessage {
+        status: "warning" | "success" | "error" | "loading" | "confirm";
+        title?: string;
+        content?: string;
+        link?: {
+            caption: string;
+            href: string;
+        };
+        onClose?: any;
+        onConfirm?: any;
+    }
+    export class Alert extends Control {
+        private mdAlert;
+        private pnlMain;
+        private _status;
+        private _title;
+        private _content;
+        private _link;
+        onClose?: any;
+        onConfirm?: any;
+        constructor(parent?: Container, options?: any);
+        get status(): string;
+        set status(value: string);
+        get title(): string;
+        set title(value: string);
+        get content(): string;
+        set content(value: string);
+        get link(): {
+            caption: string;
+            href: string;
+        };
+        set link(value: {
+            caption: string;
+            href: string;
+        });
+        private get iconName();
+        private get color();
+        closeModal: () => void;
+        showModal: () => void;
+        private renderUI;
+        private renderContent;
+        private renderLink;
+        private renderButtons;
+        protected init(): Promise<void>;
+    }
+}
+declare module "packages/alert/src/index" {
+    export { Alert, AlertElement } from "packages/alert/src/alert";
 }
 declare module "packages/code-editor/src/editor.api" {
     global {
@@ -9813,26 +9892,35 @@ declare module "packages/tree-view/src/index" {
     export { TreeView, TreeViewElement, TreeNode, TreeNodeElement } from "packages/tree-view/src/treeView";
 }
 declare module "packages/chart/src/chart" {
-    import { Control } from "packages/base/src/index";
-    export class Chart<T> extends Control {
+    import { Control, ControlElement } from "packages/base/src/index";
+    export interface EchartElement extends ControlElement {
+        theme?: 'light' | 'dark';
+    }
+    export class Chart<T> extends Control implements ControlElement {
         private _data;
-        private _timeCreated;
+        private _theme;
+        private _echart;
+        private _chartDom;
         private _chartIns;
         constructor(parent?: Control, options?: any);
         get data(): T;
         set data(value: T);
+        get theme(): 'light' | 'dark';
+        set theme(value: 'light' | 'dark');
         private get dataObj();
         showLoading(): void;
         drawChart(): void;
+        private _drawChart;
         updateChartOptions(): void;
         resize(): void;
+        private initChartDom;
         protected init(): void;
     }
 }
 declare module "packages/chart/src/lineChart" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Chart } from "packages/chart/src/chart";
-    export interface LineEchartElement extends ControlElement {
+    import { Control } from "packages/base/src/index";
+    import { Chart, EchartElement } from "packages/chart/src/chart";
+    export interface LineEchartElement extends EchartElement {
         data?: any;
     }
     global {
@@ -9848,8 +9936,8 @@ declare module "packages/chart/src/lineChart" {
     }
 }
 declare module "packages/chart/src/barChart" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Chart } from "packages/chart/src/chart";
+    import { Control } from "packages/base/src/index";
+    import { Chart, EchartElement } from "packages/chart/src/chart";
     export interface IBarChartAxisTick {
         show?: boolean;
     }
@@ -9903,7 +9991,7 @@ declare module "packages/chart/src/barChart" {
         color?: string[];
         series?: IBarChartSeries[];
     }
-    export interface BarEchartElement extends ControlElement {
+    export interface BarEchartElement extends EchartElement {
         data?: IBarChartData;
     }
     global {
@@ -9919,9 +10007,9 @@ declare module "packages/chart/src/barChart" {
     }
 }
 declare module "packages/chart/src/barStackChart" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Chart } from "packages/chart/src/chart";
-    export interface BarEchartElement extends ControlElement {
+    import { Control } from "packages/base/src/index";
+    import { Chart, EchartElement } from "packages/chart/src/chart";
+    export interface BarEchartElement extends EchartElement {
         data?: any;
     }
     global {
@@ -9937,8 +10025,8 @@ declare module "packages/chart/src/barStackChart" {
     }
 }
 declare module "packages/chart/src/pieChart" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Chart } from "packages/chart/src/chart";
+    import { Control } from "packages/base/src/index";
+    import { Chart, EchartElement } from "packages/chart/src/chart";
     export interface IPieChartTooltip {
         trigger?: string;
         formatter?: string;
@@ -9953,7 +10041,7 @@ declare module "packages/chart/src/pieChart" {
         tooltip?: IPieChartTooltip;
         series?: IPieChartSeries[];
     }
-    export interface PieEchartElement extends ControlElement {
+    export interface PieEchartElement extends EchartElement {
         data?: IPieChartData;
     }
     global {
@@ -9969,9 +10057,9 @@ declare module "packages/chart/src/pieChart" {
     }
 }
 declare module "packages/chart/src/scatterChart" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Chart } from "packages/chart/src/chart";
-    export interface ScatterChartElement extends ControlElement {
+    import { Control } from "packages/base/src/index";
+    import { Chart, EchartElement } from "packages/chart/src/chart";
+    export interface ScatterChartElement extends EchartElement {
         data?: any;
     }
     global {
@@ -9987,9 +10075,9 @@ declare module "packages/chart/src/scatterChart" {
     }
 }
 declare module "packages/chart/src/scatterLineChart" {
-    import { Control, ControlElement } from "packages/base/src/index";
-    import { Chart } from "packages/chart/src/chart";
-    export interface ScatterLineChartElement extends ControlElement {
+    import { Control } from "packages/base/src/index";
+    import { Chart, EchartElement } from "packages/chart/src/chart";
+    export interface ScatterLineChartElement extends EchartElement {
         data?: any;
     }
     global {
@@ -10489,9 +10577,269 @@ declare module "packages/video/src/video" {
 declare module "packages/video/src/index" {
     export { Video, VideoElement } from "packages/video/src/video";
 }
+declare module "packages/schema-designer/src/uiSchema" {
+    import { Container, ControlElement } from "packages/base/src/index";
+    import { ISchemaDesignerData } from "packages/schema-designer/src/schemaDesigner";
+    type IUISchemaOptions = 'DEFAULT' | 'GENERATED' | 'REGISTERED' | 'INLINED';
+    type IUISchemaRuleEffect = 'HIDE' | 'SHOW' | 'ENABLE' | 'DISABLE';
+    type IUISchemaType = 'VerticalLayout' | 'HorizontalLayout' | 'Group' | 'Categorization' | 'Category' | 'Control';
+    export interface ISchemaDesignerUI {
+        type: IUISchemaType;
+        scope?: string;
+        label?: string;
+        elements?: ISchemaDesignerUI[];
+        options?: {
+            format?: string;
+            readonly?: boolean;
+        } | {
+            detail: IUISchemaOptions | {
+                type: IUISchemaType;
+                elements: ISchemaDesignerUI;
+            };
+        };
+        rule?: IUISchemaRule;
+    }
+    interface IRules {
+        not?: IRules;
+        const?: string | number | boolean;
+        minimum?: number;
+        exclusiveMaximum?: number;
+        enum?: string[] | number[];
+    }
+    interface IUISchemaRule {
+        effect: IUISchemaRuleEffect;
+        condition: {
+            scope: string;
+            schema: IRules;
+        };
+    }
+    export class SchemaDesignerUI extends Container {
+        private txtUISchema;
+        private pnlUISchemaBuilder;
+        private uiSchema;
+        schema: ISchemaDesignerData;
+        uuid: string;
+        constructor(parent?: Container, options?: ControlElement);
+        protected init(): void;
+        refresh(): void;
+        getUISchema(): ISchemaDesignerUI;
+        private updateJsonUISchema;
+        private getUISchemaMap;
+        private getScopeByFields;
+        updateActionsItems(): Promise<void>;
+        updateActionsRules(): Promise<void>;
+        updateUISchemaItemsByRename(fields: string[], newFields: string[]): Promise<void>;
+        updateUISchemaByType(fields: string[], isOption?: boolean): Promise<void>;
+        deleteUISchema(fields: string[], onlyChild?: boolean): void;
+        private createUISchema;
+        private initUI;
+    }
+}
+declare module "packages/schema-designer/src/style/schema-designer.css" { }
+declare module "packages/schema-designer/src/schemaDesigner" {
+    import { Container, ControlElement } from "packages/base/src/index";
+    import { ISchemaDesignerUI } from "packages/schema-designer/src/uiSchema";
+    export { ISchemaDesignerUI };
+    import "packages/schema-designer/src/style/schema-designer.css";
+    type IDataType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array';
+    export interface ISchemaDesignerData {
+        type: IDataType;
+        properties: {
+            [key: string]: {
+                type: IDataType;
+                title?: string;
+                description?: string;
+                pattern?: number | string;
+                format?: string;
+                const?: string | number | boolean;
+                default?: string | number | boolean;
+                multipleOf?: number;
+                minimum?: number;
+                maximum?: number;
+                exclusiveMinimum?: number;
+                exclusiveMaximum?: number;
+                minLength?: number;
+                maxLength?: number;
+                minItems?: number;
+                maxItems?: number;
+                uniqueItems?: boolean;
+                deprecated?: boolean;
+                readOnly?: boolean;
+                writeOnly?: boolean;
+                additionalProperties?: boolean;
+                enum?: string[] | number[];
+                oneOf?: {
+                    title?: string;
+                    const: number | string;
+                }[];
+                items?: ISchemaDesignerData | false;
+                prefixItems?: {
+                    type?: string | number;
+                    enum?: string | number;
+                }[];
+                required?: string[];
+            };
+        };
+        required?: string[];
+    }
+    export interface SchemaDesignerElement extends ControlElement {
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-schema-designer']: SchemaDesignerElement;
+            }
+        }
+    }
+    export class SchemaDesigner extends Container {
+        private txtSchema;
+        private pnlSchemaBuilder;
+        private uuid;
+        private schema;
+        private pnlUISchema;
+        private uiSchemaPanel;
+        static create(options?: SchemaDesignerElement, parent?: Container): Promise<SchemaDesigner>;
+        constructor(parent?: Container, options?: SchemaDesignerElement);
+        refresh(): void;
+        protected init(): void;
+        getJsonData(): ISchemaDesignerData;
+        getJsonUI(): ISchemaDesignerUI;
+        private getJSON;
+        private updateJsonData;
+        private convertFieldNameToLabel;
+        private generateUUID;
+        private generateFieldName;
+        private createDataSchema;
+        private renderEnum;
+        private renderOneOf;
+        private renderPrefixItems;
+        private updateControls;
+        private getControlByPath;
+        private renderSchema;
+        private addSchemaByType;
+        private renderObjectSchema;
+        private renderStringSchema;
+        private renderNumberSchema;
+        private renderBooleanSchema;
+        private renderArraySchema;
+        private initUI;
+    }
+}
+declare module "packages/schema-designer/src/index" {
+    export { SchemaDesigner, SchemaDesignerElement, ISchemaDesignerData, ISchemaDesignerUI } from "packages/schema-designer/src/schemaDesigner";
+}
+declare module "packages/navigator/src/style/navigator.css" { }
+declare module "packages/navigator/src/navigator" {
+    import { Container, Control, ControlElement } from "packages/base/src/index";
+    import "packages/navigator/src/style/navigator.css";
+    interface INavOption {
+        searchPlaceholder?: string;
+    }
+    interface INavItem {
+        id: number | string;
+        caption: string;
+        navItems: INavItem[];
+        data: any;
+    }
+    export interface NavElement extends ControlElement {
+        navItems: INavItem[];
+        options: INavOption;
+        onItemClick: () => void;
+    }
+    export interface NavItemElement extends ControlElement {
+        caption: string;
+        navItems: INavItem[];
+        data: any;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ["i-nav"]: NavElement;
+            }
+        }
+    }
+    export class Nav extends Control {
+        private _navItems;
+        private _flatNavItems;
+        private _parentNavItem;
+        private _wrapper;
+        private txtSearch;
+        private _navWrapper;
+        private _options;
+        private _onItemClick;
+        private _searching;
+        private _activeNavItem;
+        constructor(parent?: Control, options?: any);
+        static create(options?: NavElement, parent?: Container): Promise<Nav>;
+        protected init(): void;
+        set navItems(navItems: INavItem[]);
+        get navItems(): INavItem[];
+        setRootActive(): void;
+        setSelectedItemById(id: number | string): void;
+        getSelectedItemById(id: number | string): INavItem | undefined;
+        getActiveRoute(): INavItem[];
+        clear(): void;
+        private render;
+        private renderNav;
+        private setNavItemActive;
+        private handleSearchOnChange;
+        private flattenNavItem;
+        private findSiblingsById;
+        private findParentNavItem;
+        private findParentPathByNavItem;
+    }
+    export class NavItem extends Control {
+        private _navItems;
+        private _wrapper;
+        private _caption;
+        private _back;
+        constructor(parent?: Control, options?: any);
+        static create(options?: NavItemElement, parent?: Container): Promise<NavItem>;
+        protected init(): void;
+        private render;
+    }
+}
+declare module "packages/navigator/src/index" {
+    export { Nav, NavItem } from "packages/navigator/src/navigator";
+}
+declare module "packages/breadcrumb/src/style/breadcrumb.css" { }
+declare module "packages/breadcrumb/src/breadcrumb" {
+    import { Container, Control, ControlElement } from "packages/base/src/index";
+    import "packages/breadcrumb/src/style/breadcrumb.css";
+    interface IBreadcrumbItem {
+        caption: string;
+        data?: any;
+    }
+    export interface BreadcrumbElement extends ControlElement {
+        onItemClick: (breadcrumbItem?: IBreadcrumbItem) => void;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ["i-breadcrumb"]: BreadcrumbElement;
+            }
+        }
+    }
+    export class Breadcrumb extends Control {
+        private _wrapper;
+        private _breadcrumbItems;
+        private _onItemClick;
+        constructor(parent?: Control, options?: any);
+        static create(options?: BreadcrumbElement, parent?: Container): Promise<Breadcrumb>;
+        protected init(): void;
+        set breadcrumbItems(breadcrumbItems: IBreadcrumbItem[]);
+        get breadcrumbItems(): IBreadcrumbItem[];
+        private clear;
+        private render;
+    }
+}
+declare module "packages/breadcrumb/src/index" {
+    export { Breadcrumb } from "packages/breadcrumb/src/breadcrumb";
+}
 declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "packages/base/src/index";
+    export { Alert } from "packages/alert/src/index";
     export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IDataSchema, IUISchema, IRenderUIOptions, DataSchemaValidator, renderUI } from "packages/application/src/index";
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
@@ -10526,4 +10874,7 @@ declare module "@ijstech/components" {
     export * as IPFS from "packages/ipfs/src/index";
     export { moment } from "packages/moment/src/index";
     export { Video } from "packages/video/src/index";
+    export { SchemaDesigner } from "packages/schema-designer/src/index";
+    export { Nav } from "packages/navigator/src/index";
+    export { Breadcrumb } from "packages/breadcrumb/src/index";
 }
