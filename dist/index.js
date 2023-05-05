@@ -11907,7 +11907,7 @@ var require_moment = __commonJS({
         }
         return to2;
       }
-      function Moment2(config) {
+      function Moment3(config) {
         copyConfig(this, config);
         this._d = new Date(config._d != null ? config._d.getTime() : NaN);
         if (!this.isValid()) {
@@ -11920,7 +11920,7 @@ var require_moment = __commonJS({
         }
       }
       function isMoment(obj) {
-        return obj instanceof Moment2 || obj != null && obj._isAMomentObject != null;
+        return obj instanceof Moment3 || obj != null && obj._isAMomentObject != null;
       }
       function warn(msg) {
         if (hooks.suppressDeprecationWarnings === false && typeof console !== "undefined" && console.warn) {
@@ -13640,7 +13640,7 @@ var require_moment = __commonJS({
         configFromArray(config);
       }
       function createFromConfig(config) {
-        var res = new Moment2(checkOverflow(prepareConfig(config)));
+        var res = new Moment3(checkOverflow(prepareConfig(config)));
         if (res._nextDay) {
           res.add(1, "d");
           res._nextDay = void 0;
@@ -13657,7 +13657,7 @@ var require_moment = __commonJS({
           config._i = input = config._locale.preparse(input);
         }
         if (isMoment(input)) {
-          return new Moment2(checkOverflow(input));
+          return new Moment3(checkOverflow(input));
         } else if (isDate(input)) {
           config._d = input;
         } else if (isArray(format2)) {
@@ -14179,7 +14179,7 @@ var require_moment = __commonJS({
         return this.format(output || this.localeData().calendar(format2, this, createLocal(now2)));
       }
       function clone() {
-        return new Moment2(this);
+        return new Moment3(this);
       }
       function isAfter(input, units) {
         var localInput = isMoment(input) ? input : createLocal(input);
@@ -14896,7 +14896,7 @@ var require_moment = __commonJS({
       function getZoneName() {
         return this._isUTC ? "Coordinated Universal Time" : "";
       }
-      var proto = Moment2.prototype;
+      var proto = Moment3.prototype;
       proto.add = add;
       proto.calendar = calendar$1;
       proto.clone = clone;
@@ -15443,11 +15443,13 @@ __export(exports, {
   ComboBox: () => ComboBox,
   Component: () => Component,
   Container: () => Container,
+  ContextMenu: () => ContextMenu,
   Control: () => Control,
   DataGrid: () => DataGrid,
   DataSchemaValidator: () => DataSchemaValidator,
   Datepicker: () => Datepicker,
   EventBus: () => EventBus,
+  Form: () => Form,
   GridLayout: () => GridLayout,
   HStack: () => HStack,
   IPFS: () => src_exports2,
@@ -16070,12 +16072,12 @@ var darkTheme = {
     fontColor: "#000"
   }
 };
-function createThemeVars(theme, vars, prefix) {
+function createThemeVars(theme2, vars, prefix) {
   vars = vars || {};
-  for (let v in theme) {
-    if (typeof theme[v] == "object") {
+  for (let v in theme2) {
+    if (typeof theme2[v] == "object") {
       vars[v] = {};
-      createThemeVars(theme[v], vars[v], prefix ? prefix + v + "-" : v + "-");
+      createThemeVars(theme2[v], vars[v], prefix ? prefix + v + "-" : v + "-");
     } else {
       let name = ((prefix || "") + v).split(/(?=[A-Z])/).join("_").toLowerCase();
       vars[v] = `var(--${name})`;
@@ -16083,14 +16085,14 @@ function createThemeVars(theme, vars, prefix) {
   }
   return vars;
 }
-function createThemeCss(theme, vars, prefix) {
+function createThemeCss(theme2, vars, prefix) {
   vars = vars || {};
-  for (let v in theme) {
-    if (typeof theme[v] == "object") {
-      createThemeCss(theme[v], vars, prefix ? prefix + v + "-" : v + "-");
+  for (let v in theme2) {
+    if (typeof theme2[v] == "object") {
+      createThemeCss(theme2[v], vars, prefix ? prefix + v + "-" : v + "-");
     } else {
       let name = ((prefix || "") + v).split(/(?=[A-Z])/).join("_").toLowerCase();
-      vars[name] = theme[v];
+      vars[name] = theme2[v];
     }
   }
   return vars;
@@ -16099,8 +16101,8 @@ var ThemeVars = createThemeVars(defaultTheme);
 var ColorVars = createThemeVars(Colors);
 var themeStyle;
 var currentTheme;
-function applyTheme(theme) {
-  let cssVars = createThemeCss(theme);
+function applyTheme(theme2) {
+  let cssVars = createThemeCss(theme2);
   let css = `:root{`;
   for (let p in cssVars)
     css += `--${p}: ${cssVars[p]};`;
@@ -16110,7 +16112,7 @@ function applyTheme(theme) {
     document.head.appendChild(themeStyle);
   }
   themeStyle.textContent = css;
-  currentTheme = theme;
+  currentTheme = theme2;
 }
 applyTheme(defaultTheme);
 
@@ -17261,10 +17263,12 @@ var ComponentPropertyType;
   ComponentPropertyType2[ComponentPropertyType2["array"] = 5] = "array";
   ComponentPropertyType2[ComponentPropertyType2["event"] = 6] = "event";
 })(ComponentPropertyType || (ComponentPropertyType = {}));
+var notifyEventParams = [{ name: "target", type: "Control", isControl: true }, { name: "event", type: "Event" }];
 var ComponentProperty = {
   props: {
     "id": { type: "string" }
-  }
+  },
+  events: {}
 };
 var Component = class extends HTMLElement {
   constructor(parent, options, defaults) {
@@ -17298,6 +17302,9 @@ var Component = class extends HTMLElement {
       value = value.substring(1, value.length - 1);
     }
     return value;
+  }
+  _getDesignPropValue(prop) {
+    return this._designProps && this._designProps[prop];
   }
   _setDesignPropValue(prop, value) {
     this._designProps = this._designProps || {};
@@ -18062,6 +18069,16 @@ function getParentControl(elm) {
     return getParentControl(elm.parentElement);
   return null;
 }
+function getParentControlById(elm, id) {
+  if (elm.parentElement instanceof Control) {
+    if (elm.parentElement[id] instanceof Control)
+      return elm.parentElement[id];
+    else
+      return getParentControlById(elm.parentElement, id);
+  }
+  ;
+  return null;
+}
 var toNumberValue = (value) => {
   return parseFloat(value.replace("px", ""));
 };
@@ -18406,6 +18423,17 @@ var ControlProperties = {
     height: { type: "number", default: "0" },
     visible: { type: "boolean", default: "true" },
     enabled: { type: "boolean", default: "true" }
+  },
+  events: {
+    onClick: notifyEventParams,
+    onContextMenu: notifyEventParams,
+    onDblClick: notifyEventParams,
+    onFocus: notifyEventParams,
+    onKeyDown: notifyEventParams,
+    onKeyUp: notifyEventParams,
+    onMouseDown: notifyEventParams,
+    onMouseMove: notifyEventParams,
+    onMouseUp: notifyEventParams
   }
 };
 var Control = class extends Component {
@@ -18430,17 +18458,26 @@ var Control = class extends Component {
   }
   _getCustomProperties() {
     let result = {
-      props: {}
+      props: {},
+      events: {}
     };
     for (let n in ComponentProperty.props)
       result.props[n] = ComponentProperty.props[n];
+    for (let n in ComponentProperty.events)
+      result.events[n] = ComponentProperty.events[n];
     for (let n in ControlProperties.props)
       result.props[n] = ControlProperties.props[n];
+    for (let n in ControlProperties.events)
+      result.events[n] = ControlProperties.events[n];
     let propInfo = getCustomElementProperties(this.tagName);
     if (propInfo) {
+      result.tagName = propInfo.tagName;
+      result.className = propInfo.className;
       result.icon = propInfo.icon;
       for (let n in propInfo.props)
         result.props[n] = propInfo.props[n];
+      for (let n in propInfo.events)
+        result.events[n] = propInfo.events[n];
     }
     ;
     return result;
@@ -18463,6 +18500,24 @@ var Control = class extends Component {
   }
   xssSanitize(value) {
     return DOMPurify.sanitize(value);
+  }
+  get contextMenu() {
+    if (this._contextMenuId && !this._contextMenuControl)
+      this._contextMenuControl = getParentControlById(this, this._contextMenuId);
+    return this._contextMenuControl;
+  }
+  set contextMenu(value) {
+    if (typeof value === "string") {
+      this._contextMenuId = value;
+      this._contextMenuControl = null;
+    } else if (value instanceof Control) {
+      this._contextMenuId = value.id;
+      this._contextMenuControl = value;
+    } else {
+      this._contextMenuId = null;
+      this._contextMenuControl = null;
+    }
+    ;
   }
   get margin() {
     return this._margin;
@@ -18673,10 +18728,15 @@ var Control = class extends Component {
       return true;
   }
   _handleContextMenu(event, stopPropagation) {
+    let contextMenu = this.contextMenu;
+    if (contextMenu) {
+      contextMenu.show({ x: event.clientX, y: event.clientY });
+    }
+    ;
     if (this._onContextMenu) {
       this._onContextMenu(this, event);
       return true;
-    } else if (!stopPropagation) {
+    } else if (!stopPropagation && !contextMenu) {
       let parent = getParentControl(this);
       if (!parent)
         return false;
@@ -18921,6 +18981,7 @@ var Control = class extends Component {
     this.setAttributeToProperty("padding");
     this.setAttributeToProperty("tag");
     this.setAttributeToProperty("anchor");
+    this.setAttributeToProperty("contextMenu");
     this.setAttributeToProperty("maxWidth");
     this.setAttributeToProperty("minWidth");
     this.setAttributeToProperty("stack");
@@ -19354,16 +19415,13 @@ function getCustomElementProperties(name) {
 function getCustomElements() {
   return _customElementProperties;
 }
-function customElements2(name, properties) {
+function customElements2(tagName, properties) {
   return (constructor) => {
     try {
-      if (properties) {
-        properties.caption = properties.caption || properties.name;
-        properties.name = name;
-      }
-      ;
-      _customElementProperties[name] = properties;
-      window.customElements.define(name, constructor);
+      if (properties)
+        properties.tagName = tagName;
+      _customElementProperties[tagName] = properties;
+      window.customElements.define(tagName, constructor);
     } catch (err) {
     }
   };
@@ -19801,11 +19859,11 @@ var Button = class extends Control {
 Button = __decorateClass([
   customElements2("i-button", {
     icon: "closed-captioning",
-    caption: "Button",
+    className: "Button",
     props: {
-      caption: { type: "string" },
-      onClick: { type: "event" }
-    }
+      caption: { type: "string" }
+    },
+    events: {}
   })
 ], Button);
 
@@ -20001,10 +20059,11 @@ var Label = class extends Control {
 Label = __decorateClass([
   customElements2("i-label", {
     icon: "heading",
-    caption: "Label",
+    className: "Label",
     props: {
       caption: { type: "string" }
-    }
+    },
+    events: {}
   })
 ], Label);
 
@@ -20808,8 +20867,9 @@ var Panel = class extends Container {
 Panel = __decorateClass([
   customElements2("i-panel", {
     icon: "stop",
-    caption: "Panel",
-    props: {}
+    className: "Panel",
+    props: {},
+    events: {}
   })
 ], Panel);
 
@@ -23333,8 +23393,10 @@ var Tabs = class extends Container {
     }
     this._activeTabIndex = index;
     (_a = this.activeTab) == null ? void 0 : _a.classList.add("active");
-    if (this.contentPanes[index])
+    if (this.contentPanes[index]) {
       this.contentPanes[index].style.display = "";
+      this.refreshControls();
+    }
   }
   get items() {
     return this._tabs;
@@ -25501,10 +25563,11 @@ __decorateClass([
 Input = __decorateClass([
   customElements2("i-input", {
     icon: "edit",
-    name: "Input",
+    className: "Input",
     props: {
       caption: { type: "string" }
-    }
+    },
+    events: {}
   })
 ], Input);
 
@@ -25857,13 +25920,17 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
     if (showErrMsg == true) {
       if (descriptions.hasOwnProperty(idxScope))
         descriptions[idxScope].visible = false;
-      errorMsgs[idxScope].caption = errMsg;
-      errorMsgs[idxScope].visible = true;
+      if (errorMsgs[idxScope]) {
+        errorMsgs[idxScope].caption = errMsg;
+        errorMsgs[idxScope].visible = true;
+      }
     } else {
       if (descriptions.hasOwnProperty(idxScope))
         descriptions[idxScope].visible = true;
-      errorMsgs[idxScope].caption = "";
-      errorMsgs[idxScope].visible = false;
+      if (errorMsgs[idxScope]) {
+        errorMsgs[idxScope].caption = "";
+        errorMsgs[idxScope].visible = false;
+      }
     }
     valueChangedCallback && valueChangedCallback(data, errMsg);
   };
@@ -27372,14 +27439,6 @@ var Application = class {
     ;
     return [];
   }
-  async getModule(modulePath, options) {
-    if (this.modules[modulePath])
-      return this.modules[modulePath];
-    let result = await this.newModule(modulePath, options);
-    if (result)
-      this.modules[modulePath] = result;
-    return result;
-  }
   async loadPackage(packageName, modulePath) {
     var _a, _b, _c;
     let options = this._initOptions;
@@ -27393,13 +27452,16 @@ var Application = class {
       ;
     }
     ;
+    let rootDir = (options == null ? void 0 : options.rootDir) ? (options == null ? void 0 : options.rootDir) + "/" : "";
+    let moduleDir = (options == null ? void 0 : options.moduleDir) ? (options == null ? void 0 : options.moduleDir) + "/" : "modules/";
+    let libDir = (options == null ? void 0 : options.libDir) ? (options == null ? void 0 : options.libDir) + "/" : "libs/";
     if (!modulePath) {
       if ((_b = options == null ? void 0 : options.modules) == null ? void 0 : _b[packageName])
-        modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "modules/" + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
+        modulePath = rootDir + moduleDir + ((_c = options == null ? void 0 : options.modules) == null ? void 0 : _c[packageName].path) + "/index.js";
       else
         return null;
     } else if (modulePath == "*") {
-      modulePath = ((options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : "") + "libs/" + packageName + "/index.js";
+      modulePath = rootDir + libDir + packageName + "/index.js";
     } else if (modulePath.startsWith("{LIB}/")) {
       let libPath = LibPath || "";
       if (LibPath && !LibPath.endsWith("/"))
@@ -27449,9 +27511,46 @@ var Application = class {
       modulePath += options.modules[module2].path;
       if (!modulePath.endsWith(".js"))
         modulePath += "/index.js";
-    } else if (options && options.dependencies && options.dependencies[module2])
-      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : ""}libs/${module2}/index.js`;
+    } else if (options && options.dependencies && options.dependencies[module2]) {
+      let libDir = (options == null ? void 0 : options.libDir) ? (options == null ? void 0 : options.libDir) + "/" : "libs/";
+      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : ""}${libDir}${module2}/index.js`;
+    }
+    ;
     return modulePath;
+  }
+  async initModule(modulePath, script) {
+    if (this.modulesId[modulePath])
+      return this.modulesId[modulePath];
+    _currentDefineModule = null;
+    this.currentModulePath = modulePath;
+    if (modulePath.indexOf("://") > 0)
+      this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
+    else
+      this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
+    await import(`data:text/javascript,${encodeURIComponent(script)}`);
+    document.getElementsByTagName("html")[0].classList.add(applicationStyle);
+    this.currentModulePath = "";
+    this.currentModuleDir = "";
+    if (!_currentDefineModule && this.packages[modulePath]) {
+      _currentDefineModule = this.packages[modulePath];
+    }
+    ;
+    if (_currentDefineModule) {
+      let module2 = _currentDefineModule.default || _currentDefineModule;
+      if (module2) {
+        this.id++;
+        let elmId = `i-module--${this.id}`;
+        let Module2 = class extends module2 {
+        };
+        this.modulesId[modulePath] = elmId;
+        this.modules[modulePath] = Module2;
+        customElements.define(elmId, Module2);
+        return elmId;
+      }
+      ;
+    }
+    ;
+    return null;
   }
   async newModule(module2, options) {
     var _a, _b, _c, _d;
@@ -27501,7 +27600,8 @@ var Application = class {
     ;
     let elmId = this.modulesId[modulePath];
     if (elmId && modulePath) {
-      return document.createElement(elmId);
+      let Module2 = this.modules[modulePath];
+      return new Module2(null, options);
     }
     ;
     let script;
@@ -27525,33 +27625,11 @@ var Application = class {
     }
     ;
     if (script) {
-      _currentDefineModule = null;
-      this.currentModulePath = modulePath;
-      if (modulePath.indexOf("://") > 0)
-        this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
-      else
-        this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
-      await import(`data:text/javascript,${encodeURIComponent(script)}`);
-      document.getElementsByTagName("html")[0].classList.add(applicationStyle);
-      this.currentModulePath = "";
-      this.currentModuleDir = "";
-      if (!_currentDefineModule && this.packages[modulePath]) {
-        _currentDefineModule = this.packages[modulePath];
-      }
-      ;
-      if (_currentDefineModule) {
-        let module3 = _currentDefineModule.default || _currentDefineModule;
-        if (module3) {
-          this.id++;
-          elmId = `i-module--${this.id}`;
-          this.modulesId[modulePath] = elmId;
-          let Module2 = class extends module3 {
-          };
-          customElements.define(elmId, Module2);
-          let result = new Module2(null, options);
-          return result;
-        }
-        ;
+      let elmId2 = await this.initModule(modulePath, script);
+      if (elmId2) {
+        let Module2 = this.modules[modulePath];
+        let result = new Module2(null, options);
+        return result;
       }
       ;
     }
@@ -27811,6 +27889,12 @@ var CodeEditor = class extends Control {
   get editor() {
     return this._editor;
   }
+  focus() {
+    this._editor.focus();
+  }
+  setCursor(line, column) {
+    this.editor.setPosition({ lineNumber: line, column });
+  }
   get language() {
     return this._language;
   }
@@ -28063,6 +28147,9 @@ CodeDiffEditor.updateFile = updateFile;
 CodeDiffEditor = __decorateClass([
   customElements2("i-code-diff-editor")
 ], CodeDiffEditor);
+
+// packages/data-grid/src/dataGrid.ts
+var import_moment2 = __toModule(require_moment());
 
 // packages/data-grid/src/style/dataGrid.css.ts
 var Theme22 = theme_exports.ThemeVars;
@@ -28563,6 +28650,8 @@ var TGridColumn = class {
     this._readOnly = false;
     this.grid = grid;
     this._colIdx = colIdx;
+    if (!this._type)
+      this._type = "string";
   }
   get asJSON() {
     return {
@@ -28620,34 +28709,6 @@ var TGridColumn = class {
   set binding(value) {
     this._binding = value;
   }
-  get button() {
-    return this._type == "button";
-  }
-  set button(value) {
-    if (value) {
-      this._type = "button";
-      this._button = true;
-    } else if (this._type == "button") {
-      this._type = "string";
-      this._button = false;
-    }
-    ;
-    this.grid.enableUpdateTimer();
-  }
-  get checkBox() {
-    return this._type == "checkBox";
-  }
-  set checkBox(value) {
-    if (value) {
-      this._type = "checkBox";
-      this._checkBox = true;
-    } else if (this._type == "checkBox") {
-      this._type = "string";
-      this._checkBox = false;
-    }
-    ;
-    this.grid.enableUpdateTimer();
-  }
   get colIdx() {
     return this._colIdx;
   }
@@ -28663,6 +28724,13 @@ var TGridColumn = class {
   }
   set color(value) {
     this._color = value;
+    this.grid.enableUpdateTimer();
+  }
+  get comboItems() {
+    return this._comboItems;
+  }
+  set comboItems(value) {
+    this._comboItems = value;
     this.grid.enableUpdateTimer();
   }
   get dataType() {
@@ -28696,19 +28764,6 @@ var TGridColumn = class {
     this._horizontalAlign = value;
     this.grid.enableUpdateTimer();
   }
-  get radioButton() {
-    return this._type == "radioButton";
-  }
-  set radioButton(value) {
-    if (value) {
-      this._type = "radioButton";
-      this._radioButton = true;
-    } else if (this._type == "radioButton") {
-      this._type = "string";
-      this._radioButton = false;
-    }
-    this.grid.enableUpdateTimer();
-  }
   get readOnly() {
     return this._readOnly;
   }
@@ -28730,7 +28785,7 @@ var TGridColumn = class {
     this._sortable = value;
   }
   get type() {
-    return this._type || "string";
+    return this._type;
   }
   set type(value) {
     this._type = value;
@@ -28928,12 +28983,16 @@ var DataGrid = class extends Control {
   }
   set fixedCol(value) {
     this._fixedCol = value;
+    if (this._leftCol < this._fixedCol)
+      this._leftCol = this._fixedCol;
   }
   get fixedRow() {
     return this._fixedRow;
   }
   set fixedRow(value) {
     this._fixedRow = value;
+    if (this._topRow < this._fixedRow)
+      this._topRow = this._fixedRow;
   }
   get layout() {
     return this._layout;
@@ -29121,99 +29180,119 @@ var DataGrid = class extends Control {
       editor = editor || this.editor;
       if (!editor || editor._isModified === false)
         return;
-      let newValue;
-      if (editor.valueCode)
-        newValue = editor.valueCode;
-      else if (editor.getText)
-        newValue = editor.getText();
-      else
-        newValue = application.xssSanitize(editor.value);
-      let text = "";
-      if (editor.getText)
-        text = editor.getText();
-      else
-        text = newValue;
-      let cell = this.data.getCell(this._col, this._row);
-      if (cell.mergeRect && (this._col != cell.mergeRect.startCol || this._row != cell.mergeRect.startRow))
-        cell = this.data.getCell(cell.mergeRect.startCol, cell.mergeRect.startRow);
-      if (true) {
-        if (this.options._autoRowHeight) {
-          let div = this._currCell.div;
-          div.textContent = text;
-          let height = div.clientHeight + 3;
-          if (cell.mergeRect) {
-            height = height / (cell.mergeRect.endRow - cell.mergeRect.startRow + 1);
-            for (let i = cell.mergeRect.startRow; i <= cell.mergeRect.endRow; i++) {
-              cell._height = height;
-              this._updateRowHeights(i);
-            }
-          } else {
-            cell._height = height;
-            this._updateRowHeights(this._row);
-          }
-        } else
-          this._currCell.div.textContent = text;
-      }
-      cell._value = newValue;
-      this.origValue = void 0;
-      if (!cardViewEditor)
+      if (editor.getAttribute("editorType")) {
+        let cell = this.data.getCell(this._col, this._row);
+        if (editor.getAttribute("editorType") === "sc:checkBox") {
+          cell._value = editor.checked;
+        } else if (editor.getAttribute("editorType") === "sc:datePicker") {
+          cell._value = editor.value;
+        } else if (editor.getAttribute("editorType") === "sc:dateTimePicker") {
+          cell._value = editor.value;
+        } else if (editor.getAttribute("editorType") === "sc:timePicker") {
+          cell._value = editor.value;
+        } else if (editor.getAttribute("editorType") === "sc:comboBox") {
+          cell._value = editor.value;
+        } else if (editor.getAttribute("editorType") === "number") {
+          cell._value = parseFloat(editor.value);
+        } else if (editor.getAttribute("editorType") === "integer") {
+          cell._value = parseInt(editor.value);
+        }
         this.enableUpdateTimer();
-      if (cell._field) {
-        if (!cell._record) {
-          let column = this.columns.getColumn(cell._col);
-          let record = this.getObject(0, cell._row);
-          let rs = record[cell._lookupTable];
-          cell._record = rs.append();
-          let v = column._lookupDetailValue;
-          switch (column._lookupDetailType) {
-            case "date":
-              v = new Date(v);
-              v.setHours(0, 0, 0, 0);
-              break;
-            case "numeric":
-              if (typeof v == "string")
-                v = parseFloat(v);
-              break;
-          }
-          ;
-          cell._record[column._lookupDetailField] = v;
+      } else {
+        let newValue;
+        if (editor.valueCode)
+          newValue = editor.valueCode;
+        else if (editor.getText)
+          newValue = editor.getText();
+        else
+          newValue = application.xssSanitize(editor.value);
+        let text = "";
+        if (editor.getText)
+          text = editor.getText();
+        else
+          text = newValue;
+        let cell = this.data.getCell(this._col, this._row);
+        if (cell.mergeRect && (this._col != cell.mergeRect.startCol || this._row != cell.mergeRect.startRow))
+          cell = this.data.getCell(cell.mergeRect.startCol, cell.mergeRect.startRow);
+        if (true) {
+          if (this.options._autoRowHeight) {
+            let div = this._currCell.div;
+            div.textContent = text;
+            let height = div.clientHeight + 3;
+            if (cell.mergeRect) {
+              height = height / (cell.mergeRect.endRow - cell.mergeRect.startRow + 1);
+              for (let i = cell.mergeRect.startRow; i <= cell.mergeRect.endRow; i++) {
+                cell._height = height;
+                this._updateRowHeights(i);
+              }
+            } else {
+              cell._height = height;
+              this._updateRowHeights(this._row);
+            }
+          } else
+            this._currCell.div.textContent = text;
         }
-        cell._record[cell._field] = newValue;
-      } else if (this._dataBindingContext) {
-        let record = this.getObject(0, this._row);
-        let field = this.getObject(this._col, 0);
-        let idx = 0;
-        let jsonValue;
-        if (typeof field == "number") {
-          idx = field;
-          field = this.dataBinding["fields"][idx];
-          if (this.dataBinding["jsonValues"])
-            jsonValue = this.dataBinding["jsonValues"][idx];
-        }
-        this.data.getCell(0, this._row)._newRow = false;
-        let fieldType = this.dataBinding["fieldTypes"][idx];
-        if (fieldType == "float")
-          newValue = parseNumber(newValue);
-        else if (fieldType == "integer")
-          newValue == Math.round(parseNumber(newValue));
-        else if (editor && editor["dataType"] == "dtNumber")
-          newValue = parseNumber(newValue);
-        if (!record && field) {
-          record = this._dataBindingContext["append"]();
-          this.setObject(0, this._row, record);
-        }
-        if (record && field) {
-          if (jsonValue)
-            newValue = this.setJSONValue(record[field], jsonValue, newValue);
-          if (record[field] != newValue)
-            record[field] = newValue;
-        }
-        if (true)
+        cell._value = newValue;
+        this.origValue = void 0;
+        if (!cardViewEditor)
           this.enableUpdateTimer();
+        if (cell._field) {
+          if (!cell._record) {
+            let column = this.columns.getColumn(cell._col);
+            let record = this.getObject(0, cell._row);
+            let rs = record[cell._lookupTable];
+            cell._record = rs.append();
+            let v = column._lookupDetailValue;
+            switch (column._lookupDetailType) {
+              case "date":
+                v = new Date(v);
+                v.setHours(0, 0, 0, 0);
+                break;
+              case "numeric":
+                if (typeof v == "string")
+                  v = parseFloat(v);
+                break;
+            }
+            ;
+            cell._record[column._lookupDetailField] = v;
+          }
+          cell._record[cell._field] = newValue;
+        } else if (this._dataBindingContext) {
+          let record = this.getObject(0, this._row);
+          let field = this.getObject(this._col, 0);
+          let idx = 0;
+          let jsonValue;
+          if (typeof field == "number") {
+            idx = field;
+            field = this.dataBinding["fields"][idx];
+            if (this.dataBinding["jsonValues"])
+              jsonValue = this.dataBinding["jsonValues"][idx];
+          }
+          this.data.getCell(0, this._row)._newRow = false;
+          let fieldType = this.dataBinding["fieldTypes"][idx];
+          if (fieldType == "float")
+            newValue = parseNumber(newValue);
+          else if (fieldType == "integer")
+            newValue == Math.round(parseNumber(newValue));
+          else if (editor && editor["dataType"] == "dtNumber")
+            newValue = parseNumber(newValue);
+          if (!record && field) {
+            record = this._dataBindingContext["append"]();
+            this.setObject(0, this._row, record);
+          }
+          if (record && field) {
+            if (jsonValue)
+              newValue = this.setJSONValue(record[field], jsonValue, newValue);
+            if (record[field] != newValue)
+              record[field] = newValue;
+          }
+          if (true)
+            this.enableUpdateTimer();
+        }
+        this.updateBindingData(cell);
+        if (this.onCellChange)
+          this.onCellChange(this, cell, oldValue, newValue);
       }
-      this.updateBindingData(cell);
-      if (this.onCellChange)
-        this.onCellChange(this, cell, oldValue, newValue);
     }
     ;
   }
@@ -29274,7 +29353,7 @@ var DataGrid = class extends Control {
   }
   refresh() {
     super.refresh();
-    this.enableUpdateTimer();
+    this.highlightCurrCell();
   }
   deleteRow(row) {
     if (this._dataBindingContext && this._dataBindingContext["readOnly"])
@@ -29357,7 +29436,6 @@ var DataGrid = class extends Control {
     ;
   }
   setLeftCol(aLeftCol, skipSetScroll) {
-    console.log("setLeftCol", aLeftCol, skipSetScroll);
     if (aLeftCol != this._leftCol) {
       if (this.editorMode) {
         this.hideEditor(true);
@@ -29376,7 +29454,6 @@ var DataGrid = class extends Control {
     }
   }
   setTopRow(row, skipSetScroll) {
-    console.log("setTopRow", row, skipSetScroll);
     if (row != this._topRow) {
       if (this.editorMode) {
         this.hideEditor(true);
@@ -29480,7 +29557,8 @@ var DataGrid = class extends Control {
         if (tableCell && this._currCell.cell) {
           let edit = this.edit;
           edit.value = this._currCell.cell._displayValue || this._currCell.cell._value || "";
-          edit.setSelectionRange(0, edit.value.length);
+          if (edit instanceof HTMLInputElement)
+            edit.setSelectionRange(0, edit.value.length);
         } else {
           this.edit.value = "";
         }
@@ -29757,7 +29835,7 @@ var DataGrid = class extends Control {
     for (let i = 0; i < this._colCount; i++) {
       this._totalColWidth = this._totalColWidth + this.getColWidth(i);
     }
-    if (this._totalColWidth < this.widthValue)
+    if (this._totalColWidth < parseFloat(this["width"].toString()))
       this.placeHolder.style.width = "100%";
     else
       this.placeHolder.style.width = this._totalColWidth + "px";
@@ -29872,7 +29950,8 @@ var DataGrid = class extends Control {
       this._needUpdate = false;
     for (let i = this._leftCol; i < this._colCount; i++) {
       w = w + this.getColWidth(i);
-      this.visibleColCount++;
+      if (this.visibleColCount < this._colCount)
+        this.visibleColCount++;
       if (w >= width)
         break;
     }
@@ -29957,17 +30036,135 @@ var DataGrid = class extends Control {
       this._row = this.data.data.indexOf(currRow);
     this.enableUpdateTimer();
   }
-  getEditor(col, cell) {
-    let editor = this.createElement("input", this);
-    editor.setAttribute("autocomplete", "disabled");
-    editor.className = "grid_edit";
-    this.appendChild(editor);
-    return editor;
+  getEditor(col, cell, inputValue) {
+    if (this.columns.getColumn(col).type == "sc:checkBox") {
+      let editor = new Checkbox(void 0, {
+        checked: cell.value != void 0 ? cell.value : false
+      });
+      editor.style.marginLeft = "1px";
+      editor.className = "grid_edit";
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      this.appendChild(editor);
+      return editor;
+    } else if (this.columns.getColumn(col).type == "sc:datePicker") {
+      let editor = new Datepicker(void 0, {
+        type: "date",
+        width: this.getColWidth(cell.col) - 1
+      });
+      editor.className = "grid_edit";
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      this.appendChild(editor);
+      if (cell.value != void 0) {
+        editor.value = cell.value;
+      } else {
+        editor.value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+      }
+      let inputElm = editor.getElementsByTagName("input")[0];
+      inputElm.style.height = "";
+      inputElm.style.padding = "0px";
+      inputElm.style.backgroundColor = "white";
+      let btn = editor.getElementsByClassName("datepicker-toggle")[0];
+      btn.style.backgroundColor = "white";
+      return editor;
+    } else if (this.columns.getColumn(col).type == "sc:timePicker") {
+      let editor = new Datepicker(void 0, {
+        type: "time",
+        width: this.getColWidth(cell.col) - 1
+      });
+      editor.className = "grid_edit";
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      this.appendChild(editor);
+      if (cell.value != void 0) {
+        editor.value = cell.value;
+      } else {
+        editor.value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+      }
+      let inputElm = editor.getElementsByTagName("input")[0];
+      inputElm.style.height = "";
+      inputElm.style.padding = "0px";
+      inputElm.style.backgroundColor = "white";
+      let btn = editor.getElementsByClassName("datepicker-toggle")[0];
+      btn.style.backgroundColor = "white";
+      return editor;
+    } else if (this.columns.getColumn(col).type == "sc:dateTimePicker") {
+      let editor = new Datepicker(void 0, {
+        type: "dateTime",
+        width: this.getColWidth(cell.col) - 1
+      });
+      editor.className = "grid_edit";
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      this.appendChild(editor);
+      if (cell.value != void 0) {
+        editor.value = cell.value;
+      } else {
+        editor.value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+      }
+      let inputElm = editor.getElementsByTagName("input")[0];
+      inputElm.style.height = "";
+      inputElm.style.padding = "0px";
+      inputElm.style.backgroundColor = "white";
+      let btn = editor.getElementsByClassName("datepicker-toggle")[0];
+      btn.style.backgroundColor = "white";
+      return editor;
+    } else if (this.columns.getColumn(col).type == "sc:comboBox") {
+      let editor = new ComboBox(void 0, {
+        items: this.cols(col).comboItems,
+        selectedItem: cell.value != void 0 ? cell.value : this.cols(col).comboItems ? this.cols(col).comboItems[0] : void 0,
+        icon: { name: "caret-down", width: "16px", height: "16px" }
+      });
+      editor.className = "grid_edit comboBoxEditor";
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      this.appendChild(editor);
+      let rowHeight = this.getRowHeight(cell.row);
+      let selectionElm = editor.getElementsByClassName("selection")[0];
+      selectionElm.style.maxWidth = `100%`;
+      selectionElm.style.padding = "0px";
+      let inputElm = selectionElm.getElementsByTagName("input")[0];
+      inputElm.style.padding = "0px";
+      let iconBtn = editor.getElementsByClassName("icon-btn")[0];
+      iconBtn.style.padding = "0px";
+      iconBtn.style.width = rowHeight + "px";
+      iconBtn.style.height = rowHeight + "px";
+      let iconElm = iconBtn.getElementsByTagName("i-icon")[0];
+      iconElm.style.width = rowHeight + "px";
+      iconElm.style.height = rowHeight + "px";
+      return editor;
+    } else if (this.columns.getColumn(col).type == "number") {
+      let editor = this.createElement("input", this);
+      editor.type = "number";
+      editor.value = cell.value;
+      editor.setAttribute("autocomplete", "disabled");
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      editor.className = "grid_edit";
+      this.appendChild(editor);
+      return editor;
+    } else if (this.columns.getColumn(col).type == "integer") {
+      let editor = this.createElement("input", this);
+      editor.type = "text";
+      editor.addEventListener("input", () => {
+        const currentValue = editor.value;
+        const sanitizedValue = currentValue.replace(/[^0-9]/g, "");
+        editor.value = sanitizedValue;
+      });
+      editor.value = cell.value;
+      editor.setAttribute("autocomplete", "disabled");
+      editor.setAttribute("editorType", this.columns.getColumn(col).type);
+      editor.className = "grid_edit";
+      this.appendChild(editor);
+      return editor;
+    } else {
+      let editor = this.createElement("input", this);
+      if (inputValue)
+        editor.value = inputValue;
+      editor.setAttribute("autocomplete", "disabled");
+      editor.className = "grid_edit";
+      return editor;
+    }
   }
   handleEditControlChange(event) {
     console.dir("## handleEditControlChange");
   }
-  _handleDblClick(event, stopPropagation) {
+  _handleEditDblClick(event, stopPropagation) {
     return true;
   }
   colLeft() {
@@ -30157,7 +30354,7 @@ var DataGrid = class extends Control {
       case 32: {
         let col = this.cols(this._col);
         let cell = this.cells(this._col, this._row);
-        if (cell && cell.checkBox || col && (col.checkBox || col.radioButton)) {
+        if (cell && cell.checkBox) {
           if (this._currCell) {
             this.toggleCellValue(col, cell);
             this._updateCell(this._currCell, cell, col);
@@ -30212,7 +30409,7 @@ var DataGrid = class extends Control {
       default: {
         let col = this.cols(this._col);
         let cell = this.cells(this._col, this._row);
-        if (cell && cell.checkBox || col && (col.checkBox || col.radioButton))
+        if (cell && cell.checkBox)
           event.stopPropagation();
       }
     }
@@ -30275,17 +30472,16 @@ var DataGrid = class extends Control {
           this.appendChild(editor);
       }
       if (!editor) {
-        editor = this.getEditor(this._col, cell);
+        editor = this.getEditor(this._col, cell, inputValue);
       }
       if (editor) {
         editor.onchange = this.handleEditControlChange.bind(this);
-        editor.ondblclick = this._handleDblClick.bind(this);
+        editor.ondblclick = this._handleEditDblClick.bind(this);
         editor.onkeydown = this._handleKeyDown.bind(this);
         editor.onblur = this._handleBlur.bind(this);
         this.editor = editor;
         editor.style.position = "absolute";
         editor.style.display = "block";
-        editor.value = this.edit.value;
         editor.focus();
         if (cell.mergeRect) {
           let w = 0;
@@ -30385,7 +30581,7 @@ var DataGrid = class extends Control {
                 if (!this.editorMode) {
                   let cell2 = this.data.cells(aCol, aRow);
                   this.edit.value = cell2._displayValue || cell2._value || "";
-                  this.showEditor();
+                  this.showEditor(cell2._displayValue || cell2._value || "");
                 }
               } else if (aRow < this._fixedRow) {
                 application.globalEvents.abortEvent(event);
@@ -30426,6 +30622,31 @@ var DataGrid = class extends Control {
     let _tableCell = tableCell;
     let withDispValue = false;
     let disp;
+    if (this.cols(cell.col).type == "string" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0)
+        cell._value = "";
+    } else if (this.cols(cell.col).type == "sc:checkBox" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = false;
+    } else if (this.cols(cell.col).type == "sc:datePicker" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+    } else if (this.cols(cell.col).type == "sc:dateTimePicker" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+    } else if (this.cols(cell.col).type == "sc:timePicker" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+    } else if (this.cols(cell.col).type == "sc:comboBox" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = this.cols(cell.col).comboItems ? this.cols(cell.col).comboItems[0] : void 0;
+    } else if (this.cols(cell.col).type == "number" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = 0;
+    } else if (this.cols(cell.col).type == "integer" && !tableCell.classList.contains("header")) {
+      if (cell.value == void 0 || cell.value == "")
+        cell._value = 0;
+    }
     if (tableCellDiv) {
       tableCell.style.display = "";
       if (cell._encrypted)
@@ -30513,128 +30734,165 @@ var DataGrid = class extends Control {
           tableCellDiv.style.display = "none";
         else
           tableCellDiv.style.display = "";
-        if (_column && _column._type == "image" && _cell._file && _cell._file["url"]) {
-          tableCellDiv.classList.add("image");
-          tableCellDiv.style.height = this._defaultRowHeight + "px";
-          tableCellDiv.innerHTML = '<img src="' + withDispValue ? _cell._displayValue : _cell._file["url"] + '?size=t" style="max-height:100%;max-width=100%"/>';
-        } else if (disp && disp.image) {
-          tableCellDiv.classList.add("image");
-          tableCellDiv.style.height = this._defaultRowHeight + "px";
-          tableCellDiv.innerHTML = '<img src="' + withDispValue ? value : disp.value + '"/>';
-        } else if (disp && disp.html) {
-          tableCellDiv.innerHTML = withDispValue ? value : application.xssSanitize(disp.value);
-        } else if (_cell && (_cell.image || _cell._dataType == 5) || _column && _column._dataType == 5) {
-          tableCellDiv.classList.add("image");
-          tableCellDiv.style.height = this._defaultRowHeight + "px";
-          tableCellDiv.innerHTML = '<img src="' + withDispValue ? value : _cell._value + '"/>';
-        } else if (_cell && (_cell.html || _cell._dataType == 6) || _column && _column._dataType == 6) {
-          tableCellDiv.innerHTML = withDispValue ? value : application.xssSanitize(_cell._value);
-        } else if (value && !Array.isArray(value) && !(value instanceof Date) && typeof value == "object") {
-          if (Array.isArray(value)) {
-            let html = "";
-            for (let i = 0; i < value.length; i++)
-              html += "<button>" + (value[i]["caption"] || "...") + "</button>";
-            tableCellDiv.innerHTML = html;
-          } else
-            tableCellDiv.innerHTML = "<button>" + (value["caption"] || "...") + "</button>";
-        } else if (_column && _column._button) {
-          tableCellDiv.innerHTML = "<button>" + (value || "...") + "</button>";
-        } else if (_cell && _cell._checkBox || _column && _column._checkBox) {
-          if (value)
-            tableCellDiv.className = "check_box_checked";
-          else
-            tableCellDiv.className = "check_box_unchecked";
-          tableCellDiv.style.position = "relative";
-          tableCellDiv.style.margin = "auto";
-          tableCellDiv.style.top = (this._defaultRowHeight - 13) / 2 + "px";
-          tableCellDiv.style.left = "1px";
-          tableCellDiv.style["height"] = "100%";
-          tableCellDiv.style["width"] = "13px";
-        } else if (_column && _column._radioButton) {
-          if (value)
-            tableCellDiv.className = "radio_button.checked";
-          else
-            tableCellDiv.className = "radio_button.unchecked";
-          tableCellDiv.style.position = "relative";
-          tableCellDiv.style.margin = "auto";
-          tableCellDiv.style.top = (this._defaultRowHeight - 13) / 2 + "px";
-          tableCellDiv.style.left = "1px";
-          tableCellDiv.style["height"] = "100%";
-          tableCellDiv.style["width"] = "13px";
+        if (_column && _column._type == "sc:checkBox") {
+          let item = new Checkbox(void 0, {
+            checked: cell.value
+          });
+          tableCellDiv.appendChild(item);
+        } else if (_column && _column._type == "sc:datePicker") {
+          let item = new Label(void 0, {
+            caption: cell.value.format("YYYY-MM-DD")
+          });
+          tableCellDiv.appendChild(item);
+        } else if (_column && _column._type == "sc:dateTimePicker") {
+          let item = new Label(void 0, {
+            caption: cell.value.format("YYYY-MM-DD HH:mm:ss")
+          });
+          tableCellDiv.appendChild(item);
+        } else if (_column && _column._type == "sc:timePicker") {
+          let item = new Label(void 0, {
+            caption: cell.value.format("HH:mm:ss")
+          });
+          tableCellDiv.appendChild(item);
+        } else if (_column && _column._type == "sc:comboBox") {
+          let item = new Label(void 0, {
+            caption: cell.value ? cell.value.label : "no data"
+          });
+          tableCellDiv.appendChild(item);
+        } else if (_column && _column._type == "number") {
+          let item = new Label(void 0, {
+            caption: cell.value.toString()
+          });
+          tableCellDiv.appendChild(item);
+        } else if (_column && _column._type == "integer") {
+          let item = new Label(void 0, {
+            caption: cell.value.toString()
+          });
+          tableCellDiv.appendChild(item);
         } else {
-          if (_cell._dispValue && tableCell.classList.contains("grid_fixed_cell")) {
-            tableCellDiv.textContent = _cell._dispValue;
-          } else if (withDispValue) {
-            tableCellDiv.textContent = value;
-          } else if (_cell.row < this._fixedRow) {
-            tableCellDiv.textContent = value;
+          if (_column && _column._type == "image" && _cell._file && _cell._file["url"]) {
+            tableCellDiv.classList.add("image");
+            tableCellDiv.style.height = this._defaultRowHeight + "px";
+            tableCellDiv.innerHTML = '<img src="' + withDispValue ? _cell._displayValue : _cell._file["url"] + '?size=t" style="max-height:100%;max-width=100%"/>';
+          } else if (disp && disp.image) {
+            tableCellDiv.classList.add("image");
+            tableCellDiv.style.height = this._defaultRowHeight + "px";
+            tableCellDiv.innerHTML = '<img src="' + withDispValue ? value : disp.value + '"/>';
+          } else if (disp && disp.html) {
+            tableCellDiv.innerHTML = withDispValue ? value : application.xssSanitize(disp.value);
+          } else if (_cell && (_cell.image || _cell._dataType == 5) || _column && _column._dataType == 5) {
+            tableCellDiv.classList.add("image");
+            tableCellDiv.style.height = this._defaultRowHeight + "px";
+            tableCellDiv.innerHTML = '<img src="' + withDispValue ? value : _cell._value + '"/>';
+          } else if (_cell && (_cell.html || _cell._dataType == 6) || _column && _column._dataType == 6) {
+            tableCellDiv.innerHTML = withDispValue ? value : application.xssSanitize(_cell._value);
+          } else if (value && !Array.isArray(value) && !(value instanceof Date) && typeof value == "object") {
+            if (Array.isArray(value)) {
+              let html = "";
+              for (let i = 0; i < value.length; i++)
+                html += "<button>" + (value[i]["caption"] || "...") + "</button>";
+              tableCellDiv.innerHTML = html;
+            } else
+              tableCellDiv.innerHTML = "<button>" + (value["caption"] || "...") + "</button>";
+          } else if (_column && _column._button) {
+            tableCellDiv.innerHTML = "<button>" + (value || "...") + "</button>";
+          } else if (_cell && _cell._checkBox || _column && _column._checkBox) {
+            if (value)
+              tableCellDiv.className = "check_box_checked";
+            else
+              tableCellDiv.className = "check_box_unchecked";
+            tableCellDiv.style.position = "relative";
+            tableCellDiv.style.margin = "auto";
+            tableCellDiv.style.top = (this._defaultRowHeight - 13) / 2 + "px";
+            tableCellDiv.style.left = "1px";
+            tableCellDiv.style["height"] = "100%";
+            tableCellDiv.style["width"] = "13px";
+          } else if (_column && _column._radioButton) {
+            if (value)
+              tableCellDiv.className = "radio_button.checked";
+            else
+              tableCellDiv.className = "radio_button.unchecked";
+            tableCellDiv.style.position = "relative";
+            tableCellDiv.style.margin = "auto";
+            tableCellDiv.style.top = (this._defaultRowHeight - 13) / 2 + "px";
+            tableCellDiv.style.left = "1px";
+            tableCellDiv.style["height"] = "100%";
+            tableCellDiv.style["width"] = "13px";
           } else {
-            if (column && _column._type == "lookupDetail") {
-              let rd;
-              if (_cell._record)
-                rd = _cell._record;
-              else {
-                let record = this.getObject(0, _cell._row);
-                if (record) {
-                  let rs = record[_column._lookupTable];
-                  if (rs) {
-                    rd = rs.first;
-                    _cell._field = _column._lookupField;
-                    let v1 = _column._lookupDetailValue;
-                    switch (_column._lookupDetailType) {
-                      case "date":
-                        v1 = new Date(v1);
-                        v1.setHours(0, 0, 0, 0);
-                        break;
-                      case "numeric":
-                        if (typeof v1 == "string")
-                          v1 = parseFloat(v1);
-                        break;
-                    }
-                    while (rd) {
-                      let v2 = rd[_column._lookupField];
+            if (_cell._dispValue && tableCell.classList.contains("grid_fixed_cell")) {
+              tableCellDiv.textContent = _cell._dispValue;
+            } else if (withDispValue) {
+              tableCellDiv.textContent = value;
+            } else if (_cell.row < this._fixedRow) {
+              tableCellDiv.textContent = value;
+            } else {
+              if (column && _column._type == "lookupDetail") {
+                let rd;
+                if (_cell._record)
+                  rd = _cell._record;
+                else {
+                  let record = this.getObject(0, _cell._row);
+                  if (record) {
+                    let rs = record[_column._lookupTable];
+                    if (rs) {
+                      rd = rs.first;
+                      _cell._field = _column._lookupField;
+                      let v1 = _column._lookupDetailValue;
                       switch (_column._lookupDetailType) {
                         case "date":
-                          v2 = new Date(rd[_column._lookupDetailField]);
-                          v2.setHours(0, 0, 0, 0);
+                          v1 = new Date(v1);
+                          v1.setHours(0, 0, 0, 0);
                           break;
                         case "numeric":
-                          if (typeof v2 == "string")
-                            v2 = parseFloat(v2);
+                          if (typeof v1 == "string")
+                            v1 = parseFloat(v1);
                           break;
                       }
-                      if (v1 == v2)
-                        break;
-                      else if (_column._lookupDetailType == "date" && v1.getTime() == v2.getTime())
-                        break;
-                      rd = rs["next"];
+                      while (rd) {
+                        let v2 = rd[_column._lookupField];
+                        switch (_column._lookupDetailType) {
+                          case "date":
+                            v2 = new Date(rd[_column._lookupDetailField]);
+                            v2.setHours(0, 0, 0, 0);
+                            break;
+                          case "numeric":
+                            if (typeof v2 == "string")
+                              v2 = parseFloat(v2);
+                            break;
+                        }
+                        if (v1 == v2)
+                          break;
+                        else if (_column._lookupDetailType == "date" && v1.getTime() == v2.getTime())
+                          break;
+                        rd = rs["next"];
+                      }
                     }
                   }
                 }
-              }
-              if (rd) {
-                _cell._value = rd[_column._lookupField];
-                _cell._record = rd;
-                tableCellDiv.textContent = rd[_column._lookupField];
-              }
-            } else if (column && _column._type == "listOfValue" && _column._listOfValue) {
-              let lsv = this._listOfValue[_column._listOfValue];
-              if (lsv != void 0)
-                tableCellDiv.textContent = lsv[value] || value;
-              else
-                tableCellDiv.textContent = value;
-            } else if (column && (_column._type == "lookup" || _column._type == "lookupCombo")) {
-            } else if (_column && _column._type == "{userAccount}") {
-            } else {
-              let type = typeof value;
-              if (type != "undefined") {
-                if (type == "number")
-                  tableCellDiv.textContent = parseNumber(value.toPrecision(12)).toString();
-                else {
-                  tableCellDiv.textContent = value;
+                if (rd) {
+                  _cell._value = rd[_column._lookupField];
+                  _cell._record = rd;
+                  tableCellDiv.textContent = rd[_column._lookupField];
                 }
-              } else
-                tableCellDiv.textContent = "";
+              } else if (column && _column._type == "listOfValue" && _column._listOfValue) {
+                let lsv = this._listOfValue[_column._listOfValue];
+                if (lsv != void 0)
+                  tableCellDiv.textContent = lsv[value] || value;
+                else
+                  tableCellDiv.textContent = value;
+              } else if (column && (_column._type == "lookup" || _column._type == "lookupCombo")) {
+              } else if (_column && _column._type == "{userAccount}") {
+              } else {
+                let type = typeof value;
+                if (type != "undefined") {
+                  if (type == "number")
+                    tableCellDiv.textContent = parseNumber(value.toPrecision(12)).toString();
+                  else {
+                    tableCellDiv.textContent = value;
+                  }
+                } else
+                  tableCellDiv.textContent = "";
+              }
             }
           }
         }
@@ -30768,7 +31026,7 @@ var DataGrid = class extends Control {
       }
       splitter.style.left = left + "px";
       if (this._fixedCol > 0 && col == this._fixedCol - 1)
-        splitter.style.height = this.heightValue + "px";
+        splitter.style.height = "100%";
       else
         splitter.style.height = height + "px";
       splitter.style.display = "";
@@ -30911,7 +31169,7 @@ var DataGrid = class extends Control {
           }
           ;
           this.tableCells = [[]];
-          if (this._totalColWidth < this.widthValue)
+          if (this._totalColWidth < parseFloat(this.width.toString()))
             this.placeHolder.style.width = "100%";
           else
             this.placeHolder.style.width = this._totalColWidth + "px";
@@ -31131,10 +31389,10 @@ cssRule("i-markdown", {
         }
       }
     },
-    "ol ol, ul ul, ol ul, ul ol": {
+    "ol ol, i-markdown ul ul, i-markdown ol ul, i-markdown ul ol": {
       marginTop: "0.5em"
     },
-    "code, pre code": {
+    "code, i-markdown pre code": {
       borderRadius: "3px",
       background: "#ebeff3",
       overflowX: "scroll",
@@ -31147,7 +31405,7 @@ cssRule("i-markdown", {
       wordBreak: "normal",
       wordWrap: "normal"
     },
-    "a, a:hover": {
+    "a, i-markdown a:hover": {
       color: "#55f",
       textDecoration: "none"
     }
@@ -31476,9 +31734,9 @@ var MarkdownEditor = class extends Control {
     if (width) {
       this.width = width;
     }
-    const theme = this.getAttribute("theme", true, "");
-    if (theme) {
-      this._theme = theme;
+    const theme2 = this.getAttribute("theme", true, "");
+    if (theme2) {
+      this._theme = theme2;
     }
     const toolbarItems = this.getAttribute("toolbarItems", true, "");
     if (toolbarItems) {
@@ -31501,6 +31759,12 @@ MarkdownEditor = __decorateClass([
 
 // packages/menu/src/style/menu.css.ts
 var Theme24 = theme_exports.ThemeVars;
+cssRule("i-context-menu", {
+  display: "none"
+});
+cssRule("i-menu", {
+  display: "block"
+});
 var fadeInRight = keyframes({
   "0%": {
     opacity: 0,
@@ -31515,7 +31779,6 @@ var menuStyle = style({
   fontFamily: Theme24.typography.fontFamily,
   fontSize: Theme24.typography.fontSize,
   position: "relative",
-  display: "block",
   overflow: "hidden",
   $nest: {
     "*": {
@@ -31657,6 +31920,22 @@ var Menu = class extends Control {
   constructor() {
     super(...arguments);
     this._oldWidth = 0;
+  }
+  add(options) {
+    const newItem = new MenuItem(this, options);
+    this.menuElm.appendChild(newItem);
+    this._items.push(newItem);
+    this._data.push(options || {});
+    return newItem;
+  }
+  delete(item) {
+    const index = this.items.findIndex((menu) => menu.isEqualNode(item));
+    if (index !== -1) {
+      this.menuElm.removeChild(item);
+      this._items.splice(index, 1);
+      this._data.splice(index, 1);
+      item.remove();
+    }
   }
   get mode() {
     return this._mode;
@@ -31807,9 +32086,77 @@ var Menu = class extends Control {
 Menu = __decorateClass([
   customElements2("i-menu")
 ], Menu);
+var ContextMenu = class extends Menu {
+  show(pos) {
+    const { x, y } = pos;
+    this.handleModalOpen(x, y);
+  }
+  async renderItemModal(x, y) {
+    if (!this.modal) {
+      this.modal = await Modal.create({
+        showBackdrop: false,
+        height: "auto",
+        width: "auto",
+        popupPlacement: "rightTop"
+      });
+      this.modal.classList.add(modalStyle2);
+      this.modal.visible = false;
+      this.getModalContainer().appendChild(this.modal);
+      this.getModalContainer().style.position = "fixed";
+    }
+    this.getModalContainer().style.left = `${x}px`;
+    this.getModalContainer().style.top = `${y}px`;
+    if (!this.itemPanel)
+      this.itemPanel = await Panel.create();
+    this.itemPanel.innerHTML = "";
+    if (this.items && this.items.length) {
+      this.itemPanel.append(...this.items);
+    }
+    this.modal.item = this.itemPanel;
+  }
+  getModalContainer() {
+    let span = document.getElementById("modal-context");
+    if (!span) {
+      span = this.createElement("span", document.body);
+      span.id = "modal-context";
+    }
+    return span;
+  }
+  async handleModalOpen(x, y) {
+    await this.renderItemModal(x, y);
+    clearTimeout(this.openTimeout);
+    this.openTimeout = setTimeout(() => {
+      if (this.items && this.items.length)
+        this.modal.visible = true;
+    }, menuPopupTimeout);
+  }
+};
+ContextMenu = __decorateClass([
+  customElements2("i-context-menu")
+], ContextMenu);
 var MenuItem = class extends Control {
   constructor(parent, options) {
     super(parent, options);
+  }
+  add(options) {
+    const newItem = new MenuItem(this, options);
+    this._items.push(newItem);
+    let mode = this.menuMode();
+    if (mode === "inline") {
+      this.subMenu.appendChild(newItem);
+    }
+    return newItem;
+  }
+  delete(item) {
+    const index = this.items.findIndex((menu) => menu.isEqualNode(item));
+    if (index !== -1) {
+      let mode = this.menuMode();
+      if (mode === "inline") {
+        this.subMenu.removeChild(item);
+      }
+      this._items.splice(index, 1);
+      item.remove();
+    }
   }
   get title() {
     return this.captionElm.innerHTML;
@@ -33440,6 +33787,12 @@ var Iframe = class extends Control {
         iframe.onload = null;
       };
     });
+  }
+  postMessage(msg) {
+    if (this.iframeElm && this.iframeElm.contentWindow) {
+      this.iframeElm.contentWindow.postMessage(msg, "*");
+    }
+    ;
   }
   get url() {
     return this._url;
@@ -38494,6 +38847,1004 @@ var Breadcrumb = class extends Control {
 Breadcrumb = __decorateClass([
   customElements2("i-breadcrumb")
 ], Breadcrumb);
+
+// packages/form/src/styles/index.css.ts
+var Theme39 = theme_exports.ThemeVars;
+var formStyle = style({
+  gap: 10
+});
+var formGroupStyle = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: 5,
+  justifyContent: "center"
+});
+var groupStyle = style({
+  border: `1px solid ${Theme39.divider}`,
+  borderRadius: 5,
+  width: "100%"
+});
+var groupHeaderStyle = style({
+  padding: 10,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between"
+});
+var groupBodyStyle = style({
+  padding: 10
+});
+var collapseBtnStyle = style({
+  cursor: "pointer",
+  height: Theme39.typography.fontSize,
+  width: Theme39.typography.fontSize
+});
+var inputStyle = style({
+  width: "100%"
+});
+var datePickerStyle = style({
+  width: "100% !important",
+  $nest: {
+    "> input": {
+      width: "calc(100% - 24px) !important"
+    }
+  }
+});
+var comboBoxStyle = style({});
+var buttonStyle = style({
+  padding: 5
+});
+
+// packages/form/src/form.ts
+var theme = theme_exports.ThemeVars;
+var DEFAULT_OPTIONS = {
+  columnsPerRow: 1,
+  confirmButtonOptions: {
+    caption: "Confirm",
+    backgroundColor: theme.colors.primary.main,
+    fontColor: theme.colors.primary.contrastText,
+    hide: false
+  },
+  clearButtonOptions: {
+    caption: "Clear",
+    backgroundColor: theme.colors.primary.main,
+    fontColor: theme.colors.primary.contrastText,
+    hide: false
+  },
+  dateTimeFormat: {
+    date: "YYYY-MM-DD",
+    time: "HH:mm:ss",
+    dateTime: "YYYY-MM-DD HH:mm:ss"
+  },
+  columnWidth: "100%"
+};
+var Form = class extends Control {
+  constructor() {
+    super();
+    this._formControls = {};
+  }
+  init() {
+    super.init();
+    this._jsonSchema = this.getAttribute("jsonSchema", true);
+    this._uiSchema = this.getAttribute("uiSchema", true);
+    this._formOptions = this.getAttribute("options", true);
+    if (!this._formOptions)
+      this._formOptions = DEFAULT_OPTIONS;
+    this.renderForm();
+  }
+  set formOptions(options) {
+    this._formOptions = options;
+  }
+  get formOptions() {
+    return this._formOptions;
+  }
+  set jsonSchema(jsonSchema) {
+    this._jsonSchema = jsonSchema;
+  }
+  get jsonSchema() {
+    return this._jsonSchema;
+  }
+  set uiSchema(uiSchema) {
+    this._uiSchema = uiSchema;
+  }
+  get uiSchema() {
+    return this._uiSchema;
+  }
+  clearFormData() {
+    for (const scope in this._formControls) {
+      const control = this._formControls[scope];
+      const input = control.input;
+      if (input) {
+        switch (input.tagName) {
+          case "I-INPUT":
+            input.value = "";
+            break;
+          case "I-CHECKBOX":
+            input.checked = false;
+            break;
+          case "I-DATEPICKER":
+            input.value = void 0;
+            break;
+          case "I-COMBOBOX":
+            input.selectedItem = input.items[0];
+            break;
+        }
+      }
+    }
+  }
+  setFormData(data) {
+    for (const key2 in data) {
+      const value = data[key2];
+      const scope = `#/properties/${key2}`;
+      this.setData(scope, value);
+    }
+  }
+  setData(scope, value) {
+    var _a;
+    if (typeof value === "object") {
+      for (const key2 of value) {
+        const data = value[key2];
+        const currentScope = `${scope}/properties/${key2}`;
+        this.setData(currentScope, data);
+      }
+    } else {
+      const input = (_a = this._formControls[scope]) == null ? void 0 : _a.input;
+      if (input) {
+        switch (input.tagName) {
+          case "I-INPUT":
+            input.value = value;
+            break;
+          case "I-CHECKBOX":
+            input.checked = value;
+            break;
+          case "I-COMBOBOX":
+            input.selectedItem = input.items.find((v) => v.value === value) || input.items[0];
+            break;
+          case "I-DATEPICKER":
+            input.value = value;
+            break;
+        }
+      }
+    }
+  }
+  getFormData() {
+    if (!this._jsonSchema)
+      return void 0;
+    const data = this.getDataBySchema(this._jsonSchema);
+    return data;
+  }
+  getDataBySchema(schema, scope = "#") {
+    var _a, _b, _c, _d, _e;
+    if (!schema)
+      return void 0;
+    if (schema.type === "string") {
+      const control = (_a = this._formControls[scope]) == null ? void 0 : _a.input;
+      if (control) {
+        switch (control.tagName) {
+          case "I-INPUT":
+            return control.value;
+          case "I-COMBO-BOX":
+            return (_b = control.value) == null ? void 0 : _b.value;
+          case "I-DATEPICKER":
+            return control.value;
+          default:
+            return void 0;
+        }
+      } else
+        return void 0;
+    } else if (schema.type === "integer") {
+      const control = (_c = this._formControls[scope]) == null ? void 0 : _c.input;
+      if (control) {
+        switch (control.tagName) {
+          case "I-INPUT":
+            return control.value ? parseInt(control.value) : void 0;
+          default:
+            return void 0;
+        }
+      } else
+        return void 0;
+    } else if (schema.type === "number") {
+      const control = (_d = this._formControls[scope]) == null ? void 0 : _d.input;
+      if (control) {
+        switch (control.tagName) {
+          case "I-INPUT":
+            return control.value ? parseFloat(control.value) : void 0;
+          default:
+            return void 0;
+        }
+      } else
+        return void 0;
+    } else if (schema.type === "boolean") {
+      const control = (_e = this._formControls[scope]) == null ? void 0 : _e.input;
+      if (control) {
+        switch (control.tagName) {
+          case "I-CHECKBOX":
+            return control.checked;
+          default:
+            return void 0;
+        }
+      }
+    } else if (schema.type === "object") {
+      const properties = schema.properties;
+      if (!properties)
+        return void 0;
+      const obj = {};
+      for (const propertyName in properties) {
+        const currentSchema = properties[propertyName];
+        const currentScope = `${scope}/properties/${propertyName}`;
+        obj[propertyName] = this.getDataBySchema(currentSchema, currentScope);
+      }
+      return obj;
+    } else {
+    }
+  }
+  renderForm() {
+    var _a, _b, _c, _d;
+    this.clearInnerHTML();
+    console.log("ui schema", this._uiSchema);
+    let controls2;
+    if (this._uiSchema) {
+      controls2 = this.renderFormByUISchema(this._uiSchema);
+    } else {
+      controls2 = this.renderFormByJSONSchema(this._jsonSchema);
+    }
+    if (controls2)
+      this.appendChild(controls2);
+    const pnlButton = new HStack(void 0, {
+      justifyContent: "end",
+      alignItems: "center",
+      gap: 5,
+      padding: {
+        top: 10,
+        bottom: 10
+      }
+    });
+    if (!this._formOptions.confirmButtonOptions)
+      this._formOptions.confirmButtonOptions = DEFAULT_OPTIONS.confirmButtonOptions;
+    if (!this._formOptions.clearButtonOptions)
+      this._formOptions.clearButtonOptions = DEFAULT_OPTIONS.clearButtonOptions;
+    console.log("clear button hide", this._formOptions.clearButtonOptions);
+    if (!((_a = this._formOptions.clearButtonOptions) == null ? void 0 : _a.hide)) {
+      const btnClear = new Button(pnlButton, {
+        caption: this._formOptions.clearButtonOptions.caption || DEFAULT_OPTIONS.clearButtonOptions.caption,
+        font: {
+          color: this._formOptions.clearButtonOptions.fontColor || DEFAULT_OPTIONS.clearButtonOptions.fontColor
+        },
+        background: {
+          color: this._formOptions.clearButtonOptions.backgroundColor || DEFAULT_OPTIONS.clearButtonOptions.backgroundColor
+        }
+      });
+      btnClear.classList.add(buttonStyle);
+      if ((_b = this._formOptions.clearButtonOptions) == null ? void 0 : _b.onClick)
+        btnClear.onClick = this._formOptions.clearButtonOptions.onClick;
+      else
+        btnClear.onClick = () => {
+          this.clearFormData();
+        };
+      pnlButton.appendChild(btnClear);
+    }
+    if (!((_c = this._formOptions.confirmButtonOptions) == null ? void 0 : _c.hide)) {
+      const btnConfirm = new Button(pnlButton, {
+        caption: this._formOptions.confirmButtonOptions.caption || DEFAULT_OPTIONS.confirmButtonOptions.caption,
+        font: {
+          color: this._formOptions.confirmButtonOptions.fontColor || DEFAULT_OPTIONS.confirmButtonOptions.fontColor
+        },
+        background: {
+          color: this._formOptions.confirmButtonOptions.backgroundColor || DEFAULT_OPTIONS.confirmButtonOptions.backgroundColor
+        }
+      });
+      btnConfirm.classList.add(buttonStyle);
+      if ((_d = this._formOptions.confirmButtonOptions) == null ? void 0 : _d.onClick)
+        btnConfirm.onClick = this._formOptions.confirmButtonOptions.onClick;
+      pnlButton.appendChild(btnConfirm);
+    }
+    this.appendChild(pnlButton);
+  }
+  renderFormByJSONSchema(schema, scope = "#", isArray = false, idx, schemaOptions) {
+    var _a;
+    if (!schema)
+      return void 0;
+    const currentField = scope.substr(scope.lastIndexOf("/") + 1);
+    const labelName = schema.title || (scope != "#/" ? this.convertFieldNameToLabel(currentField) : "");
+    const columnWidth = this._formOptions.columnWidth ? this._formOptions.columnWidth : "100px";
+    const idxScope = idx !== void 0 ? `${scope}_${idx}` : scope;
+    let isRequired = false;
+    let arrRequired = [];
+    if (schema.required instanceof Array)
+      arrRequired = schema.required;
+    else
+      isRequired = !!schema.required;
+    const controlOptions = {
+      caption: labelName,
+      description: schema.description,
+      columnWidth,
+      readOnly: schema.readOnly,
+      required: isRequired
+    };
+    if (schema.enum && schema.enum.length > 0 || schema.oneOf && schema.oneOf.length > 0) {
+      let items = [];
+      if (schema.oneOf && schema.oneOf.length > 0) {
+        items = schema.oneOf.map((item) => ({
+          label: item.title || "",
+          value: item.const || ""
+        }));
+      } else if (schema.enum && schema.enum.length > 0) {
+        items = schema.enum.map((item) => ({
+          label: item,
+          value: item
+        }));
+      }
+      return this.renderComboBox(scope, items, controlOptions);
+    } else if (schema.type === "string") {
+      if (["date", "time", "date-time"].includes(schema.format || "")) {
+        let datePickerType = schema.format;
+        if (schema.format === "date-time")
+          datePickerType = "dateTime";
+        return this.renderDatePicker(scope, datePickerType || "", controlOptions);
+      } else if (schema.format === "data-url") {
+        return this.renderUploader(scope, controlOptions);
+      } else if (schema.format === "color") {
+        return this.renderColorPicker(scope, controlOptions);
+      } else {
+        return this.renderInput(scope, { caption: labelName, columnWidth });
+      }
+    } else if (["integer", "number"].includes(((_a = schema.type) == null ? void 0 : _a.toString()) || "")) {
+      return this.renderNumberInput(scope, { caption: labelName, columnWidth });
+    } else if (schema.type === "boolean") {
+      return this.renderCheckBox(scope, controlOptions);
+    } else if (schema.type === "object") {
+      const properties = schema.properties;
+      if (!properties)
+        return void 0;
+      let wrapperObj;
+      let wrapper;
+      if (scope !== "#") {
+        wrapperObj = this.renderGroup(controlOptions);
+        wrapper = wrapperObj.wrapper;
+      } else
+        wrapper = new Panel(void 0);
+      let form = new GridLayout(void 0, {
+        columnsPerRow: this._formOptions.columnsPerRow || DEFAULT_OPTIONS.columnsPerRow
+      });
+      form.classList.add(formStyle);
+      for (const propertyName in properties) {
+        let currentSchema = properties[propertyName];
+        if (!(currentSchema == null ? void 0 : currentSchema.required) && arrRequired.includes(propertyName)) {
+          currentSchema.required = true;
+        }
+        const control = this.renderFormByJSONSchema(currentSchema, `${idxScope}/properties/${propertyName}`, false, idx);
+        form.append(control);
+      }
+      if (scope !== "#" && wrapperObj && wrapperObj.body)
+        wrapperObj.body.append(form);
+      else if (wrapper)
+        wrapper.append(form);
+      this._formControls[scope] = {
+        wrapper
+      };
+      return wrapper;
+    } else if (schema.type === "array") {
+      return void 0;
+    } else if (schema.type === "null") {
+      return void 0;
+    } else if (schema.type === "any") {
+      return void 0;
+    } else
+      return void 0;
+  }
+  renderFormByUISchema(uiSchema, carryData) {
+    if (!uiSchema)
+      return null;
+    const { elements, type, scope, label, options, rule } = uiSchema;
+    if (type === "VerticalLayout") {
+      const elm = new VStack(void 0, {
+        justifyContent: "center",
+        alignItems: "center"
+      });
+      if (elements)
+        elements.map((v) => {
+          let ui = this.renderFormByUISchema(v);
+          if (ui)
+            elm.append(ui);
+        });
+      return elm;
+    } else if (type === "HorizontalLayout") {
+      const elm = new GridLayout(void 0, {
+        width: "100%",
+        gap: { column: 16 },
+        columnsPerRow: (elements == null ? void 0 : elements.length) || 1
+      });
+      if (elements)
+        elements.map((v) => {
+          let ui = this.renderFormByUISchema(v);
+          if (ui)
+            elm.append(ui);
+        });
+      return elm;
+    } else if (type === "Group") {
+      const groupObj = this.renderGroup({
+        required: false,
+        caption: typeof label === "string" ? label : "",
+        columnWidth: "100%",
+        description: "",
+        enable: true,
+        readOnly: false
+      });
+      if (elements) {
+        elements.map((v) => {
+          let ui = this.renderFormByUISchema(v);
+          if (ui && groupObj.body)
+            groupObj.body.append(ui);
+        });
+      }
+      return groupObj.wrapper;
+    } else if (type === "Categorization") {
+      let elm = new Tabs();
+      let formTabs = document.getElementById("formTabs");
+      if (formTabs)
+        formTabs.visible = true;
+      if (elements) {
+        for (let i = 0; i < elements.length; i++) {
+          const element = elements[i];
+          this.renderFormByUISchema(element, { tabs: formTabs, index: i });
+        }
+      }
+      elm = formTabs;
+      return formTabs;
+    } else if (type === "Category") {
+      let caption;
+      if (label !== false) {
+        caption = label;
+      }
+      if (carryData && carryData.tabs && carryData.index != void 0) {
+        const children = new Panel(void 0, {
+          padding: {
+            left: 10,
+            right: 10,
+            top: 10,
+            bottom: 10
+          }
+        });
+        if (elements) {
+          for (const element of elements) {
+            let ui = this.renderFormByUISchema(element);
+            if (ui)
+              children.append(ui);
+          }
+        }
+        let tabCaption = typeof caption == "boolean" ? "" : caption;
+        const formTabs = document.getElementById("formTabs");
+        let tab = formTabs.add({ caption: tabCaption, children });
+        formTabs.activeTabIndex = 0;
+      }
+    } else if (type === "Control" && scope) {
+      const [key2, dataSchema] = this.getDataSchemaByScope(scope);
+      const stub = new Panel(void 0, {
+        padding: {
+          left: 5,
+          right: 5,
+          top: 5,
+          bottom: 5
+        }
+      });
+      stub.classList.add("form-group");
+      let caption, labelElm, descriptionElm;
+      let formControlElm = new Panel();
+      formControlElm.classList.add("form-control");
+      let hideLabel = false;
+      if (label !== false) {
+        caption = label;
+        if (!caption)
+          caption = this.convertFieldNameToLabel(key2);
+      }
+      const control = this.renderFormByJSONSchema(dataSchema, scope, false, void 0, options);
+      formControlElm.append(control);
+      if (formControlElm)
+        stub.append(formControlElm);
+      if (descriptionElm)
+        stub.append(descriptionElm);
+      return stub;
+    } else
+      return null;
+  }
+  getDataSchemaByScope(scope) {
+    const segments = scope.split("/");
+    let obj = {};
+    for (const segment of segments) {
+      if (segment === "#")
+        obj = this._jsonSchema;
+      else
+        obj = obj[segment];
+    }
+    if (obj == void 0)
+      console.log("No corresponding scope:", scope);
+    return [segments[segments.length - 1], obj];
+  }
+  renderGroup(options) {
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(groupStyle);
+    const header = new Panel(wrapper);
+    header.classList.add(groupHeaderStyle);
+    const label = new Label(header, { caption: options.caption });
+    const icon = new Icon(header, {
+      name: "chevron-up"
+    });
+    const body = new Panel(wrapper);
+    body.classList.add(groupBodyStyle);
+    icon.onClick = () => {
+      body.visible = !body.visible;
+      icon.name = `chevron-${body.visible ? "up" : "down"}`;
+    };
+    icon.classList.add(collapseBtnStyle);
+    return { wrapper, body };
+  }
+  renderTabs() {
+    const tabs = new Tabs();
+    return tabs;
+  }
+  renderTab(tabs, caption) {
+    if (!tabs)
+      return null;
+    return tabs.add({ caption: caption || `Sheet ${tabs.items.length + 1}` });
+  }
+  renderInput(scope, options) {
+    const wrapper = new Panel(void 0, {
+      width: options.columnWidth
+    });
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption,
+      width: "100%"
+    });
+    const input = new Input(wrapper, {
+      inputType: "text",
+      width: "100%"
+    });
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderNumberInput(scope, options) {
+    const wrapper = new Panel(void 0, { width: options.columnWidth });
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption,
+      width: "100%"
+    });
+    const input = new Input(wrapper, {
+      inputType: "number",
+      width: "100%"
+    });
+    input.classList.add(inputStyle);
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderTextArea(scope, options) {
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption
+    });
+    const input = new Input(wrapper, {
+      inputType: "textarea",
+      height: "unset",
+      rows: 5
+    });
+    input.classList.add(inputStyle);
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderColorPicker(scope, options) {
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption
+    });
+    const input = new Input(wrapper, {
+      inputType: "color"
+    });
+    input.classList.add(inputStyle);
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderDatePicker(scope, type, options) {
+    var _a;
+    if (type != "date" && type != "time" && type != "dateTime")
+      return this.renderInput(scope, options);
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption
+    });
+    let dateTimeFormat = "";
+    if (type === "date")
+      dateTimeFormat = ((_a = this._formOptions.dateTimeFormat) == null ? void 0 : _a.date) || DEFAULT_OPTIONS.dateTimeFormat.date;
+    console.log("type", type, "datetimeformat", dateTimeFormat);
+    const input = new Datepicker(wrapper, {
+      type,
+      dateTimeFormat
+    });
+    input.classList.add(datePickerStyle);
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderComboBox(scope, items, options) {
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption
+    });
+    const input = new ComboBox(wrapper, {
+      items,
+      icon: {
+        name: "caret-down"
+      }
+    });
+    input.classList.add(comboBoxStyle);
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderRadioGroup(scope, options) {
+    const radioGroup = new RadioGroup(void 0, {});
+    return radioGroup;
+  }
+  renderCheckBox(scope, options) {
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(formGroupStyle);
+    const input = new Checkbox(wrapper, {
+      caption: options.caption
+    });
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      input,
+      description
+    };
+    return wrapper;
+  }
+  renderUploader(scope, options) {
+    const pnl = new Panel(void 0);
+    const label = new Label(pnl, {
+      caption: options.caption
+    });
+    return pnl;
+  }
+  checkPropertyChange(value, schema, property) {
+    return this.validate(value, schema, { changing: property || "property" });
+  }
+  mustBeValid(result) {
+    if (!result.valid) {
+      throw new TypeError(result.errors.map(function(error) {
+        return "for property " + error.property + ": " + error.message;
+      }).join(", \n"));
+    }
+  }
+  validate(instance, schema, options) {
+    if (!options)
+      options = {};
+    var _changing = options.changing;
+    function getType(schema2) {
+      return schema2.type;
+    }
+    var errors = [];
+    function checkProp(value, schema2, path, scope, i, isNonObjArrayItem) {
+      if (isNonObjArrayItem && typeof i === "number") {
+        if (typeof value === "object") {
+          value = value[Object.keys(value)[0]];
+          if (isNaN(value) && (schema2.type === "number" || schema2.type === "integer"))
+            value = "";
+        }
+        scope = scope + "_" + (i + 1).toString();
+      } else {
+        const parsedPath = path.split(".");
+        let parsedScope = scope.split("/");
+        let parentProp = "";
+        if (parsedScope.length > 1) {
+          parsedScope = parsedScope.splice(0, parsedScope.length - 2);
+          parentProp = parsedScope[parsedScope.length - 1].split("_")[0];
+        }
+        let idxOfArray = -1;
+        parsedPath.forEach((value2) => {
+          if (value2.includes(parentProp)) {
+            let matches = value2.match(/\[(.*?)\]/);
+            if (matches)
+              idxOfArray = parseInt(matches[1]) + 1;
+          }
+        });
+        if (idxOfArray > 0 && getType(schema2) != "object") {
+          scope = scope + "_" + idxOfArray;
+        }
+      }
+      var l;
+      path += path ? typeof i == "number" ? "[" + i + "]" : typeof i == "undefined" ? "" : "." + i : i;
+      function addError(message, scope2, overwritePath) {
+        errors.push({ property: overwritePath || path, scope: scope2, message });
+      }
+      if ((typeof schema2 != "object" || schema2 instanceof Array) && (path || typeof schema2 != "function") && !(schema2 && getType(schema2))) {
+        if (typeof schema2 == "function") {
+          if (!(value instanceof schema2)) {
+            addError("is not an instance of the class/constructor " + schema2.name, scope);
+          }
+        } else if (schema2) {
+          addError("Invalid schema/property definition " + schema2, scope);
+        }
+        return null;
+      }
+      if (_changing && schema2.readOnly) {
+        addError("is a readonly field, it can not be changed", scope);
+      }
+      if (schema2.extends) {
+        checkProp(value, schema2.extends, path, scope, i);
+      }
+      function checkType(type, value2, scope2) {
+        if (type) {
+          if (type != "any" && (type == "null" ? value2 !== null : typeof value2 != type) && !(value2 instanceof Array && type == "array") && typeof type == "string" && !(type == "integer" && value2 % 1 === 0)) {
+            return [{
+              property: path,
+              scope: scope2,
+              message: value2 + " - " + typeof value2 + " value found, but a " + type + " is required"
+            }];
+          }
+          if (type instanceof Array) {
+            let unionErrors = [];
+            for (var j2 = 0; j2 < type.length; j2++) {
+              if (!(unionErrors = checkType(type[j2], value2, scope2)).length) {
+                break;
+              }
+            }
+            if (unionErrors.length) {
+              return unionErrors;
+            }
+          } else if (typeof type == "object") {
+            var priorErrors = errors;
+            errors = [];
+            checkProp(value2, type, path, scope2);
+            var theseErrors = errors;
+            errors = priorErrors;
+            return theseErrors;
+          }
+        }
+        return [];
+      }
+      if (value === void 0 || value === "" || value instanceof Array && !value.length) {
+        if (schema2.required && typeof schema2.required === "boolean") {
+          addError("is missing and it is required", scope);
+        }
+      } else {
+        if (getType(schema2) === "object" && schema2.required instanceof Array) {
+          for (let requiredField of schema2.required) {
+            if (value[requiredField] === void 0 || value[requiredField] === "" || value[requiredField] instanceof Array && !value[requiredField].length) {
+              addError(`is missing and it is required`, scope + "/properties/" + requiredField, requiredField);
+            }
+          }
+        }
+        errors = errors.concat(checkType(getType(schema2), value, scope));
+        if (schema2.disallow && !checkType(schema2.disallow, value, scope).length) {
+          addError(" disallowed value was matched", scope);
+        }
+        if (value !== null) {
+          if (value instanceof Array) {
+            if (schema2.items) {
+              var itemsIsArray = schema2.items instanceof Array;
+              var propDef = schema2.items;
+              for (i = 0, l = value.length; i < l; i += 1) {
+                if (itemsIsArray)
+                  propDef = schema2.items[i];
+                if (options.coerce)
+                  value[i] = options.coerce(value[i], propDef);
+                if (schema2.items.type == "object") {
+                  var errors2 = checkProp(value[i], propDef, path, scope, i);
+                  if (errors2)
+                    errors.concat(errors2);
+                }
+              }
+            }
+            if (schema2.minItems && value.length < schema2.minItems) {
+              addError("There must be a minimum of " + schema2.minItems + " in the array", scope);
+            }
+            if (schema2.maxItems && value.length > schema2.maxItems) {
+              addError("There must be a maximum of " + schema2.maxItems + " in the array", scope);
+            }
+          } else if (schema2.properties || schema2.additionalProperties) {
+            errors.concat(checkObj(value, schema2.properties, path, schema2.additionalProperties, scope));
+          }
+          if (schema2.items && schema2.items.type != "object") {
+            for (let i2 = 0; i2 < value.length; i2++) {
+              checkProp(value[i2], schema2.items, path, scope, i2, true);
+            }
+          }
+          if (schema2.pattern && typeof value == "string" && !value.match(schema2.pattern)) {
+            addError("does not match the regex pattern " + schema2.pattern, scope);
+          }
+          if (schema2.maxLength && typeof value == "string" && value.length > schema2.maxLength) {
+            addError("may only be " + schema2.maxLength + " characters long", scope);
+          }
+          if (schema2.minLength && typeof value == "string" && value.length < schema2.minLength) {
+            addError("must be at least " + schema2.minLength + " characters long", scope);
+          }
+          if (typeof schema2.minimum !== "undefined" && typeof value == typeof schema2.minimum && schema2.minimum > value) {
+            addError("must have a minimum value of " + schema2.minimum, scope);
+          }
+          if (typeof schema2.maximum !== "undefined" && typeof value == typeof schema2.maximum && schema2.maximum < value) {
+            addError("must have a maximum value of " + schema2.maximum, scope);
+          }
+          if (schema2["enum"]) {
+            var enumer = schema2["enum"];
+            l = enumer.length;
+            var found;
+            for (var j = 0; j < l; j++) {
+              if (enumer[j] === value) {
+                found = 1;
+                break;
+              }
+            }
+            if (!found) {
+              addError("does not have a value in the enumeration " + enumer.join(", "), scope);
+            }
+          }
+          if (typeof schema2.maxDecimal == "number" && value.toString().match(new RegExp("\\.[0-9]{" + (schema2.maxDecimal + 1) + ",}"))) {
+            addError("may only have " + schema2.maxDecimal + " digits of decimal places", scope);
+          }
+          if (value !== "") {
+            if (schema2.format === "wallet-address") {
+              const regex = new RegExp("^((0x[a-fA-F0-9]{40})|([13][a-km-zA-HJ-NP-Z1-9]{25,34})|(X[1-9A-HJ-NP-Za-km-z]{33})|(4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}))$");
+              if (!regex.test(value))
+                addError("is not a valid wallet address", scope);
+            } else if (schema2.format === "cid") {
+              const regex = new RegExp("^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$");
+              if (!regex.test(value))
+                addError("is not a valid cid", scope);
+            } else if (schema2.format === "cid-v0") {
+              const regex = new RegExp("^(Qm[1-9A-HJ-NP-Za-km-z]{44,})$");
+              if (!regex.test(value))
+                addError("is not a valid version 0 cid", scope);
+            } else if (schema2.format === "cid-v1") {
+              const regex = new RegExp("^(b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$");
+              if (!regex.test(value))
+                addError("is not a valid version 1 cid", scope);
+            } else if (schema2.format === "uuid") {
+              const regex = new RegExp("^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$");
+              if (!regex.test(value))
+                addError("is not a valid uuid", scope);
+            }
+          }
+        }
+      }
+      return null;
+    }
+    function checkObj(instance2, objTypeDef, path, additionalProp, scope) {
+      if (typeof objTypeDef == "object") {
+        if (typeof instance2 != "object" || instance2 instanceof Array) {
+          errors.push({ property: path, scope, message: "an object is required" });
+        }
+        for (var i in objTypeDef) {
+          if (objTypeDef.hasOwnProperty(i) && i != "__proto__" && i != "constructor") {
+            var value = instance2.hasOwnProperty(i) ? instance2[i] : void 0;
+            if (value === void 0 && options.existingOnly)
+              continue;
+            var propDef = objTypeDef[i];
+            if (value === void 0 && propDef["default"]) {
+              value = instance2[i] = propDef["default"];
+            }
+            if (options.coerce && i in instance2) {
+              value = instance2[i] = options.coerce(value, propDef);
+            }
+            checkProp(value, propDef, path, scope + "/properties/" + i, i);
+          }
+        }
+      }
+      for (i in instance2) {
+        if (instance2.hasOwnProperty(i) && !(i.charAt(0) == "_" && i.charAt(1) == "_") && objTypeDef && !objTypeDef[i] && additionalProp === false) {
+          if (options.filter) {
+            delete instance2[i];
+            continue;
+          } else {
+            errors.push({
+              property: path,
+              message: "The property " + i + " is not defined in the schema and the schema does not allow additional properties",
+              scope
+            });
+          }
+        }
+        var requires = objTypeDef && objTypeDef[i] && objTypeDef[i].requires;
+        if (requires && !(requires in instance2)) {
+          errors.push({
+            property: path,
+            scope,
+            message: "the presence of the property " + i + " requires that " + requires + " also be present"
+          });
+        }
+        value = instance2[i];
+        if (additionalProp && (!(objTypeDef && typeof objTypeDef == "object") || !(i in objTypeDef))) {
+          if (options.coerce) {
+            value = instance2[i] = options.coerce(value, additionalProp);
+          }
+          checkProp(value, additionalProp, path, scope + "/properties/" + i, i);
+        }
+        if (!_changing && value && value.$schema) {
+          const errors2 = checkProp(value, value.$schema, path, scope + "/properties/" + i, i);
+          if (errors2)
+            errors = errors.concat(errors2);
+        }
+      }
+      return errors;
+    }
+    const root = "#";
+    if (schema) {
+      checkProp(instance, schema, "", root, _changing || "");
+    }
+    if (!_changing && instance && instance.$schema) {
+      checkProp(instance, instance.$schema, "", root, "");
+    }
+    return { valid: !errors.length, errors };
+  }
+  convertFieldNameToLabel(name) {
+    let label = "";
+    for (let i = 0; i < name.length; i++) {
+      let char = name[i];
+      if (i == 0) {
+        label += char.toUpperCase();
+        continue;
+      }
+      if (char == char.toUpperCase())
+        label += ` ${char}`;
+      else
+        label += char;
+    }
+    return label;
+  }
+};
+Form = __decorateClass([
+  customElements2("i-form")
+], Form);
 /*!-----------------------------------------------------------
 * Copyright (c) IJS Technologies. All rights reserved.
 * Released under dual AGPLv3/commercial license
