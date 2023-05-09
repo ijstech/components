@@ -15446,6 +15446,7 @@ __export(exports, {
   ContextMenu: () => ContextMenu,
   Control: () => Control,
   DataGrid: () => DataGrid,
+  DataGridCell: () => DataGridCell,
   DataSchemaValidator: () => DataSchemaValidator,
   Datepicker: () => Datepicker,
   EventBus: () => EventBus,
@@ -21899,7 +21900,8 @@ cssRule("i-upload", {
     ".i-upload_preview-img": {
       maxHeight: "inherit",
       maxWidth: "100%",
-      display: "table"
+      display: "table",
+      margin: "auto"
     },
     ".i-upload_preview-crop": {
       position: "absolute",
@@ -25935,7 +25937,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
     valueChangedCallback && valueChangedCallback(data, errMsg);
   };
   const renderForm = (schema, scope = "#", isArray = false, idx, schemaOptions) => {
-    var _a;
+    var _a, _b;
     if (!schema)
       return void 0;
     const currentField = scope.substr(scope.lastIndexOf("/") + 1);
@@ -26272,7 +26274,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
       const _items = schema.items;
       const itemsRequired = typeof (_items == null ? void 0 : _items.required) === "object" ? _items.required : [];
       const updateIndex = (props, newIdx, currentIdx, prefixScope, newPrefix, subIdx) => {
-        var _a2, _b;
+        var _a2, _b2;
         for (const propertyName in props) {
           const subIndex = subIdx || 0;
           const finalIndex = subIdx ? subIndex : newIdx;
@@ -26281,7 +26283,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
           if (props[propertyName].type === "object") {
             updateIndex(props[propertyName].properties, newIdx, currentIdx, currentScope, newScope);
           } else if (props[propertyName].type === "array" && ((_a2 = props[propertyName].items) == null ? void 0 : _a2.type) === "object") {
-            const rows = ((_b = controls2[currentScope]) == null ? void 0 : _b.querySelectorAll(":scope > i-panel > [role='row']")) || [];
+            const rows = ((_b2 = controls2[currentScope]) == null ? void 0 : _b2.querySelectorAll(":scope > i-panel > [role='row']")) || [];
             let _currentItemIdx = 0;
             while (_currentItemIdx < rows.length) {
               _currentItemIdx++;
@@ -26329,6 +26331,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
       const isObject = _items.type === "object";
       if (!isObject)
         isVertical = true;
+      const itemType = (_b = schema.items) == null ? void 0 : _b.type;
       if (isVertical && _items.type) {
         const addCard = () => {
           const index = groupPnl.querySelectorAll(":scope > i-panel > [role='row']").length + 1;
@@ -26365,6 +26368,9 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
             const control = renderForm(_items, `${idxScope}`, true, index);
             if (control) {
               control.setAttribute("object-field-idx", `${index}`);
+              if (itemType !== "array" && itemType !== "object") {
+                control.setAttribute("single-field", "");
+              }
               gridLayout.append(control);
             }
           } else if (typeof _items === "object" && _items.type === "object" && _items.properties) {
@@ -26377,6 +26383,9 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               if (control && (property == null ? void 0 : property.type) === "object") {
                 control.setAttribute("object-field", propertyName);
                 control.setAttribute("object-field-idx", `${index}`);
+                if (itemType !== "array" && itemType !== "object") {
+                  control.setAttribute("single-field", "");
+                }
                 const lb = control.querySelector(":scope > i-panel");
                 if (lb) {
                   lb.style.display = "none";
@@ -26536,6 +26545,9 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               if (control && (property == null ? void 0 : property.type) === "object") {
                 control.setAttribute("object-field", propertyName);
                 control.setAttribute("object-field-idx", `${index}`);
+                if (itemType !== "array" && itemType !== "object") {
+                  control.setAttribute("single-field", "");
+                }
                 const lb = control.querySelector(":scope > i-panel");
                 if (lb) {
                   lb.style.display = "none";
@@ -26794,6 +26806,45 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
     } else
       return null;
   };
+  const setDataUpload = (url, control) => {
+    if (!url || !control)
+      return;
+    const getImageTypeFromUrl = (url2) => {
+      const extension = url2.match(/\.([^.]+)$/);
+      switch (extension && extension[1].toLowerCase()) {
+        case "jpg":
+        case "jpeg":
+          return "image/jpeg";
+        case "png":
+          return "image/png";
+        case "gif":
+          return "image/gif";
+        case "svg":
+          return "image/svg";
+        default:
+          return "image/png";
+      }
+    };
+    const getExtensionFromType = (fileType) => {
+      return fileType.split("/")[1];
+    };
+    try {
+      let imgUrl = url;
+      if (url.startsWith("ipfs://")) {
+        imgUrl = imgUrl.replace("ipfs://", "https://ipfs.scom.dev/ipfs/");
+      }
+      fetch(imgUrl).then((response) => response.arrayBuffer()).then((arrayBuffer) => {
+        const fileType = getImageTypeFromUrl(imgUrl);
+        const blob = new Blob([arrayBuffer], { type: fileType });
+        const fileName = `image-${Date.now()}.${getExtensionFromType(fileType)}`;
+        const file = new File([blob], fileName, { type: fileType });
+        control.fileList = [file];
+        control.preview(imgUrl);
+      });
+    } catch (e) {
+      control.fileList = [];
+    }
+  };
   const setData = (schema, data, scope = "#", idx) => {
     var _a;
     if (!schema || !data && !(schema.type === "number" && data === 0))
@@ -26837,6 +26888,8 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
                       else
                         dateFormat = defaultDateTimeFormat;
                       column.value = (0, import_moment.default)(fieldData, dateFormat);
+                    } else if (column.tagName === "I-UPLOAD") {
+                      setDataUpload(fieldData, column);
                     } else {
                       column.value = fieldData;
                     }
@@ -26885,6 +26938,8 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         control.value = (0, import_moment.default)(data, dateFormat);
       } else if (control.tagName === "I-COMBO-BOX") {
         control.selectedItem = control.items.find((v) => v.value === data) || void 0;
+      } else if (control.tagName === "I-UPLOAD") {
+        setDataUpload(data, control);
       } else
         control.value = data;
     }
@@ -26920,7 +26975,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         const arrayField = row.querySelectorAll(":scope > [array-field]");
         if (!columns && !objects && !arrayField)
           continue;
-        const columnData = {};
+        let columnData = {};
         for (const column of columns) {
           const parentCol = column.closest("[role='row']");
           if (parentCol !== row)
@@ -26928,6 +26983,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
           const fieldName = column.getAttribute("field");
           if (!fieldName)
             continue;
+          const isSingle = column.closest("[single-field]");
           if (column.tagName === "I-CHECKBOX") {
             columnData[fieldName] = column.checked;
           } else if (column.tagName === "I-COMBO-BOX") {
@@ -26954,6 +27010,9 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               columnData[fieldName] = parseInt(column.value);
             else
               columnData[fieldName] = column.value;
+          }
+          if (isSingle) {
+            columnData = columnData[fieldName];
           }
         }
         const properties = ((_c = schema.items) == null ? void 0 : _c.properties) || {};

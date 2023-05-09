@@ -11266,7 +11266,7 @@ declare module "@ijstech/components" {
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
     export { ComboBox, IComboItem } from "packages/combo-box/src/index";
-    export { DataGrid } from "@ijstech/components/dataGrid";
+    export { DataGrid, DataGridCell } from "@ijstech/components/dataGrid";
     export { Input } from "packages/input/src/index";
     export { Icon, IconName } from "packages/icon/src/index";
     export { Image } from "packages/image/src/index";
