@@ -19755,6 +19755,7 @@ var Button = class extends Control {
   }
   set caption(value) {
     this.captionElm.innerHTML = value;
+    this.captionElm.style.display = value ? "" : "none";
   }
   get icon() {
     if (!this._icon) {
@@ -19841,7 +19842,7 @@ var Button = class extends Control {
       this.onClick = this.getAttribute("onClick", true) || this.onClick;
       this.captionElm = this.createElement("span", this);
       let caption = this.getAttribute("caption", true, "");
-      this.captionElm.innerHTML = caption;
+      this.caption = caption;
       let iconAttr = this.getAttribute("icon", true);
       if (iconAttr) {
         iconAttr = { ...defaultIcon, ...iconAttr };
@@ -20262,11 +20263,6 @@ var Modal = class extends Container {
     this.wrapperDiv.style.height = "100%";
     this.wrapperDiv.style.paddingLeft = coords.left + "px";
     this.wrapperDiv.style.paddingTop = coords.top + "px";
-    const innerModal = this.querySelector("i-modal");
-    if (innerModal) {
-      innerModal.wrapperDiv.style.width = "0px";
-      innerModal.wrapperDiv.style.height = "0px";
-    }
   }
   positionAtAbsolute(placement) {
     let parent = this._parent || this.linkTo || this.parentElement || document.body;
@@ -23874,7 +23870,8 @@ cssRule("i-combo-box", {
 var defaultIcon2 = {
   width: 16,
   height: 16,
-  fill: theme_exports.ThemeVars.text.primary
+  fill: theme_exports.ThemeVars.text.primary,
+  name: "angle-down"
 };
 var ComboBox = class extends Control {
   constructor(parent, options) {
@@ -24240,12 +24237,10 @@ var ComboBox = class extends Control {
           return false;
         this.toggleList();
       });
-      let iconAttr = this.getAttribute("icon", true);
-      if (iconAttr) {
-        iconAttr = { ...defaultIcon2, ...iconAttr };
-        const icon = new Icon(void 0, iconAttr);
-        this.icon = icon;
-      }
+      let iconAttr = this.getAttribute("icon", true, {});
+      iconAttr = { ...defaultIcon2, ...iconAttr };
+      const icon = new Icon(void 0, iconAttr);
+      this.icon = icon;
       this.selectedItem = this.getAttribute("selectedItem", true);
       this.listElm = this.createElement("div");
       this.listElm.classList.add(ItemListStyle);
@@ -27202,6 +27197,7 @@ var Application = class {
     this.packageNames = new Set();
     this.packages = {};
     this.cidItems = {};
+    this.bundleLibs = {};
     this.globalEvents = new GlobalEvents();
   }
   get EventBus() {
@@ -27529,7 +27525,11 @@ var Application = class {
     }
     if (this.packages[modulePath])
       return this.packages[modulePath];
-    let script = await this.getScript(modulePath);
+    let script = "";
+    if (this.bundleLibs[packageName])
+      script = this.bundleLibs[packageName];
+    else
+      script = await this.getScript(modulePath);
     if (script) {
       _currentDefineModule = null;
       this.currentModulePath = modulePath;
@@ -27616,6 +27616,20 @@ var Application = class {
     if (options) {
       if (options.main) {
         this._initOptions = options;
+        if (options.bundle) {
+          try {
+            let rootDir = (options == null ? void 0 : options.rootDir) ? (options == null ? void 0 : options.rootDir) + "/" : "";
+            let content = await this.getScript(rootDir + "bundle.json");
+            if (content) {
+              this.bundleLibs = JSON.parse(content);
+            }
+            ;
+          } catch (err) {
+            this.bundleLibs = {};
+          }
+          ;
+        }
+        ;
       }
       ;
       if (!this._assets && options.assets)
@@ -27680,7 +27694,10 @@ var Application = class {
         ;
       }
       ;
-      script = await this.getScript(modulePath);
+      if (this.bundleLibs[module2])
+        script = this.bundleLibs[module2];
+      else
+        script = await this.getScript(modulePath);
     }
     ;
     if (script) {
@@ -29592,9 +29609,13 @@ var DataGrid = class extends Control {
     this._currCell = this.getTableCellByActualIndex(this._col, this._row);
     if (!this.options._rowSelect) {
       if (!this._currCell) {
-        return this.cellHighlight.style.display = "none";
+        if (this.cellHighlight)
+          this.cellHighlight.style.display = "none";
+        return;
       }
+      ;
     }
+    ;
     this.highlightSelectedCell();
     this.selectedRangeHighlight.style.display = "none";
     if (this._currCell || this.options._rowSelect && this._row < this._rowCount) {
@@ -32977,7 +32998,7 @@ var TreeView = class extends Control {
       const childContent = childNode.querySelector(".i-tree-node_content");
       if (parentContent && childContent) {
         const parentLeft = parentContent.style.paddingLeft || 0;
-        childContent.style.paddingLeft = `calc(${parentLeft} + 1em)`;
+        childContent.style.paddingLeft = parentLeft ? `calc(${parentLeft} + 1em)` : "1em";
       }
     } else {
       this.appendChild(childNode);
@@ -39061,17 +39082,20 @@ var Form = class extends Control {
           case "I-DATEPICKER":
             input.value = value;
             break;
+          case "I-UPLOAD":
+            input.preview(value);
+            break;
         }
       }
     }
   }
-  getFormData() {
+  async getFormData() {
     if (!this._jsonSchema)
       return void 0;
-    const data = this.getDataBySchema(this._jsonSchema);
+    const data = await this.getDataBySchema(this._jsonSchema);
     return data;
   }
-  getDataBySchema(schema, scope = "#") {
+  async getDataBySchema(schema, scope = "#") {
     var _a, _b, _c, _d, _e;
     if (!schema)
       return void 0;
@@ -39085,6 +39109,18 @@ var Form = class extends Control {
             return (_b = control.value) == null ? void 0 : _b.value;
           case "I-DATEPICKER":
             return control.value;
+          case "I-UPLOAD":
+            const file = control.fileList[0];
+            if (file) {
+              if (schema.format === "data-url") {
+                const dataUrl = await control.toBase64(file);
+                return dataUrl;
+              } else if (schema.format === "data-cid") {
+                return file.cid;
+              } else
+                return void 0;
+            } else
+              return void 0;
           default:
             return void 0;
         }
@@ -39130,7 +39166,7 @@ var Form = class extends Control {
       for (const propertyName in properties) {
         const currentSchema = properties[propertyName];
         const currentScope = `${scope}/properties/${propertyName}`;
-        obj[propertyName] = this.getDataBySchema(currentSchema, currentScope);
+        obj[propertyName] = await this.getDataBySchema(currentSchema, currentScope);
       }
       return obj;
     } else {
@@ -39241,8 +39277,12 @@ var Form = class extends Control {
         return this.renderDatePicker(scope, datePickerType || "", controlOptions);
       } else if (schema.format === "data-url") {
         return this.renderUploader(scope, controlOptions);
+      } else if (schema.format === "data-cid") {
+        return this.renderUploader(scope, controlOptions);
       } else if (schema.format === "color") {
         return this.renderColorPicker(scope, controlOptions);
+      } else if (schema.format === "data-url") {
+        return this.renderUploader(scope, controlOptions);
       } else {
         return this.renderInput(scope, { caption: labelName, columnWidth });
       }
@@ -39536,6 +39576,25 @@ var Form = class extends Control {
     };
     return wrapper;
   }
+  renderUploader(scope, options) {
+    const wrapper = new Panel(void 0);
+    wrapper.classList.add(formGroupStyle);
+    const label = new Label(wrapper, {
+      caption: options == null ? void 0 : options.caption
+    });
+    const uploader = new Upload(wrapper, {});
+    uploader.classList.add(inputStyle);
+    const description = new Label(wrapper, {
+      caption: options.description
+    });
+    this._formControls[scope] = {
+      wrapper,
+      label,
+      input: uploader,
+      description
+    };
+    return wrapper;
+  }
   renderDatePicker(scope, type, options) {
     var _a;
     if (type != "date" && type != "time" && type != "dateTime")
@@ -39608,13 +39667,6 @@ var Form = class extends Control {
       description
     };
     return wrapper;
-  }
-  renderUploader(scope, options) {
-    const pnl = new Panel(void 0);
-    const label = new Label(pnl, {
-      caption: options.caption
-    });
-    return pnl;
   }
   checkPropertyChange(value, schema, property) {
     return this.validate(value, schema, { changing: property || "property" });

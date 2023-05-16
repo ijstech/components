@@ -5918,6 +5918,7 @@ declare module "packages/application/src/index" {
     }
     export interface IHasDependencies {
         assets?: string;
+        bundle?: boolean;
         ipfs?: string;
         rootDir?: string;
         moduleDir?: string;
@@ -5998,6 +5999,7 @@ declare module "packages/application/src/index" {
         private _uploadModal;
         private cidItems;
         geoInfo: IGeoInfo;
+        private bundleLibs;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -9540,7 +9542,7 @@ declare module "packages/data-grid/src/dataGrid" {
         showData(interval: number): void;
         getTableCellByActualIndex(aColIdx: number, aRowIdx: number): HTMLTableCellElement | undefined;
         getTableCell(aColIdx: number, aRowIdx: number): any;
-        highlightCurrCell(): "none" | undefined;
+        highlightCurrCell(): void;
         setCurrCell(aCol: number, aRow: number, triggerEvent?: boolean): void;
         private highlightSelectedCell;
         private _updateLanguage;
@@ -11231,7 +11233,7 @@ declare module "packages/form/src/form" {
         clearFormData(): void;
         setFormData(data: any): void;
         private setData;
-        getFormData(): any;
+        getFormData(): Promise<any>;
         private getDataBySchema;
         renderForm(): void;
         private renderFormByJSONSchema;
@@ -11244,11 +11246,11 @@ declare module "packages/form/src/form" {
         private renderNumberInput;
         private renderTextArea;
         private renderColorPicker;
+        private renderUploader;
         private renderDatePicker;
         private renderComboBox;
         private renderRadioGroup;
         private renderCheckBox;
-        private renderUploader;
         private checkPropertyChange;
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
