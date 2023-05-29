@@ -6000,6 +6000,7 @@ declare module "packages/application/src/index" {
         private cidItems;
         geoInfo: IGeoInfo;
         private bundleLibs;
+        store: Record<string, any>;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -10943,6 +10944,12 @@ declare module "packages/form/src/styles/index.css" {
     export const datePickerStyle: string;
     export const comboBoxStyle: string;
     export const buttonStyle: string;
+    export const listHeaderStyle: string;
+    export const listBtnAddStyle: string;
+    export const listColumnHeaderStyle: string;
+    export const listItemStyle: string;
+    export const listItemBtnDelete: string;
+    export const tabsStyle: string;
 }
 declare module "packages/form/src/types/jsonSchema4" {
     export type IJSONSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
@@ -11133,13 +11140,11 @@ declare module "packages/form/src/types/index" {
     import { IJSONSchema4TypeName, IJSONSchema4 } from "packages/form/src/types/jsonSchema4";
     import { IJSONSchema6TypeName, IJSONSchema6 } from "packages/form/src/types/jsonSchema6";
     import { IJSONSchema7TypeName, IJSONSchema7 } from "packages/form/src/types/jsonSchema7";
-    type IUISchemaType = 'VerticalLayout' | 'HorizontalLayout' | 'Group' | 'Categorization' | 'Category' | 'Control';
-    type IUISchemaRulesEffect = 'HIDE' | 'SHOW' | 'DISABLE' | 'ENABLE';
-    interface IUISchemaRulesCondition {
+    export type IUISchemaType = 'VerticalLayout' | 'HorizontalLayout' | 'Group' | 'Categorization' | 'Category' | 'Control';
+    export type IUISchemaRulesEffect = 'HIDE' | 'SHOW' | 'DISABLE' | 'ENABLE';
+    export interface IUISchemaRulesCondition {
         scope: string;
-        schema: {
-            [key: string]: any;
-        };
+        schema: IDataSchema;
     }
     export interface IUISchemaOptions {
         detail?: 'DEFAULT' | 'GENERATED' | 'REGISTERED' | IUISchema;
@@ -11157,7 +11162,7 @@ declare module "packages/form/src/types/index" {
         autocomplete?: boolean;
         variant?: 'stepper';
     }
-    interface IUISchemaRules {
+    export interface IUISchemaRules {
         effect?: IUISchemaRulesEffect;
         condition?: IUISchemaRulesCondition;
     }
@@ -11221,6 +11226,7 @@ declare module "packages/form/src/form" {
         private _jsonSchema;
         private _uiSchema;
         private _formOptions;
+        private _formRules;
         private _formControls;
         constructor();
         protected init(): void;
@@ -11238,10 +11244,11 @@ declare module "packages/form/src/form" {
         renderForm(): void;
         private renderFormByJSONSchema;
         private renderFormByUISchema;
+        private setupRules;
+        private setupControlRule;
+        private validateRule;
         private getDataSchemaByScope;
         private renderGroup;
-        private renderTabs;
-        private renderTab;
         private renderInput;
         private renderNumberInput;
         private renderTextArea;
@@ -11251,6 +11258,8 @@ declare module "packages/form/src/form" {
         private renderComboBox;
         private renderRadioGroup;
         private renderCheckBox;
+        private renderList;
+        private renderCard;
         private checkPropertyChange;
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
