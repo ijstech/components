@@ -22089,7 +22089,8 @@ var UploadDrag = class extends Control {
     source.preventDefault();
     if (this.disabled)
       return;
-    this.onBeforeDrop(this);
+    if (this.onBeforeDrop)
+      this.onBeforeDrop(this);
     this.counter = 0;
     (_a = this.parentElement) == null ? void 0 : _a.classList.remove("i-upload-dragger_active");
     const accept = (_b = this.parentElement) == null ? void 0 : _b.getAttribute("accept");
@@ -22155,21 +22156,6 @@ var Upload = class extends Control {
     });
     this._dt = new DataTransfer();
     this._fileList = [];
-    this.handleRemoveImagePreview = (event) => {
-      if (!this.isPreviewing || !this.enabled)
-        return;
-      event.stopPropagation();
-      const file = this._dt.files.length ? this._dt.files[0] : void 0;
-      this.clear();
-      if (this.onRemoved)
-        this.onRemoved(this, file);
-    };
-    this.toBase64 = (file) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
   }
   get caption() {
     return this._caption;
@@ -22333,10 +22319,19 @@ var Upload = class extends Control {
       this._previewRemoveElm.classList.remove("active");
     }
     this._previewRemoveElm.classList.add("i-upload_preview-remove");
-    this._previewRemoveElm.onclick = this.handleRemoveImagePreview;
+    this._previewRemoveElm.onclick = this.handleRemoveImagePreview.bind(this);
     const span = this.createElement("span", this._previewRemoveElm);
     span.style.fontFamily = Theme12.typography.fontFamily;
     span.innerHTML = "Click to remove";
+  }
+  handleRemoveImagePreview(event) {
+    if (!this.isPreviewing || !this.enabled)
+      return;
+    event.stopPropagation();
+    const file = this._dt.files.length ? this._dt.files[0] : void 0;
+    this.clear();
+    if (this.onRemoved)
+      this.onRemoved(this, file);
   }
   handleRemove(file) {
     const rawFile = file;
@@ -22353,6 +22348,14 @@ var Upload = class extends Control {
     this.updateFileListUI(this._dt.files);
     if (!this._dt.items.length)
       this.clear();
+  }
+  toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
   }
   preview(uri) {
     if (!uri)
@@ -22401,7 +22404,10 @@ var Upload = class extends Control {
       this._uploadDragElm = new UploadDrag(this, {
         caption: this.caption,
         disabled: !this.enabled || !this.draggable,
-        onBeforeDrop: (source) => this.onBeforeDrop(source),
+        onBeforeDrop: (source) => {
+          if (this.onBeforeDrop)
+            this.onBeforeDrop(source);
+        },
         onDrop: (source, value) => {
           value && this.proccessFiles(value);
         }
@@ -38580,6 +38586,7 @@ var Nav = class extends Control {
   }
   set navItems(navItems) {
     this._navItems = navItems;
+    this.renderNav(navItems);
   }
   get navItems() {
     return this._navItems;
@@ -38974,14 +38981,21 @@ var comboBoxStyle = style({});
 var buttonStyle = style({
   padding: 5
 });
+var iconButtonStyle = style({
+  cursor: "pointer",
+  height: Theme39.typography.fontSize,
+  width: Theme39.typography.fontSize
+});
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme39.divider}`
+  borderBottom: `1px solid ${Theme39.divider}`,
+  marginBottom: 10
 });
 var listBtnAddStyle = style({
   height: Theme39.typography.fontSize,
   width: Theme39.typography.fontSize,
-  cursor: "pointer"
+  cursor: "pointer",
+  placeSelf: "center"
 });
 var listColumnHeaderStyle = style({
   padding: "10px 0"
@@ -38994,6 +39008,17 @@ var listItemBtnDelete = style({
 });
 var tabsStyle = style({
   marginBottom: 41
+});
+var cardStyle = style({
+  background: Theme39.background.main,
+  border: `1px solid ${Theme39.divider}`
+});
+var cardHeader = style({
+  padding: 20,
+  borderBottom: `1px solid ${Theme39.divider}`
+});
+var cardBody = style({
+  padding: 20
 });
 
 // packages/form/src/form.ts
@@ -39020,8 +39045,8 @@ var DEFAULT_OPTIONS = {
   columnWidth: "100%"
 };
 var Form = class extends Control {
-  constructor() {
-    super();
+  constructor(parent, options) {
+    super(parent, options);
     this._formRules = [];
     this._formControls = {};
   }
@@ -39101,23 +39126,43 @@ var Form = class extends Control {
               const listItem = listItems[i];
               const rowData = value[i];
               const fields = listItem.querySelectorAll('[role="field"]');
-              for (let j = 0; j < fields.length; j++) {
-                const field = fields[j];
-                const fieldName = field.getAttribute("field") || "";
-                const columnData = rowData[fieldName];
-                if (field.tagName === "I-INPUT") {
-                  field.value = columnData;
-                } else if (field.tagName === "I-CHECKBOX") {
-                  field.checked = columnData;
-                } else if (field.tagName === "I-COMBO-BOX") {
-                  field.value = columnData;
-                  const selectedItem = field.items.find((v) => v.value === columnData);
-                  if (selectedItem)
-                    field.selectedItem = selectedItem;
-                } else if (field.tagName === "I-RADIO-GROUP") {
-                  field.selectedValue = columnData;
-                } else if (field.tagName === "I-DATEPICKER") {
-                  field.value = columnData;
+              if (grid.getAttribute("single-item") === true) {
+                const field = fields[0];
+                if (field) {
+                  if (field.tagName === "I-INPUT") {
+                    field.value = rowData;
+                  } else if (field.tagName === "I-CHECKBOX") {
+                    field.checked = rowData;
+                  } else if (field.tagName === "I-COMBO-BOX") {
+                    field.value = rowData;
+                    const selectedItem = field.items.find((v) => v.value === rowData);
+                    if (selectedItem)
+                      field.selectedItem = selectedItem;
+                  } else if (field.tagName === "I-RADIO-GROUP") {
+                    field.selectedValue = rowData;
+                  } else if (field.tagName === "I-DATEPICKER") {
+                    field.value = moment(rowData);
+                  }
+                }
+              } else {
+                for (let j = 0; j < fields.length; j++) {
+                  const field = fields[j];
+                  const fieldName = field.getAttribute("field") || "";
+                  const columnData = rowData[fieldName];
+                  if (field.tagName === "I-INPUT") {
+                    field.value = columnData;
+                  } else if (field.tagName === "I-CHECKBOX") {
+                    field.checked = columnData;
+                  } else if (field.tagName === "I-COMBO-BOX") {
+                    field.value = columnData;
+                    const selectedItem = field.items.find((v) => v.value === columnData);
+                    if (selectedItem)
+                      field.selectedItem = selectedItem;
+                  } else if (field.tagName === "I-RADIO-GROUP") {
+                    field.selectedValue = columnData;
+                  } else if (field.tagName === "I-DATEPICKER") {
+                    field.value = moment(columnData);
+                  }
                 }
               }
             }
@@ -39145,7 +39190,7 @@ var Form = class extends Control {
             input.selectedItem = input.items.find((v) => v.value === value) || input.items[0];
             break;
           case "I-DATEPICKER":
-            input.value = value;
+            input.value = moment(value);
             break;
           case "I-UPLOAD":
             input.preview(value);
@@ -39161,7 +39206,7 @@ var Form = class extends Control {
     return data;
   }
   async getDataBySchema(schema, scope = "#") {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
     if (!schema)
       return void 0;
     if (schema.type === "string") {
@@ -39246,29 +39291,54 @@ var Form = class extends Control {
         for (const listItem of listItems) {
           const data = {};
           const fields = listItem.querySelectorAll('[role="field"]');
-          if (fields && fields.length > 0)
-            for (const field of fields) {
-              const fieldName = field.getAttribute("field") || "";
+          if ((grid == null ? void 0 : grid.getAttribute("single-item")) === true) {
+            const field = fields[0];
+            if (field) {
               if (field.tagName === "I-INPUT") {
                 const value = field.value;
                 const dataType = field.getAttribute("dataType");
                 if (dataType === "string")
-                  data[fieldName] = value;
+                  list.push(value);
                 else if (dataType === "number")
-                  data[fieldName] = parseFloat(value);
+                  list.push(parseFloat(value));
                 else if (dataType === "boolean")
-                  data[fieldName] = !!value;
+                  list.push(!!value);
               } else if (field.tagName === "I-DATEPICKER") {
-                data[fieldName] = field.value;
+                list.push(field.value);
               } else if (field.tagName === "I-COMBO-BOX") {
-                data[fieldName] = (_i = field.value) == null ? void 0 : _i.value;
+                list.push((_i = field.value) == null ? void 0 : _i.value);
               } else if (field.tagName === "I-CHECKBOX") {
-                data[fieldName] = field.checked;
+                list.push(field.checked);
               } else if (field.tagName === "I-RADIO-GROUP") {
-                data[fieldName] = field.selectedValue;
+                list.push(field.selectedValue);
               }
             }
-          list.push(data);
+          } else {
+            if (fields && fields.length > 0) {
+              for (const field of fields) {
+                const fieldName = field.getAttribute("field") || "";
+                if (field.tagName === "I-INPUT") {
+                  const value = field.value;
+                  const dataType = field.getAttribute("dataType");
+                  if (dataType === "string")
+                    data[fieldName] = value;
+                  else if (dataType === "number")
+                    data[fieldName] = parseFloat(value);
+                  else if (dataType === "boolean")
+                    data[fieldName] = !!value;
+                } else if (field.tagName === "I-DATEPICKER") {
+                  data[fieldName] = field.value;
+                } else if (field.tagName === "I-COMBO-BOX") {
+                  data[fieldName] = (_j = field.value) == null ? void 0 : _j.value;
+                } else if (field.tagName === "I-CHECKBOX") {
+                  data[fieldName] = field.checked;
+                } else if (field.tagName === "I-RADIO-GROUP") {
+                  data[fieldName] = field.selectedValue;
+                }
+              }
+            }
+            list.push(data);
+          }
         }
         return list;
       }
@@ -39278,6 +39348,7 @@ var Form = class extends Control {
     var _a, _b, _c, _d;
     this.clearInnerHTML();
     this._formRules = [];
+    this._formControls = {};
     let controls2;
     if (this._uiSchema) {
       this.renderFormByUISchema(this, this._uiSchema);
@@ -39334,7 +39405,7 @@ var Form = class extends Control {
     }
     this.appendChild(pnlButton);
   }
-  renderFormByJSONSchema(parent, schema, scope = "#", isArray = false, idx, schemaOptions) {
+  renderFormByJSONSchema(parent, schema, scope = "#", isArray = false, subLevel = false, idx, schemaOptions) {
     var _a;
     if (!parent || !schema)
       return void 0;
@@ -39398,7 +39469,7 @@ var Form = class extends Control {
       let wrapperObj;
       let wrapper;
       let container;
-      if (scope !== "#") {
+      if (scope !== "#" && !subLevel) {
         wrapperObj = this.renderGroup(parent, controlOptions);
         wrapper = wrapperObj.wrapper;
         container = wrapperObj.body;
@@ -39415,7 +39486,7 @@ var Form = class extends Control {
         if (!(currentSchema == null ? void 0 : currentSchema.required) && arrRequired.includes(propertyName)) {
           currentSchema.required = true;
         }
-        this.renderFormByJSONSchema(form, currentSchema, `${idxScope}/properties/${propertyName}`, false, idx);
+        this.renderFormByJSONSchema(form, currentSchema, `${idxScope}/properties/${propertyName}`, false, false, idx);
       }
       this._formControls[scope] = {
         wrapper
@@ -39425,29 +39496,33 @@ var Form = class extends Control {
       if (!schema.items)
         return void 0;
       const { body, btnAdd, columnHeader } = this.renderList(parent, scope, controlOptions);
-      if (typeof schema.items === "object" && !(schema.items instanceof Array) && schema.items.type === "object") {
-        const properties = schema.items.properties;
-        let hasSublevel = Object.values(properties).find((value) => value.type === "object");
-        if (!hasSublevel) {
-          const templateColumns = [];
-          for (let i = 0; i < Object.values(properties).length; i++)
-            templateColumns.push("1fr");
-          templateColumns.push("50px");
-          const header = new GridLayout(columnHeader, {
-            templateColumns,
-            gap: {
-              column: 5,
-              row: 5
-            }
-          });
-          header.classList.add(listColumnHeaderStyle);
-          for (const fieldName in properties) {
-            const property = properties[fieldName];
-            const caption = property.title || this.convertFieldNameToLabel(fieldName);
-            new Label(header, {
-              caption
+      if (typeof schema.items === "object" && !(schema.items instanceof Array)) {
+        if (schema.items.type === "object") {
+          const properties = schema.items.properties;
+          let hasSublevel = Object.values(properties).find((value) => value.type === "object");
+          if (!hasSublevel) {
+            const templateColumns = [];
+            for (let i = 0; i < Object.values(properties).length; i++)
+              templateColumns.push("1fr");
+            templateColumns.push("50px");
+            const header = new GridLayout(columnHeader, {
+              templateColumns,
+              gap: {
+                column: 5,
+                row: 5
+              }
             });
+            header.classList.add(listColumnHeaderStyle);
+            for (const fieldName in properties) {
+              const property = properties[fieldName];
+              const caption = property.title || this.convertFieldNameToLabel(fieldName);
+              new Label(header, {
+                caption
+              });
+            }
           }
+        } else {
+          body.setAttribute("single-item", "true");
         }
       }
       if (btnAdd) {
@@ -39460,6 +39535,7 @@ var Form = class extends Control {
                 this.renderCard(body, scope, schema.items, controlOptions);
               }
             } else {
+              this.renderCard(body, scope, schema.items, controlOptions);
             }
           }
         };
@@ -39576,7 +39652,7 @@ var Form = class extends Control {
         if (!caption)
           caption = this.convertFieldNameToLabel(key2);
       }
-      const control = this.renderFormByJSONSchema(formControlElm, dataSchema, scope, false, void 0, options);
+      const control = this.renderFormByJSONSchema(formControlElm, dataSchema, scope, false, false, void 0, options);
       if (formControlElm)
         stub.append(formControlElm);
       if (descriptionElm)
@@ -39973,17 +40049,20 @@ var Form = class extends Control {
   }
   renderList(parent, scope, options) {
     const wrapper = new Panel(parent);
-    const header = new HStack(wrapper, { justifyContent: "space-between", alignItems: "center" });
+    const header = new GridLayout(wrapper, { templateColumns: ["1fr", "50px"] });
     header.classList.add(listHeaderStyle);
     new Label(header, { caption: options.caption });
     const btnAdd = new Icon(header, { name: "plus" });
     btnAdd.classList.add(listBtnAddStyle);
     const columnHeader = new VStack(wrapper);
-    const body = new VStack(wrapper);
+    const body = new VStack(wrapper, {
+      gap: 10
+    });
     this._formControls[scope] = {
       wrapper,
       input: body
     };
+    console.log("formControls", this._formControls);
     return {
       wrapper,
       columnHeader,
@@ -39992,14 +40071,65 @@ var Form = class extends Control {
     };
   }
   renderCard(parent, scope, schema, options) {
+    var _a;
     if (!schema.type)
       return;
     if (schema.type === "object") {
-      const templateColumns = [];
-      for (let i = 0; i < Object.values(schema.properties).length; i++) {
-        templateColumns.push("1fr");
+      let hasSubLevel = !!Object.values(schema.properties).find((value) => value.type === "object");
+      if (!hasSubLevel) {
+        const templateColumns = [];
+        for (let i = 0; i < Object.values(schema.properties).length; i++) {
+          templateColumns.push("1fr");
+        }
+        templateColumns.push("50px");
+        const row = new GridLayout(parent, {
+          templateColumns,
+          gap: {
+            column: 5,
+            row: 5
+          },
+          verticalAlignment: "center",
+          alignItems: "center",
+          justifyContent: "center"
+        });
+        row.classList.add(listItemStyle);
+        row.setAttribute("role", "list-item");
+        for (const fieldName in schema.properties) {
+          const property = schema.properties[fieldName];
+          this.renderFormByJSONSchema(row, property, `${scope}/items/properties/${fieldName}`, !hasSubLevel);
+        }
+        const btnDelete = new Icon(row, {
+          name: "trash"
+        });
+        btnDelete.classList.add(listItemBtnDelete);
+        btnDelete.onClick = () => {
+          row.remove();
+        };
+      } else {
+        console.log("renderCard schema", schema, "scope", scope);
+        const card = new Panel(parent);
+        card.classList.add(cardStyle);
+        card.setAttribute("role", "list-item");
+        const headerStack = new GridLayout(card, { gap: 5, templateColumns: ["1fr", "30px", "30px"] });
+        headerStack.classList.add(cardHeader);
+        const bodyStack = new VStack(card);
+        bodyStack.classList.add(cardBody);
+        const badgeRowNum = new Label(headerStack, { caption: ((_a = parent.querySelectorAll('[role="list-item"]')) == null ? void 0 : _a.length) || 1 });
+        const btnDelete = new Icon(headerStack, { name: "trash" });
+        const btnCollapse = new Icon(headerStack, { name: "chevron-down" });
+        btnCollapse.onClick = () => {
+          bodyStack.visible = !bodyStack.visible;
+          btnCollapse.name = `chevron-${bodyStack.visible ? "up" : "down"}`;
+        };
+        btnDelete.classList.add(listItemBtnDelete);
+        btnDelete.onClick = () => {
+          card.remove();
+        };
+        btnCollapse.classList.add(listItemBtnDelete);
+        this.renderFormByJSONSchema(bodyStack, schema, `${scope}/items/properties`, true, hasSubLevel);
       }
-      templateColumns.push("50px");
+    } else {
+      const templateColumns = ["1fr", "50px"];
       const row = new GridLayout(parent, {
         templateColumns,
         gap: {
@@ -40012,10 +40142,7 @@ var Form = class extends Control {
       });
       row.classList.add(listItemStyle);
       row.setAttribute("role", "list-item");
-      for (const fieldName in schema.properties) {
-        const property = schema.properties[fieldName];
-        this.renderFormByJSONSchema(row, property, `${scope}/items/properties/${fieldName}`, true);
-      }
+      this.renderFormByJSONSchema(row, schema, `${scope}/items`, true);
       const btnDelete = new Icon(row, {
         name: "trash"
       });

@@ -4545,9 +4545,9 @@ declare module "packages/upload/src/upload" {
         private checkBeforeUpload;
         private updateFileListUI;
         private renderPreview;
-        private handleRemove;
         private handleRemoveImagePreview;
-        toBase64: (file: File) => Promise<unknown>;
+        private handleRemove;
+        toBase64(file: File): Promise<unknown>;
         preview(uri: string): void;
         clear(): void;
         upload(endpoint: string): Promise<void>;
@@ -10839,9 +10839,9 @@ declare module "packages/navigator/src/navigator" {
         data: any;
     }
     export interface NavElement extends ControlElement {
-        navItems: INavItem[];
-        options: INavOption;
-        onItemClick: () => void;
+        navItems?: INavItem[];
+        options?: INavOption;
+        onItemClick?: () => void;
     }
     export interface NavItemElement extends ControlElement {
         caption: string;
@@ -10944,12 +10944,16 @@ declare module "packages/form/src/styles/index.css" {
     export const datePickerStyle: string;
     export const comboBoxStyle: string;
     export const buttonStyle: string;
+    export const iconButtonStyle: string;
     export const listHeaderStyle: string;
     export const listBtnAddStyle: string;
     export const listColumnHeaderStyle: string;
     export const listItemStyle: string;
     export const listItemBtnDelete: string;
     export const tabsStyle: string;
+    export const cardStyle: string;
+    export const cardHeader: string;
+    export const cardBody: string;
 }
 declare module "packages/form/src/types/jsonSchema4" {
     export type IJSONSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
@@ -11228,7 +11232,7 @@ declare module "packages/form/src/form" {
         private _formOptions;
         private _formRules;
         private _formControls;
-        constructor();
+        constructor(parent?: Control, options?: any);
         protected init(): void;
         set formOptions(options: any);
         get formOptions(): any;
