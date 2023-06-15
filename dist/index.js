@@ -15440,6 +15440,7 @@ __export(exports, {
   ClearObservers: () => ClearObservers,
   CodeDiffEditor: () => CodeDiffEditor,
   CodeEditor: () => CodeEditor,
+  ColorPicker: () => ColorPicker,
   ComboBox: () => ComboBox,
   Component: () => Component,
   Container: () => Container,
@@ -25118,19 +25119,828 @@ RadioGroup = __decorateClass([
   customElements2("i-radio-group")
 ], RadioGroup);
 
-// packages/input/src/style/input.css.ts
+// packages/color/src/utils.ts
+function stringToArr(color, isRgb) {
+  const formatted = isRgb ? color.replace(/^rgba?\(|\)$/g, "") : color.replace(/^hsla?\(|\)$/g, "");
+  const separator = formatted.includes(",") ? "," : " ";
+  let rgba = formatted.split(separator);
+  if (rgba.includes("/"))
+    rgba.splice(3, 1);
+  if (!isRgb)
+    return rgba;
+  for (let R in rgba) {
+    const r = rgba[R];
+    if (r.includes("%")) {
+      const p = +r.substr(0, r.length - 1) / 100;
+      if (+R < 3) {
+        rgba[R] = Math.round(p * 255).toString();
+      } else {
+        rgba[R] = p.toString();
+      }
+    }
+  }
+  return rgba;
+}
+function hslaToHex(h, s, l, a) {
+  s /= 100;
+  l /= 100;
+  let c = (1 - Math.abs(2 * l - 1)) * s;
+  let x = c * (1 - Math.abs(h / 60 % 2 - 1));
+  let m = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (0 <= h && h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (60 <= h && h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (120 <= h && h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (180 <= h && h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (240 <= h && h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else if (300 <= h && h < 360) {
+    r = c;
+    g = 0;
+    b = x;
+  }
+  r = Math.round((r + m) * 255).toString(16);
+  g = Math.round((g + m) * 255).toString(16);
+  b = Math.round((b + m) * 255).toString(16);
+  if (r.length == 1)
+    r = "0" + r;
+  if (g.length == 1)
+    g = "0" + g;
+  if (b.length == 1)
+    b = "0" + b;
+  let aValue = Math.round(255 * a).toString(16);
+  if (aValue.length === 1)
+    aValue = "0" + aValue;
+  return `#${r}${g}${b}${aValue}`;
+}
+function rgbToHex(rgba) {
+  let r = (+rgba[0]).toString(16);
+  let g = (+rgba[1]).toString(16);
+  let b = (+rgba[2]).toString(16);
+  if (r.length === 1)
+    r = "0" + r;
+  if (g.length === 1)
+    g = "0" + g;
+  if (b.length === 1)
+    b = "0" + b;
+  let a = "";
+  if (rgba[3]) {
+    a = Math.round(+rgba[3] * 255).toString(16);
+    if (a.length === 1)
+      a = "0" + a;
+  }
+  return "#" + r + g + b + a;
+}
+function hslaToRgba(h, s, l) {
+  h = h % 360;
+  s = s / 100;
+  l = l / 100;
+  const chroma = (1 - Math.abs(2 * l - 1)) * s;
+  const hueSegment = h / 60;
+  const x = chroma * (1 - Math.abs(hueSegment % 2 - 1));
+  let r, g, b;
+  if (hueSegment >= 0 && hueSegment < 1) {
+    r = chroma;
+    g = x;
+    b = 0;
+  } else if (hueSegment >= 1 && hueSegment < 2) {
+    r = x;
+    g = chroma;
+    b = 0;
+  } else if (hueSegment >= 2 && hueSegment < 3) {
+    r = 0;
+    g = chroma;
+    b = x;
+  } else if (hueSegment >= 3 && hueSegment < 4) {
+    r = 0;
+    g = x;
+    b = chroma;
+  } else if (hueSegment >= 4 && hueSegment < 5) {
+    r = x;
+    g = 0;
+    b = chroma;
+  } else {
+    r = chroma;
+    g = 0;
+    b = x;
+  }
+  const lightnessAdjustment = l - chroma / 2;
+  r += lightnessAdjustment;
+  g += lightnessAdjustment;
+  b += lightnessAdjustment;
+  r = Math.round(r * 255);
+  g = Math.round(g * 255);
+  b = Math.round(b * 255);
+  return { r, g, b };
+}
+function rgbaToHsla(r, g, b) {
+  r = r < 0 ? 0 : r > 255 ? 255 : r;
+  g = g < 0 ? 0 : g > 255 ? 255 : g;
+  b = b < 0 ? 0 : b > 255 ? 255 : b;
+  r = r / 255;
+  g = g / 255;
+  b = b / 255;
+  let min = Math.min(r, g, b);
+  let max = Math.max(r, g, b);
+  let delta = max - min;
+  let h = 0;
+  let s;
+  let l;
+  if (max == min) {
+    h = 0;
+  } else if (r == max) {
+    h = (g - b) / delta;
+  } else if (g == max) {
+    h = 2 + (b - r) / delta;
+  } else if (b == max) {
+    h = 4 + (r - g) / delta;
+  }
+  h = Math.min(h * 60, 360);
+  if (h < 0)
+    h += 360;
+  l = (min + max) / 2;
+  if (max == min)
+    s = 0;
+  else if (l <= 0.5)
+    s = delta / (max + min);
+  else
+    s = delta / (2 - max - min);
+  return {
+    h: Math.round(h),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100)
+  };
+}
+function getUnitValues(h, s, l, a) {
+  return {
+    h,
+    s,
+    l,
+    a,
+    ...hslaToRgba(h, s, l),
+    hex: hslaToHex(h, s, l, a),
+    isValid: true
+  };
+}
+function getRgba(h) {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let a = 1;
+  if (h.length === 4 || h.length === 5) {
+    r = "0x" + h[1] + h[1];
+    g = "0x" + h[2] + h[2];
+    b = "0x" + h[3] + h[3];
+    if (h.length === 5)
+      a = "0x" + h[4] + h[4];
+  } else if (h.length === 7 || h.length == 9) {
+    r = "0x" + h[1] + h[2];
+    g = "0x" + h[3] + h[4];
+    b = "0x" + h[5] + h[6];
+    if (h.length === 9)
+      a = "0x" + h[7] + h[8];
+  }
+  if (a !== 1)
+    a = +(a / 255).toFixed(3);
+  return { r: +r, g: +g, b: +b, a };
+}
+function convertColor(color) {
+  var _a, _b, _c;
+  let result = {};
+  if (/^rgb/.test(color)) {
+    const rgb2 = stringToArr(color, true);
+    const r = Number(rgb2[0]);
+    const g = Number(rgb2[1]);
+    const b = Number(rgb2[2]);
+    const a = Number((_a = rgb2[3]) != null ? _a : 1);
+    result = {
+      r,
+      g,
+      b,
+      a,
+      hex: rgbToHex(rgb2),
+      ...rgbaToHsla(r, g, b)
+    };
+  } else if (/^#/i.test(color)) {
+    if (!isHexColorValid(color))
+      return { isValid: false, hex: color };
+    const { r, g, b, a } = getRgba(color);
+    result = {
+      hex: color,
+      r,
+      g,
+      b,
+      a,
+      ...rgbaToHsla(r, g, b)
+    };
+  } else if (/^hsl/i.test(color)) {
+    const hsla = stringToArr(color, false);
+    const h = Number((_b = hsla[0]) != null ? _b : 0);
+    const s = Number((hsla[1] || "").replace("%", ""));
+    const l = Number((hsla[2] || "").replace("%", ""));
+    const a = Number((_c = hsla[3]) != null ? _c : 1);
+    result = {
+      h,
+      s,
+      l,
+      a,
+      hex: hslaToHex(h, s, l, a),
+      ...hslaToRgba(h, s, l)
+    };
+  }
+  return { ...result, isValid: true };
+}
+function isHexColorValid(color) {
+  const hexRegex = /^#([A-Fa-f0-9]{3,4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/i;
+  return hexRegex.test(color);
+}
+function isRgbValid(value) {
+  const regex = /^[0-9]{1,3}$/i;
+  return regex.test(value) && +value >= 0 && +value <= 255;
+}
+function isHValid(value) {
+  const regex = /^[0-9]{1,3}$/i;
+  return regex.test(value) && +value >= 0 && +value <= 360;
+}
+function isPercentValid(value) {
+  const regex = /^(\d\d?(\.\d+)?|\.\d+|100)%$/i;
+  return regex.test(value);
+}
+function customRound(value, threshold) {
+  const roundedValue = Math.round(value);
+  const decimalPart = value % 1;
+  if (decimalPart > threshold) {
+    return roundedValue + 1;
+  } else {
+    return roundedValue;
+  }
+}
+
+// packages/color/src/style/color.css.ts
 var Theme20 = theme_exports.ThemeVars;
+var gradient = "linear-gradient(to right, rgb(255, 0, 0) 0%, rgb(255, 255, 0) 17%, rgb(0, 255, 0) 33%, rgb(0, 255, 255) 50%, rgb(0, 0, 255) 67%, rgb(255, 0, 255) 83%, rgb(255, 0, 0) 100%)";
+var opacity = `var(--opacity-color, linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 100%))`;
+cssRule("i-color", {
+  $nest: {
+    ".i-color": {
+      minHeight: 25,
+      height: "100%",
+      position: "relative",
+      display: "inline-flex",
+      alignItems: "center"
+    },
+    ".input-span": {
+      height: "100%",
+      minWidth: 100,
+      display: "inline-flex",
+      alignItems: "center",
+      border: `1px solid ${Theme20.divider}`,
+      padding: 4,
+      $nest: {
+        "span": {
+          backgroundColor: "#000",
+          height: "100%",
+          width: "100%",
+          minHeight: 12,
+          display: "inline-block"
+        }
+      }
+    },
+    ".color-palette": {
+      $nest: {
+        'input[type="range"]': {
+          backgroundImage: gradient,
+          borderRadius: 0
+        },
+        'input[type="range"]::-webkit-slider-runnable-track': {
+          background: gradient
+        },
+        'input[type="range"]::-webkit-slider-thumb': {
+          backgroundColor: "rgb(248, 248, 248)",
+          width: 12,
+          height: 12,
+          boxShadow: "rgba(0, 0, 0, 0.37) 0px 1px 4px 0px"
+        }
+      }
+    },
+    ".color-slider": {
+      $nest: {
+        'input[type="range"]': {
+          backgroundImage: opacity,
+          borderRadius: 0
+        },
+        'input[type="range"]::-webkit-slider-runnable-track': {
+          background: opacity
+        },
+        'input[type="range"]::-webkit-slider-thumb': {
+          backgroundColor: "rgb(248, 248, 248)",
+          width: 12,
+          height: 12,
+          boxShadow: "rgba(0, 0, 0, 0.37) 0px 1px 4px 0px"
+        }
+      }
+    },
+    ".pnl-select": {
+      "boxShadow": "rgba(0, 0, 0, 0.3) 0px 0px 2px, rgba(0, 0, 0, 0.3) 0px 4px 8px"
+    },
+    ".color-picker": {
+      justifyContent: "center",
+      alignItems: "center"
+    },
+    ".color-input-group": {
+      display: "flex",
+      gap: "2px",
+      flex: "1"
+    },
+    ".color-input": {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      $nest: {
+        "input": {
+          fontSize: 11,
+          width: "100%",
+          borderRadius: 2,
+          border: "none",
+          boxShadow: "rgb(218, 218, 218) 0px 0px 0px 1px inset",
+          height: 20,
+          textAlign: "center",
+          letterSpacing: 1.5
+        },
+        "span": {
+          fontSize: 11
+        }
+      }
+    },
+    ".selected-color": {
+      width: 16,
+      height: 16,
+      borderRadius: "50%",
+      boxShadow: "rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset"
+    },
+    ".color-preview": {
+      $nest: {
+        "> i-panel": {
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          inset: "0px",
+          background: "linear-gradient(to right, rgb(255, 255, 255), rgba(255, 255, 255, 0))",
+          $nest: {
+            "> i-panel": {
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              inset: "0px",
+              background: "linear-gradient(to top, rgb(0, 0, 0), rgba(0, 0, 0, 0))"
+            }
+          }
+        },
+        "#iconPointer": {
+          width: 12,
+          height: 12,
+          borderRadius: "50%",
+          boxShadow: "rgb(255, 255, 255) 0px 0px 0px 1px inset",
+          transform: "translate(-6px, -6px)",
+          position: "absolute",
+          cursor: "default",
+          top: 0,
+          left: 0
+        }
+      }
+    }
+  }
+});
+
+// packages/color/src/color.ts
+var palette = {
+  0: "rgb(255, 0, 0)",
+  17: "rgb(255, 255, 0)",
+  33: "rgb(0, 255, 0)",
+  50: "rgb(0, 255, 255)",
+  67: "rgb(0, 0, 255)",
+  83: "rgb(255, 0, 255)",
+  100: "rgb(255, 0, 0)"
+};
+var rgb = ["r", "g", "b", "a"];
+var hsl = ["h", "s", "l", "a"];
+var hex = ["hex"];
+var formatList = ["hex", "rgb", "hsl"];
+var formatMap = { hex, rgb, hsl };
+var DEFAULT_COLOR = "#000";
+var ColorPicker = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+    this._format = 0;
+    this.inputMap = new Map();
+    this.currentH = 0;
+    this.currentColor = {
+      h: 0,
+      s: 0,
+      l: 0,
+      r: 0,
+      g: 0,
+      b: 0,
+      hex: DEFAULT_COLOR
+    };
+    this.currentPalette = "";
+  }
+  get value() {
+    var _a;
+    return ((_a = this.currentColor) == null ? void 0 : _a.hex) || "";
+  }
+  set value(color) {
+    const data = convertColor(color);
+    if (data.isValid)
+      this.currentColor = { ...data };
+    this.updateUI(true);
+  }
+  get caption() {
+    return this._caption;
+  }
+  set caption(value) {
+    this._caption = value;
+    if (!value)
+      this.captionSpanElm.style.display = "none";
+    else
+      this.captionSpanElm.style.display = "";
+    this.captionSpanElm && (this.captionSpanElm.innerHTML = value);
+  }
+  get captionWidth() {
+    return this._captionWidth;
+  }
+  set captionWidth(value) {
+    if (!value)
+      return;
+    this._captionWidth = value;
+    this.setElementPosition(this.captionSpanElm, "width", value);
+  }
+  get height() {
+    return this.offsetHeight;
+  }
+  set height(value) {
+    this.setPosition("height", value);
+  }
+  async init() {
+    if (!this.wrapperElm) {
+      super.init();
+      this.wrapperElm = this.createElement("div", this);
+      this.wrapperElm.classList.add("i-color");
+      this.captionSpanElm = this.createElement("span", this.wrapperElm);
+      this.captionWidth = this.getAttribute("captionWidth", true);
+      this.caption = this.getAttribute("caption", true);
+      this.mdColorPicker = await Modal.create({
+        popupPlacement: "bottomLeft",
+        closeOnBackdropClick: true,
+        minWidth: 230,
+        showBackdrop: false,
+        onClose: () => this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR
+      });
+      this.mdColorPicker.id = "mdColorPicker";
+      this.wrapperElm.appendChild(this.mdColorPicker);
+      const item = await Panel.create();
+      item.classList.add("pnl-select");
+      await this.createPreview();
+      item.appendChild(this.pnlShown);
+      this.pnlWrap = await Panel.create({
+        padding: { top: "1rem", left: "1rem", right: "1rem", bottom: "0.75rem" },
+        width: "100%",
+        background: { color: "#fff" }
+      });
+      item.appendChild(this.pnlWrap);
+      this.mdColorPicker.item = item;
+      await this.createPicker();
+      const valueElm = this.createElement("span", this.wrapperElm);
+      valueElm.classList.add("input-span");
+      valueElm.addEventListener("click", () => {
+        if (!this.enabled)
+          return;
+        this.mdColorPicker.visible = !this.mdColorPicker.visible;
+      });
+      this.inputSpanElm = this.createElement("span", valueElm);
+      this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR;
+      this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
+      const value = this.getAttribute("value", true);
+      if (value !== void 0)
+        this.value = value;
+    }
+  }
+  createInputGroup() {
+    let wrapElm = this.pnlInput.querySelector(".color-input-group");
+    if (!wrapElm) {
+      wrapElm = this.createElement("div", this.pnlInput);
+      wrapElm.classList.add("color-input-group");
+    }
+    wrapElm.innerHTML = "";
+    const formatType = formatList[this._format] || "";
+    const list = formatMap[formatType];
+    for (let item of list) {
+      const inputWrap = this.createElement("div", wrapElm);
+      inputWrap.classList.add("color-input");
+      const input = this.createElement("input", inputWrap);
+      let value = this.currentColor[item];
+      if (item === "s" || item === "l")
+        value = (value != null ? value : "") + "%";
+      input.value = value !== void 0 ? value : item === "a" ? "1" : "";
+      input.addEventListener("input", (event) => this.onInputChanged(event, item));
+      this.inputMap.set(item, input);
+      const span = this.createElement("span", inputWrap);
+      span.style.textTransform = "uppercase";
+      span.innerHTML = item;
+    }
+  }
+  async createPreview() {
+    this.pnlShown = await Panel.create({
+      height: 100,
+      width: "100%",
+      overflow: "hidden",
+      background: { color: this.currentPalette || "" }
+    });
+    this.pnlShown.innerHTML = `
+      <i-panel>
+        <i-panel>
+          <i-panel id="iconPointer"></i-panel>
+        </i-panel>
+      </i-panel>
+    `;
+    this.pnlShown.classList.add("color-preview");
+    this.pnlShown.onClick = this.onColorSelected.bind(this);
+  }
+  async createPicker() {
+    const picker = await GridLayout.create({
+      gap: { column: "0px", row: "0.5rem" },
+      templateAreas: [["selected", "palette"], ["selected", "slider"]],
+      templateColumns: ["32px", "auto"],
+      margin: { bottom: "1rem" }
+    });
+    picker.classList.add("color-picker");
+    this.colorSelected = await Panel.create({});
+    this.colorSelected.classList.add("selected-color");
+    this.colorSelected.style.gridArea = "selected";
+    this.colorPalette = await Range.create({
+      width: "100%",
+      height: 10,
+      min: 0,
+      max: 100,
+      step: 1,
+      value: 0
+    });
+    this.colorPalette.onChanged = this.onPaletteChanged.bind(this);
+    this.colorPalette.classList.add("color-palette");
+    this.colorPalette.style.gridArea = "palette";
+    this.colorSlider = await Range.create({
+      width: "100%",
+      height: 10,
+      min: 0,
+      max: 1,
+      value: 1,
+      step: 0.1
+    });
+    this.colorSlider.onChanged = this.onSliderChanged.bind(this);
+    this.colorSlider.classList.add("color-slider");
+    this.colorSlider.style.gridArea = "slider";
+    picker.append(this.colorSelected, this.colorPalette, this.colorSlider);
+    this.pnlInput = await HStack.create({
+      alignItems: "center",
+      gap: "0.5rem"
+    });
+    this.createInputGroup();
+    const icons = await VStack.create({
+      justifyContent: "center",
+      alignItems: "center",
+      maxHeight: 50
+    });
+    const topIcon = await Icon.create({
+      name: "angle-up",
+      fill: "#000",
+      width: 16,
+      height: 16
+    });
+    topIcon.classList.add("pointer");
+    topIcon.onClick = () => this.onToggleFormat(-1);
+    const bottomIcon = await Icon.create({
+      name: "angle-down",
+      fill: "#000",
+      width: 16,
+      height: 16
+    });
+    bottomIcon.classList.add("pointer");
+    bottomIcon.onClick = () => this.onToggleFormat(1);
+    icons.append(topIcon, bottomIcon);
+    this.pnlInput.appendChild(icons);
+    this.pnlWrap.append(picker, this.pnlInput);
+  }
+  onPaletteChanged() {
+    const value = this.colorPalette.value;
+    this.setPalette(value);
+    if (this.currentPalette) {
+      this.pnlShown.background = { color: this.currentPalette };
+      const rgbArr = stringToArr(this.currentPalette, true);
+      this.style.setProperty("--opacity-color", `linear-gradient(to right, rgba(${rgbArr[0]}, ${rgbArr[1]}, ${rgbArr[2]}, 0) 0%, ${this.currentPalette} 100%)`);
+      this.onColorSelected(this.pnlShown);
+    }
+  }
+  onSliderChanged() {
+    this.currentColor.a = this.colorSlider.value;
+    this.updateHex();
+    this.updateUI();
+  }
+  onToggleFormat(value) {
+    const maxLength = formatList.length;
+    this._format = ((this._format + value) % maxLength + maxLength) % maxLength;
+    this.createInputGroup();
+  }
+  onColorSelected(target, event) {
+    const rect = target.getBoundingClientRect();
+    const x = event ? event.clientX - rect.left : 160;
+    const y = event ? event.clientY - rect.top : 60;
+    const iconPointer = target.querySelector("#iconPointer");
+    if (iconPointer) {
+      iconPointer.style.top = `${y}px`;
+      iconPointer.style.left = `${x}px`;
+    }
+    const paletteWidth = target.offsetWidth;
+    const paletteHeight = target.offsetHeight;
+    const hue = Math.round(this.currentH / 100 * 360);
+    const saturation = Math.round(x / paletteWidth * 100);
+    const lightness = Math.round((1 - y / paletteHeight) * 100);
+    this.updateColor(hue, saturation, lightness);
+  }
+  updateColor(h, s, l) {
+    const a = this.colorSlider.value;
+    const data = getUnitValues(h, s, l, a);
+    if (data.isValid)
+      this.updateCurrentColor(data);
+  }
+  updateCurrentColor(data, init = false) {
+    if (data)
+      this.currentColor = { ...data };
+    this.updateUI(init);
+    if (this.onChanged)
+      this.onChanged(this, this.value);
+  }
+  updateHex() {
+    const { h, s, l, a } = this.currentColor;
+    this.currentColor.hex = hslaToHex(h, s, l, a);
+  }
+  updateUI(init) {
+    if (init)
+      this.initUI();
+    for (let unit in this.currentColor) {
+      const input = this.inputMap.get(unit);
+      if (!input)
+        continue;
+      const hasSuffix = unit === "s" || unit === "l";
+      input.value = `${this.currentColor[unit]} ${hasSuffix ? "%" : ""}`;
+    }
+    const { h, s, l, a, r, g, b, hex: hex2 = "" } = this.currentColor;
+    if (this.colorSelected)
+      this.colorSelected.background = { color: `hsla(${h}, ${s}%, ${l}%, ${a})` };
+    this.style.setProperty("--opacity-color", `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0) 0%, rgb(${r}, ${g}, ${b}) 100%)`);
+    const hexInput = this.inputMap.get("hex");
+    if (hexInput)
+      hexInput.value = hex2 || "";
+    if (this.inputSpanElm)
+      this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR;
+    if (this.pnlShown) {
+      const iconPointer = this.pnlShown.querySelector("#iconPointer");
+      if (iconPointer) {
+        const paletteWidth = this.pnlShown.offsetWidth;
+        const paletteHeight = this.pnlShown.offsetHeight;
+        const x = Math.round(s / 100 * paletteWidth);
+        const y = Math.round((1 - l / 100) * paletteHeight);
+        iconPointer.style.left = `${x}px`;
+        iconPointer.style.top = `${y}px`;
+      }
+    }
+  }
+  initUI() {
+    const { h, a } = this.currentColor || {};
+    const paletteValue = h ? customRound(h / 360 * 100, 0.5) : 0;
+    console.log(paletteValue);
+    this.setPalette(paletteValue);
+    if (this.colorPalette)
+      this.colorPalette.value = paletteValue;
+    if (this.colorSlider)
+      this.colorSlider.value = a != null ? a : 1;
+    if (this.pnlShown) {
+      this.pnlShown.background = { color: this.currentPalette || "" };
+    }
+  }
+  setPalette(paletteValue) {
+    const keys = Object.keys(palette);
+    this.currentH = paletteValue;
+    if (paletteValue === 100) {
+      this.currentPalette = palette[paletteValue];
+      return;
+    }
+    for (let i = 0; i < keys.length; i++) {
+      const value = +keys[i];
+      const nextValue = +keys[i + 1];
+      if (paletteValue >= value && paletteValue < nextValue) {
+        const colorArr = stringToArr(palette[value], true);
+        const nextColorArr = stringToArr(palette[nextValue], true);
+        const percent = (paletteValue - value) / (nextValue - value);
+        if (percent === 0 || percent === 1) {
+          this.currentPalette = palette[value];
+        } else {
+          const diffPos = colorArr.findIndex((val, index) => val !== nextColorArr[index]);
+          if (diffPos >= 0) {
+            const percent2 = (paletteValue - value) / (nextValue - value);
+            colorArr[diffPos] = `${percent2 * 255}`;
+            this.currentPalette = `rgb(${colorArr[0]}, ${colorArr[1]}, ${colorArr[2]})`;
+          } else {
+            this.currentPalette = palette[0];
+          }
+        }
+        break;
+      }
+    }
+  }
+  onInputChanged(event, item) {
+    const value = event.target.value;
+    let currentColor = { ...this.currentColor };
+    let isRgbChanged = false;
+    let isHslChanged = false;
+    switch (item) {
+      case "hex":
+        const data = convertColor(value);
+        if (data.isValid)
+          this.updateCurrentColor(data, true);
+        break;
+      case "r":
+      case "g":
+      case "b":
+        const isValid = isRgbValid(value);
+        currentColor[item] = isValid ? value : 255;
+        isRgbChanged = true;
+        break;
+      case "h":
+        const hValid = isHValid(value);
+        currentColor[item] = hValid ? value : 0;
+        isHslChanged = true;
+        break;
+      case "s":
+      case "l":
+        const sValid = isPercentValid(value);
+        currentColor[item] = sValid ? value : 0;
+        isHslChanged = true;
+        break;
+    }
+    if (item === "hex")
+      return;
+    const { r, g, b, h, s, l } = currentColor;
+    if (isRgbChanged) {
+      const { h: h2, s: s2, l: l2 } = rgbaToHsla(r, g, b);
+      currentColor = { ...currentColor, h: h2, s: s2, l: l2 };
+    } else if (isHslChanged) {
+      const { r: r2, g: g2, b: b2 } = hslaToRgba(h, s, l);
+      currentColor = { ...currentColor, r: r2, g: g2, b: b2 };
+    }
+    this.updateHex();
+    this.updateCurrentColor({ ...currentColor }, true);
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+ColorPicker = __decorateClass([
+  customElements2("i-color")
+], ColorPicker);
+
+// packages/input/src/style/input.css.ts
+var Theme21 = theme_exports.ThemeVars;
 cssRule("i-input", {
   display: "inline-block",
-  fontFamily: Theme20.typography.fontFamily,
-  fontSize: Theme20.typography.fontSize,
+  fontFamily: Theme21.typography.fontFamily,
+  fontSize: Theme21.typography.fontSize,
   "$nest": {
     "> span": {
       overflow: "hidden"
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme20.text.primary,
+      color: Theme21.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -25140,11 +25950,11 @@ cssRule("i-input", {
       height: "100%"
     },
     "> input": {
-      border: `0.5px solid ${Theme20.divider}`,
+      border: `0.5px solid ${Theme21.divider}`,
       boxSizing: "border-box",
       outline: "none",
-      color: Theme20.input.fontColor,
-      background: Theme20.input.background,
+      color: Theme21.input.fontColor,
+      background: Theme21.input.background,
       borderRadius: "inherit",
       fontSize: "inherit",
       maxHeight: "100%"
@@ -25153,7 +25963,7 @@ cssRule("i-input", {
       display: "none",
       verticalAlign: "middle",
       padding: "6px",
-      backgroundColor: Theme20.action.focus,
+      backgroundColor: Theme21.action.focus,
       $nest: {
         "&.active": {
           display: "inline-flex",
@@ -25166,8 +25976,8 @@ cssRule("i-input", {
     "textarea": {
       width: "100%",
       lineHeight: 1.5,
-      color: Theme20.input.fontColor,
-      background: Theme20.input.background
+      color: Theme21.input.fontColor,
+      background: Theme21.input.background
     }
   }
 });
@@ -25253,14 +26063,16 @@ var Input = class extends Control {
     const clearBtnWidth = this._showClearButton ? this._clearBtnWidth : 0;
     const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
     this.setPosition("width", value);
-    this.inputElm.style.width = `calc(100% - ${captionWidth} - ${clearBtnWidth}px)`;
+    if (this.inputElm)
+      this.inputElm.style.width = `calc(100% - ${captionWidth} - ${clearBtnWidth}px)`;
   }
   get readOnly() {
     return this._readOnly;
   }
   set readOnly(value) {
     this._readOnly = value;
-    this.inputElm.readOnly = value;
+    if (this.inputElm)
+      this.inputElm.readOnly = value;
   }
   get inputType() {
     return this._inputType;
@@ -25446,16 +26258,17 @@ var Input = class extends Control {
         this.inputElm.addEventListener("focus", this._handleOnFocus.bind(this));
         break;
       case "color":
-        this.captionSpanElm = this.createElement("span", this);
-        this.labelElm = this.createElement("label", this.captionSpanElm);
-        this.inputElm = this.createElement("input", this);
-        this.inputElm.style.height = "auto";
-        this.inputElm.disabled = enabled === false;
-        this.inputElm.setAttribute("type", "color");
-        this.inputElm.addEventListener("input", this._handleChange.bind(this));
-        this.inputElm.addEventListener("keydown", this._handleInputKeyDown.bind(this));
-        this.inputElm.addEventListener("keyup", this._handleInputKeyUp.bind(this));
-        this.inputElm.addEventListener("focus", this._handleOnFocus.bind(this));
+        this._inputControl = new ColorPicker(this, {
+          value,
+          enabled,
+          caption,
+          width,
+          height
+        });
+        if (this.onChanged)
+          this._inputControl.onChanged = this.onChanged;
+        this.appendChild(this._inputControl);
+        this.inputElm = this._inputControl.querySelector(".input-span");
         break;
       default:
         const inputType = type == "password" ? type : "text";
@@ -25575,7 +26388,7 @@ Input = __decorateClass([
 ], Input);
 
 // packages/application/src/styles/jsonUI.css.ts
-var Theme21 = theme_exports.ThemeVars;
+var Theme22 = theme_exports.ThemeVars;
 var jsonUICheckboxStyle = style({
   display: "flex",
   alignItems: "center",
@@ -25590,7 +26403,7 @@ var jsonUICheckboxStyle = style({
 var jsonUIComboboxStyle = style({
   $nest: {
     ".selection": {
-      border: `1px solid ${Theme21.divider}`
+      border: `1px solid ${Theme22.divider}`
     },
     ".selection input": {
       paddingInline: 0
@@ -26275,7 +27088,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
       const _items = schema.items;
       const itemsRequired = typeof (_items == null ? void 0 : _items.required) === "object" ? _items.required : [];
       const updateIndex = (props, newIdx, currentIdx, prefixScope, newPrefix, subIdx) => {
-        var _a2, _b2;
+        var _a2, _b2, _c;
         for (const propertyName in props) {
           const subIndex = subIdx || 0;
           const finalIndex = subIdx ? subIndex : newIdx;
@@ -26291,7 +27104,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               updateIndex(props[propertyName].items.properties, newIdx, currentIdx, currentScope, newScope, subIndex + _currentItemIdx);
             }
           }
-          const parentLayout = controls2[newScope].closest("[array-item-idx");
+          const parentLayout = (_c = controls2[newScope]) == null ? void 0 : _c.closest("[array-item-idx]");
           if (parentLayout) {
             parentLayout.setAttribute("array-item-idx", `${newIdx}`);
             parentLayout["options"]["array-item-idx"] = `${newIdx}`;
@@ -28235,7 +29048,7 @@ CodeDiffEditor = __decorateClass([
 var import_moment2 = __toModule(require_moment());
 
 // packages/data-grid/src/style/dataGrid.css.ts
-var Theme22 = theme_exports.ThemeVars;
+var Theme23 = theme_exports.ThemeVars;
 cssRule("i-data-grid", {
   border: "0.5px solid #dadada",
   $nest: {
@@ -28412,13 +29225,6 @@ var DataGridCell = class {
   }
   set color(value) {
     this._color = value;
-    this.grid.enableUpdateTimer();
-  }
-  get dataType() {
-    return this._dataType;
-  }
-  set dataType(value) {
-    this._dataType = value;
     this.grid.enableUpdateTimer();
   }
   get displayValue() {
@@ -28763,8 +29569,6 @@ var TGridColumn = class {
     this._color = value.color;
     this._horizontalAlign = value["horizontalAlign"] != void 0 ? value["horizontalAlign"] : value["alignment"];
     this._type = value["type"] || value["dataType"];
-    this._checkBox = value["type"] == "checkBox";
-    this._radioButton = value["type"] == "radioButton";
     this._readOnly = value["readOnly"];
     this._visible = value["visible"];
     this._resizable = value["resizable"];
@@ -28816,15 +29620,8 @@ var TGridColumn = class {
     this._comboItems = value;
     this.grid.enableUpdateTimer();
   }
-  get dataType() {
-    return this._dataType;
-  }
-  set dataType(value) {
-    this._dataType = value;
-    this.grid.enableUpdateTimer();
-  }
   get default() {
-    return (!this._color || this._color == "clNone") && (this._horizontalAlign == void 0 || this._horizontalAlign == 1) && (!this._type || this._type == "string") && !this._readOnly && this._visible && (!this._dataType || this._dataType == 0) && this._resizable && !this._lookupContext && !this._lookupTable && !this._lookupField && !this._listOfValue;
+    return (!this._color || this._color == "clNone") && (this._horizontalAlign == void 0 || this._horizontalAlign == 1) && (!this._type || this._type == "string") && !this._readOnly && this._visible && !this._dataType && this._resizable && !this._lookupContext && !this._lookupTable && !this._lookupField && !this._listOfValue;
   }
   get format() {
     return this._format;
@@ -28872,7 +29669,39 @@ var TGridColumn = class {
   }
   set type(value) {
     this._type = value;
+    switch (value) {
+      case "checkBox":
+        this._dataType = "boolean";
+        break;
+      case "comboBox":
+        this._dataType = "string";
+        break;
+      case "datePicker":
+        this._dataType = "date";
+        break;
+      case "dateTimePicker":
+        this._dataType = "dateTime";
+        break;
+      case "integer":
+        this._dataType = "integer";
+        break;
+      case "number":
+        this._dataType = "number";
+        break;
+      case "string":
+        this._dataType = "string";
+        break;
+      case "timePicker":
+        this._dataType = "time";
+        break;
+      default:
+        this._dataType = "string";
+        break;
+    }
     this.grid.enableUpdateTimer();
+  }
+  get dataType() {
+    return this._dataType;
   }
   get visible() {
     return this._visible !== false;
@@ -28960,12 +29789,21 @@ var TGridRow = class {
     this._visible = true;
     this._resizable = false;
     this.grid = grid;
+    if (!this._type)
+      this._type = "string";
   }
   get color() {
     return this._color;
   }
   set color(value) {
     this._color = value;
+    this.grid.enableUpdateTimer();
+  }
+  get comboItems() {
+    return this._comboItems;
+  }
+  set comboItems(value) {
+    this._comboItems = value;
     this.grid.enableUpdateTimer();
   }
   get height() {
@@ -28988,6 +29826,45 @@ var TGridRow = class {
   set resizable(value) {
     this._resizable = value;
     this.grid.enableUpdateTimer();
+  }
+  get type() {
+    return this._type;
+  }
+  set type(value) {
+    this._type = value;
+    switch (value) {
+      case "checkBox":
+        this._dataType = "boolean";
+        break;
+      case "comboBox":
+        this._dataType = "string";
+        break;
+      case "datePicker":
+        this._dataType = "date";
+        break;
+      case "dateTimePicker":
+        this._dataType = "dateTime";
+        break;
+      case "integer":
+        this._dataType = "integer";
+        break;
+      case "number":
+        this._dataType = "number";
+        break;
+      case "string":
+        this._dataType = "string";
+        break;
+      case "timePicker":
+        this._dataType = "time";
+        break;
+      default:
+        this._dataType = "string";
+        break;
+    }
+    this.grid.enableUpdateTimer();
+  }
+  get dataType() {
+    return this._dataType;
   }
   get visible() {
     return this._visible;
@@ -29088,6 +29965,25 @@ var DataGrid = class extends Control {
     this._init();
   }
   _init() {
+    this._mode = this.getAttribute("mode", true);
+    if (!this.mode)
+      this._mode = "vertical";
+    if (this._mode == "vertical") {
+      this._fixedCol = 0;
+      this._fixedRow = 1;
+      this._leftCol = 0;
+      this._topRow = 1;
+    } else if (this._mode == "horizontal") {
+      this._fixedCol = 1;
+      this._fixedRow = 0;
+      this._leftCol = 1;
+      this._topRow = 0;
+    } else {
+      this._fixedCol = 0;
+      this._fixedRow = 0;
+      this._leftCol = 0;
+      this._topRow = 0;
+    }
     this.options = new TGridOptions(this);
     this.placeHolder = this.createElement("div", this);
     this._table = this.createElement("table", this);
@@ -29193,6 +30089,9 @@ var DataGrid = class extends Control {
     this._colCount = value;
     this.enableUpdateTimer(false, true);
   }
+  get mode() {
+    return this._mode;
+  }
   get readOnly() {
     return this._readOnly;
   }
@@ -29263,24 +30162,23 @@ var DataGrid = class extends Control {
       editor = editor || this.editor;
       if (!editor || editor._isModified === false)
         return;
-      if (editor.getAttribute("editorType")) {
-        let cell = this.data.getCell(this._col, this._row);
-        if (editor.getAttribute("editorType") === "sc:checkBox") {
-          cell._value = editor.checked;
-        } else if (editor.getAttribute("editorType") === "sc:datePicker") {
-          cell._value = editor.value;
-        } else if (editor.getAttribute("editorType") === "sc:dateTimePicker") {
-          cell._value = editor.value;
-        } else if (editor.getAttribute("editorType") === "sc:timePicker") {
-          cell._value = editor.value;
-        } else if (editor.getAttribute("editorType") === "sc:comboBox") {
-          cell._value = editor.value;
-        } else if (editor.getAttribute("editorType") === "number") {
-          cell._value = parseFloat(editor.value);
-        } else if (editor.getAttribute("editorType") === "integer") {
-          cell._value = parseInt(editor.value);
-        }
-        this.enableUpdateTimer();
+      let cell = this.data.getCell(this._col, this._row);
+      let rowOrColDataType = this.mode == "vertical" ? this.cols(this._col).dataType : this.rows(this._row).dataType;
+      let rowOrColType = this.mode == "vertical" ? this.cols(this._col).type : this.rows(this._row).type;
+      if (rowOrColDataType == "boolean" && rowOrColType == "checkBox") {
+        cell._value = editor.checked;
+      } else if (rowOrColDataType == "date" && rowOrColType == "datePicker") {
+        cell._value = editor.value;
+      } else if (rowOrColDataType == "dateTime" && rowOrColType == "dateTimePicker") {
+        cell._value = editor.value;
+      } else if (rowOrColDataType == "time" && rowOrColType == "timePicker") {
+        cell._value = editor.value;
+      } else if (rowOrColDataType == "string" && rowOrColType == "comboBox") {
+        cell._value = editor.value.value;
+      } else if (rowOrColDataType == "number" && rowOrColType == "number") {
+        cell._value = parseFloat(editor.value);
+      } else if (rowOrColDataType == "integer" && rowOrColType == "integer") {
+        cell._value = parseInt(editor.value);
       } else {
         let newValue;
         if (editor.valueCode)
@@ -29294,7 +30192,6 @@ var DataGrid = class extends Control {
           text = editor.getText();
         else
           text = newValue;
-        let cell = this.data.getCell(this._col, this._row);
         if (cell.mergeRect && (this._col != cell.mergeRect.startCol || this._row != cell.mergeRect.startRow))
           cell = this.data.getCell(cell.mergeRect.startCol, cell.mergeRect.startRow);
         if (true) {
@@ -29376,6 +30273,7 @@ var DataGrid = class extends Control {
         if (this.onCellChange)
           this.onCellChange(this, cell, oldValue, newValue);
       }
+      this.enableUpdateTimer();
     }
     ;
   }
@@ -29437,6 +30335,8 @@ var DataGrid = class extends Control {
   refresh() {
     super.refresh();
     this.highlightCurrCell();
+    this._scrollBox.style.height = this.heightValue + "px";
+    this._scrollBox.style.width = this.widthValue + "px";
   }
   deleteRow(row) {
     if (this._dataBindingContext && this._dataBindingContext["readOnly"])
@@ -29565,8 +30465,6 @@ var DataGrid = class extends Control {
       self._refreshDataTimeout = setTimeout(function() {
         clearTimeout(self._refreshDataTimeout);
         self._refreshDataTimeout = void 0;
-        if (!self._destroyed)
-          self.showDataInternal();
       }, 10);
     }
     ;
@@ -29600,7 +30498,7 @@ var DataGrid = class extends Control {
       if (this.gridRows.rows[i] && this.gridRows.rows[i]._visible == false)
         aRow--;
     }
-    if (aRow >= this._fixedRow && this.tableCells[aRow])
+    if (aRow >= this._fixedRow && aCol >= this._fixedCol && this.tableCells[aRow] && this.tableCells[aRow][aCol])
       return this.tableCells[aRow][aCol];
     else
       return void 0;
@@ -29689,8 +30587,8 @@ var DataGrid = class extends Control {
       this.hideEditor(true);
     }
     ;
-    if (aCol < 0)
-      aCol = 0;
+    if (aCol < this._fixedCol)
+      aCol = this._fixedCol;
     if (aRow < this._fixedRow)
       aRow = this._fixedRow;
     let rowChange = false;
@@ -29839,7 +30737,6 @@ var DataGrid = class extends Control {
     this.highlightCurrCell();
   }
   _handleScroll(event) {
-    console.dir("_handleScroll");
     let target = event.target;
     clearTimeout(this.scrollHorizontalTimer);
     clearTimeout(this.scrollVerticalTimer);
@@ -29962,15 +30859,25 @@ var DataGrid = class extends Control {
   cols(colIdx) {
     return this.columns.getColumn(colIdx);
   }
+  rows(rowIdx) {
+    return this.gridRows.getRow(rowIdx);
+  }
   _updateTableCellDiv(tableCell, col, row) {
     if (!tableCell.div) {
       let div = this.createElement("div");
       tableCell.div = div;
       div.owner = this;
-      if (row < this._fixedRow)
-        tableCell.className = "header grid_fixed_cell";
-      else if (col < this._fixedCol)
-        tableCell.className = "grid_fixed_cell";
+      if (this.mode == "vertical") {
+        if (row < this._fixedRow)
+          tableCell.className = "header grid_fixed_cell";
+        else if (col < this._fixedCol)
+          tableCell.className = "grid_fixed_cell";
+      } else {
+        if (col < this._fixedCol)
+          tableCell.className = "header grid_fixed_cell";
+        else if (row < this._fixedRow)
+          tableCell.className = "grid_fixed_cell";
+      }
       let actCol = this.getActualColIdx(col);
       let actRow = this.getActualRowIdx(row);
       let cell = this.data.cells(actCol, actRow);
@@ -30123,23 +31030,23 @@ var DataGrid = class extends Control {
       this._row = this.data.data.indexOf(currRow);
     this.enableUpdateTimer();
   }
-  getEditor(col, cell, inputValue) {
-    if (this.columns.getColumn(col).type == "sc:checkBox") {
+  getEditor(col, row, cell, inputValue) {
+    let colOrRowType;
+    colOrRowType = this.mode == "vertical" ? this.columns.getColumn(col).type : this.gridRows.getRow(row).type;
+    if (colOrRowType == "checkBox") {
       let editor = new Checkbox(void 0, {
         checked: cell.value != void 0 ? cell.value : false
       });
       editor.style.marginLeft = "1px";
       editor.className = "grid_edit";
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       this.appendChild(editor);
       return editor;
-    } else if (this.columns.getColumn(col).type == "sc:datePicker") {
+    } else if (colOrRowType == "datePicker") {
       let editor = new Datepicker(void 0, {
         type: "date",
         width: this.getColWidth(cell.col) - 1
       });
       editor.className = "grid_edit";
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       this.appendChild(editor);
       if (cell.value != void 0) {
         editor.value = cell.value;
@@ -30153,13 +31060,12 @@ var DataGrid = class extends Control {
       let btn = editor.getElementsByClassName("datepicker-toggle")[0];
       btn.style.backgroundColor = "white";
       return editor;
-    } else if (this.columns.getColumn(col).type == "sc:timePicker") {
+    } else if (colOrRowType == "timePicker") {
       let editor = new Datepicker(void 0, {
         type: "time",
         width: this.getColWidth(cell.col) - 1
       });
       editor.className = "grid_edit";
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       this.appendChild(editor);
       if (cell.value != void 0) {
         editor.value = cell.value;
@@ -30173,13 +31079,12 @@ var DataGrid = class extends Control {
       let btn = editor.getElementsByClassName("datepicker-toggle")[0];
       btn.style.backgroundColor = "white";
       return editor;
-    } else if (this.columns.getColumn(col).type == "sc:dateTimePicker") {
+    } else if (colOrRowType == "dateTimePicker") {
       let editor = new Datepicker(void 0, {
         type: "dateTime",
         width: this.getColWidth(cell.col) - 1
       });
       editor.className = "grid_edit";
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       this.appendChild(editor);
       if (cell.value != void 0) {
         editor.value = cell.value;
@@ -30193,14 +31098,22 @@ var DataGrid = class extends Control {
       let btn = editor.getElementsByClassName("datepicker-toggle")[0];
       btn.style.backgroundColor = "white";
       return editor;
-    } else if (this.columns.getColumn(col).type == "sc:comboBox") {
+    } else if (colOrRowType == "comboBox") {
+      let colOrRowComboItems;
+      colOrRowComboItems = this.mode == "vertical" ? this.cols(col).comboItems : this.rows(row).comboItems;
+      let _selectedItem = colOrRowComboItems[0];
+      for (let i = 0; i < colOrRowComboItems.length; i++) {
+        if (cell.value === colOrRowComboItems[i].value) {
+          _selectedItem = colOrRowComboItems[i];
+          break;
+        }
+      }
       let editor = new ComboBox(void 0, {
-        items: this.cols(col).comboItems,
-        selectedItem: cell.value != void 0 ? cell.value : this.cols(col).comboItems ? this.cols(col).comboItems[0] : void 0,
+        items: colOrRowComboItems,
+        selectedItem: _selectedItem,
         icon: { name: "caret-down", width: "16px", height: "16px" }
       });
       editor.className = "grid_edit comboBoxEditor";
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       this.appendChild(editor);
       let rowHeight = this.getRowHeight(cell.row);
       let selectionElm = editor.getElementsByClassName("selection")[0];
@@ -30216,16 +31129,15 @@ var DataGrid = class extends Control {
       iconElm.style.width = rowHeight + "px";
       iconElm.style.height = rowHeight + "px";
       return editor;
-    } else if (this.columns.getColumn(col).type == "number") {
+    } else if (colOrRowType == "number") {
       let editor = this.createElement("input", this);
       editor.type = "number";
       editor.value = cell.value;
       editor.setAttribute("autocomplete", "disabled");
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       editor.className = "grid_edit";
       this.appendChild(editor);
       return editor;
-    } else if (this.columns.getColumn(col).type == "integer") {
+    } else if (colOrRowType == "integer") {
       let editor = this.createElement("input", this);
       editor.type = "text";
       editor.addEventListener("input", () => {
@@ -30235,7 +31147,6 @@ var DataGrid = class extends Control {
       });
       editor.value = cell.value;
       editor.setAttribute("autocomplete", "disabled");
-      editor.setAttribute("editorType", this.columns.getColumn(col).type);
       editor.className = "grid_edit";
       this.appendChild(editor);
       return editor;
@@ -30440,11 +31351,12 @@ var DataGrid = class extends Control {
       }
       case 32: {
         let col = this.cols(this._col);
+        let row = this.rows(this._row);
         let cell = this.cells(this._col, this._row);
         if (cell && cell.checkBox) {
           if (this._currCell) {
             this.toggleCellValue(col, cell);
-            this._updateCell(this._currCell, cell, col);
+            this._updateCell(this._currCell, cell, col, row);
           }
           ;
           event.stopPropagation();
@@ -30559,7 +31471,7 @@ var DataGrid = class extends Control {
           this.appendChild(editor);
       }
       if (!editor) {
-        editor = this.getEditor(this._col, cell, inputValue);
+        editor = this.getEditor(this._col, this._row, cell, inputValue);
       }
       if (editor) {
         editor.onchange = this.handleEditControlChange.bind(this);
@@ -30653,10 +31565,11 @@ var DataGrid = class extends Control {
                 return true;
               }
               let column = this.columns.getColumn(aCol);
+              let gridRow = this.gridRows.getRow(aRow);
               if (column && (cell && cell._checkBox || column._checkBox || column._radioButton)) {
                 if (aRow >= this._fixedRow || !cell.readOnly && cell._checkBox) {
                   this.toggleCellValue(column, cell);
-                  this._updateCell(tableCell, cell, column);
+                  this._updateCell(tableCell, cell, column, gridRow);
                   this.setCurrCell(aCol, aRow, true);
                 } else if (this.options._sortOnClick && column._sortable) {
                   if (aCol == this.sortingCol)
@@ -30702,37 +31615,51 @@ var DataGrid = class extends Control {
     ;
     return true;
   }
-  _updateCell(tableCell, cell, column) {
+  _updateCell(tableCell, cell, column, row) {
     let tableCellDiv = tableCell == null ? void 0 : tableCell.div;
     let _cell = cell;
     let _column = column;
+    let _row = row;
     let _tableCell = tableCell;
     let withDispValue = false;
     let disp;
-    if (this.cols(cell.col).type == "string" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0)
-        cell._value = "";
-    } else if (this.cols(cell.col).type == "sc:checkBox" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = false;
-    } else if (this.cols(cell.col).type == "sc:datePicker" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
-    } else if (this.cols(cell.col).type == "sc:dateTimePicker" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
-    } else if (this.cols(cell.col).type == "sc:timePicker" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
-    } else if (this.cols(cell.col).type == "sc:comboBox" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = this.cols(cell.col).comboItems ? this.cols(cell.col).comboItems[0] : void 0;
-    } else if (this.cols(cell.col).type == "number" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = 0;
-    } else if (this.cols(cell.col).type == "integer" && !tableCell.classList.contains("header")) {
-      if (cell.value == void 0 || cell.value == "")
-        cell._value = 0;
+    if (!tableCell.classList.contains("header")) {
+      let colOrRowType = this.mode == "vertical" ? this.cols(cell.col).type : this.rows(cell.row).type;
+      switch (colOrRowType) {
+        case "string":
+          if (cell.value == void 0)
+            cell._value = "";
+          break;
+        case "checkBox":
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = false;
+          break;
+        case "datePicker":
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+          break;
+        case "dateTimePicker":
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+          break;
+        case "timePicker":
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+          break;
+        case "comboBox":
+          let colOrRowComboItems = this.mode == "vertical" ? this.cols(cell.col).comboItems : this.rows(cell.row).comboItems;
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = colOrRowComboItems ? colOrRowComboItems[0].value : void 0;
+          break;
+        case "number":
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = 0;
+          break;
+        case "integer":
+          if (cell.value == void 0 || cell.value == "")
+            cell._value = 0;
+          break;
+      }
     }
     if (tableCellDiv) {
       tableCell.style.display = "";
@@ -30821,37 +31748,54 @@ var DataGrid = class extends Control {
           tableCellDiv.style.display = "none";
         else
           tableCellDiv.style.display = "";
-        if (_column && _column._type == "sc:checkBox") {
+        let colOrRowType;
+        let colOrRowDataType;
+        if (_column && _row) {
+          if (this.mode == "vertical") {
+            colOrRowType = _column._type;
+            colOrRowDataType = _column._dataType;
+          } else {
+            colOrRowType = _row._type;
+            colOrRowDataType = _row._dataType;
+          }
+        } else if (_column) {
+          colOrRowType = _column._type;
+          colOrRowDataType = _column._dataType;
+        } else {
+          colOrRowType = _row._type;
+          colOrRowDataType = _row._dataType;
+        }
+        if (colOrRowDataType == "boolean") {
           let item = new Checkbox(void 0, {
             checked: cell.value
           });
           tableCellDiv.appendChild(item);
-        } else if (_column && _column._type == "sc:datePicker") {
+        } else if (colOrRowDataType == "date") {
           let item = new Label(void 0, {
             caption: cell.value.format("YYYY-MM-DD")
           });
           tableCellDiv.appendChild(item);
-        } else if (_column && _column._type == "sc:dateTimePicker") {
+        } else if (colOrRowDataType == "dateTime") {
           let item = new Label(void 0, {
             caption: cell.value.format("YYYY-MM-DD HH:mm:ss")
           });
           tableCellDiv.appendChild(item);
-        } else if (_column && _column._type == "sc:timePicker") {
+        } else if (colOrRowDataType == "time") {
           let item = new Label(void 0, {
             caption: cell.value.format("HH:mm:ss")
           });
           tableCellDiv.appendChild(item);
-        } else if (_column && _column._type == "sc:comboBox") {
-          let item = new Label(void 0, {
-            caption: cell.value ? cell.value.label : "no data"
-          });
-          tableCellDiv.appendChild(item);
-        } else if (_column && _column._type == "number") {
+        } else if (colOrRowDataType == "string") {
           let item = new Label(void 0, {
             caption: cell.value.toString()
           });
           tableCellDiv.appendChild(item);
-        } else if (_column && _column._type == "integer") {
+        } else if (colOrRowDataType == "number") {
+          let item = new Label(void 0, {
+            caption: cell.value.toString()
+          });
+          tableCellDiv.appendChild(item);
+        } else if (colOrRowDataType == "integer") {
           let item = new Label(void 0, {
             caption: cell.value.toString()
           });
@@ -31126,22 +32070,26 @@ var DataGrid = class extends Control {
       for (let c = 0; c < this._fixedCol; c++) {
         let tableCell = this.getTableCell(c, r);
         let column = null;
+        let row2 = null;
         if (this.columns)
           column = this.columns.getColumn(c);
+        if (this.gridRows)
+          row2 = this.gridRows.getRow(r);
         if (tableCell) {
           let cell = this.data.cells(c, r);
-          this._updateCell(tableCell, cell, column);
+          this._updateCell(tableCell, cell, column, row2);
         }
       }
     }
     for (let r = 0; r < this._fixedRow; r++) {
       for (let c = this._fixedCol; c < this.visibleColCount; c++) {
+        let row2 = this.gridRows.getRow(r);
         let tableCell = this.getTableCell(c, r);
         if (tableCell) {
           let cell = this.data.cells(this.getActualColIdx(c), r);
           if (cell)
             tableCell.cell = cell;
-          this._updateCell(tableCell, cell);
+          this._updateCell(tableCell, cell, void 0, row2);
         }
       }
     }
@@ -31168,11 +32116,12 @@ var DataGrid = class extends Control {
       for (let c = this._fixedCol; c < this.visibleColCount; c++) {
         let colIdx = this.getActualColIdx(c);
         let column = this.columns.getColumn(colIdx);
+        let row2 = this.gridRows.getRow(rowIdx);
         let tableCell = this.getTableCell(c, r);
         if (tableCell) {
           let cell = this.data.cells(colIdx, rowIdx);
           tableCell.cell = cell;
-          this._updateCell(tableCell, cell, column);
+          this._updateCell(tableCell, cell, column, row2);
         }
         ;
       }
@@ -31303,12 +32252,12 @@ DataGrid = __decorateClass([
 ], DataGrid);
 
 // packages/markdown/src/style/markdown.css.ts
-var Theme23 = theme_exports.ThemeVars;
+var Theme24 = theme_exports.ThemeVars;
 cssRule("i-markdown", {
   display: "inline-block",
-  color: Theme23.text.primary,
-  fontFamily: Theme23.typography.fontFamily,
-  fontSize: Theme23.typography.fontSize,
+  color: Theme24.text.primary,
+  fontFamily: Theme24.typography.fontFamily,
+  fontSize: Theme24.typography.fontSize,
   $nest: {
     h1: {
       fontSize: "48px",
@@ -31845,7 +32794,7 @@ MarkdownEditor = __decorateClass([
 ], MarkdownEditor);
 
 // packages/menu/src/style/menu.css.ts
-var Theme24 = theme_exports.ThemeVars;
+var Theme25 = theme_exports.ThemeVars;
 cssRule("i-context-menu", {
   display: "none"
 });
@@ -31863,8 +32812,8 @@ var fadeInRight = keyframes({
   }
 });
 var menuStyle = style({
-  fontFamily: Theme24.typography.fontFamily,
-  fontSize: Theme24.typography.fontSize,
+  fontFamily: Theme25.typography.fontFamily,
+  fontSize: Theme25.typography.fontSize,
   position: "relative",
   overflow: "hidden",
   $nest: {
@@ -31894,7 +32843,7 @@ var menuStyle = style({
         ".menu-item-arrow-active": {
           transform: "rotate(180deg)",
           transition: "transform 0.25s",
-          fill: `${Theme24.text.primary} !important`
+          fill: `${Theme25.text.primary} !important`
         },
         "li": {
           position: "relative",
@@ -31902,7 +32851,7 @@ var menuStyle = style({
             "&:hover": {
               $nest: {
                 ".menu-item": {
-                  color: Theme24.colors.primary.main
+                  color: Theme25.colors.primary.main
                 },
                 ".menu-item-arrow-active": {
                   fill: "currentColor !important"
@@ -31918,7 +32867,7 @@ var menuStyle = style({
 var meunItemStyle = style({
   position: "relative",
   display: "block",
-  color: Theme24.text.secondary,
+  color: Theme25.text.secondary,
   $nest: {
     ".menu-item": {
       position: "relative",
@@ -31938,8 +32887,8 @@ var meunItemStyle = style({
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme24.action.hover,
-      color: Theme24.text.primary
+      background: Theme25.action.hover,
+      color: Theme25.text.primary
     },
     ".menu-item.menu-active > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -32703,13 +33652,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme25 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme25.typography.fontFamily,
-  fontSize: Theme25.typography.fontSize,
+  fontFamily: Theme26.typography.fontFamily,
+  fontSize: Theme26.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -32743,7 +33692,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme25.text.primary,
+      color: Theme26.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
@@ -32777,7 +33726,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme25.divider}`,
+          borderLeft: `1px solid ${Theme26.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -32786,12 +33735,12 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme25.action.selected,
-          border: `1px solid ${Theme25.colors.info.dark}`,
-          color: Theme25.text.primary
+          backgroundColor: Theme26.action.selected,
+          border: `1px solid ${Theme26.colors.info.dark}`,
+          color: Theme26.text.primary
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme25.action.hover,
+          backgroundColor: Theme26.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -32819,8 +33768,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme25.colors.primary.main,
-          color: Theme25.colors.primary.contrastText,
+          background: Theme26.colors.primary.main,
+          color: Theme26.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -32861,7 +33810,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme25.divider}`,
+          borderLeft: `1px solid ${Theme26.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -32877,15 +33826,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme25.divider}`,
-          borderLeft: `1px solid ${Theme25.divider}`,
+          borderBottom: `1px solid ${Theme26.divider}`,
+          borderLeft: `1px solid ${Theme26.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme25.divider}`,
-          borderRight: `0.5px solid ${Theme25.divider}`,
+          borderTop: `1px solid ${Theme26.divider}`,
+          borderRight: `0.5px solid ${Theme26.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -32904,7 +33853,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme25.colors.primary.main}`
+          borderBottom: `2px solid ${Theme26.colors.primary.main}`
         }
       }
     },
@@ -32931,11 +33880,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme26.text.secondary,
+  fill: Theme27.text.secondary,
   width: 12,
   height: 12
 };
@@ -33399,11 +34348,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme27.typography.fontFamily,
-  fontSize: Theme27.typography.fontSize,
+  fontFamily: Theme28.typography.fontFamily,
+  fontSize: Theme28.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -33752,7 +34701,9 @@ var Chart = class extends Control {
     this.dataObj && this._chartIns.setOption(this.dataObj);
   }
   resize() {
-    this.dataObj && this._chartIns.resize();
+    if (this.dataObj && this._chartIns) {
+      this._chartIns.resize();
+    }
   }
   initChartDom() {
     const captionDiv = this.createElement("div", this);
@@ -33912,16 +34863,16 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme28.typography.fontFamily,
-  fontSize: Theme28.typography.fontSize,
+  fontFamily: Theme29.typography.fontFamily,
+  fontSize: Theme29.typography.fontSize,
   lineHeight: "25px",
-  color: Theme28.text.primary,
+  color: Theme29.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -33929,7 +34880,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme28.text.primary,
+      color: Theme29.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -33945,7 +34896,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme28.text.disabled,
+      color: Theme29.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -34192,7 +35143,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme30 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -34205,9 +35156,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme29.typography.fontFamily,
-  fontSize: Theme29.typography.fontSize,
-  color: Theme29.text.primary,
+  fontFamily: Theme30.typography.fontFamily,
+  fontSize: Theme30.typography.fontSize,
+  color: Theme30.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -34230,13 +35181,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme29.colors.error.light
+          backgroundColor: Theme30.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme29.colors.error.light
+          backgroundColor: Theme30.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme29.colors.error.light
+          borderColor: Theme30.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -34244,13 +35195,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme29.colors.success.light
+          backgroundColor: Theme30.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme29.colors.success.light
+          backgroundColor: Theme30.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme29.colors.success.light
+          borderColor: Theme30.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -34258,13 +35209,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme29.colors.warning.light
+          backgroundColor: Theme30.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme29.colors.warning.light
+          backgroundColor: Theme30.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme29.colors.warning.light
+          borderColor: Theme30.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -34272,14 +35223,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme29.colors.primary.light
+          backgroundColor: Theme30.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme29.colors.primary.light
+          backgroundColor: Theme30.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme29.colors.primary.light
+          borderColor: Theme30.colors.primary.light
         }
       }
     },
@@ -34301,11 +35252,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme29.divider
+              backgroundColor: Theme30.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme29.divider
+              backgroundColor: Theme30.divider
             }
           }
         },
@@ -34330,7 +35281,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme29.divider,
+          borderColor: Theme30.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -34386,7 +35337,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -34430,7 +35381,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme30.colors.primary.main;
+    return this._strokeColor || Theme31.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -34565,11 +35516,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme30.colors.success.main;
+      ret = Theme31.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme30.divider;
+    return Theme31.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -34657,11 +35608,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme31.typography.fontFamily,
-  fontSize: Theme31.typography.fontSize,
-  color: Theme31.text.primary,
+  fontFamily: Theme32.typography.fontFamily,
+  fontSize: Theme32.typography.fontSize,
+  color: Theme32.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -34683,26 +35634,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme31.divider}`
+      borderBottom: `1px solid ${Theme32.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme31.divider}`,
+      borderBottom: `1px solid ${Theme32.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme31.background.paper,
-      color: Theme31.text.secondary
+      background: Theme32.background.paper,
+      color: Theme32.text.secondary
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme31.divider}`,
-          borderLeft: `1px solid ${Theme31.divider}`,
+          borderTop: `1px solid ${Theme32.divider}`,
+          borderLeft: `1px solid ${Theme32.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme31.divider} !important`,
-          borderBottom: `1px solid ${Theme31.divider}`
+          borderRight: `1px solid ${Theme32.divider} !important`,
+          borderBottom: `1px solid ${Theme32.divider}`
         }
       }
     },
@@ -34723,7 +35674,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme31.colors.primary.main
+          fill: Theme32.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -34752,12 +35703,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme31.text.primary
+          fill: Theme32.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme31.divider}`
+      borderRight: `1px solid ${Theme32.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -34828,7 +35779,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -34883,7 +35834,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme32.text.primary
+        fill: Theme33.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -34891,7 +35842,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme32.text.primary
+        fill: Theme33.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -35344,7 +36295,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -35365,7 +36316,7 @@ cssRule("i-carousel-slider", {
     ".slider-arrow": {
       width: 28,
       height: 28,
-      fill: Theme33.colors.primary.main,
+      fill: Theme34.colors.primary.main,
       cursor: "pointer"
     },
     ".slider-arrow-hidden": {
@@ -35398,7 +36349,7 @@ cssRule("i-carousel-slider", {
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme33.colors.primary.main}`,
+          border: `2px solid ${Theme34.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -35409,7 +36360,7 @@ cssRule("i-carousel-slider", {
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme33.colors.primary.main
+          backgroundColor: Theme34.colors.primary.main
         }
       }
     }
@@ -35915,7 +36866,7 @@ Video = __decorateClass([
 ], Video);
 
 // packages/schema-designer/src/uiSchema.ts
-var Theme34 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 var dataUITypes = [
   { label: "VerticalLayout", value: "VerticalLayout" },
   { label: "HorizontalLayout", value: "HorizontalLayout" },
@@ -36169,7 +37120,7 @@ var SchemaDesignerUI = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme34.colors.primary.contrastText
+      fill: Theme35.colors.primary.contrastText
     }));
     btnAddElement.onClick = () => {
       this.createUISchema(pnlUIElements, currentLayout, true);
@@ -36258,7 +37209,7 @@ var SchemaDesignerUI = class extends Container {
           visible: false,
           width: 12,
           height: 12,
-          fill: Theme34.colors.secondary.main,
+          fill: Theme35.colors.secondary.main,
           tooltip: {
             content: "Remove this property",
             trigger: "hover"
@@ -36313,7 +37264,7 @@ var SchemaDesignerUI = class extends Container {
               visible: false,
               width: 12,
               height: 12,
-              fill: Theme34.colors.secondary.main,
+              fill: Theme35.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -36415,13 +37366,13 @@ var SchemaDesignerUI = class extends Container {
                   display: "flex",
                   padding: { top: 8, bottom: 8, left: 16, right: 16 },
                   border: { radius: 8 },
-                  background: { color: Theme34.action.selected }
+                  background: { color: Theme35.action.selected }
                 });
                 const iconTimesEnum = new Icon(pnlEnum, {
                   name: "times",
                   width: 14,
                   height: 14,
-                  fill: Theme34.colors.secondary.main,
+                  fill: Theme35.colors.secondary.main,
                   position: "absolute",
                   right: 2,
                   top: 2
@@ -36453,7 +37404,7 @@ var SchemaDesignerUI = class extends Container {
               position: "absolute",
               top: 5,
               right: 5,
-              fill: Theme34.colors.secondary.main,
+              fill: Theme35.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -36661,7 +37612,7 @@ var SchemaDesignerUI = class extends Container {
         name: "plus",
         width: "1em",
         height: "1em",
-        fill: Theme34.colors.primary.contrastText
+        fill: Theme35.colors.primary.contrastText
       }));
       const pnlFormDetail = new Panel(void 0, {
         padding: { top: 10, bottom: 10, left: 10, right: 10 }
@@ -36872,7 +37823,7 @@ var SchemaDesignerUI = class extends Container {
         name: "times-circle",
         width: 12,
         height: 12,
-        fill: Theme34.colors.secondary.main,
+        fill: Theme35.colors.secondary.main,
         visible: false
       });
       iconClear.onClick = () => {
@@ -36966,7 +37917,7 @@ var SchemaDesignerUI = class extends Container {
     if (isChildren) {
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme34.colors.secondary.main} !important` },
+        background: { color: `${Theme35.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         height: 28,
@@ -36976,7 +37927,7 @@ var SchemaDesignerUI = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme34.colors.primary.contrastText
+        fill: Theme35.colors.primary.contrastText
       }));
       btnDelete.onClick = () => {
         deleteElement();
@@ -36990,7 +37941,7 @@ var SchemaDesignerUI = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme34.colors.primary.contrastText
+        fill: Theme35.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -37063,12 +38014,12 @@ SchemaDesignerUI = __decorateClass([
 ], SchemaDesignerUI);
 
 // packages/schema-designer/src/style/schema-designer.css.ts
-var Theme35 = theme_exports.ThemeVars;
+var Theme36 = theme_exports.ThemeVars;
 var scrollBar = {
   "&::-webkit-scrollbar-track": {
     borderRadius: "12px",
     border: "1px solid transparent",
-    background: Theme35.action.hover
+    background: Theme36.action.hover
   },
   "&::-webkit-scrollbar": {
     width: "8px",
@@ -37076,7 +38027,7 @@ var scrollBar = {
   },
   "&::-webkit-scrollbar-thumb": {
     borderRadius: "12px",
-    background: Theme35.action.active
+    background: Theme36.action.active
   }
 };
 cssRule("i-schema-designer", {
@@ -37102,12 +38053,12 @@ cssRule("i-schema-designer", {
           height: "30px !important",
           width: "100% !important",
           border: 0,
-          borderBottom: `0.5px solid ${Theme35.divider}`,
+          borderBottom: `0.5px solid ${Theme36.divider}`,
           background: "transparent"
         },
         "textarea": {
           height: "100% !important",
-          border: `0.5px solid ${Theme35.divider}`,
+          border: `0.5px solid ${Theme36.divider}`,
           borderRadius: "1em",
           background: "transparent",
           $nest: scrollBar
@@ -37125,7 +38076,7 @@ cssRule("i-schema-designer", {
           background: "transparent !important",
           height: "30px !important",
           border: "0 !important",
-          borderBottom: `0.5px solid ${Theme35.divider} !important`
+          borderBottom: `0.5px solid ${Theme36.divider} !important`
         },
         ".selection": {
           background: "transparent",
@@ -37134,7 +38085,7 @@ cssRule("i-schema-designer", {
         },
         "span.icon-btn": {
           border: "0",
-          borderBottom: `0.5px solid ${Theme35.divider}`,
+          borderBottom: `0.5px solid ${Theme36.divider}`,
           borderRadius: "0",
           height: "30px !important",
           width: "32px !important",
@@ -37161,8 +38112,8 @@ cssRule("i-schema-designer", {
       }
     },
     "i-button": {
-      background: Theme35.colors.primary.main,
-      color: Theme35.colors.primary.contrastText
+      background: Theme36.colors.primary.main,
+      color: Theme36.colors.primary.contrastText
     },
     ".cs-wrapper--header": {
       padding: "5px 10px",
@@ -37175,12 +38126,12 @@ cssRule("i-schema-designer", {
     ".cs-prefix--items": {
       $nest: {
         ".cs-box--shadow": {
-          boxShadow: Theme35.shadows[2]
+          boxShadow: Theme36.shadows[2]
         }
       }
     },
     ".cs-box--enum": {
-      boxShadow: Theme35.shadows[2],
+      boxShadow: Theme36.shadows[2],
       padding: "8px 16px",
       borderRadius: 8,
       minWidth: 100,
@@ -37215,7 +38166,7 @@ cssRule("i-schema-designer", {
 });
 
 // packages/schema-designer/src/schemaDesigner.ts
-var Theme36 = theme_exports.ThemeVars;
+var Theme37 = theme_exports.ThemeVars;
 var dataTypes = [
   { label: "string", value: "string" },
   { label: "number", value: "number" },
@@ -37460,7 +38411,7 @@ var SchemaDesigner = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme36.colors.primary.contrastText
+      fill: Theme37.colors.primary.contrastText
     }));
     const hStackActions = new HStack(void 0, {
       verticalAlignment: "center",
@@ -37548,7 +38499,7 @@ var SchemaDesigner = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -37563,7 +38514,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -37583,7 +38534,7 @@ var SchemaDesigner = class extends Container {
         name: "exclamation-circle",
         width: 12,
         height: 12,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Invalid field",
           trigger: "hover"
@@ -37592,7 +38543,7 @@ var SchemaDesigner = class extends Container {
       });
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme36.colors.secondary.main} !important` },
+        background: { color: `${Theme37.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         padding: { top: 6, bottom: 6, left: 12, right: 12 }
@@ -37601,7 +38552,7 @@ var SchemaDesigner = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       }));
       btnDelete.setAttribute("action", "delete");
       btnDelete.onClick = async () => {
@@ -37847,13 +38798,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme36.action.selected }
+          background: { color: Theme37.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme36.colors.secondary.main,
+          fill: Theme37.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -37897,7 +38848,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -37986,13 +38937,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme36.action.selected }
+          background: { color: Theme37.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme36.colors.secondary.main,
+          fill: Theme37.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -38031,7 +38982,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -38130,7 +39081,7 @@ var SchemaDesigner = class extends Container {
         name: "times",
         width: 14,
         height: 14,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         position: "absolute",
         right: 4,
         top: 4
@@ -38216,7 +39167,7 @@ var SchemaDesigner = class extends Container {
     if (parentFields.length) {
       new Label(vStack, {
         caption: "Advanced options",
-        font: { size: "16px", color: Theme36.colors.primary.main }
+        font: { size: "16px", color: Theme37.colors.primary.main }
       });
     }
     const gridLayout = new GridLayout(vStack, {
@@ -38261,7 +39212,7 @@ var SchemaDesigner = class extends Container {
         width: 12,
         height: 12,
         position: notCheckbox ? "absolute" : "relative",
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -38492,9 +39443,9 @@ SchemaDesigner = __decorateClass([
 ], SchemaDesigner);
 
 // packages/navigator/src/style/navigator.css.ts
-var Theme37 = theme_exports.ThemeVars;
+var Theme38 = theme_exports.ThemeVars;
 cssRule("i-nav", {
-  border: `1px solid ${Theme37.divider}`,
+  border: `1px solid ${Theme38.divider}`,
   $nest: {
     "> i-vstack": {
       alignItems: "center",
@@ -38503,7 +39454,7 @@ cssRule("i-nav", {
         ".search-container": {
           width: "100%",
           padding: 10,
-          borderBottom: `1px solid ${Theme37.divider}`,
+          borderBottom: `1px solid ${Theme38.divider}`,
           alignItems: "center",
           gap: 5,
           $nest: {
@@ -38515,7 +39466,7 @@ cssRule("i-nav", {
                 "input": {
                   background: "transparent",
                   border: "0",
-                  borderBottom: `1px solid ${Theme37.divider}`
+                  borderBottom: `1px solid ${Theme38.divider}`
                 }
               }
             }
@@ -38530,9 +39481,9 @@ cssRule("i-nav", {
     },
     "i-nav-item": {
       cursor: "pointer",
-      background: Theme37.background.main,
+      background: Theme38.background.main,
       borderLeft: "3px solid transparent",
-      borderBottom: `1px solid ${Theme37.divider}`,
+      borderBottom: `1px solid ${Theme38.divider}`,
       $nest: {
         "> i-grid-layout": {
           height: 50,
@@ -38541,14 +39492,14 @@ cssRule("i-nav", {
           alignItems: "center"
         },
         "i-icon": {
-          height: Theme37.typography.fontSize,
-          width: Theme37.typography.fontSize,
-          fill: Theme37.colors.primary.main
+          height: Theme38.typography.fontSize,
+          width: Theme38.typography.fontSize,
+          fill: Theme38.colors.primary.main
         },
         "&.active": {
-          color: Theme37.colors.primary.contrastText,
-          background: Theme37.colors.primary.main,
-          borderLeft: `3px solid ${Theme37.colors.primary.main}`
+          color: Theme38.colors.primary.contrastText,
+          background: Theme38.colors.primary.main,
+          borderLeft: `3px solid ${Theme38.colors.primary.main}`
         }
       }
     }
@@ -38857,19 +39808,19 @@ NavItem = __decorateClass([
 ], NavItem);
 
 // packages/breadcrumb/src/style/breadcrumb.css.ts
-var Theme38 = theme_exports.ThemeVars;
+var Theme39 = theme_exports.ThemeVars;
 cssRule("i-breadcrumb", {
   $nest: {
     "i-label": {
       padding: 5,
       margin: "0 5px",
-      color: Theme38.colors.primary.main
+      color: Theme39.colors.primary.main
     },
     "i-icon": {
       margin: "0 5px",
-      height: Theme38.typography.fontSize,
-      width: Theme38.typography.fontSize,
-      fill: Theme38.colors.primary.main
+      height: Theme39.typography.fontSize,
+      width: Theme39.typography.fontSize,
+      fill: Theme39.colors.primary.main
     }
   }
 });
@@ -38937,7 +39888,7 @@ Breadcrumb = __decorateClass([
 ], Breadcrumb);
 
 // packages/form/src/styles/index.css.ts
-var Theme39 = theme_exports.ThemeVars;
+var Theme40 = theme_exports.ThemeVars;
 var formStyle = style({
   gap: 10
 });
@@ -38948,7 +39899,7 @@ var formGroupStyle = style({
   justifyContent: "center"
 });
 var groupStyle = style({
-  border: `1px solid ${Theme39.divider}`,
+  border: `1px solid ${Theme40.divider}`,
   borderRadius: 5,
   width: "100%"
 });
@@ -38963,8 +39914,8 @@ var groupBodyStyle = style({
 });
 var collapseBtnStyle = style({
   cursor: "pointer",
-  height: Theme39.typography.fontSize,
-  width: Theme39.typography.fontSize
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize
 });
 var inputStyle = style({
   width: "100%"
@@ -38983,39 +39934,102 @@ var buttonStyle = style({
 });
 var iconButtonStyle = style({
   cursor: "pointer",
-  height: Theme39.typography.fontSize,
-  width: Theme39.typography.fontSize
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize
 });
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme39.divider}`,
+  borderBottom: `1px solid ${Theme40.divider}`,
   marginBottom: 10
 });
 var listBtnAddStyle = style({
-  height: Theme39.typography.fontSize,
-  width: Theme39.typography.fontSize,
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize,
   cursor: "pointer",
   placeSelf: "center"
 });
 var listColumnHeaderStyle = style({
-  padding: "10px 0"
+  padding: "10px 0",
+  textAlign: "center"
 });
-var listItemStyle = style({});
+var listItemStyle = style({
+  $nest: {
+    "i-panel": {
+      $nest: {
+        "i-input": {
+          width: "100% !important"
+        },
+        "input": {
+          width: "100% !important"
+        },
+        "i-checkbox": {
+          height: "auto !important",
+          $nest: {
+            ".i-checkbox": {
+              width: "100%",
+              justifyContent: "center"
+            },
+            ".i-checkbox_label": {
+              display: "none"
+            }
+          }
+        }
+      }
+    }
+  }
+});
+var listVerticalLayoutStyle = style({
+  $nest: {
+    "& > i-grid-layout:not(:last-child)": {
+      paddingBottom: 10,
+      borderBottom: "1px solid var(--divider)"
+    },
+    "& > i-grid-layout > i-panel": {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      $nest: {
+        "i-label:first-child": {
+          width: "25% !important"
+        },
+        "> :nth-child(2)": {
+          width: "calc(75% - 5px) !important"
+        },
+        "i-checkbox": {
+          width: "100%",
+          $nest: {
+            ".i-checkbox": {
+              display: "flex",
+              flexDirection: "row-reverse",
+              justifyContent: "flex-end",
+              gap: 5
+            },
+            ".i-checkbox_label": {
+              display: "flex",
+              paddingLeft: 0,
+              width: "25%"
+            }
+          }
+        }
+      }
+    }
+  }
+});
 var listItemBtnDelete = style({
+  cursor: "pointer",
   placeSelf: "center",
-  height: Theme39.typography.fontSize,
-  width: Theme39.typography.fontSize
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize
 });
 var tabsStyle = style({
   marginBottom: 41
 });
 var cardStyle = style({
-  background: Theme39.background.main,
-  border: `1px solid ${Theme39.divider}`
+  background: Theme40.background.main,
+  border: `1px solid ${Theme40.divider}`
 });
 var cardHeader = style({
   padding: 20,
-  borderBottom: `1px solid ${Theme39.divider}`
+  borderBottom: `1px solid ${Theme40.divider}`
 });
 var cardBody = style({
   padding: 20
@@ -39023,6 +40037,7 @@ var cardBody = style({
 
 // packages/form/src/form.ts
 var theme = theme_exports.ThemeVars;
+var IPFS_Gateway = "https://ipfs.scom.dev/ipfs/";
 var DEFAULT_OPTIONS = {
   columnsPerRow: 1,
   confirmButtonOptions: {
@@ -39162,6 +40177,8 @@ var Form = class extends Control {
                     field.selectedValue = columnData;
                   } else if (field.tagName === "I-DATEPICKER") {
                     field.value = moment(columnData);
+                  } else if (field.tagName === "I-UPLOAD") {
+                    this.setDataUpload(columnData, field);
                   }
                 }
               }
@@ -39193,7 +40210,7 @@ var Form = class extends Control {
             input.value = moment(value);
             break;
           case "I-UPLOAD":
-            input.preview(value);
+            this.setDataUpload(value, input);
             break;
         }
       }
@@ -39405,8 +40422,8 @@ var Form = class extends Control {
     }
     this.appendChild(pnlButton);
   }
-  renderFormByJSONSchema(parent, schema, scope = "#", isArray = false, subLevel = false, idx, schemaOptions) {
-    var _a;
+  renderFormByJSONSchema(parent, schema, scope = "#", hideLabel = false, subLevel = false, idx, schemaOptions) {
+    var _a, _b;
     if (!parent || !schema)
       return void 0;
     const currentField = scope.substr(scope.lastIndexOf("/") + 1);
@@ -39425,7 +40442,7 @@ var Form = class extends Control {
       columnWidth,
       readOnly: schema.readOnly,
       required: isRequired,
-      hideLabel: isArray
+      hideLabel
     };
     if (schema.enum && schema.enum.length > 0 || schema.oneOf && schema.oneOf.length > 0) {
       let items = [];
@@ -39495,12 +40512,13 @@ var Form = class extends Control {
     } else if (schema.type === "array") {
       if (!schema.items)
         return void 0;
-      const { body, btnAdd, columnHeader } = this.renderList(parent, scope, controlOptions);
+      const isVertical = ((_b = schemaOptions == null ? void 0 : schemaOptions.detail) == null ? void 0 : _b.type) === "VerticalLayout";
+      const { body, btnAdd, columnHeader } = this.renderList(parent, scope, controlOptions, isVertical);
       if (typeof schema.items === "object" && !(schema.items instanceof Array)) {
         if (schema.items.type === "object") {
           const properties = schema.items.properties;
           let hasSublevel = Object.values(properties).find((value) => value.type === "object");
-          if (!hasSublevel) {
+          if (!hasSublevel && !isVertical) {
             const templateColumns = [];
             for (let i = 0; i < Object.values(properties).length; i++)
               templateColumns.push("1fr");
@@ -40047,7 +41065,7 @@ var Form = class extends Control {
     };
     return wrapper;
   }
-  renderList(parent, scope, options) {
+  renderList(parent, scope, options, isVertical) {
     const wrapper = new Panel(parent);
     const header = new GridLayout(wrapper, { templateColumns: ["1fr", "50px"] });
     header.classList.add(listHeaderStyle);
@@ -40058,6 +41076,10 @@ var Form = class extends Control {
     const body = new VStack(wrapper, {
       gap: 10
     });
+    if (isVertical) {
+      body.setAttribute("layout", "Vertical");
+      body.classList.add(listVerticalLayoutStyle);
+    }
     this._formControls[scope] = {
       wrapper,
       input: body
@@ -40074,37 +41096,56 @@ var Form = class extends Control {
     var _a;
     if (!schema.type)
       return;
+    const isVertical = parent.getAttribute("layout") === "Vertical";
     if (schema.type === "object") {
       let hasSubLevel = !!Object.values(schema.properties).find((value) => value.type === "object");
       if (!hasSubLevel) {
-        const templateColumns = [];
+        const templates = [];
         for (let i = 0; i < Object.values(schema.properties).length; i++) {
-          templateColumns.push("1fr");
+          templates.push("1fr");
         }
-        templateColumns.push("50px");
+        if (!isVertical) {
+          templates.push("50px");
+        }
         const row = new GridLayout(parent, {
-          templateColumns,
+          templateRows: isVertical ? templates : void 0,
+          templateColumns: isVertical ? void 0 : templates,
           gap: {
             column: 5,
             row: 5
           },
-          verticalAlignment: "center",
-          alignItems: "center",
-          justifyContent: "center"
+          verticalAlignment: isVertical ? void 0 : "center",
+          alignItems: isVertical ? void 0 : "center",
+          justifyContent: isVertical ? void 0 : "center"
         });
         row.classList.add(listItemStyle);
         row.setAttribute("role", "list-item");
-        for (const fieldName in schema.properties) {
-          const property = schema.properties[fieldName];
-          this.renderFormByJSONSchema(row, property, `${scope}/items/properties/${fieldName}`, !hasSubLevel);
+        if (isVertical) {
+          const btnDelete = new Icon(row, {
+            name: "times",
+            margin: { left: "auto" }
+          });
+          btnDelete.classList.add(listItemBtnDelete);
+          btnDelete.onClick = () => {
+            row.remove();
+          };
+          for (const fieldName in schema.properties) {
+            const property = schema.properties[fieldName];
+            this.renderFormByJSONSchema(row, property, `${scope}/items/properties/${fieldName}`, false);
+          }
+        } else {
+          for (const fieldName in schema.properties) {
+            const property = schema.properties[fieldName];
+            this.renderFormByJSONSchema(row, property, `${scope}/items/properties/${fieldName}`, !hasSubLevel);
+          }
+          const btnDelete = new Icon(row, {
+            name: "trash"
+          });
+          btnDelete.classList.add(listItemBtnDelete);
+          btnDelete.onClick = () => {
+            row.remove();
+          };
         }
-        const btnDelete = new Icon(row, {
-          name: "trash"
-        });
-        btnDelete.classList.add(listItemBtnDelete);
-        btnDelete.onClick = () => {
-          row.remove();
-        };
       } else {
         console.log("renderCard schema", schema, "scope", scope);
         const card = new Panel(parent);
@@ -40435,6 +41476,43 @@ var Form = class extends Control {
         label += char;
     }
     return label;
+  }
+  setDataUpload(url, control) {
+    if (!url || !control)
+      return;
+    const getImageTypeFromUrl = (url2) => {
+      const extension = url2.match(/\.([^.]+)$/);
+      switch (extension && extension[1].toLowerCase()) {
+        case "jpg":
+        case "jpeg":
+          return "image/jpeg";
+        case "gif":
+          return "image/gif";
+        case "svg":
+          return "image/svg";
+        default:
+          return "image/png";
+      }
+    };
+    const getExtensionFromType = (fileType) => {
+      return fileType.split("/")[1];
+    };
+    try {
+      let imgUrl = url;
+      if (url.startsWith("ipfs://")) {
+        imgUrl = imgUrl.replace("ipfs://", IPFS_Gateway);
+      }
+      fetch(imgUrl).then((response) => response.arrayBuffer()).then((arrayBuffer) => {
+        const fileType = getImageTypeFromUrl(imgUrl);
+        const blob = new Blob([arrayBuffer], { type: fileType });
+        const fileName = `image-${Date.now()}.${getExtensionFromType(fileType)}`;
+        const file = new File([blob], fileName, { type: fileType });
+        control.fileList = [file];
+        control.preview(imgUrl);
+      });
+    } catch (e) {
+      control.fileList = [];
+    }
   }
 };
 Form = __decorateClass([

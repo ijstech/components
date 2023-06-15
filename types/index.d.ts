@@ -5473,6 +5473,103 @@ declare module "packages/radio/src/radio" {
 declare module "packages/radio/src/index" {
     export { Radio, RadioElement, RadioGroup, RadioGroupElement } from "packages/radio/src/radio";
 }
+declare module "packages/color/src/utils" {
+    export function stringToArr(color: string, isRgb: boolean): string[];
+    export function hslaToHex(h: number, s: number, l: number, a: number): string;
+    export function rgbToHex(rgba: string[]): string;
+    export function hslaToRgba(h: number, s: number, l: number): {
+        r: number;
+        g: number;
+        b: number;
+    };
+    export function rgbaToHsla(r: number, g: number, b: number): {
+        h: number;
+        s: number;
+        l: number;
+    };
+    export function getUnitValues(h: number, s: number, l: number, a: number): {
+        hex: string;
+        isValid: boolean;
+        r: number;
+        g: number;
+        b: number;
+        h: number;
+        s: number;
+        l: number;
+        a: number;
+    };
+    export function convertColor(color: string): any;
+    export function isRgbValid(value: string): boolean;
+    export function isHValid(value: string): boolean;
+    export function isPercentValid(value: string): boolean;
+    export function customRound(value: number, threshold: number): number;
+}
+declare module "packages/color/src/style/color.css" { }
+declare module "packages/color/src/color" {
+    import { ControlElement, Control, notifyEventCallback } from "@ijstech/components/base";
+    import "packages/color/src/style/color.css";
+    export interface ColorPickerElement extends ControlElement {
+        value?: string;
+        caption?: string;
+        captionWidth?: number | string;
+        onChanged?: notifyEventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-color']: ColorPickerElement;
+            }
+        }
+    }
+    export class ColorPicker extends Control {
+        private wrapperElm;
+        private inputSpanElm;
+        private captionSpanElm;
+        private mdColorPicker;
+        private colorPalette;
+        private colorSlider;
+        private pnlShown;
+        private pnlWrap;
+        private pnlInput;
+        private colorSelected;
+        private _caption;
+        private _captionWidth;
+        private _format;
+        private inputMap;
+        private currentH;
+        private currentColor;
+        private currentPalette;
+        onChanged: notifyEventCallback;
+        constructor(parent?: Control, options?: any);
+        get value(): string;
+        set value(color: string);
+        get caption(): string;
+        set caption(value: string);
+        get captionWidth(): number | string;
+        set captionWidth(value: number | string);
+        get height(): number;
+        set height(value: number | string);
+        protected init(): Promise<void>;
+        private createInputGroup;
+        private createPreview;
+        private createPicker;
+        private onPaletteChanged;
+        private onSliderChanged;
+        private onToggleFormat;
+        private onColorSelected;
+        private updateColor;
+        private updateCurrentColor;
+        private updateHex;
+        private updateUI;
+        private initUI;
+        private setPalette;
+        private onInputChanged;
+        static create(options?: ColorPickerElement, parent?: Control): Promise<ColorPicker>;
+    }
+}
+declare module "packages/color/src/index" {
+    export { ColorPicker, ColorPickerElement } from "packages/color/src/color";
+}
 declare module "packages/input/src/style/input.css" { }
 declare module "packages/input/src/input" {
     import { Control, ControlElement, notifyEventCallback, IBorder, Border } from "@ijstech/components/base";
@@ -5481,9 +5578,10 @@ declare module "packages/input/src/input" {
     import { Datepicker, DatepickerElement } from "packages/datepicker/src/index";
     import { Range, RangeElement } from "packages/range/src/index";
     import { Radio, RadioElement } from "packages/radio/src/index";
+    import { ColorPicker } from "packages/color/src/index";
     import "packages/input/src/style/input.css";
     export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text' | 'color';
-    type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio;
+    type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio | ColorPicker;
     type actionCallback = (target: Input) => void;
     type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
     export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
@@ -9264,10 +9362,12 @@ declare module "packages/data-grid/src/dataGrid" {
     import { Control, Container, ControlElement } from "@ijstech/components/base";
     import { IComboItem } from "packages/combo-box/src/index";
     import "packages/data-grid/src/style/dataGrid.css";
-    export type CellDataType = "sc:datePicker" | "sc:dateTimePicker" | "sc:timePicker" | "sc:checkBox" | "sc:comboBox" | "number" | "integer" | "string";
+    export type ColRowType = "datePicker" | "dateTimePicker" | "timePicker" | "checkBox" | "comboBox" | "number" | "integer" | "string";
+    type DataType = "date" | "dateTime" | "time" | "boolean" | "number" | "integer" | "string";
     export type cellValueChangedCallback = (source: DataGrid, cell: DataGridCell, oldValue: any, newValue: any) => void;
     export interface IDataGridElement extends ControlElement {
         caption?: string;
+        mode?: GridMode;
     }
     global {
         namespace JSX {
@@ -9291,7 +9391,6 @@ declare module "packages/data-grid/src/dataGrid" {
         private _col;
         private _row;
         private _visible;
-        private _dataType;
         private _button;
         private _checkBox;
         private _color;
@@ -9314,8 +9413,6 @@ declare module "packages/data-grid/src/dataGrid" {
         set col(value: number);
         get color(): string;
         set color(value: string);
-        get dataType(): number;
-        set dataType(value: number);
         get displayValue(): any;
         get formula(): any;
         set formula(value: any);
@@ -9364,9 +9461,6 @@ declare module "packages/data-grid/src/dataGrid" {
         private _displayUserName;
         private _binding;
         private _comboItems;
-        private _checkBox;
-        private _button;
-        private _radioButton;
         private _rows;
         constructor(grid: IDataGrid, colIdx: number);
         get asJSON(): any;
@@ -9379,8 +9473,6 @@ declare module "packages/data-grid/src/dataGrid" {
         set color(value: string);
         get comboItems(): IComboItem[];
         set comboItems(value: IComboItem[]);
-        get dataType(): number;
-        set dataType(value: number);
         get default(): boolean;
         get format(): string;
         set format(value: string);
@@ -9394,8 +9486,9 @@ declare module "packages/data-grid/src/dataGrid" {
         set resizable(value: boolean);
         get sortable(): boolean;
         set sortable(value: boolean);
-        get type(): CellDataType;
-        set type(value: CellDataType);
+        get type(): ColRowType;
+        set type(value: ColRowType);
+        get dataType(): DataType;
         get visible(): boolean;
         set visible(value: boolean);
         get width(): number;
@@ -9416,7 +9509,44 @@ declare module "packages/data-grid/src/dataGrid" {
         setColCount(value: number): void;
         updateColIndex(): void;
     }
+    class TGridRow {
+        private grid;
+        private _comboItems;
+        private _visible;
+        private _color;
+        private _height;
+        private _readOnly;
+        private _resizable;
+        private _type;
+        private _dataType;
+        constructor(grid: DataGrid);
+        get color(): string;
+        set color(value: string);
+        get comboItems(): IComboItem[];
+        set comboItems(value: IComboItem[]);
+        get height(): number;
+        set height(value: number);
+        get readOnly(): boolean;
+        set readOnly(value: boolean);
+        get resizable(): boolean;
+        set resizable(value: boolean);
+        get type(): ColRowType;
+        set type(value: ColRowType);
+        get dataType(): DataType;
+        get visible(): boolean;
+        set visible(value: boolean);
+    }
+    class TGridRows {
+        private grid;
+        rows: any[];
+        private defaultHeight;
+        constructor(grid: DataGrid, defaultHeight: number);
+        clear(): void;
+        getHeight(index: number): any;
+        getRow(index: number): TGridRow;
+    }
     export type TGridLayout = 'grid' | 'card';
+    export type GridMode = 'vertical' | 'horizontal';
     export class DataGrid extends Control {
         private _colResizing;
         private _listOfValue;
@@ -9437,7 +9567,8 @@ declare module "packages/data-grid/src/dataGrid" {
         private tableContainer;
         private data;
         columns: TGridColumns;
-        private gridRows;
+        gridRows: TGridRows;
+        private _mode;
         private _colCount;
         private _rowCount;
         private editor;
@@ -9516,6 +9647,7 @@ declare module "packages/data-grid/src/dataGrid" {
         set row(value: number);
         get colCount(): number;
         set colCount(value: number);
+        get mode(): GridMode;
         get readOnly(): boolean;
         set readOnly(value: boolean);
         get rowCount(): number;
@@ -9565,6 +9697,7 @@ declare module "packages/data-grid/src/dataGrid" {
         private getActualColIdx;
         private getActualRowIdx;
         cols(colIdx: number): TGridColumn;
+        rows(rowIdx: number): TGridRow;
         private _updateTableCellDiv;
         private _updateTableCols;
         setColWidth(aColIndex: number, width: number, trigerEvent?: boolean): void;
@@ -10949,6 +11082,7 @@ declare module "packages/form/src/styles/index.css" {
     export const listBtnAddStyle: string;
     export const listColumnHeaderStyle: string;
     export const listItemStyle: string;
+    export const listVerticalLayoutStyle: string;
     export const listItemBtnDelete: string;
     export const tabsStyle: string;
     export const cardStyle: string;
@@ -11268,6 +11402,7 @@ declare module "packages/form/src/form" {
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
         private convertFieldNameToLabel;
+        private setDataUpload;
     }
 }
 declare module "packages/form/src/index" {
@@ -11315,4 +11450,5 @@ declare module "@ijstech/components" {
     export { Nav } from "packages/navigator/src/index";
     export { Breadcrumb } from "packages/breadcrumb/src/index";
     export { Form, IDataSchema, IUISchema, IFormOptions } from "packages/form/src/index";
+    export { ColorPicker } from "packages/color/src/index";
 }
