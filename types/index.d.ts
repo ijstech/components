@@ -6099,6 +6099,7 @@ declare module "packages/application/src/index" {
         geoInfo: IGeoInfo;
         private bundleLibs;
         store: Record<string, any>;
+        rootDir: string;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -6124,6 +6125,7 @@ declare module "packages/application/src/index" {
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
         private getModulePath;
         initModule(modulePath: string, script: string): Promise<string | null>;
+        init(scconfigPath: string): Promise<Module | null>;
         newModule(module: string, options?: IHasDependencies): Promise<Module | null>;
         copyToClipboard(value: string): Promise<boolean>;
         xssSanitize(value: string): string;

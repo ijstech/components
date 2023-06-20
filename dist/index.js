@@ -25559,6 +25559,7 @@ var ColorPicker = class extends Control {
       r: 0,
       g: 0,
       b: 0,
+      a: 1,
       hex: DEFAULT_COLOR
     };
     this.currentPalette = "";
@@ -25809,7 +25810,7 @@ var ColorPicker = class extends Control {
       if (!input)
         continue;
       const hasSuffix = unit === "s" || unit === "l";
-      input.value = `${this.currentColor[unit]} ${hasSuffix ? "%" : ""}`;
+      input.value = `${this.currentColor[unit]}${hasSuffix ? "%" : ""}`;
     }
     const { h, s, l, a, r, g, b, hex: hex2 = "" } = this.currentColor;
     if (this.colorSelected)
@@ -25835,7 +25836,6 @@ var ColorPicker = class extends Control {
   initUI() {
     const { h, a } = this.currentColor || {};
     const paletteValue = h ? customRound(h / 360 * 100, 0.5) : 0;
-    console.log(paletteValue);
     this.setPalette(paletteValue);
     if (this.colorPalette)
       this.colorPalette.value = paletteValue;
@@ -25880,6 +25880,7 @@ var ColorPicker = class extends Control {
     let currentColor = { ...this.currentColor };
     let isRgbChanged = false;
     let isHslChanged = false;
+    let isAChanged = false;
     switch (item) {
       case "hex":
         const data = convertColor(value);
@@ -25900,9 +25901,23 @@ var ColorPicker = class extends Control {
         break;
       case "s":
       case "l":
+        if (!value.includes("%"))
+          return;
         const sValid = isPercentValid(value);
-        currentColor[item] = sValid ? value : 0;
-        isHslChanged = true;
+        if (sValid) {
+          currentColor[item] = value.replace("%", "");
+          isHslChanged = true;
+        }
+        break;
+      case "a":
+        if (value === "0.")
+          return;
+        let numValue = +value;
+        const aValid = !isNaN(numValue);
+        if (!aValid)
+          numValue = 0;
+        currentColor[item] = numValue < 0 ? 0 : numValue > 1 ? 1 : numValue;
+        isAChanged = true;
         break;
     }
     if (item === "hex")
@@ -28018,6 +28033,7 @@ var Application = class {
     this.cidItems = {};
     this.bundleLibs = {};
     this.store = {};
+    this.rootDir = "/";
     this.globalEvents = new GlobalEvents();
   }
   get EventBus() {
@@ -28031,7 +28047,6 @@ var Application = class {
       let items = name.split("/");
       let value = this._assets;
       let item = items.shift();
-      ;
       while (value && item) {
         value = value[item];
         item = items.shift();
@@ -28430,6 +28445,20 @@ var Application = class {
     }
     ;
     return null;
+  }
+  async init(scconfigPath) {
+    let scconfig = JSON.parse(await this.getContent(scconfigPath));
+    if (!scconfig.rootDir && scconfigPath.indexOf("/") > 0) {
+      let rootDir = scconfigPath.split("/").slice(0, -1).join("/");
+      this.rootDir = rootDir;
+      scconfig.rootDir = rootDir;
+      if (scconfig.moduleDir && !scconfig.moduleDir.startsWith("/"))
+        scconfig.moduleDir = rootDir + "/" + scconfig.moduleDir;
+      if (scconfig.libDir && !scconfig.libDir.startsWith("/"))
+        scconfig.libDir = rootDir + "/" + scconfig.libDir;
+    }
+    ;
+    return this.newModule(scconfig.main, scconfig);
   }
   async newModule(module2, options) {
     var _a, _b, _c, _d;
