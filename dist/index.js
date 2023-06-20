@@ -28453,9 +28453,9 @@ var Application = class {
       this.rootDir = rootDir;
       scconfig.rootDir = rootDir;
       if (scconfig.moduleDir && !scconfig.moduleDir.startsWith("/"))
-        scconfig.moduleDir = rootDir + "/" + scconfig.moduleDir;
+        scconfig.moduleDir = scconfig.moduleDir;
       if (scconfig.libDir && !scconfig.libDir.startsWith("/"))
-        scconfig.libDir = rootDir + "/" + scconfig.libDir;
+        scconfig.libDir = scconfig.libDir;
     }
     ;
     return this.newModule(scconfig.main, scconfig);
