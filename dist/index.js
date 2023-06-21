@@ -28056,6 +28056,21 @@ var Application = class {
     }
     ;
   }
+  fetch(input, init) {
+    if (typeof input == "string") {
+      let url = input;
+      if (url.indexOf("://") < 0 && !url.startsWith("/"))
+        input = `${this.rootDir}${url}`;
+    } else if (input instanceof Request) {
+      let req = input;
+      if (req.url.indexOf("://") < 0 && !req.url.startsWith("/")) {
+        input = new Request(`${this.rootDir}${req.url}`);
+      }
+      ;
+    }
+    ;
+    return fetch(input, init);
+  }
   async postData(endpoint, data) {
     data = data || {};
     const response = await fetch(endpoint, {
@@ -28277,7 +28292,7 @@ var Application = class {
     if (this.scripts[modulePath])
       return this.scripts[modulePath];
     try {
-      let result = await (await fetch(modulePath)).text();
+      let result = await (await this.fetch(modulePath)).text();
       if (typeof result == "string") {
         if (await this.verifyScript(modulePath, result)) {
           this.scripts[modulePath] = result;
@@ -28310,7 +28325,7 @@ var Application = class {
   }
   async getContent(modulePath) {
     try {
-      return await (await fetch(modulePath)).text();
+      return await (await this.fetch(modulePath)).text();
     } catch (err) {
     }
     return "";
@@ -28398,10 +28413,18 @@ var Application = class {
     let modulePath = module2;
     if (options && options.modules && options.modules[module2] && options.modules[module2].path) {
       modulePath = "";
-      if (options.rootDir)
-        modulePath += options.rootDir + "/";
-      if (options.moduleDir)
-        modulePath += options.moduleDir + "/";
+      if (options.rootDir) {
+        modulePath += options.rootDir;
+        if (!modulePath.endsWith("/"))
+          modulePath += "/";
+      }
+      ;
+      if (options.moduleDir) {
+        modulePath += options.moduleDir;
+        if (!modulePath.endsWith("/"))
+          modulePath += "/";
+      }
+      ;
       modulePath += options.modules[module2].path;
       if (!modulePath.endsWith(".js"))
         modulePath += "/index.js";
@@ -28450,12 +28473,12 @@ var Application = class {
     let scconfig = JSON.parse(await this.getContent(scconfigPath));
     if (!scconfig.rootDir && scconfigPath.indexOf("/") > 0) {
       let rootDir = scconfigPath.split("/").slice(0, -1).join("/");
+      if (!rootDir.startsWith("/"))
+        rootDir = "/" + rootDir;
+      if (!rootDir.endsWith("/"))
+        rootDir = rootDir + "/";
       this.rootDir = rootDir;
       scconfig.rootDir = rootDir;
-      if (scconfig.moduleDir && !scconfig.moduleDir.startsWith("/"))
-        scconfig.moduleDir = scconfig.moduleDir;
-      if (scconfig.libDir && !scconfig.libDir.startsWith("/"))
-        scconfig.libDir = scconfig.libDir;
     }
     ;
     return this.newModule(scconfig.main, scconfig);

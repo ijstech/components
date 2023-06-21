@@ -1,6 +1,6 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.60",
+    "version": "0.1.61",
     "cid": "bafybeie6k73gsgtvcf6y6sjmwkiumlza2umhpp2jml7rs4xivija23xlkq",
     "main": "dist/index.js",
     "types": "types/index.d.ts",    
