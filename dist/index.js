@@ -19422,6 +19422,12 @@ function customElements2(tagName, properties) {
     try {
       if (properties)
         properties.tagName = tagName;
+      else
+        properties = {
+          props: {},
+          events: {},
+          tagName
+        };
       _customElementProperties[tagName] = properties;
       window.customElements.define(tagName, constructor);
     } catch (err) {
@@ -28056,6 +28062,33 @@ var Application = class {
     }
     ;
   }
+  async createElement(name, lazyLoad, attributes) {
+    let elementName = `i-${name}`;
+    let result;
+    try {
+      if (window.customElements.get(elementName)) {
+        result = document.createElement(elementName);
+      } else {
+        let loaded = await this.loadPackage(`@scom/${name}`, "*");
+        if (loaded)
+          result = document.createElement(elementName);
+      }
+      ;
+      if (result) {
+        if (lazyLoad)
+          result.setAttribute("lazyLoad", "true");
+        for (let name2 in attributes) {
+          result.setAttribute(name2, attributes[name2]);
+        }
+        ;
+      }
+      ;
+    } catch (err) {
+      console.dir(err);
+    }
+    ;
+    return result;
+  }
   fetch(input, init) {
     if (typeof input == "string") {
       let url = input;
@@ -28357,7 +28390,9 @@ var Application = class {
       ;
     }
     ;
-    let rootDir = (options == null ? void 0 : options.rootDir) ? (options == null ? void 0 : options.rootDir) + "/" : "";
+    let rootDir = (options == null ? void 0 : options.rootDir) ? options == null ? void 0 : options.rootDir : "";
+    if (!rootDir.endsWith("/"))
+      rootDir = rootDir + "/";
     let moduleDir = (options == null ? void 0 : options.moduleDir) ? (options == null ? void 0 : options.moduleDir) + "/" : "modules/";
     let libDir = (options == null ? void 0 : options.libDir) ? (options == null ? void 0 : options.libDir) + "/" : "libs/";
     if (!modulePath) {
@@ -28385,8 +28420,10 @@ var Application = class {
       this.currentModulePath = modulePath;
       if (modulePath.indexOf("://") > 0)
         this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
+      else if (!modulePath.startsWith("/"))
+        this.currentModuleDir = this.LibHost + this.rootDir + modulePath.split("/").slice(0, -1).join("/");
       else
-        this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
+        this.currentModuleDir = this.LibHost + modulePath.split("/").slice(0, -1).join("/");
       if (!this.packageNames.has(packageName)) {
         await import(`data:text/javascript,${encodeURIComponent(script)}`);
         this.packageNames.add(packageName);
@@ -28442,8 +28479,10 @@ var Application = class {
     this.currentModulePath = modulePath;
     if (modulePath.indexOf("://") > 0)
       this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
+    else if (!modulePath.startsWith("/"))
+      this.currentModuleDir = this.LibHost + this.rootDir + modulePath.split("/").slice(0, -1).join("/");
     else
-      this.currentModuleDir = application.LibHost + modulePath.split("/").slice(0, -1).join("/");
+      this.currentModuleDir = this.LibHost + modulePath.split("/").slice(0, -1).join("/");
     await import(`data:text/javascript,${encodeURIComponent(script)}`);
     document.getElementsByTagName("html")[0].classList.add(applicationStyle);
     this.currentModulePath = "";
@@ -28493,7 +28532,9 @@ var Application = class {
         this._initOptions = options;
         if (options.bundle) {
           try {
-            let rootDir = (options == null ? void 0 : options.rootDir) ? (options == null ? void 0 : options.rootDir) + "/" : "";
+            let rootDir = (options == null ? void 0 : options.rootDir) ? options == null ? void 0 : options.rootDir : "";
+            if (!rootDir.endsWith("/"))
+              rootDir += "/";
             let content = await this.getScript(rootDir + "bundle.json");
             if (content) {
               this.bundleLibs = JSON.parse(content);

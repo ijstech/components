@@ -6104,6 +6104,9 @@ declare module "packages/application/src/index" {
         get EventBus(): EventBus;
         static get Instance(): Application;
         assets(name: string): any;
+        createElement(name: string, lazyLoad?: boolean, attributes?: {
+            [name: string]: string;
+        }): Promise<HTMLElement | undefined>;
         fetch(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Response>;
         postData(endpoint: string, data: any): Promise<any>;
         showUploadModal(): Promise<void>;
