@@ -28727,25 +28727,28 @@ var Application = class {
   }
   async init(scconfigPath) {
     let scconfig = JSON.parse(await this.getContent(scconfigPath));
-    if (!scconfig.rootDir && scconfigPath.indexOf("/") > 0) {
-      let rootDir = scconfigPath.split("/").slice(0, -1).join("/");
-      let a = document.createElement("a");
-      a.href = rootDir;
-      rootDir = a.href.replace(/^[a-zA-Z]{3,5}:\/{2}[a-zA-Z0-9_.:-]+/, "");
-      if (!rootDir.startsWith("/"))
-        rootDir = "/" + rootDir;
-      if (!rootDir.endsWith("/"))
-        rootDir = rootDir + "/";
-      this.rootDir = rootDir;
-      scconfig.rootDir = rootDir;
-    } else {
-      let rootDir = window.location.pathname;
-      if (rootDir.endsWith(".html") || rootDir.endsWith(".htm"))
-        rootDir = rootDir.substring(0, rootDir.lastIndexOf("/"));
-      if (!rootDir.endsWith("/"))
-        rootDir = rootDir + "/";
-      this.rootDir = rootDir;
-      scconfig.rootDir = rootDir;
+    if (!scconfig.rootDir) {
+      if (scconfigPath.indexOf("/") > 0) {
+        let rootDir = scconfigPath.split("/").slice(0, -1).join("/");
+        let a = document.createElement("a");
+        a.href = rootDir;
+        rootDir = a.href.replace(/^[a-zA-Z]{3,5}:\/{2}[a-zA-Z0-9_.:-]+/, "");
+        if (!rootDir.startsWith("/"))
+          rootDir = "/" + rootDir;
+        if (!rootDir.endsWith("/"))
+          rootDir = rootDir + "/";
+        this.rootDir = rootDir;
+        scconfig.rootDir = rootDir;
+      } else {
+        let rootDir = window.location.pathname;
+        if (rootDir.endsWith(".html") || rootDir.endsWith(".htm"))
+          rootDir = rootDir.substring(0, rootDir.lastIndexOf("/"));
+        if (!rootDir.endsWith("/"))
+          rootDir = rootDir + "/";
+        this.rootDir = rootDir;
+        scconfig.rootDir = rootDir;
+      }
+      ;
     }
     ;
     return this.newModule(scconfig.main, scconfig);
