@@ -3993,6 +3993,7 @@ declare module "packages/base/src/control" {
         border?: IBorder;
         visible?: boolean;
         background?: IBackground;
+        grid?: IGrid;
     }
     export type IControlMediaQuery = IMediaQuery<IControlMediaQueryProps>;
     export const ControlProperties: ICustomProperties;
@@ -5190,6 +5191,8 @@ declare module "packages/combo-box/src/combo-box" {
         value: string;
         label: string;
         isNew?: boolean;
+        description?: string;
+        icon?: string;
     }
     type ModeType = 'single' | 'multiple' | 'tags';
     export interface ComboBoxElement extends ControlElement {
@@ -5549,10 +5552,13 @@ declare module "packages/color/src/color" {
         set captionWidth(value: number | string);
         get height(): number;
         set height(value: number | string);
+        private generateUUID;
         protected init(): Promise<void>;
+        private onClosePicker;
         private createInputGroup;
         private createPreview;
         private createPicker;
+        private activeEyeDropper;
         private onPaletteChanged;
         private onSliderChanged;
         private onToggleFormat;
@@ -6107,7 +6113,7 @@ declare module "packages/application/src/index" {
         createElement(name: string, lazyLoad?: boolean, attributes?: {
             [name: string]: string;
         }): Promise<HTMLElement | undefined>;
-        fetch(input: RequestInfo | URL, init?: RequestInit | undefined): Promise<Response>;
+        fetch(input: RequestInfo, init?: RequestInit | undefined): Promise<Response>;
         postData(endpoint: string, data: any): Promise<any>;
         showUploadModal(): Promise<void>;
         getUploadUrl(item: ICidInfo): Promise<{
@@ -6164,6 +6170,7 @@ declare module "packages/icon/src/icon" {
         private _size;
         private _image;
         private _spin;
+        private _fill;
         constructor(parent?: Control, options?: any);
         protected init(): void;
         get fill(): Types.Color;
