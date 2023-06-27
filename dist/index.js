@@ -25550,6 +25550,7 @@ cssRule("i-color", {
           alignItems: "center"
         },
         ".color-input-group": {
+          width: 165,
           display: "flex",
           gap: "2px",
           flex: "1"
@@ -25577,11 +25578,18 @@ cssRule("i-color", {
           }
         },
         ".selected-color": {
+          position: "relative",
           width: 24,
           height: 24,
           borderRadius: "50%",
           boxShadow: "rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset",
-          background: `url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZGBgEGHAD97gk2YcNYBhmIQBgWSAP52AwoAQwJvQRg1gACckQoC2gQgAIF8IscwEtKYAAAAASUVORK5CYII=") left center, var(--selected-color)`
+          background: `url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZGBgEGHAD97gk2YcNYBhmIQBgWSAP52AwoAQwJvQRg1gACckQoC2gQgAIF8IscwEtKYAAAAASUVORK5CYII=") left center`,
+          overflow: "hidden",
+          $nest: {
+            "i-panel": {
+              backgroundColor: "var(--selected-color)"
+            }
+          }
         },
         ".color-preview": {
           $nest: {
@@ -25794,6 +25802,7 @@ var ColorPicker = class extends Control {
           } else {
             this.mdColorPicker.style.left = `${x}px`;
           }
+          this.updateIconPointer();
         }
         this.mdColorPicker.visible = !this.mdColorPicker.visible;
       });
@@ -25858,7 +25867,7 @@ var ColorPicker = class extends Control {
     const picker = await GridLayout.create({
       gap: { column: "0.5rem", row: "0.5rem" },
       templateAreas: [["picker", "selected", "palette"], ["picker", "selected", "slider"]],
-      templateColumns: ["14px", "30px", "auto"],
+      templateColumns: ["14px", "30px", "120px"],
       margin: { bottom: "1rem" }
     });
     picker.classList.add("color-picker");
@@ -25870,34 +25879,45 @@ var ColorPicker = class extends Control {
     });
     pickerIcon.style.gridArea = "picker";
     pickerIcon.onClick = () => this.activeEyeDropper(pickerIcon);
-    this.colorSelected = await Panel.create({});
-    this.colorSelected.classList.add("selected-color");
-    this.colorSelected.style.gridArea = "selected";
+    const colorSelectedWrapper = await Panel.create();
+    colorSelectedWrapper.classList.add("selected-color");
+    colorSelectedWrapper.style.gridArea = "selected";
+    this.colorSelected = await Panel.create({
+      position: "absolute",
+      width: "100%",
+      height: "100%"
+    });
+    const { h, s, l, a, r = 0, g = 0, b = 0 } = this.currentColor;
+    let paletteValue = h ? customRound(h / 360 * 100, 0.5) : 0;
+    paletteValue = paletteValue > 100 ? 100 : paletteValue;
+    colorSelectedWrapper.appendChild(this.colorSelected);
     this.colorPalette = await Range.create({
       width: "100%",
       height: 10,
       min: 0,
       max: 100,
       step: 1,
-      value: 0
+      value: paletteValue
     });
     this.colorPalette.onChanged = this.onPaletteChanged.bind(this);
     this.colorPalette.classList.add("custom-range", "color-palette");
     this.colorPalette.style.gridArea = "palette";
-    const { r = 0, g = 0, b = 0 } = this.currentColor;
     this.mdColorPicker.style.setProperty("--opacity-color", `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0) 0%, rgb(${r}, ${g}, ${b}) 100%)`);
+    if (h !== void 0) {
+      this.mdColorPicker.style.setProperty("--selected-color", `hsla(${h}, ${s}%, ${l}%, ${a})`);
+    }
     this.colorSlider = await Range.create({
       width: "100%",
       height: 10,
       min: 0,
       max: 1,
-      value: 1,
+      value: a != null ? a : 1,
       step: 0.1
     });
     this.colorSlider.onChanged = this.onSliderChanged.bind(this);
     this.colorSlider.classList.add("custom-range", "color-slider");
     this.colorSlider.style.gridArea = "slider";
-    picker.append(pickerIcon, this.colorSelected, this.colorPalette, this.colorSlider);
+    picker.append(pickerIcon, colorSelectedWrapper, this.colorPalette, this.colorSlider);
     this.pnlInput = await HStack.create({
       alignItems: "center",
       gap: "0.5rem"
@@ -25965,6 +25985,20 @@ var ColorPicker = class extends Control {
     this._format = ((this._format + value) % maxLength + maxLength) % maxLength;
     this.createInputGroup();
   }
+  updateIconPointer() {
+    if (this.pnlShown) {
+      const iconPointer = this.pnlShown.querySelector("#iconPointer");
+      if (iconPointer) {
+        const { s, l } = this.currentColor;
+        const paletteWidth = this.pnlShown.offsetWidth;
+        const paletteHeight = this.pnlShown.offsetHeight;
+        const x = Math.round(s / 100 * paletteWidth);
+        const y = Math.round(paletteHeight * (1 - (2 * l - (1 - x / paletteWidth) * 100) / 100));
+        iconPointer.style.left = `${x}px`;
+        iconPointer.style.top = `${y}px`;
+      }
+    }
+  }
   onColorSelected(target, event) {
     const rect = target.getBoundingClientRect();
     const x = event ? event.clientX - rect.left : 160;
@@ -25978,7 +26012,7 @@ var ColorPicker = class extends Control {
     const paletteHeight = target.offsetHeight;
     const hue = Math.round(this.currentH / 100 * 360);
     const saturation = Math.round(x / paletteWidth * 100);
-    const lightness = Math.round((1 - y / paletteHeight) * 100);
+    const lightness = Math.round((1 - y / paletteHeight + (1 - x / paletteWidth)) * 50);
     this.updateColor(hue, saturation, lightness);
   }
   updateColor(h, s, l) {
@@ -26008,7 +26042,7 @@ var ColorPicker = class extends Control {
       const hasSuffix = unit === "s" || unit === "l";
       input.value = `${this.currentColor[unit]}${hasSuffix ? "%" : ""}`;
     }
-    const { h, s, l, a, r, g, b, hex: hex2 = "" } = this.currentColor;
+    const { h = 0, s = 0, l = 0, a = 1, r = 0, g = 0, b = 0, hex: hex2 = "" } = this.currentColor;
     if (this.mdColorPicker) {
       this.mdColorPicker.style.setProperty("--selected-color", `hsla(${h}, ${s}%, ${l}%, ${a})`);
       this.mdColorPicker.style.setProperty("--opacity-color", `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0) 0%, rgb(${r}, ${g}, ${b}) 100%)`);
@@ -26018,17 +26052,7 @@ var ColorPicker = class extends Control {
       hexInput.value = hex2 || "";
     if (this.inputSpanElm)
       this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR;
-    if (this.pnlShown) {
-      const iconPointer = this.pnlShown.querySelector("#iconPointer");
-      if (iconPointer) {
-        const paletteWidth = this.pnlShown.offsetWidth;
-        const paletteHeight = this.pnlShown.offsetHeight;
-        const x = Math.round(s / 100 * paletteWidth);
-        const y = Math.round((1 - l / 100) * paletteHeight);
-        iconPointer.style.left = `${x}px`;
-        iconPointer.style.top = `${y}px`;
-      }
-    }
+    this.updateIconPointer();
   }
   initUI() {
     const { h, a } = this.currentColor || {};
@@ -28710,6 +28734,14 @@ var Application = class {
       rootDir = a.href.replace(/^[a-zA-Z]{3,5}:\/{2}[a-zA-Z0-9_.:-]+/, "");
       if (!rootDir.startsWith("/"))
         rootDir = "/" + rootDir;
+      if (!rootDir.endsWith("/"))
+        rootDir = rootDir + "/";
+      this.rootDir = rootDir;
+      scconfig.rootDir = rootDir;
+    } else {
+      let rootDir = window.location.pathname;
+      if (rootDir.endsWith(".html") || rootDir.endsWith(".htm"))
+        rootDir = rootDir.substring(0, rootDir.lastIndexOf("/"));
       if (!rootDir.endsWith("/"))
         rootDir = rootDir + "/";
       this.rootDir = rootDir;
@@ -34184,6 +34216,7 @@ var TreeView = class extends Control {
     });
     this._items = [];
     this._alwaysExpanded = false;
+    this._deleteNodeOnEmptyCaption = false;
   }
   get activeItem() {
     return this._activeItem;
@@ -34364,6 +34397,7 @@ var TreeView = class extends Control {
       this.editable = this.getAttribute("editable", true, false);
       this.actionButtons = this.getAttribute("actionButtons", true);
       this.data = this.getAttribute("data", true);
+      this._deleteNodeOnEmptyCaption = this.getAttribute("deleteNodeOnEmptyCaption", true);
       const activeAttr = this.getAttribute("activeItem", true);
       activeAttr && (this.activeItem = activeAttr);
     }
@@ -34474,6 +34508,7 @@ var TreeNode = class extends Control {
     return this._iconRightElm;
   }
   handleChange(target, oldValue, newValue) {
+    debugger;
     const fn = this.rootParent.onChange;
     if (fn && typeof fn === "function")
       fn(this.rootParent, target, oldValue, newValue);
@@ -34489,6 +34524,9 @@ var TreeNode = class extends Control {
     let isUpdating = false;
     const updateCaption = () => {
       const newValue = captionInput.value;
+      if (this.rootParent._deleteNodeOnEmptyCaption && captionInput.value.replace(/\s+/g, "") === "") {
+        return this.remove();
+      }
       if (newValue !== this.caption)
         this.handleChange(this, this.caption, newValue);
       this.caption = newValue;

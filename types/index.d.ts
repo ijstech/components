@@ -5562,6 +5562,7 @@ declare module "packages/color/src/color" {
         private onPaletteChanged;
         private onSliderChanged;
         private onToggleFormat;
+        private updateIconPointer;
         private onColorSelected;
         private updateColor;
         private updateCurrentColor;
@@ -10016,6 +10017,7 @@ declare module "packages/tree-view/src/treeView" {
         editable?: boolean;
         actionButtons?: ButtonElement[];
         alwaysExpanded?: boolean;
+        deleteNodeOnEmptyCaption?: boolean;
         onActiveChange?: activedChangeCallback;
         onChange?: changeCallback;
         onRenderNode?: renderCallback;
@@ -10048,6 +10050,7 @@ declare module "packages/tree-view/src/treeView" {
         private _items;
         private _actionButtons;
         private _alwaysExpanded;
+        _deleteNodeOnEmptyCaption: boolean;
         onRenderNode: renderCallback;
         onActiveChange: activedChangeCallback;
         onChange: changeCallback;
