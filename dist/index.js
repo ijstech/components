@@ -28255,7 +28255,7 @@ var Application = class {
     this.cidItems = {};
     this.bundleLibs = {};
     this.store = {};
-    this.rootDir = "/";
+    this.rootDir = "";
     this.globalEvents = new GlobalEvents();
   }
   get EventBus() {
@@ -28749,6 +28749,14 @@ var Application = class {
         scconfig.rootDir = rootDir;
       }
       ;
+    } else {
+      let rootDir = scconfig.rootDir;
+      if (!rootDir.endsWith("/"))
+        rootDir = rootDir + "/";
+      if (!rootDir.endsWith("/"))
+        rootDir = rootDir + "/";
+      this.rootDir = rootDir;
+      scconfig.rootDir = rootDir;
     }
     ;
     return this.newModule(scconfig.main, scconfig);
