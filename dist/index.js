@@ -28683,8 +28683,19 @@ var Application = class {
       if (!modulePath.endsWith(".js"))
         modulePath += "/index.js";
     } else if (options && options.dependencies && options.dependencies[module2]) {
-      let libDir = (options == null ? void 0 : options.libDir) ? (options == null ? void 0 : options.libDir) + "/" : "libs/";
-      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir + "/" : ""}${libDir}${module2}/index.js`;
+      let libDir = "";
+      if (options == null ? void 0 : options.libDir) {
+        libDir = options.libDir;
+        if (!libDir.endsWith("/"))
+          libDir += "/";
+        if (libDir.startsWith("/"))
+          libDir = libDir.substring(1);
+      } else
+        libDir = "libs/";
+      modulePath = `${(options == null ? void 0 : options.rootDir) ? options.rootDir : ""}`;
+      if (modulePath && !modulePath.endsWith("/"))
+        modulePath += "/";
+      modulePath += libDir + module2 + "/index.js";
     }
     ;
     return modulePath;
@@ -28751,8 +28762,8 @@ var Application = class {
       ;
     } else {
       let rootDir = scconfig.rootDir;
-      if (!rootDir.endsWith("/"))
-        rootDir = rootDir + "/";
+      if (!rootDir.startsWith("/"))
+        rootDir = "/" + rootDir;
       if (!rootDir.endsWith("/"))
         rootDir = rootDir + "/";
       this.rootDir = rootDir;
