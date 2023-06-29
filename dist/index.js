@@ -28278,15 +28278,14 @@ var Application = class {
     }
     ;
   }
-  async createElement(name, lazyLoad, attributes) {
-    name = name.split("/").pop() || name;
+  async createElement(name, lazyLoad, attributes, modulePath) {
     let elementName = `i-${name}`;
     let result;
     try {
       if (window.customElements.get(elementName)) {
         result = document.createElement(elementName);
       } else {
-        let loaded = await this.loadPackage(`@scom/${name}`, "*");
+        let loaded = await this.loadPackage(`@scom/${name}`, modulePath || "*");
         if (loaded)
           result = document.createElement(elementName);
       }

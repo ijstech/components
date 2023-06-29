@@ -6113,7 +6113,7 @@ declare module "packages/application/src/index" {
         assets(name: string): any;
         createElement(name: string, lazyLoad?: boolean, attributes?: {
             [name: string]: string;
-        }): Promise<HTMLElement | undefined>;
+        }, modulePath?: string): Promise<HTMLElement | undefined>;
         fetch(input: RequestInfo, init?: RequestInit | undefined): Promise<Response>;
         postData(endpoint: string, data: any): Promise<any>;
         showUploadModal(): Promise<void>;
