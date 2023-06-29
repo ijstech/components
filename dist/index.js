@@ -28279,6 +28279,7 @@ var Application = class {
     ;
   }
   async createElement(name, lazyLoad, attributes, modulePath) {
+    name = name.split("/").pop() || name;
     let elementName = `i-${name}`;
     let result;
     try {
