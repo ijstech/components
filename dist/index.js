@@ -20207,6 +20207,8 @@ var Modal = class extends Container {
         }
         this.wrapperDiv.style.overflow = "hidden auto";
       }
+      document.addEventListener("mousedown", this.handleModalMouseDown.bind(this));
+      document.addEventListener("mouseup", this.handleModalMouseUp.bind(this));
     } else {
       this.wrapperDiv.classList.remove(visibleStyle);
       if (this.showBackdrop) {
@@ -20219,6 +20221,8 @@ var Modal = class extends Container {
         }
       }
       this.onClose && this.onClose(this);
+      document.removeEventListener("mousedown", this.handleModalMouseDown.bind(this));
+      document.removeEventListener("mouseup", this.handleModalMouseUp.bind(this));
     }
   }
   get onOpen() {
@@ -20415,13 +20419,19 @@ var Modal = class extends Container {
       this._onOpen(this);
     }
   }
-  _handleClick(event) {
+  handleModalMouseDown(event) {
     const target = event.target;
+    this.insideClick = true;
     if (this.closeOnBackdropClick) {
-      if (!this.modalDiv.contains(target) && this.visible)
-        this.visible = false;
+      this.insideClick = this.modalDiv.contains(target);
+    } else if (!this.showBackdrop) {
+      let parent = this._parent || this.linkTo || this.parentElement;
+      this.insideClick = this.modalDiv.contains(target) || (parent == null ? void 0 : parent.contains(target));
     }
-    return true;
+  }
+  handleModalMouseUp(event) {
+    if (!this.insideClick)
+      this.visible = false;
   }
   updateModal(name, value) {
     if (!isNaN(Number(value)))
@@ -20489,15 +20499,6 @@ var Modal = class extends Container {
         if (!this.visible)
           return;
         if (event.key === "Escape") {
-          this.visible = false;
-        }
-      });
-      document.body.addEventListener("click", (event) => {
-        if (!this.visible || this.showBackdrop || !this.closeOnBackdropClick)
-          return;
-        const target = event.target;
-        let parent = this._parent || this.linkTo || this.parentElement;
-        if (!this.modalDiv.contains(target) && !(parent == null ? void 0 : parent.contains(target))) {
           this.visible = false;
         }
       });
@@ -22425,10 +22426,17 @@ var Upload = class extends Control {
     this.isPreviewing = false;
     this._fileList = [];
   }
-  async upload(endpoint) {
-    let cid = await hashFiles(this._fileList);
-    let result = await application.postData(endpoint, cid);
-    console.dir(result);
+  async upload() {
+    var _a;
+    const cidItems = await hashFiles(this._fileList);
+    let uploadUrl = await application.getUploadUrl(cidItems);
+    for (let i = 0; i < this._fileList.length; i++) {
+      const file = this._fileList[i];
+      if (((_a = file.cid) == null ? void 0 : _a.cid) && uploadUrl[file.cid.cid]) {
+        let result = await application.upload(uploadUrl[file.cid.cid], file);
+        console.log("upload result: ", result);
+      }
+    }
   }
   addFiles() {
   }
@@ -25465,6 +25473,38 @@ function customRound(value, threshold) {
     return roundedValue;
   }
 }
+function hsvToHsl(h, s, v) {
+  const _h = h;
+  const _s = s / 100;
+  const _v = v / 100;
+  const r = Math.max(_v, 0.01);
+  let o;
+  let _l = (2 - _s) * _v / 2;
+  const lmin = (2 - _s) * r;
+  o = _s * r;
+  o /= lmin <= 1 ? lmin : 2 - lmin;
+  o = o || 0;
+  return {
+    h: Math.round(_h),
+    s: Math.round(o * 100),
+    l: Math.round(_l * 100)
+  };
+}
+function hslToHsv(h, s, l) {
+  const _h = h;
+  let _s = s / 100;
+  let _l = l / 100;
+  const r = Math.max(_l, 0.01);
+  let smin = _s;
+  _l *= 2;
+  _s *= _l <= 1 ? _l : 2 - _l;
+  smin *= r <= 1 ? r : 2 - r;
+  return {
+    h: Math.round(_h),
+    s: Math.round((_l === 0 ? 2 * smin / (r + smin) : 2 * _s / (_l + _s)) * 100),
+    v: Math.round((_l + _s) / 2 * 100)
+  };
+}
 
 // packages/color/src/style/color.css.ts
 var Theme20 = theme_exports.ThemeVars;
@@ -25488,7 +25528,7 @@ cssRule("i-color", {
       padding: 4,
       $nest: {
         "span": {
-          backgroundColor: "#000",
+          background: "url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZGBgEGHAD97gk2YcNYBhmIQBgWSAP52AwoAQwJvQRg1gACckQoC2gQgAIF8IscwEtKYAAAAASUVORK5CYII=) #fff",
           height: "100%",
           width: "100%",
           minHeight: 12,
@@ -25592,6 +25632,8 @@ cssRule("i-color", {
           }
         },
         ".color-preview": {
+          userSelect: "none",
+          touchAction: "none",
           $nest: {
             "> i-panel": {
               width: "100%",
@@ -25613,12 +25655,22 @@ cssRule("i-color", {
               width: 12,
               height: 12,
               borderRadius: "50%",
-              boxShadow: "rgb(255, 255, 255) 0px 0px 0px 1px inset",
+              boxShadow: "rgb(255, 255, 255) 0px 0px 0px 1.25px",
               transform: "translate(-6px, -6px)",
               position: "absolute",
               cursor: "default",
               top: 0,
-              left: 0
+              left: 0,
+              $nest: {
+                "&::before": {
+                  width: 12,
+                  height: 12,
+                  content: '""',
+                  position: "absolute",
+                  borderRadius: "50%",
+                  boxShadow: "rgb(128, 128, 128) 0px 0px 0px 0.75px inset"
+                }
+              }
             }
           }
         },
@@ -25651,6 +25703,7 @@ var hex = ["hex"];
 var formatList = ["hex", "rgb", "hsl"];
 var formatMap = { hex, rgb, hsl };
 var DEFAULT_COLOR = "#000";
+var DEFAULT_BG_COLOR = "url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADFJREFUOE9jZGBgEGHAD97gk2YcNYBhmIQBgWSAP52AwoAQwJvQRg1gACckQoC2gQgAIF8IscwEtKYAAAAASUVORK5CYII=) #fff";
 var ColorPicker = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -25678,6 +25731,7 @@ var ColorPicker = class extends Control {
     if (data.isValid)
       this.currentColor = { ...data };
     this.updateUI(true);
+    this.updateIconPointer();
   }
   get caption() {
     return this._caption;
@@ -25728,6 +25782,7 @@ var ColorPicker = class extends Control {
         showBackdrop: false,
         onClose: this.onClosePicker.bind(this)
       });
+      this.mdColorPicker.onOpen = this.onOpenPicker.bind(this);
       this.mdColorPicker.style.position = "fixed";
       this.mdColorPicker.zIndex = 9999;
       this.mdColorPicker.classList.add("color-picker-modal");
@@ -25754,7 +25809,8 @@ var ColorPicker = class extends Control {
         mapScrollTop[scrollID] = elm.scrollTop;
       };
       const onParentScroll = (e) => {
-        this.mdColorPicker.visible = false;
+        if (this.mdColorPicker.visible)
+          this.mdColorPicker.visible = false;
         if (e && !e.target.offsetParent && e.target.getAttribute) {
           getScrollY(e.target);
         }
@@ -25807,20 +25863,29 @@ var ColorPicker = class extends Control {
         this.mdColorPicker.visible = !this.mdColorPicker.visible;
       });
       this.inputSpanElm = this.createElement("span", valueElm);
-      this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR;
+      this.inputSpanElm.style.background = this.value || DEFAULT_BG_COLOR;
       this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
       const value = this.getAttribute("value", true);
       if (value !== void 0)
         this.value = value;
     }
   }
+  onOpenPicker() {
+    document.addEventListener("mouseup", this.handleMouseUp.bind(this));
+    document.addEventListener("mousemove", this.handleMouseMove.bind(this));
+  }
   onClosePicker() {
+    if (this.onClosed)
+      this.onClosed();
     if (this.inputSpanElm)
-      this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR;
+      this.inputSpanElm.style.background = this.value || DEFAULT_BG_COLOR;
     const child2 = this.mdColorPicker.firstChild;
     if (child2) {
       child2.style.display = "none";
     }
+    this.isMousePressed = false;
+    document.removeEventListener("mouseup", this.handleMouseUp.bind(this));
+    document.removeEventListener("mousemove", this.handleMouseMove.bind(this));
   }
   createInputGroup() {
     let wrapElm = this.pnlInput.querySelector(".color-input-group");
@@ -25848,8 +25913,9 @@ var ColorPicker = class extends Control {
   }
   async createPreview() {
     this.pnlShown = await Panel.create({
-      height: 100,
+      height: 136,
       width: "100%",
+      minWidth: 232,
       overflow: "hidden",
       background: { color: this.currentPalette || "" }
     });
@@ -25862,6 +25928,19 @@ var ColorPicker = class extends Control {
     `;
     this.pnlShown.classList.add("color-preview");
     this.pnlShown.onClick = this.onColorSelected.bind(this);
+  }
+  _handleMouseDown(event) {
+    const target = event.target;
+    this.isMousePressed = this.pnlShown.contains(target);
+    return false;
+  }
+  handleMouseMove(event) {
+    if (this.isMousePressed) {
+      this.onColorSelected(this.pnlShown, event);
+    }
+  }
+  handleMouseUp(event) {
+    this.isMousePressed = false;
   }
   async createPicker() {
     const picker = await GridLayout.create({
@@ -25972,7 +26051,8 @@ var ColorPicker = class extends Control {
       const rgbArr = stringToArr(this.currentPalette, true);
       if (this.mdColorPicker)
         this.mdColorPicker.style.setProperty("--opacity-color", `linear-gradient(to right, rgba(${rgbArr[0]}, ${rgbArr[1]}, ${rgbArr[2]}, 0) 0%, ${this.currentPalette} 100%)`);
-      this.onColorSelected(this.pnlShown);
+      const { s, l } = this.currentColor;
+      this.updateColor(Math.round(this.currentH / 100 * 360), s, l);
     }
   }
   onSliderChanged() {
@@ -25989,11 +26069,12 @@ var ColorPicker = class extends Control {
     if (this.pnlShown) {
       const iconPointer = this.pnlShown.querySelector("#iconPointer");
       if (iconPointer) {
-        const { s, l } = this.currentColor;
+        const { h, s, l } = this.currentColor;
+        const hsv = hslToHsv(h, s, l);
         const paletteWidth = this.pnlShown.offsetWidth;
         const paletteHeight = this.pnlShown.offsetHeight;
-        const x = Math.round(s / 100 * paletteWidth);
-        const y = Math.round(paletteHeight * (1 - (2 * l - (1 - x / paletteWidth) * 100) / 100));
+        const x = hsv.s * paletteWidth / 100 | 0;
+        const y = paletteHeight - hsv.v * paletteHeight / 100 | 0;
         iconPointer.style.left = `${x}px`;
         iconPointer.style.top = `${y}px`;
       }
@@ -26001,8 +26082,12 @@ var ColorPicker = class extends Control {
   }
   onColorSelected(target, event) {
     const rect = target.getBoundingClientRect();
-    const x = event ? event.clientX - rect.left : 160;
-    const y = event ? event.clientY - rect.top : 60;
+    let x = 160;
+    let y = 60;
+    if (event) {
+      x = event.clientX < rect.left ? 0 : event.clientX > rect.right ? rect.width : event.clientX - rect.left;
+      y = event.clientY < rect.top ? 0 : event.clientY > rect.bottom ? rect.height : event.clientY - rect.top;
+    }
     const iconPointer = target.querySelector("#iconPointer");
     if (iconPointer) {
       iconPointer.style.top = `${y}px`;
@@ -26011,9 +26096,10 @@ var ColorPicker = class extends Control {
     const paletteWidth = target.offsetWidth;
     const paletteHeight = target.offsetHeight;
     const hue = Math.round(this.currentH / 100 * 360);
-    const saturation = Math.round(x / paletteWidth * 100);
-    const lightness = Math.round((1 - y / paletteHeight + (1 - x / paletteWidth)) * 50);
-    this.updateColor(hue, saturation, lightness);
+    const saturation = x * 100 / paletteWidth | 0;
+    const value = 100 - y * 100 / paletteHeight | 0;
+    const hsl2 = hsvToHsl(hue, saturation, value);
+    this.updateColor(hsl2.h, hsl2.s, hsl2.l);
   }
   updateColor(h, s, l) {
     const a = this.colorSlider.value;
@@ -26051,8 +26137,7 @@ var ColorPicker = class extends Control {
     if (hexInput)
       hexInput.value = hex2 || "";
     if (this.inputSpanElm)
-      this.inputSpanElm.style.backgroundColor = this.value || DEFAULT_COLOR;
-    this.updateIconPointer();
+      this.inputSpanElm.style.background = this.value || DEFAULT_COLOR;
   }
   initUI() {
     const { h, a } = this.currentColor || {};
@@ -26106,8 +26191,10 @@ var ColorPicker = class extends Control {
     switch (item) {
       case "hex":
         const data = convertColor(value);
-        if (data.isValid)
+        if (data.isValid) {
           this.updateCurrentColor(data, true);
+          this.updateIconPointer();
+        }
         break;
       case "r":
       case "g":
@@ -26154,6 +26241,7 @@ var ColorPicker = class extends Control {
     }
     this.updateHex();
     this.updateCurrentColor({ ...currentColor }, true);
+    this.updateIconPointer();
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -26384,6 +26472,15 @@ var Input = class extends Control {
   get border() {
     return super.border;
   }
+  set onClosed(callback) {
+    this._onClosed = callback;
+    if (!this._inputControl || this.inputType !== "color")
+      return;
+    this._inputControl.onClosed = callback;
+  }
+  get onClosed() {
+    return this._onClosed;
+  }
   _createInputElement(type) {
     const value = this.getAttribute("value");
     const caption = this.getAttribute("caption");
@@ -26504,6 +26601,12 @@ var Input = class extends Control {
         });
         if (this.onChanged)
           this._inputControl.onChanged = this.onChanged;
+        if (!this.onClosed) {
+          const onClosed = this.getAttribute("onClosed", true);
+          this._inputControl.onClosed = onClosed;
+        } else {
+          this._inputControl.onClosed = this.onClosed;
+        }
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector(".input-span");
         break;
@@ -28402,7 +28505,7 @@ var Application = class {
     });
   }
   async uploadTo(targetCid, items) {
-    let cid = await (await fetch(`/ipfs/${targetCid}`)).json();
+    let cid = await (await fetch(`${API_IPFS_BASEURL}/stat/${targetCid}`)).json();
     if (cid == null ? void 0 : cid.links) {
       for (let i = 0; i < items.length; i++) {
         let item = items[i];
@@ -34420,6 +34523,7 @@ var TreeView = class extends Control {
       this.actionButtons = this.getAttribute("actionButtons", true);
       this.data = this.getAttribute("data", true);
       this._deleteNodeOnEmptyCaption = this.getAttribute("deleteNodeOnEmptyCaption", true);
+      console.log("_deleteNodeOnEmptyCaption", this._deleteNodeOnEmptyCaption);
       const activeAttr = this.getAttribute("activeItem", true);
       activeAttr && (this.activeItem = activeAttr);
     }
@@ -34536,6 +34640,7 @@ var TreeNode = class extends Control {
       fn(this.rootParent, target, oldValue, newValue);
   }
   renderEditMode() {
+    console.log("renderEditMode");
     const captionInput = this.createElement("input");
     captionInput.value = this.caption;
     captionInput.classList.add("text-input");
@@ -34546,6 +34651,8 @@ var TreeNode = class extends Control {
     let isUpdating = false;
     const updateCaption = () => {
       const newValue = captionInput.value;
+      console.log("rootparent deleteNodeOnEmptyCaption", this.rootParent._deleteNodeOnEmptyCaption);
+      console.log("empty string", captionInput.value.replace(/\s+/g, "") === "");
       if (this.rootParent._deleteNodeOnEmptyCaption && captionInput.value.replace(/\s+/g, "") === "") {
         return this.remove();
       }
@@ -40409,7 +40516,7 @@ var DEFAULT_OPTIONS = {
     caption: "Clear",
     backgroundColor: theme.colors.primary.main,
     fontColor: theme.colors.primary.contrastText,
-    hide: false
+    hide: true
   },
   dateTimeFormat: {
     date: "YYYY-MM-DD",
@@ -40582,7 +40689,7 @@ var Form = class extends Control {
     return data;
   }
   async getDataBySchema(schema, scope = "#") {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
     if (!schema)
       return void 0;
     if (schema.type === "string") {
@@ -40596,13 +40703,21 @@ var Form = class extends Control {
           case "I-DATEPICKER":
             return control.value;
           case "I-UPLOAD":
-            const file = control.fileList[0];
+            const uploader = control;
+            const file = uploader.fileList[0];
             if (file) {
               if (schema.format === "data-url") {
-                const dataUrl = await control.toBase64(file);
+                const dataUrl = await uploader.toBase64(file);
                 return dataUrl;
               } else if (schema.format === "data-cid") {
-                return file.cid;
+                let cid = (_c = file.cid) == null ? void 0 : _c.cid;
+                if (!cid)
+                  return void 0;
+                let result = await fetch(`https://ipfs.scom.dev/ipfs/${cid}`);
+                if (result.status !== 200) {
+                  await uploader.upload();
+                }
+                return cid;
               } else
                 return void 0;
             } else
@@ -40613,33 +40728,33 @@ var Form = class extends Control {
       } else
         return void 0;
     } else if (schema.type === "integer") {
-      const control = (_c = this._formControls[scope]) == null ? void 0 : _c.input;
+      const control = (_d = this._formControls[scope]) == null ? void 0 : _d.input;
       if (control) {
         switch (control.tagName) {
           case "I-INPUT":
             return control.value ? parseInt(control.value) : void 0;
           case "I-COMBO-BOX":
-            return parseFloat((_d = control.value) == null ? void 0 : _d.value);
+            return parseFloat((_e = control.value) == null ? void 0 : _e.value);
           default:
             return void 0;
         }
       } else
         return void 0;
     } else if (schema.type === "number") {
-      const control = (_e = this._formControls[scope]) == null ? void 0 : _e.input;
+      const control = (_f = this._formControls[scope]) == null ? void 0 : _f.input;
       if (control) {
         switch (control.tagName) {
           case "I-INPUT":
             return control.value ? parseFloat(control.value) : void 0;
           case "I-COMBO-BOX":
-            return parseFloat((_f = control.value) == null ? void 0 : _f.value);
+            return parseFloat((_g = control.value) == null ? void 0 : _g.value);
           default:
             return void 0;
         }
       } else
         return void 0;
     } else if (schema.type === "boolean") {
-      const control = (_g = this._formControls[scope]) == null ? void 0 : _g.input;
+      const control = (_h = this._formControls[scope]) == null ? void 0 : _h.input;
       if (control) {
         switch (control.tagName) {
           case "I-CHECKBOX":
@@ -40660,7 +40775,7 @@ var Form = class extends Control {
       }
       return obj;
     } else if (schema.type === "array") {
-      const grid = (_h = this._formControls[scope]) == null ? void 0 : _h.input;
+      const grid = (_i = this._formControls[scope]) == null ? void 0 : _i.input;
       const listItems = grid == null ? void 0 : grid.querySelectorAll('[role="list-item"]');
       if (listItems && listItems.length > 0) {
         const list = [];
@@ -40682,7 +40797,7 @@ var Form = class extends Control {
               } else if (field.tagName === "I-DATEPICKER") {
                 list.push(field.value);
               } else if (field.tagName === "I-COMBO-BOX") {
-                list.push((_i = field.value) == null ? void 0 : _i.value);
+                list.push((_j = field.value) == null ? void 0 : _j.value);
               } else if (field.tagName === "I-CHECKBOX") {
                 list.push(field.checked);
               } else if (field.tagName === "I-RADIO-GROUP") {
@@ -40705,7 +40820,7 @@ var Form = class extends Control {
                 } else if (field.tagName === "I-DATEPICKER") {
                   data[fieldName] = field.value;
                 } else if (field.tagName === "I-COMBO-BOX") {
-                  data[fieldName] = (_j = field.value) == null ? void 0 : _j.value;
+                  data[fieldName] = (_k = field.value) == null ? void 0 : _k.value;
                 } else if (field.tagName === "I-CHECKBOX") {
                   data[fieldName] = field.checked;
                 } else if (field.tagName === "I-RADIO-GROUP") {
@@ -40836,8 +40951,6 @@ var Form = class extends Control {
         return this.renderUploader(parent, scope, controlOptions);
       } else if (schema.format === "color") {
         return this.renderColorPicker(parent, scope, controlOptions);
-      } else if (schema.format === "data-url") {
-        return this.renderUploader(parent, scope, controlOptions);
       } else {
         return this.renderInput(parent, scope, controlOptions);
       }
@@ -40966,7 +41079,6 @@ var Form = class extends Control {
         caption: typeof label === "string" ? label : "",
         columnWidth: "100%",
         description: "",
-        enable: true,
         readOnly: false
       });
       if (elements) {
@@ -41179,6 +41291,9 @@ var Form = class extends Control {
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "string");
+    if (options.readOnly !== void 0) {
+      input.setAttribute("readOnly", options.readOnly.toString());
+    }
     const description = new Label(wrapper, {
       caption: options.description
     });
@@ -41209,6 +41324,9 @@ var Form = class extends Control {
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "number");
+    if (options.readOnly !== void 0) {
+      input.setAttribute("readOnly", options.readOnly.toString());
+    }
     input.classList.add(inputStyle);
     const description = new Label(wrapper, {
       caption: options.description
@@ -41241,6 +41359,9 @@ var Form = class extends Control {
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "string");
+    if (options.readOnly !== void 0) {
+      input.setAttribute("readOnly", options.readOnly.toString());
+    }
     input.classList.add(inputStyle);
     const description = new Label(wrapper, {
       caption: options.description
@@ -41271,6 +41392,9 @@ var Form = class extends Control {
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "string");
+    if (options.readOnly !== void 0) {
+      input.setAttribute("readOnly", options.readOnly.toString());
+    }
     input.classList.add(inputStyle);
     const description = new Label(wrapper, {
       caption: options.description
@@ -41369,6 +41493,9 @@ var Form = class extends Control {
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "string");
+    if (options.readOnly !== void 0) {
+      input.setAttribute("readOnly", options.readOnly.toString());
+    }
     input.classList.add(comboBoxStyle);
     const description = new Label(wrapper, {
       caption: options.description
@@ -41421,6 +41548,9 @@ var Form = class extends Control {
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "boolean");
+    if (options.readOnly !== void 0) {
+      input.setAttribute("readOnly", options.readOnly.toString());
+    }
     const description = new Label(wrapper, {
       caption: options.description
     });
@@ -41865,14 +41995,18 @@ var Form = class extends Control {
     };
     try {
       let imgUrl = url;
-      if (url.startsWith("ipfs://")) {
+      const regex = new RegExp("^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$");
+      if (regex.test(url)) {
+        imgUrl = IPFS_Gateway + imgUrl;
+      } else if (url.startsWith("ipfs://")) {
         imgUrl = imgUrl.replace("ipfs://", IPFS_Gateway);
       }
-      fetch(imgUrl).then((response) => response.arrayBuffer()).then((arrayBuffer) => {
+      fetch(imgUrl).then((response) => response.arrayBuffer()).then(async (arrayBuffer) => {
         const fileType = getImageTypeFromUrl(imgUrl);
         const blob = new Blob([arrayBuffer], { type: fileType });
         const fileName = `image-${Date.now()}.${getExtensionFromType(fileType)}`;
         const file = new File([blob], fileName, { type: fileType });
+        file.cid = await hashFile(file);
         control.fileList = [file];
         control.preview(imgUrl);
       });

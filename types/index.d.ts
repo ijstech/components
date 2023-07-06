@@ -4551,7 +4551,7 @@ declare module "packages/upload/src/upload" {
         toBase64(file: File): Promise<unknown>;
         preview(uri: string): void;
         clear(): void;
-        upload(endpoint: string): Promise<void>;
+        upload(): Promise<void>;
         addFiles(): void;
         addFolder(): void;
         protected init(): void;
@@ -4668,6 +4668,7 @@ declare module "packages/modal/src/modal" {
         private _closeOnBackdropClick;
         private _showBackdrop;
         private _wrapperPositionAt;
+        private insideClick;
         protected _onOpen: eventCallback;
         onClose: eventCallback;
         constructor(parent?: Control, options?: any);
@@ -4695,7 +4696,8 @@ declare module "packages/modal/src/modal" {
         private getWrapperFixCoords;
         private getWrapperAbsoluteCoords;
         protected _handleOnShow(event: Event): void;
-        _handleClick(event: Event): boolean;
+        private handleModalMouseDown;
+        private handleModalMouseUp;
         private updateModal;
         refresh(): void;
         get background(): Background;
@@ -5506,6 +5508,16 @@ declare module "packages/color/src/utils" {
     export function isHValid(value: string): boolean;
     export function isPercentValid(value: string): boolean;
     export function customRound(value: number, threshold: number): number;
+    export function hsvToHsl(h: number, s: number, v: number): {
+        h: number;
+        s: number;
+        l: number;
+    };
+    export function hslToHsv(h: number, s: number, l: number): {
+        h: number;
+        s: number;
+        v: number;
+    };
 }
 declare module "packages/color/src/style/color.css" { }
 declare module "packages/color/src/color" {
@@ -5542,7 +5554,9 @@ declare module "packages/color/src/color" {
         private currentH;
         private currentColor;
         private currentPalette;
+        private isMousePressed;
         onChanged: notifyEventCallback;
+        onClosed: () => void;
         constructor(parent?: Control, options?: any);
         get value(): string;
         set value(color: string);
@@ -5554,9 +5568,13 @@ declare module "packages/color/src/color" {
         set height(value: number | string);
         private generateUUID;
         protected init(): Promise<void>;
+        private onOpenPicker;
         private onClosePicker;
         private createInputGroup;
         private createPreview;
+        protected _handleMouseDown(event: MouseEvent): boolean;
+        private handleMouseMove;
+        private handleMouseUp;
         private createPicker;
         private activeEyeDropper;
         private onPaletteChanged;
@@ -5608,6 +5626,7 @@ declare module "packages/input/src/input" {
         onBlur?: actionCallback;
         onFocus?: actionCallback;
         onClearClick?: actionCallback;
+        onClosed?: () => void;
     }
     global {
         namespace JSX {
@@ -5633,6 +5652,7 @@ declare module "packages/input/src/input" {
         private inputElm;
         private _inputControl;
         private clearIconElm;
+        private _onClosed;
         onKeyDown: notifyEventCallback;
         onKeyUp: notifyEventCallback;
         onChanged: notifyEventCallback;
@@ -5666,6 +5686,8 @@ declare module "packages/input/src/input" {
         set resize(value: resizeType);
         set border(value: IBorder);
         get border(): Border;
+        set onClosed(callback: () => void);
+        get onClosed(): () => void;
         private _createInputElement;
         private _inputCallback;
         private _handleChange;
