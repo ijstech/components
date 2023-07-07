@@ -20188,6 +20188,8 @@ var Modal = class extends Container {
       closeOnBackdropClick: true,
       popupPlacement: "center"
     });
+    this.boundHandleModalMouseDown = this.handleModalMouseDown.bind(this);
+    this.boundHandleModalMouseUp = this.handleModalMouseUp.bind(this);
   }
   get visible() {
     var _a;
@@ -20207,8 +20209,8 @@ var Modal = class extends Container {
         }
         this.wrapperDiv.style.overflow = "hidden auto";
       }
-      document.addEventListener("mousedown", this.handleModalMouseDown.bind(this));
-      document.addEventListener("mouseup", this.handleModalMouseUp.bind(this));
+      document.addEventListener("mousedown", this.boundHandleModalMouseDown);
+      document.addEventListener("mouseup", this.boundHandleModalMouseUp);
     } else {
       this.wrapperDiv.classList.remove(visibleStyle);
       if (this.showBackdrop) {
@@ -20221,8 +20223,8 @@ var Modal = class extends Container {
         }
       }
       this.onClose && this.onClose(this);
-      document.removeEventListener("mousedown", this.handleModalMouseDown.bind(this));
-      document.removeEventListener("mouseup", this.handleModalMouseUp.bind(this));
+      document.removeEventListener("mousedown", this.boundHandleModalMouseDown);
+      document.removeEventListener("mouseup", this.boundHandleModalMouseUp);
     }
   }
   get onOpen() {
@@ -27715,8 +27717,8 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
               fill: "#ff0000",
               width: "1em",
               height: "1em",
-              margin: {
-                top: "0.75em"
+              marginBlock: {
+                top: "auto"
               }
             });
             btnDelete.classList.add("pointer");
@@ -40454,7 +40456,7 @@ var listVerticalLayoutStyle = style({
       flexDirection: "row",
       flexWrap: "wrap",
       $nest: {
-        "i-label:first-child": {
+        "i-hstack:first-child": {
           width: "25% !important"
         },
         "> :nth-child(2)": {
@@ -40500,6 +40502,16 @@ var cardHeader = style({
 var cardBody = style({
   padding: 20
 });
+var uploadStyle = style({
+  height: "auto",
+  width: "100%",
+  margin: 0,
+  $nest: {
+    "> .i-upload-wrapper": {
+      marginBottom: 0
+    }
+  }
+});
 
 // packages/form/src/form.ts
 var theme = theme_exports.ThemeVars;
@@ -40530,6 +40542,108 @@ var Form = class extends Control {
     super(parent, options);
     this._formRules = [];
     this._formControls = {};
+    this.validateOnValueChanged = async (parent, scope, caption) => {
+      var _a, _b;
+      const data = await this.getFormData();
+      const validationResult = this.validate(data, this.jsonSchema, { changing: false });
+      let showErrMsg = false;
+      let errMsg = "";
+      let _scope = scope;
+      const isArray = parent.getAttribute("role") === "list-item";
+      if (isArray) {
+        let parentIdx = [];
+        const getParentIdxs = async (_parent) => {
+          if (!_parent)
+            return;
+          const parentElm = _parent.closest('[role="array"]');
+          const arrayField = parentElm == null ? void 0 : parentElm.getAttribute("array-field");
+          if (arrayField) {
+            const parentList = parentElm.querySelectorAll(':scope > i-vstack > [role="list-item"]');
+            for (let i = 0; i < parentList.length; i++) {
+              if (parentList[i] === _parent) {
+                parentIdx.push(i + 1);
+                await getParentIdxs(parentElm.closest('[role="list-item"]'));
+                break;
+              }
+            }
+          }
+        };
+        await getParentIdxs(parent);
+        const fields = scope.split("/");
+        let scopes = [];
+        const idxLength = parentIdx.length;
+        const arrIdx = parentIdx.reverse();
+        for (let i = 0; i < fields.length; i++) {
+          const fld = fields[i];
+          if (fld === "items" && fields[i - 1] !== "properties")
+            continue;
+          const nextFld = fields[i + 1];
+          if (nextFld === "items") {
+            if (arrIdx.length !== idxLength) {
+              const idx = arrIdx.pop();
+              scopes.push(`${fld}_${idx}`);
+            } else {
+              arrIdx.pop();
+              scopes.push(fld);
+            }
+          } else {
+            scopes.push(fld);
+          }
+        }
+        _scope = scopes.join("/");
+        let currentElm = null;
+        let currentIdx = 0;
+        const arrElm = ((_a = parent.parentElement) == null ? void 0 : _a.querySelectorAll(`:scope > [role="list-item"]`)) || [];
+        for (let itemIdx = 0; itemIdx < arrElm.length; itemIdx++) {
+          const elm = arrElm[itemIdx];
+          if (elm === parent) {
+            currentIdx = itemIdx;
+            currentElm = elm.querySelector(`:scope > i-panel > i-vstack > [scope="${scope}"]`);
+            break;
+          }
+        }
+        const lbError = (_b = currentElm == null ? void 0 : currentElm.parentElement) == null ? void 0 : _b.querySelector(':scope > [role="error"]');
+        const err = validationResult.errors.find((f) => f.scope.includes(`${_scope}_${currentIdx + 1}`));
+        if (!lbError)
+          return;
+        if (err) {
+          lbError.caption = `${caption || ""} ${err.message}`;
+          lbError.visible = true;
+        } else {
+          lbError.caption = "";
+          lbError.visible = false;
+        }
+        return;
+      }
+      if ((validationResult == null ? void 0 : validationResult.valid) == false) {
+        const err = validationResult.errors.find((f) => f.scope === scope);
+        if (err) {
+          showErrMsg = true;
+          errMsg = err.message;
+        }
+      }
+      const control = this._formControls[_scope];
+      if (control) {
+        const { error, description } = control;
+        if (showErrMsg == true) {
+          if (description) {
+            description.visible = false;
+          }
+          if (error) {
+            error.caption = `${caption || ""} ${errMsg}`;
+            error.visible = true;
+          }
+        } else {
+          if (description && description.caption) {
+            description.visible = true;
+          }
+          if (error) {
+            error.caption = "";
+            error.visible = false;
+          }
+        }
+      }
+    };
   }
   init() {
     super.init();
@@ -40561,8 +40675,12 @@ var Form = class extends Control {
   clearFormData() {
     for (const scope in this._formControls) {
       const control = this._formControls[scope];
-      const input = control.input;
+      const { input, error } = control;
       if (input) {
+        if (error) {
+          error.caption = "";
+          error.visible = false;
+        }
         switch (input.tagName) {
           case "I-INPUT":
             input.value = "";
@@ -40590,18 +40708,23 @@ var Form = class extends Control {
       this.setData(scope, value);
     }
   }
-  setData(scope, value) {
-    var _a, _b, _c;
+  setData(scope, value, parentElm) {
+    var _a, _b, _c, _d;
+    let _control;
     if (typeof value === "object") {
       if (value instanceof Array) {
-        const grid = (_a = this._formControls[scope]) == null ? void 0 : _a.input;
+        if (parentElm) {
+          const currentFld = scope.split("/").pop();
+          _control = (_a = parentElm.querySelector(`[array-field="${currentFld}"]`)) == null ? void 0 : _a.lastChild;
+        }
+        const grid = _control || ((_b = this._formControls[scope]) == null ? void 0 : _b.input);
         if (grid) {
           grid.clearInnerHTML();
           for (const data of value) {
-            const schema = (_b = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _b.items;
+            const schema = (_c = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _c.items;
             this.renderCard(grid, scope, schema, {});
           }
-          const listItems = grid.querySelectorAll('[role="list-item"]');
+          const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
           if (listItems && listItems.length > 0) {
             for (let i = 0; i < listItems.length; i++) {
               const listItem = listItems[i];
@@ -40647,19 +40770,51 @@ var Form = class extends Control {
                     this.setDataUpload(columnData, field);
                   }
                 }
+                const subArr = listItem.querySelectorAll('[role="array"]');
+                for (const subItem of subArr) {
+                  if (subItem.closest('[role="list-item"]') === listItem) {
+                    const field = subItem.getAttribute("array-field") || "";
+                    this.setData(`${scope}/items/properties/${field}`, rowData[field], listItem);
+                  }
+                }
+                const subObj = listItem.querySelectorAll('[role="object"]');
+                for (const subItem of subObj) {
+                  if (subItem.closest('[role="list-item"]') === listItem) {
+                    const field = subItem.getAttribute("object-field") || "";
+                    this.setData(`${scope}/items/properties/${field}`, rowData[field], listItem);
+                  }
+                }
               }
             }
           }
         }
       } else {
+        if (parentElm) {
+          const currentFld = scope.split("/").pop();
+          _control = parentElm.querySelector(`[object-field="${currentFld}"]`);
+        }
         for (const key2 in value) {
           const data = value[key2];
           const currentScope = `${scope}/properties/${key2}`;
-          this.setData(currentScope, data);
+          this.setData(currentScope, data, _control || parentElm);
         }
       }
     } else {
-      const input = (_c = this._formControls[scope]) == null ? void 0 : _c.input;
+      if (parentElm) {
+        _control = parentElm.querySelector(`[scope="${scope}"]`);
+      }
+      const input = _control || ((_d = this._formControls[scope]) == null ? void 0 : _d.input);
+      if (!input && value === void 0) {
+        const currentFld = scope.split("/").pop();
+        const objElm = parentElm == null ? void 0 : parentElm.querySelector(`[object-field="${currentFld}"]`);
+        if (objElm) {
+          const _inputs = objElm.querySelectorAll(':scope > i-panel > i-vstack > [role="field"]');
+          for (const _input of _inputs) {
+            this.setData(`${scope}/properties/${_input.getAttribute("field")}`, void 0, objElm);
+          }
+        }
+        return;
+      }
       if (input) {
         switch (input.tagName) {
           case "I-INPUT":
@@ -40688,12 +40843,16 @@ var Form = class extends Control {
     const data = await this.getDataBySchema(this._jsonSchema);
     return data;
   }
-  async getDataBySchema(schema, scope = "#") {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+  async getDataBySchema(schema, scope = "#", parentElm) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
     if (!schema)
       return void 0;
+    let _control;
+    if (parentElm) {
+      _control = parentElm.querySelector(`[scope="${scope}"]`);
+    }
+    const control = _control || ((_a = this._formControls[scope]) == null ? void 0 : _a.input);
     if (schema.type === "string") {
-      const control = (_a = this._formControls[scope]) == null ? void 0 : _a.input;
       if (control) {
         switch (control.tagName) {
           case "I-INPUT":
@@ -40728,11 +40887,22 @@ var Form = class extends Control {
       } else
         return void 0;
     } else if (schema.type === "integer") {
-      const control = (_d = this._formControls[scope]) == null ? void 0 : _d.input;
       if (control) {
         switch (control.tagName) {
           case "I-INPUT":
             return control.value ? parseInt(control.value) : void 0;
+          case "I-COMBO-BOX":
+            return parseFloat((_d = control.value) == null ? void 0 : _d.value);
+          default:
+            return void 0;
+        }
+      } else
+        return void 0;
+    } else if (schema.type === "number") {
+      if (control) {
+        switch (control.tagName) {
+          case "I-INPUT":
+            return control.value ? parseFloat(control.value) : void 0;
           case "I-COMBO-BOX":
             return parseFloat((_e = control.value) == null ? void 0 : _e.value);
           default:
@@ -40740,21 +40910,7 @@ var Form = class extends Control {
         }
       } else
         return void 0;
-    } else if (schema.type === "number") {
-      const control = (_f = this._formControls[scope]) == null ? void 0 : _f.input;
-      if (control) {
-        switch (control.tagName) {
-          case "I-INPUT":
-            return control.value ? parseFloat(control.value) : void 0;
-          case "I-COMBO-BOX":
-            return parseFloat((_g = control.value) == null ? void 0 : _g.value);
-          default:
-            return void 0;
-        }
-      } else
-        return void 0;
     } else if (schema.type === "boolean") {
-      const control = (_h = this._formControls[scope]) == null ? void 0 : _h.input;
       if (control) {
         switch (control.tagName) {
           case "I-CHECKBOX":
@@ -40771,15 +40927,19 @@ var Form = class extends Control {
       for (const propertyName in properties) {
         const currentSchema = properties[propertyName];
         const currentScope = `${scope}/properties/${propertyName}`;
-        obj[propertyName] = await this.getDataBySchema(currentSchema, currentScope);
+        obj[propertyName] = await this.getDataBySchema(currentSchema, currentScope, parentElm);
       }
       return obj;
     } else if (schema.type === "array") {
-      const grid = (_i = this._formControls[scope]) == null ? void 0 : _i.input;
-      const listItems = grid == null ? void 0 : grid.querySelectorAll('[role="list-item"]');
+      if (parentElm) {
+        _control = (_f = parentElm.querySelector('[role="list-item"]')) == null ? void 0 : _f.parentElement;
+      }
+      const grid = _control || ((_g = this._formControls[scope]) == null ? void 0 : _g.input);
+      const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
       if (listItems && listItems.length > 0) {
         const list = [];
-        for (const listItem of listItems) {
+        for (let i = 0; i < listItems.length; i++) {
+          const listItem = listItems[i];
           const data = {};
           const fields = listItem.querySelectorAll('[role="field"]');
           if ((grid == null ? void 0 : grid.getAttribute("single-item")) === true) {
@@ -40797,7 +40957,7 @@ var Form = class extends Control {
               } else if (field.tagName === "I-DATEPICKER") {
                 list.push(field.value);
               } else if (field.tagName === "I-COMBO-BOX") {
-                list.push((_j = field.value) == null ? void 0 : _j.value);
+                list.push((_h = field.value) == null ? void 0 : _h.value);
               } else if (field.tagName === "I-CHECKBOX") {
                 list.push(field.checked);
               } else if (field.tagName === "I-RADIO-GROUP") {
@@ -40805,8 +40965,14 @@ var Form = class extends Control {
               }
             }
           } else {
+            const properties = ((_i = schema.items) == null ? void 0 : _i.properties) || {};
             if (fields && fields.length > 0) {
               for (const field of fields) {
+                if (field.closest('[role="list-item"]') !== listItem)
+                  continue;
+                const objectField = (_j = field.closest('[role="object"]')) == null ? void 0 : _j.getAttribute("object-field");
+                if (objectField && ((_k = properties[objectField]) == null ? void 0 : _k.type) === "object")
+                  continue;
                 const fieldName = field.getAttribute("field") || "";
                 if (field.tagName === "I-INPUT") {
                   const value = field.value;
@@ -40820,12 +40986,28 @@ var Form = class extends Control {
                 } else if (field.tagName === "I-DATEPICKER") {
                   data[fieldName] = field.value;
                 } else if (field.tagName === "I-COMBO-BOX") {
-                  data[fieldName] = (_k = field.value) == null ? void 0 : _k.value;
+                  data[fieldName] = (_l = field.value) == null ? void 0 : _l.value;
                 } else if (field.tagName === "I-CHECKBOX") {
                   data[fieldName] = field.checked;
                 } else if (field.tagName === "I-RADIO-GROUP") {
                   data[fieldName] = field.selectedValue;
                 }
+              }
+            }
+            const subArr = listItem.querySelectorAll('[role="array"]');
+            for (const subItem of subArr) {
+              if (subItem.closest('[role="list-item"]') === listItem) {
+                const field = subItem.getAttribute("array-field") || "";
+                const subData = await this.getDataBySchema(properties[field], `${scope}/items/properties/${field}`, subItem);
+                data[field] = subData;
+              }
+            }
+            const subObj = listItem.querySelectorAll('[role="object"]');
+            for (const subItem of subObj) {
+              if (subItem.closest('[role="list-item"]') === listItem) {
+                const field = subItem.getAttribute("object-field") || "";
+                const subData = await this.getDataBySchema(properties[field], `${scope}/items/properties/${field}`, subItem);
+                data[field] = subData;
               }
             }
             list.push(data);
@@ -40836,7 +41018,7 @@ var Form = class extends Control {
     }
   }
   renderForm() {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     this.clearInnerHTML();
     this._formRules = [];
     this._formControls = {};
@@ -40890,8 +41072,13 @@ var Form = class extends Control {
         }
       });
       btnConfirm.classList.add(buttonStyle);
-      if ((_d = this._formOptions.confirmButtonOptions) == null ? void 0 : _d.onClick)
-        btnConfirm.onClick = this._formOptions.confirmButtonOptions.onClick;
+      btnConfirm.onClick = async () => {
+        var _a2;
+        const data = await this.getFormData();
+        const validationResult = this.validate(data, this._jsonSchema, { changing: false });
+        if (validationResult.valid && ((_a2 = this._formOptions.confirmButtonOptions) == null ? void 0 : _a2.onClick))
+          this._formOptions.confirmButtonOptions.onClick();
+      };
       pnlButton.appendChild(btnConfirm);
     }
     this.appendChild(pnlButton);
@@ -40977,6 +41164,8 @@ var Form = class extends Control {
         columnsPerRow: this._formOptions.columnsPerRow || DEFAULT_OPTIONS.columnsPerRow
       });
       form.classList.add(formStyle);
+      form.setAttribute("role", "object");
+      form.setAttribute("object-field", currentField);
       for (const propertyName in properties) {
         let currentSchema = properties[propertyName];
         if (!(currentSchema == null ? void 0 : currentSchema.required) && arrRequired.includes(propertyName)) {
@@ -41013,9 +41202,7 @@ var Form = class extends Control {
             for (const fieldName in properties) {
               const property = properties[fieldName];
               const caption = property.title || this.convertFieldNameToLabel(fieldName);
-              new Label(header, {
-                caption
-              });
+              this.renderLabel(header, { caption, required: !!property.required });
             }
           }
         } else {
@@ -41242,14 +41429,25 @@ var Form = class extends Control {
   getDataSchemaByScope(scope) {
     const segments = scope.split("/");
     let obj = {};
+    let preObj = {};
+    let parentObj = {};
     for (const segment of segments) {
+      parentObj = preObj;
+      preObj = obj;
       if (segment === "#")
         obj = this._jsonSchema;
       else
         obj = obj[segment];
     }
+    const key2 = segments[segments.length - 1];
     if (obj == void 0)
       console.log("No corresponding scope:", scope);
+    else if (!obj.required && typeof parentObj.required === "object" && parentObj.required.includes(key2)) {
+      obj = {
+        ...obj,
+        required: true
+      };
+    }
     return [segments[segments.length - 1], obj];
   }
   renderGroup(parent, options) {
@@ -41257,7 +41455,14 @@ var Form = class extends Control {
     wrapper.classList.add(groupStyle);
     const header = new Panel(wrapper);
     header.classList.add(groupHeaderStyle);
-    const label = new Label(header, { caption: options.caption });
+    const hstack = new HStack(header, { gap: 2 });
+    new Label(hstack, { caption: options.caption });
+    if (options.required) {
+      new Label(hstack, {
+        caption: "*",
+        font: { color: "#ff0000" }
+      });
+    }
     const icon = new Icon(header, {
       name: "chevron-up"
     });
@@ -41270,6 +41475,38 @@ var Form = class extends Control {
     icon.classList.add(collapseBtnStyle);
     return { wrapper, body };
   }
+  renderLabel(parent, options, type = "caption") {
+    let label;
+    if (type === "caption") {
+      const hstack = new HStack(parent, {
+        gap: 2,
+        width: "100%"
+      });
+      label = new Label(hstack, {
+        caption: options == null ? void 0 : options.caption
+      });
+      if (options.required) {
+        new Label(hstack, {
+          caption: "*",
+          font: { color: "#ff0000" }
+        });
+      }
+    } else if (type === "description") {
+      label = new Label(parent, {
+        caption: options.description,
+        margin: { top: 2 },
+        visible: !!options.description
+      });
+    } else {
+      label = new Label(parent, {
+        visible: false,
+        font: { color: "#ff0000" },
+        margin: { top: 2 }
+      });
+      label.setAttribute("role", "error");
+    }
+    return label;
+  }
   renderInput(parent, scope, options) {
     const field = scope.substr(scope.lastIndexOf("/") + 1);
     const wrapper = new Panel(parent, {
@@ -41278,15 +41515,14 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const input = new Input(wrapper, {
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const input = new Input(vstack, {
       inputType: "text",
       width: "100%"
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
@@ -41294,14 +41530,14 @@ var Form = class extends Control {
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41311,15 +41547,14 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const input = new Input(wrapper, {
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const input = new Input(vstack, {
       inputType: "number",
       width: "100%"
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
@@ -41328,14 +41563,14 @@ var Form = class extends Control {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
     input.classList.add(inputStyle);
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41345,16 +41580,15 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const input = new Input(wrapper, {
+    const vstack = new VStack(wrapper);
+    const input = new Input(vstack, {
       inputType: "textarea",
       height: "unset",
       rows: 5
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
@@ -41363,14 +41597,14 @@ var Form = class extends Control {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
     input.classList.add(inputStyle);
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41380,14 +41614,13 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const input = new Input(wrapper, {
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const input = new Input(vstack, {
       inputType: "color"
     });
+    input.onClosed = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
@@ -41396,14 +41629,14 @@ var Form = class extends Control {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
     input.classList.add(inputStyle);
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41413,25 +41646,24 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const uploader = new Upload(wrapper, {});
-    uploader.classList.add(inputStyle);
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const uploader = new Upload(vstack);
+    uploader.classList.add(uploadStyle);
     uploader.setAttribute("role", "field");
     uploader.setAttribute("scope", scope);
     uploader.setAttribute("field", field);
     uploader.setAttribute("dataType", "string");
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    uploader.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input: uploader,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41444,31 +41676,30 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
+    const vstack = new VStack(wrapper, { gap: 4 });
     let dateTimeFormat = "";
     if (type === "date")
       dateTimeFormat = ((_a = this._formOptions.dateTimeFormat) == null ? void 0 : _a.date) || DEFAULT_OPTIONS.dateTimeFormat.date;
-    const input = new Datepicker(wrapper, {
+    const input = new Datepicker(vstack, {
       type,
       dateTimeFormat
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "string");
     input.classList.add(datePickerStyle);
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41478,17 +41709,16 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const input = new ComboBox(wrapper, {
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const input = new ComboBox(vstack, {
       items,
       icon: {
         name: "caret-down"
       }
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
@@ -41497,14 +41727,14 @@ var Form = class extends Control {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
     input.classList.add(comboBoxStyle);
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41514,26 +41744,25 @@ var Form = class extends Control {
     wrapper.classList.add(formGroupStyle);
     let label;
     if (!options.hideLabel) {
-      label = new Label(wrapper, {
-        caption: options == null ? void 0 : options.caption,
-        width: "100%"
-      });
+      label = this.renderLabel(wrapper, options, "caption");
     }
-    const input = new RadioGroup(wrapper, {
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const input = new RadioGroup(vstack, {
       radioItems: items
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
     input.setAttribute("dataType", "string");
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       label,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
@@ -41541,9 +41770,11 @@ var Form = class extends Control {
     const field = scope.substr(scope.lastIndexOf("/") + 1);
     const wrapper = new Panel(parent);
     wrapper.classList.add(formGroupStyle);
-    const input = new Checkbox(wrapper, {
+    const vstack = new VStack(wrapper, { gap: 4 });
+    const input = new Checkbox(vstack, {
       caption: options.caption
     });
+    input.onChanged = () => this.validateOnValueChanged(parent, scope, options == null ? void 0 : options.caption);
     input.setAttribute("role", "field");
     input.setAttribute("scope", scope);
     input.setAttribute("field", field);
@@ -41551,21 +41782,31 @@ var Form = class extends Control {
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
-    const description = new Label(wrapper, {
-      caption: options.description
-    });
+    const description = this.renderLabel(vstack, options, "description");
+    const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
       wrapper,
       input,
-      description
+      description,
+      error
     };
     return wrapper;
   }
   renderList(parent, scope, options, isVertical) {
     const wrapper = new Panel(parent);
+    const field = scope.split("/").pop() || "";
+    wrapper.setAttribute("array-field", field);
+    wrapper.setAttribute("role", "array");
     const header = new GridLayout(wrapper, { templateColumns: ["1fr", "50px"] });
     header.classList.add(listHeaderStyle);
-    new Label(header, { caption: options.caption });
+    const hstack = new HStack(header, { gap: 2 });
+    new Label(hstack, { caption: options.caption });
+    if (options.required) {
+      new Label(hstack, {
+        caption: "*",
+        font: { color: "#ff0000" }
+      });
+    }
     const btnAdd = new Icon(header, { name: "plus" });
     btnAdd.classList.add(listBtnAddStyle);
     const columnHeader = new VStack(wrapper);
@@ -41580,7 +41821,6 @@ var Form = class extends Control {
       wrapper,
       input: body
     };
-    console.log("formControls", this._formControls);
     return {
       wrapper,
       columnHeader,
@@ -41589,7 +41829,6 @@ var Form = class extends Control {
     };
   }
   renderCard(parent, scope, schema, options) {
-    var _a;
     if (!schema.type)
       return;
     const isVertical = parent.getAttribute("layout") === "Vertical";
@@ -41604,13 +41843,12 @@ var Form = class extends Control {
           templates.push("50px");
         }
         const row = new GridLayout(parent, {
-          templateRows: isVertical ? templates : void 0,
           templateColumns: isVertical ? void 0 : templates,
           gap: {
             column: 5,
-            row: 5
+            row: isVertical ? 8 : 5
           },
-          verticalAlignment: isVertical ? void 0 : "center",
+          verticalAlignment: isVertical ? void 0 : "start",
           alignItems: isVertical ? void 0 : "center",
           justifyContent: isVertical ? void 0 : "center"
         });
@@ -41643,7 +41881,6 @@ var Form = class extends Control {
           };
         }
       } else {
-        console.log("renderCard schema", schema, "scope", scope);
         const card = new Panel(parent);
         card.classList.add(cardStyle);
         card.setAttribute("role", "list-item");
@@ -41651,7 +41888,6 @@ var Form = class extends Control {
         headerStack.classList.add(cardHeader);
         const bodyStack = new VStack(card);
         bodyStack.classList.add(cardBody);
-        const badgeRowNum = new Label(headerStack, { caption: ((_a = parent.querySelectorAll('[role="list-item"]')) == null ? void 0 : _a.length) || 1 });
         const btnDelete = new Icon(headerStack, { name: "trash" });
         const btnCollapse = new Icon(headerStack, { name: "chevron-down" });
         btnCollapse.onClick = () => {
@@ -41663,7 +41899,7 @@ var Form = class extends Control {
           card.remove();
         };
         btnCollapse.classList.add(listItemBtnDelete);
-        this.renderFormByJSONSchema(bodyStack, schema, `${scope}/items/properties`, true, hasSubLevel);
+        this.renderFormByJSONSchema(bodyStack, schema, `${scope}/items`, true, hasSubLevel);
       }
     } else {
       const templateColumns = ["1fr", "50px"];

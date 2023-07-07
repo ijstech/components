@@ -4669,6 +4669,8 @@ declare module "packages/modal/src/modal" {
         private _showBackdrop;
         private _wrapperPositionAt;
         private insideClick;
+        private boundHandleModalMouseDown;
+        private boundHandleModalMouseUp;
         protected _onOpen: eventCallback;
         onClose: eventCallback;
         constructor(parent?: Control, options?: any);
@@ -11126,6 +11128,7 @@ declare module "packages/form/src/styles/index.css" {
     export const cardStyle: string;
     export const cardHeader: string;
     export const cardBody: string;
+    export const uploadStyle: string;
 }
 declare module "packages/form/src/types/jsonSchema4" {
     export type IJSONSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
@@ -11425,6 +11428,7 @@ declare module "packages/form/src/form" {
         private validateRule;
         private getDataSchemaByScope;
         private renderGroup;
+        private renderLabel;
         private renderInput;
         private renderNumberInput;
         private renderTextArea;
@@ -11436,6 +11440,7 @@ declare module "packages/form/src/form" {
         private renderCheckBox;
         private renderList;
         private renderCard;
+        private validateOnValueChanged;
         private checkPropertyChange;
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
