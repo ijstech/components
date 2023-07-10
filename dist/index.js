@@ -24294,6 +24294,7 @@ var ComboBox = class extends Control {
   }
   init() {
     if (!this.inputElm) {
+      this.calculatePositon = this.calculatePositon.bind(this);
       this.callback = this.getAttribute("parentCallback", true);
       const placeholder = this.getAttribute("placeholder", true);
       this.mode = this.getAttribute("mode", true);
@@ -24344,11 +24345,11 @@ var ComboBox = class extends Control {
           this.closeList();
       });
       super.init();
-      window.addEventListener("resize", this.calculatePositon.bind(this));
+      window.addEventListener("resize", this.calculatePositon);
     }
   }
   disconnectCallback() {
-    window.removeEventListener("resize", this.calculatePositon.bind(this));
+    window.removeEventListener("resize", this.calculatePositon);
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -25771,6 +25772,8 @@ var ColorPicker = class extends Control {
   async init() {
     if (!this.wrapperElm) {
       super.init();
+      this.handleMouseUp = this.handleMouseUp.bind(this);
+      this.handleMouseMove = this.handleMouseMove.bind(this);
       this.wrapperElm = this.createElement("div", this);
       this.wrapperElm.classList.add("i-color");
       this.captionSpanElm = this.createElement("span", this.wrapperElm);
@@ -25873,8 +25876,8 @@ var ColorPicker = class extends Control {
     }
   }
   onOpenPicker() {
-    document.addEventListener("mouseup", this.handleMouseUp.bind(this));
-    document.addEventListener("mousemove", this.handleMouseMove.bind(this));
+    document.addEventListener("mouseup", this.handleMouseUp);
+    document.addEventListener("mousemove", this.handleMouseMove);
   }
   onClosePicker() {
     if (this.onClosed)
@@ -25886,8 +25889,8 @@ var ColorPicker = class extends Control {
       child2.style.display = "none";
     }
     this.isMousePressed = false;
-    document.removeEventListener("mouseup", this.handleMouseUp.bind(this));
-    document.removeEventListener("mousemove", this.handleMouseMove.bind(this));
+    document.removeEventListener("mouseup", this.handleMouseUp);
+    document.removeEventListener("mousemove", this.handleMouseMove);
   }
   createInputGroup() {
     let wrapElm = this.pnlInput.querySelector(".color-input-group");
@@ -30483,10 +30486,13 @@ var DataGrid = class extends Control {
       let delta = Math.max(-1, Math.min(1, event.wheelDelta || -event.detail));
       this._handleMouseWheel(event, delta);
     });
-    this.edit.addEventListener("input", this._handleInput.bind(this));
-    this.edit.addEventListener("propertychange", this._handleInput.bind(this));
-    this.addEventListener("dragover", this._handleDragOver.bind(this));
-    this.addEventListener("drop", this._handleFileDrop.bind(this));
+    this._handleInput = this._handleInput.bind(this);
+    this._handleDragOver = this._handleDragOver.bind(this);
+    this._handleFileDrop = this._handleFileDrop.bind(this);
+    this.edit.addEventListener("input", this._handleInput);
+    this.edit.addEventListener("propertychange", this._handleInput);
+    this.addEventListener("dragover", this._handleDragOver);
+    this.addEventListener("drop", this._handleFileDrop);
     this._scrollBox.onscroll = this._handleScroll.bind(this);
     this.setCurrCell(this._fixedCol, this._fixedRow);
     this._updateLanguage();
@@ -30747,11 +30753,11 @@ var DataGrid = class extends Control {
       let editor = this.editor;
       this.editor = void 0;
       this.removeChild(editor);
-      this.edit.removeEventListener("propertychange", this._handleInput.bind(this));
-      this.edit.removeEventListener("input", this._handleInput.bind(this));
+      this.edit.removeEventListener("propertychange", this._handleInput);
+      this.edit.removeEventListener("input", this._handleInput);
       this.edit.value = "";
-      this.edit.addEventListener("propertychange", this._handleInput.bind(this));
-      this.edit.addEventListener("input", this._handleInput.bind(this));
+      this.edit.addEventListener("propertychange", this._handleInput);
+      this.edit.addEventListener("input", this._handleInput);
       this.focus();
       this.edit.focus();
       if (this.onEditModeChanged)
