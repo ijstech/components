@@ -20407,10 +20407,17 @@ var Modal = class extends Container {
         top = 0;
         left = parentCoords.width;
         break;
+      case "left":
+        let max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
+        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+        top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+        left = -this.modalDiv.offsetWidth - 8;
+        break;
     }
-    if (placement !== "bottomRight")
+    if (placement !== "bottomRight" && placement !== "left")
       left = left < 0 ? parentCoords.left : left;
-    top = top < 0 ? parentCoords.top : top;
+    if (placement !== "left")
+      top = top < 0 ? parentCoords.top : top;
     return { top, left };
   }
   _handleOnShow(event) {
@@ -40878,9 +40885,13 @@ var Form = class extends Control {
                 let cid = (_c = file.cid) == null ? void 0 : _c.cid;
                 if (!cid)
                   return void 0;
-                let result = await fetch(`https://ipfs.scom.dev/ipfs/${cid}`);
-                if (result.status !== 200) {
-                  await uploader.upload();
+                try {
+                  try {
+                    let result = await fetch(`https://ipfs.scom.dev/ipfs/${cid}`);
+                  } catch (e) {
+                    await uploader.upload();
+                  }
+                } catch (e) {
                 }
                 return cid;
               } else

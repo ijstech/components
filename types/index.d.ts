@@ -4639,7 +4639,7 @@ declare module "packages/modal/src/style/modal.css" {
 declare module "packages/modal/src/modal" {
     import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "@ijstech/components/base";
     import { Icon, IconElement } from "packages/icon/src/index";
-    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop';
+    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left';
     type eventCallback = (target: Control) => void;
     type ModalPositionType = "fixed" | "absolute";
     export interface ModalElement extends ControlElement {
