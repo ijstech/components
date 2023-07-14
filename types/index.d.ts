@@ -4630,6 +4630,7 @@ declare module "packages/label/src/index" {
     export { Label, LabelElement } from "packages/label/src/label";
 }
 declare module "packages/modal/src/style/modal.css" {
+    export const overlayStyle: string;
     export const wrapperStyle: string;
     export const noBackdropStyle: string;
     export const visibleStyle: string;
@@ -4663,6 +4664,7 @@ declare module "packages/modal/src/modal" {
         private wrapperDiv;
         private titleSpan;
         private modalDiv;
+        private overlayDiv;
         private _closeIcon;
         private _placement;
         private _closeOnBackdropClick;
@@ -11379,7 +11381,7 @@ declare module "packages/form/src/form" {
     global {
         namespace JSX {
             interface IntrinsicElements {
-                ["i-form"]: FormElement;
+                ['i-form']: FormElement;
             }
         }
     }
