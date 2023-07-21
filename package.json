@@ -1,7 +1,7 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.76",
-    "cid": "bafybeienuej5ykh63hditlmounixd3gnqsy5eqcqzwwywmjnkozcvrqy34",
+    "version": "0.1.77",
+    "cid": "bafybeigopw2pf7t7dg2kvhb4kli3w3cgrybyht6i6gc3gvitdvcyucokpq",
     "main": "dist/index.js",
     "types": "types/index.d.ts",    
     "license": "AGPL-3.0",

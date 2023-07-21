@@ -25259,52 +25259,13 @@ function stringToArr(color, isRgb) {
   return rgba;
 }
 function hslaToHex(h, s, l, a) {
-  s /= 100;
-  l /= 100;
-  let c = (1 - Math.abs(2 * l - 1)) * s;
-  let x = c * (1 - Math.abs(h / 60 % 2 - 1));
-  let m = l - c / 2;
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  if (0 <= h && h < 60) {
-    r = c;
-    g = x;
-    b = 0;
-  } else if (60 <= h && h < 120) {
-    r = x;
-    g = c;
-    b = 0;
-  } else if (120 <= h && h < 180) {
-    r = 0;
-    g = c;
-    b = x;
-  } else if (180 <= h && h < 240) {
-    r = 0;
-    g = x;
-    b = c;
-  } else if (240 <= h && h < 300) {
-    r = x;
-    g = 0;
-    b = c;
-  } else if (300 <= h && h < 360) {
-    r = c;
-    g = 0;
-    b = x;
-  }
-  r = Math.round((r + m) * 255).toString(16);
-  g = Math.round((g + m) * 255).toString(16);
-  b = Math.round((b + m) * 255).toString(16);
-  if (r.length == 1)
-    r = "0" + r;
-  if (g.length == 1)
-    g = "0" + g;
-  if (b.length == 1)
-    b = "0" + b;
-  let aValue = Math.round(255 * a).toString(16);
-  if (aValue.length === 1)
-    aValue = "0" + aValue;
-  return `#${r}${g}${b}${aValue}`;
+  const { r, g, b } = hslaToRgba(h, s, l);
+  return rgbToHex([
+    r.toString(),
+    g.toString(),
+    b.toString(),
+    a.toString()
+  ]);
 }
 function rgbToHex(rgba) {
   let r = (+rgba[0]).toString(16);
@@ -25498,15 +25459,6 @@ function isHValid(value) {
 function isPercentValid(value) {
   const regex = /^(\d\d?(\.\d+)?|\.\d+|100)%$/i;
   return regex.test(value);
-}
-function customRound(value, threshold) {
-  const roundedValue = Math.round(value);
-  const decimalPart = value % 1;
-  if (decimalPart > threshold) {
-    return roundedValue + 1;
-  } else {
-    return roundedValue;
-  }
 }
 function hsvToHsl(h, s, v) {
   const _h = h;
@@ -25723,15 +25675,6 @@ cssRule("i-color", {
 
 // packages/color/src/color.ts
 var Theme21 = theme_exports.ThemeVars;
-var palette = {
-  0: "rgb(255, 0, 0)",
-  17: "rgb(255, 255, 0)",
-  33: "rgb(0, 255, 0)",
-  50: "rgb(0, 255, 255)",
-  67: "rgb(0, 0, 255)",
-  83: "rgb(255, 0, 255)",
-  100: "rgb(255, 0, 0)"
-};
 var rgb = ["r", "g", "b", "a"];
 var hsl = ["h", "s", "l", "a"];
 var hex = ["hex"];
@@ -25755,7 +25698,7 @@ var ColorPicker = class extends Control {
       a: 1,
       hex: DEFAULT_COLOR
     };
-    this.currentPalette = "";
+    this.currentPalette = "rgb(255, 0, 0)";
   }
   get value() {
     var _a;
@@ -26004,14 +25947,14 @@ var ColorPicker = class extends Control {
       height: "100%"
     });
     const { h, s, l, a, r = 0, g = 0, b = 0 } = this.currentColor;
-    let paletteValue = h ? customRound(h / 360 * 100, 0.5) : 0;
-    paletteValue = paletteValue > 100 ? 100 : paletteValue;
+    let paletteValue = h || 0;
+    paletteValue = paletteValue > 360 ? 360 : paletteValue;
     colorSelectedWrapper.appendChild(this.colorSelected);
     this.colorPalette = await Range.create({
       width: "100%",
       height: 10,
       min: 0,
-      max: 100,
+      max: 360,
       step: 1,
       value: paletteValue
     });
@@ -26028,7 +25971,7 @@ var ColorPicker = class extends Control {
       min: 0,
       max: 1,
       value: a != null ? a : 1,
-      step: 0.1
+      step: 0.01
     });
     this.colorSlider.onChanged = this.onSliderChanged.bind(this);
     this.colorSlider.classList.add("custom-range", "color-slider");
@@ -26089,7 +26032,7 @@ var ColorPicker = class extends Control {
       if (this.mdColorPicker)
         this.mdColorPicker.style.setProperty("--opacity-color", `linear-gradient(to right, rgba(${rgbArr[0]}, ${rgbArr[1]}, ${rgbArr[2]}, 0) 0%, ${this.currentPalette} 100%)`);
       const { s, l } = this.currentColor;
-      this.updateColor(Math.round(this.currentH / 100 * 360), s, l);
+      this.updateColor(this.currentH, s, l);
     }
   }
   onSliderChanged() {
@@ -26132,7 +26075,7 @@ var ColorPicker = class extends Control {
     }
     const paletteWidth = target.offsetWidth;
     const paletteHeight = target.offsetHeight;
-    const hue = Math.round(this.currentH / 100 * 360);
+    const hue = this.currentH;
     const saturation = x * 100 / paletteWidth | 0;
     const value = 100 - y * 100 / paletteHeight | 0;
     const hsl2 = hsvToHsl(hue, saturation, value);
@@ -26178,8 +26121,8 @@ var ColorPicker = class extends Control {
   }
   initUI() {
     const { h, a } = this.currentColor || {};
-    let paletteValue = h ? customRound(h / 360 * 100, 0.5) : 0;
-    paletteValue = paletteValue > 100 ? 100 : paletteValue;
+    let paletteValue = h || 0;
+    paletteValue = paletteValue > 360 ? 360 : paletteValue;
     this.setPalette(paletteValue);
     if (this.colorPalette)
       this.colorPalette.value = paletteValue;
@@ -26190,34 +26133,9 @@ var ColorPicker = class extends Control {
     }
   }
   setPalette(paletteValue) {
-    const keys = Object.keys(palette);
     this.currentH = paletteValue;
-    if (paletteValue === 100) {
-      this.currentPalette = palette[paletteValue];
-      return;
-    }
-    for (let i = 0; i < keys.length; i++) {
-      const value = +keys[i];
-      const nextValue = +keys[i + 1];
-      if (paletteValue >= value && paletteValue < nextValue) {
-        const colorArr = stringToArr(palette[value], true);
-        const nextColorArr = stringToArr(palette[nextValue], true);
-        const percent = (paletteValue - value) / (nextValue - value);
-        if (percent === 0 || percent === 1) {
-          this.currentPalette = palette[value];
-        } else {
-          const diffPos = colorArr.findIndex((val, index) => val !== nextColorArr[index]);
-          if (diffPos >= 0) {
-            const percent2 = (paletteValue - value) / (nextValue - value);
-            colorArr[diffPos] = `${percent2 * 255}`;
-            this.currentPalette = `rgb(${colorArr[0]}, ${colorArr[1]}, ${colorArr[2]})`;
-          } else {
-            this.currentPalette = palette[0];
-          }
-        }
-        break;
-      }
-    }
+    const { r, g, b } = hslaToRgba(paletteValue, 100, 50);
+    this.currentPalette = `rgb(${r}, ${g}, ${b})`;
   }
   onInputChanged(event, item) {
     const value = event.target.value;
@@ -26276,8 +26194,9 @@ var ColorPicker = class extends Control {
       const { r: r2, g: g2, b: b2 } = hslaToRgba(h, s, l);
       currentColor = { ...currentColor, r: r2, g: g2, b: b2 };
     }
+    this.currentColor = { ...currentColor };
     this.updateHex();
-    this.updateCurrentColor({ ...currentColor }, true);
+    this.updateCurrentColor(void 0, true);
     this.updateIconPointer();
   }
   static async create(options, parent) {
@@ -32737,224 +32656,15 @@ DataGrid = __decorateClass([
   customElements2("i-data-grid")
 ], DataGrid);
 
-// packages/markdown/src/style/markdown.css.ts
-var Theme25 = theme_exports.ThemeVars;
-cssRule("i-markdown", {
-  display: "inline-block",
-  color: Theme25.text.primary,
-  fontFamily: Theme25.typography.fontFamily,
-  fontSize: Theme25.typography.fontSize,
-  $nest: {
-    h1: {
-      fontSize: "48px",
-      fontWeight: "900",
-      marginBottom: "16px",
-      marginTop: "1.5em",
-      $nest: {
-        "@media (max-width: 700px)": {
-          fontSize: "24px"
-        }
-      }
-    },
-    h2: {
-      fontSize: "24px",
-      lineHeight: "1.5",
-      fontWeight: "600",
-      marginBottom: "16px",
-      marginTop: "1.5em",
-      $nest: {
-        "@media (max-width: 700px)": {
-          fontSize: "20px"
-        }
-      }
-    },
-    h3: {
-      fontSize: "20px",
-      lineHeight: "24px",
-      fontWeight: "600",
-      marginBottom: "16px",
-      marginTop: "1.5em",
-      $nest: {
-        "@media (max-width: 700px)": {
-          fontSize: "16px"
-        }
-      }
-    },
-    h4: {
-      fontSize: "16px",
-      fontWeight: "600",
-      marginBottom: "16px",
-      marginTop: "1.5em"
-    },
-    h5: {
-      fontSize: "14px",
-      fontWeight: "600",
-      marginBottom: "16px",
-      marginTop: "1.5em"
-    },
-    h6: {
-      fontSize: "13.6px",
-      fontWeight: "600",
-      marginBottom: "16px",
-      marginTop: "1.5em"
-    },
-    p: {
-      display: "block",
-      lineHeight: "150%",
-      marginBottom: "1em",
-      marginTop: "0",
-      fontSize: "15px"
-    },
-    "p:has(img)": {
-      display: "flex",
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: "16px",
-      $nest: {
-        "@media (max-width: 700px)": {
-          flexWrap: "wrap"
-        }
-      }
-    },
-    ".img-caption": {
-      display: "block",
-      textAlign: "center",
-      color: "rgba(136,153,168,1.00)",
-      fontSize: 14,
-      fontWeight: 400,
-      lineHeight: "18px",
-      paddingTop: "6px"
-    },
-    "p img": {
-      width: "100%",
-      borderRadius: "5px"
-    },
-    "p a": {
-      display: "contents"
-    },
-    "table": {
-      borderSpacing: "0",
-      border: "1px solid #393939",
-      width: "100%",
-      marginBottom: "20px",
-      $nest: {
-        "thead": {
-          background: "#FFF"
-        },
-        "th": {
-          padding: "10px"
-        },
-        "td": {
-          padding: "10px",
-          borderTop: "1px solid #393939"
-        },
-        "tbody": {
-          $nest: {
-            "tr:nth-child(odd)": {
-              backgroundColor: "#EEE"
-            },
-            "tr:nth-child(even)": {
-              backgroundColor: "#FFF"
-            }
-          }
-        }
-      }
-    },
-    strong: {
-      fontWeight: "600"
-    },
-    blockquote: {
-      background: "#e3e3ff",
-      borderLeft: "0.25em solid #55f",
-      display: "block",
-      padding: "15px 30px 15px 15px",
-      color: "#6a737d",
-      fontSize: "16px",
-      margin: "0 0 16px",
-      $nest: {
-        p: {
-          marginBottom: "0"
-        }
-      }
-    },
-    hr: {
-      border: "1px solid #dfe2e5",
-      boxSizing: "content-box",
-      margin: "1.5em 0",
-      overflow: "hidden",
-      padding: "0"
-    },
-    ol: {
-      marginBottom: "1em",
-      marginTop: "0",
-      paddingLeft: "2em",
-      $nest: {
-        li: {
-          fontSize: "16px"
-        },
-        "li+li": {
-          marginTop: "0.5em"
-        }
-      }
-    },
-    ul: {
-      marginBottom: "1em",
-      marginTop: "0",
-      paddingLeft: "2em",
-      $nest: {
-        li: {
-          fontSize: "16px"
-        },
-        "li+li": {
-          marginTop: "0.5em"
-        }
-      }
-    },
-    "ol ol, i-markdown ul ul, i-markdown ol ul, i-markdown ul ol": {
-      marginTop: "0.5em"
-    },
-    "code, i-markdown pre code": {
-      borderRadius: "3px",
-      background: "#ebeff3",
-      overflowX: "scroll",
-      border: "0",
-      display: "inline",
-      margin: "0",
-      overflow: "visible",
-      padding: "0",
-      whiteSpace: "pre",
-      wordBreak: "normal",
-      wordWrap: "normal"
-    },
-    "a, i-markdown a:hover": {
-      color: "#55f",
-      textDecoration: "none"
-    }
-  }
-});
-
 // packages/markdown/src/markdown.ts
 var libs = [`${LibPath}lib/marked/marked.umd.js`];
 var Markdown = class extends Control {
-  constructor() {
-    super();
+  constructor(parent, options) {
+    super(parent, options);
     this.gitbookProcess = true;
   }
   getRenderer() {
-    const renderer = {
-      image(href, title, text) {
-        if (href === null) {
-          return text;
-        }
-        var out = '<span><img style="width: 100%;" src="' + href + '" alt="' + text + '"';
-        if (title) {
-          out += ' title="' + title + '"';
-        }
-        out += '><span class="img-caption">' + text + "</span></span>";
-        return out;
-      }
-    };
+    const renderer = {};
     return renderer;
   }
   async load(text) {
@@ -32985,6 +32695,7 @@ var Markdown = class extends Control {
   }
   init() {
     super.init();
+    this.classList.add("toastui-editor-contents");
   }
 };
 Markdown = __decorateClass([
@@ -33004,12 +32715,12 @@ RequireJS.config({
     "tui-color-picker": `${LibPath}lib/tui-editor/tui-color-picker.min.js`
   }
 });
-var libs2 = [`${LibPath}lib/tui-editor/toastui-editor-all.min.js`];
 var libPlugins = [
-  { name: "colorSyntax", path: [`${LibPath}lib/tui-editor/toastui-editor-plugin-color-syntax.min.js`] },
-  { name: "codeSyntaxHighlight", path: [`${LibPath}lib/tui-editor/toastui-editor-plugin-code-syntax-highlight-all.min.js`] },
-  { name: "tableMergedCell", path: [`${LibPath}lib/tui-editor/toastui-editor-plugin-table-merged-cell.min.js`] },
-  { name: "uml", path: [`${LibPath}lib/tui-editor/toastui-editor-plugin-uml.min.js`] }
+  `${LibPath}lib/tui-editor/toastui-editor-all.min.js`,
+  `${LibPath}lib/tui-editor/toastui-editor-plugin-color-syntax.min.js`,
+  `${LibPath}lib/tui-editor/toastui-editor-plugin-code-syntax-highlight-all.min.js`,
+  `${LibPath}lib/tui-editor/toastui-editor-plugin-table-merged-cell.min.js`,
+  `${LibPath}lib/tui-editor/toastui-editor-plugin-uml.min.js`
 ];
 var editorCSS = [
   { name: "toastui-editor", href: `${LibPath}lib/tui-editor/toastui-editor.min.css` },
@@ -33018,7 +32729,7 @@ var editorCSS = [
 var MarkdownEditor = class extends Control {
   constructor(parent, options) {
     super(parent, options);
-    this.editorPlugins = {};
+    this.editorPlugins = [];
     this._theme = "light";
     this._mode = "markdown";
     this._previewStyle = "vertical";
@@ -33076,9 +32787,10 @@ var MarkdownEditor = class extends Control {
   }
   set value(value) {
     this._value = value;
-    const targetObj = this.viewer ? this.viewerObj : this.editorObj;
-    if (targetObj) {
-      targetObj.setMarkdown(value);
+    if (this.viewer) {
+      this.mdViewer.load(value);
+    } else if (!this.viewer && this.editorObj) {
+      this.editorObj.setMarkdown(value);
     }
   }
   get height() {
@@ -33124,24 +32836,16 @@ var MarkdownEditor = class extends Control {
     await self.ready();
     return self;
   }
-  async loadLib() {
-    return new Promise((resolve, reject) => {
-      RequireJS.require(libs2, async (marked) => {
-        resolve(marked);
-      });
-    });
-  }
   async loadPlugin(plugin) {
     return new Promise((resolve, reject) => {
-      RequireJS.require(plugin, async (marked) => {
-        resolve(marked);
+      RequireJS.require(plugin, async (editor, colorSyntax, codeSyntaxHighlight, tableMergedCell, uml) => {
+        this.editor = editor;
+        resolve([colorSyntax, codeSyntaxHighlight, tableMergedCell, uml]);
       });
     });
   }
   async loadPlugins() {
-    for (const _plugin of libPlugins) {
-      this.editorPlugins[_plugin.name] = await this.loadPlugin(_plugin.path);
-    }
+    this.editorPlugins = await this.loadPlugin(libPlugins);
   }
   addCSS(href, name) {
     const css = document.head.querySelector(`[name="${name}"]`);
@@ -33158,15 +32862,16 @@ var MarkdownEditor = class extends Control {
     for (const item of editorCSS) {
       this.addCSS(item.href, item.name);
     }
-    this.editor = await this.loadLib();
-    await this.loadPlugins();
+    if (!this.viewer) {
+      await this.loadPlugins();
+    }
     try {
       this.renderEditor();
     } catch (e) {
     }
   }
   renderEditor(valueChanged) {
-    const editorPlugins = Object.values(this.editorPlugins);
+    const editorPlugins = [...this.editorPlugins].filter(Boolean);
     if (this.viewer) {
       if (this.editorObj) {
         this.editorObj.destroy();
@@ -33177,20 +32882,11 @@ var MarkdownEditor = class extends Control {
         this.elm.innerHTML = "";
         this.elm.style.height = "auto";
       }
-      this.viewerObj = this.editor.factory({
-        el: this.elm,
-        viewer: true,
-        initialValue: this.value,
-        theme: this.theme,
-        plugins: [...editorPlugins, ...this.plugins],
-        widgetRules: this.widgetRules
-      });
+      this.mdViewer = new Markdown();
+      this.elm.appendChild(this.mdViewer);
       if (this.theme === "light")
         this.elm.classList.remove("toastui-editor-dark");
     } else {
-      if (this.viewerObj) {
-        this.viewerObj.destroy();
-      }
       if (!this.elm) {
         this.elm = this.createElement("div", this);
       } else {
@@ -33225,9 +32921,8 @@ var MarkdownEditor = class extends Control {
     return null;
   }
   getViewerElm() {
-    if (this.viewerObj && this.viewer) {
-      return this.viewerObj;
-    }
+    if (this.mdViewer)
+      return this.mdViewer;
     return null;
   }
   async init() {
@@ -33280,7 +32975,7 @@ MarkdownEditor = __decorateClass([
 ], MarkdownEditor);
 
 // packages/menu/src/style/menu.css.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme25 = theme_exports.ThemeVars;
 cssRule("i-context-menu", {
   display: "none"
 });
@@ -33298,8 +32993,8 @@ var fadeInRight = keyframes({
   }
 });
 var menuStyle = style({
-  fontFamily: Theme26.typography.fontFamily,
-  fontSize: Theme26.typography.fontSize,
+  fontFamily: Theme25.typography.fontFamily,
+  fontSize: Theme25.typography.fontSize,
   position: "relative",
   overflow: "hidden",
   $nest: {
@@ -33329,7 +33024,7 @@ var menuStyle = style({
         ".menu-item-arrow-active": {
           transform: "rotate(180deg)",
           transition: "transform 0.25s",
-          fill: `${Theme26.text.primary} !important`
+          fill: `${Theme25.text.primary} !important`
         },
         "li": {
           position: "relative",
@@ -33337,7 +33032,7 @@ var menuStyle = style({
             "&:hover": {
               $nest: {
                 ".menu-item": {
-                  color: Theme26.colors.primary.main
+                  color: Theme25.colors.primary.main
                 },
                 ".menu-item-arrow-active": {
                   fill: "currentColor !important"
@@ -33353,7 +33048,7 @@ var menuStyle = style({
 var meunItemStyle = style({
   position: "relative",
   display: "block",
-  color: Theme26.text.secondary,
+  color: Theme25.text.secondary,
   $nest: {
     ".menu-item": {
       position: "relative",
@@ -33373,8 +33068,8 @@ var meunItemStyle = style({
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme26.action.hover,
-      color: Theme26.text.primary
+      background: Theme25.action.hover,
+      color: Theme25.text.primary
     },
     ".menu-item.menu-active > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -34138,13 +33833,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme27.typography.fontFamily,
-  fontSize: Theme27.typography.fontSize,
+  fontFamily: Theme26.typography.fontFamily,
+  fontSize: Theme26.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -34178,7 +33873,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme27.text.primary,
+      color: Theme26.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
@@ -34212,7 +33907,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme27.divider}`,
+          borderLeft: `1px solid ${Theme26.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -34221,12 +33916,12 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme27.action.selected,
-          border: `1px solid ${Theme27.colors.info.dark}`,
-          color: Theme27.text.primary
+          backgroundColor: Theme26.action.selected,
+          border: `1px solid ${Theme26.colors.info.dark}`,
+          color: Theme26.text.primary
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme27.action.hover,
+          backgroundColor: Theme26.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -34254,8 +33949,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme27.colors.primary.main,
-          color: Theme27.colors.primary.contrastText,
+          background: Theme26.colors.primary.main,
+          color: Theme26.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -34296,7 +33991,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme27.divider}`,
+          borderLeft: `1px solid ${Theme26.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -34312,15 +34007,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme27.divider}`,
-          borderLeft: `1px solid ${Theme27.divider}`,
+          borderBottom: `1px solid ${Theme26.divider}`,
+          borderLeft: `1px solid ${Theme26.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme27.divider}`,
-          borderRight: `0.5px solid ${Theme27.divider}`,
+          borderTop: `1px solid ${Theme26.divider}`,
+          borderRight: `0.5px solid ${Theme26.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -34339,7 +34034,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme27.colors.primary.main}`
+          borderBottom: `2px solid ${Theme26.colors.primary.main}`
         }
       }
     },
@@ -34366,11 +34061,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme28.text.secondary,
+  fill: Theme27.text.secondary,
   width: 12,
   height: 12
 };
@@ -34844,11 +34539,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme29.typography.fontFamily,
-  fontSize: Theme29.typography.fontSize,
+  fontFamily: Theme28.typography.fontFamily,
+  fontSize: Theme28.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -35359,16 +35054,16 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme30.typography.fontFamily,
-  fontSize: Theme30.typography.fontSize,
+  fontFamily: Theme29.typography.fontFamily,
+  fontSize: Theme29.typography.fontSize,
   lineHeight: "25px",
-  color: Theme30.text.primary,
+  color: Theme29.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -35376,7 +35071,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme30.text.primary,
+      color: Theme29.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -35392,7 +35087,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme30.text.disabled,
+      color: Theme29.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -35639,7 +35334,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme30 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -35652,9 +35347,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme31.typography.fontFamily,
-  fontSize: Theme31.typography.fontSize,
-  color: Theme31.text.primary,
+  fontFamily: Theme30.typography.fontFamily,
+  fontSize: Theme30.typography.fontSize,
+  color: Theme30.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -35677,13 +35372,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.error.light
+          backgroundColor: Theme30.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.error.light
+          backgroundColor: Theme30.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme31.colors.error.light
+          borderColor: Theme30.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -35691,13 +35386,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.success.light
+          backgroundColor: Theme30.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.success.light
+          backgroundColor: Theme30.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme31.colors.success.light
+          borderColor: Theme30.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -35705,13 +35400,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.warning.light
+          backgroundColor: Theme30.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.warning.light
+          backgroundColor: Theme30.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme31.colors.warning.light
+          borderColor: Theme30.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -35719,14 +35414,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.primary.light
+          backgroundColor: Theme30.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.primary.light
+          backgroundColor: Theme30.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme31.colors.primary.light
+          borderColor: Theme30.colors.primary.light
         }
       }
     },
@@ -35748,11 +35443,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme31.divider
+              backgroundColor: Theme30.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme31.divider
+              backgroundColor: Theme30.divider
             }
           }
         },
@@ -35777,7 +35472,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme31.divider,
+          borderColor: Theme30.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -35833,7 +35528,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -35877,7 +35572,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme32.colors.primary.main;
+    return this._strokeColor || Theme31.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -36012,11 +35707,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme32.colors.success.main;
+      ret = Theme31.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme32.divider;
+    return Theme31.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -36104,11 +35799,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme33.typography.fontFamily,
-  fontSize: Theme33.typography.fontSize,
-  color: Theme33.text.primary,
+  fontFamily: Theme32.typography.fontFamily,
+  fontSize: Theme32.typography.fontSize,
+  color: Theme32.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -36130,26 +35825,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme33.divider}`
+      borderBottom: `1px solid ${Theme32.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme33.divider}`,
+      borderBottom: `1px solid ${Theme32.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme33.background.paper,
-      color: Theme33.text.secondary
+      background: Theme32.background.paper,
+      color: Theme32.text.secondary
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme33.divider}`,
-          borderLeft: `1px solid ${Theme33.divider}`,
+          borderTop: `1px solid ${Theme32.divider}`,
+          borderLeft: `1px solid ${Theme32.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme33.divider} !important`,
-          borderBottom: `1px solid ${Theme33.divider}`
+          borderRight: `1px solid ${Theme32.divider} !important`,
+          borderBottom: `1px solid ${Theme32.divider}`
         }
       }
     },
@@ -36170,7 +35865,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme33.colors.primary.main
+          fill: Theme32.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -36199,12 +35894,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme33.text.primary
+          fill: Theme32.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme33.divider}`
+      borderRight: `1px solid ${Theme32.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -36275,7 +35970,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme34 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -36330,7 +36025,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme34.text.primary
+        fill: Theme33.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -36338,7 +36033,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme34.text.primary
+        fill: Theme33.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -36791,7 +36486,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme35 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -36812,7 +36507,7 @@ cssRule("i-carousel-slider", {
     ".slider-arrow": {
       width: 28,
       height: 28,
-      fill: Theme35.colors.primary.main,
+      fill: Theme34.colors.primary.main,
       cursor: "pointer"
     },
     ".slider-arrow-hidden": {
@@ -36845,7 +36540,7 @@ cssRule("i-carousel-slider", {
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme35.colors.primary.main}`,
+          border: `2px solid ${Theme34.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -36856,7 +36551,7 @@ cssRule("i-carousel-slider", {
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme35.colors.primary.main
+          backgroundColor: Theme34.colors.primary.main
         }
       }
     }
@@ -37362,7 +37057,7 @@ Video = __decorateClass([
 ], Video);
 
 // packages/schema-designer/src/uiSchema.ts
-var Theme36 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 var dataUITypes = [
   { label: "VerticalLayout", value: "VerticalLayout" },
   { label: "HorizontalLayout", value: "HorizontalLayout" },
@@ -37616,7 +37311,7 @@ var SchemaDesignerUI = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme36.colors.primary.contrastText
+      fill: Theme35.colors.primary.contrastText
     }));
     btnAddElement.onClick = () => {
       this.createUISchema(pnlUIElements, currentLayout, true);
@@ -37705,7 +37400,7 @@ var SchemaDesignerUI = class extends Container {
           visible: false,
           width: 12,
           height: 12,
-          fill: Theme36.colors.secondary.main,
+          fill: Theme35.colors.secondary.main,
           tooltip: {
             content: "Remove this property",
             trigger: "hover"
@@ -37760,7 +37455,7 @@ var SchemaDesignerUI = class extends Container {
               visible: false,
               width: 12,
               height: 12,
-              fill: Theme36.colors.secondary.main,
+              fill: Theme35.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -37862,13 +37557,13 @@ var SchemaDesignerUI = class extends Container {
                   display: "flex",
                   padding: { top: 8, bottom: 8, left: 16, right: 16 },
                   border: { radius: 8 },
-                  background: { color: Theme36.action.selected }
+                  background: { color: Theme35.action.selected }
                 });
                 const iconTimesEnum = new Icon(pnlEnum, {
                   name: "times",
                   width: 14,
                   height: 14,
-                  fill: Theme36.colors.secondary.main,
+                  fill: Theme35.colors.secondary.main,
                   position: "absolute",
                   right: 2,
                   top: 2
@@ -37900,7 +37595,7 @@ var SchemaDesignerUI = class extends Container {
               position: "absolute",
               top: 5,
               right: 5,
-              fill: Theme36.colors.secondary.main,
+              fill: Theme35.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -38108,7 +37803,7 @@ var SchemaDesignerUI = class extends Container {
         name: "plus",
         width: "1em",
         height: "1em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme35.colors.primary.contrastText
       }));
       const pnlFormDetail = new Panel(void 0, {
         padding: { top: 10, bottom: 10, left: 10, right: 10 }
@@ -38319,7 +38014,7 @@ var SchemaDesignerUI = class extends Container {
         name: "times-circle",
         width: 12,
         height: 12,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme35.colors.secondary.main,
         visible: false
       });
       iconClear.onClick = () => {
@@ -38413,7 +38108,7 @@ var SchemaDesignerUI = class extends Container {
     if (isChildren) {
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme36.colors.secondary.main} !important` },
+        background: { color: `${Theme35.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         height: 28,
@@ -38423,7 +38118,7 @@ var SchemaDesignerUI = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme35.colors.primary.contrastText
       }));
       btnDelete.onClick = () => {
         deleteElement();
@@ -38437,7 +38132,7 @@ var SchemaDesignerUI = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme35.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -38510,12 +38205,12 @@ SchemaDesignerUI = __decorateClass([
 ], SchemaDesignerUI);
 
 // packages/schema-designer/src/style/schema-designer.css.ts
-var Theme37 = theme_exports.ThemeVars;
+var Theme36 = theme_exports.ThemeVars;
 var scrollBar = {
   "&::-webkit-scrollbar-track": {
     borderRadius: "12px",
     border: "1px solid transparent",
-    background: Theme37.action.hover
+    background: Theme36.action.hover
   },
   "&::-webkit-scrollbar": {
     width: "8px",
@@ -38523,7 +38218,7 @@ var scrollBar = {
   },
   "&::-webkit-scrollbar-thumb": {
     borderRadius: "12px",
-    background: Theme37.action.active
+    background: Theme36.action.active
   }
 };
 cssRule("i-schema-designer", {
@@ -38549,12 +38244,12 @@ cssRule("i-schema-designer", {
           height: "30px !important",
           width: "100% !important",
           border: 0,
-          borderBottom: `0.5px solid ${Theme37.divider}`,
+          borderBottom: `0.5px solid ${Theme36.divider}`,
           background: "transparent"
         },
         "textarea": {
           height: "100% !important",
-          border: `0.5px solid ${Theme37.divider}`,
+          border: `0.5px solid ${Theme36.divider}`,
           borderRadius: "1em",
           background: "transparent",
           $nest: scrollBar
@@ -38572,7 +38267,7 @@ cssRule("i-schema-designer", {
           background: "transparent !important",
           height: "30px !important",
           border: "0 !important",
-          borderBottom: `0.5px solid ${Theme37.divider} !important`
+          borderBottom: `0.5px solid ${Theme36.divider} !important`
         },
         ".selection": {
           background: "transparent",
@@ -38581,7 +38276,7 @@ cssRule("i-schema-designer", {
         },
         "span.icon-btn": {
           border: "0",
-          borderBottom: `0.5px solid ${Theme37.divider}`,
+          borderBottom: `0.5px solid ${Theme36.divider}`,
           borderRadius: "0",
           height: "30px !important",
           width: "32px !important",
@@ -38608,8 +38303,8 @@ cssRule("i-schema-designer", {
       }
     },
     "i-button": {
-      background: Theme37.colors.primary.main,
-      color: Theme37.colors.primary.contrastText
+      background: Theme36.colors.primary.main,
+      color: Theme36.colors.primary.contrastText
     },
     ".cs-wrapper--header": {
       padding: "5px 10px",
@@ -38622,12 +38317,12 @@ cssRule("i-schema-designer", {
     ".cs-prefix--items": {
       $nest: {
         ".cs-box--shadow": {
-          boxShadow: Theme37.shadows[2]
+          boxShadow: Theme36.shadows[2]
         }
       }
     },
     ".cs-box--enum": {
-      boxShadow: Theme37.shadows[2],
+      boxShadow: Theme36.shadows[2],
       padding: "8px 16px",
       borderRadius: 8,
       minWidth: 100,
@@ -38662,7 +38357,7 @@ cssRule("i-schema-designer", {
 });
 
 // packages/schema-designer/src/schemaDesigner.ts
-var Theme38 = theme_exports.ThemeVars;
+var Theme37 = theme_exports.ThemeVars;
 var dataTypes = [
   { label: "string", value: "string" },
   { label: "number", value: "number" },
@@ -38907,7 +38602,7 @@ var SchemaDesigner = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme38.colors.primary.contrastText
+      fill: Theme37.colors.primary.contrastText
     }));
     const hStackActions = new HStack(void 0, {
       verticalAlignment: "center",
@@ -38995,7 +38690,7 @@ var SchemaDesigner = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme38.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -39010,7 +38705,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39030,7 +38725,7 @@ var SchemaDesigner = class extends Container {
         name: "exclamation-circle",
         width: 12,
         height: 12,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Invalid field",
           trigger: "hover"
@@ -39039,7 +38734,7 @@ var SchemaDesigner = class extends Container {
       });
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme38.colors.secondary.main} !important` },
+        background: { color: `${Theme37.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         padding: { top: 6, bottom: 6, left: 12, right: 12 }
@@ -39048,7 +38743,7 @@ var SchemaDesigner = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme38.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       }));
       btnDelete.setAttribute("action", "delete");
       btnDelete.onClick = async () => {
@@ -39294,13 +38989,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme38.action.selected }
+          background: { color: Theme37.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme38.colors.secondary.main,
+          fill: Theme37.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -39344,7 +39039,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39433,13 +39128,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme38.action.selected }
+          background: { color: Theme37.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme38.colors.secondary.main,
+          fill: Theme37.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -39478,7 +39173,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39577,7 +39272,7 @@ var SchemaDesigner = class extends Container {
         name: "times",
         width: 14,
         height: 14,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         position: "absolute",
         right: 4,
         top: 4
@@ -39663,7 +39358,7 @@ var SchemaDesigner = class extends Container {
     if (parentFields.length) {
       new Label(vStack, {
         caption: "Advanced options",
-        font: { size: "16px", color: Theme38.colors.primary.main }
+        font: { size: "16px", color: Theme37.colors.primary.main }
       });
     }
     const gridLayout = new GridLayout(vStack, {
@@ -39708,7 +39403,7 @@ var SchemaDesigner = class extends Container {
         width: 12,
         height: 12,
         position: notCheckbox ? "absolute" : "relative",
-        fill: Theme38.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39939,9 +39634,9 @@ SchemaDesigner = __decorateClass([
 ], SchemaDesigner);
 
 // packages/navigator/src/style/navigator.css.ts
-var Theme39 = theme_exports.ThemeVars;
+var Theme38 = theme_exports.ThemeVars;
 cssRule("i-nav", {
-  border: `1px solid ${Theme39.divider}`,
+  border: `1px solid ${Theme38.divider}`,
   $nest: {
     "> i-vstack": {
       alignItems: "center",
@@ -39950,7 +39645,7 @@ cssRule("i-nav", {
         ".search-container": {
           width: "100%",
           padding: 10,
-          borderBottom: `1px solid ${Theme39.divider}`,
+          borderBottom: `1px solid ${Theme38.divider}`,
           alignItems: "center",
           gap: 5,
           $nest: {
@@ -39962,7 +39657,7 @@ cssRule("i-nav", {
                 "input": {
                   background: "transparent",
                   border: "0",
-                  borderBottom: `1px solid ${Theme39.divider}`
+                  borderBottom: `1px solid ${Theme38.divider}`
                 }
               }
             }
@@ -39977,9 +39672,9 @@ cssRule("i-nav", {
     },
     "i-nav-item": {
       cursor: "pointer",
-      background: Theme39.background.main,
+      background: Theme38.background.main,
       borderLeft: "3px solid transparent",
-      borderBottom: `1px solid ${Theme39.divider}`,
+      borderBottom: `1px solid ${Theme38.divider}`,
       $nest: {
         "> i-grid-layout": {
           height: 50,
@@ -39988,14 +39683,14 @@ cssRule("i-nav", {
           alignItems: "center"
         },
         "i-icon": {
-          height: Theme39.typography.fontSize,
-          width: Theme39.typography.fontSize,
-          fill: Theme39.colors.primary.main
+          height: Theme38.typography.fontSize,
+          width: Theme38.typography.fontSize,
+          fill: Theme38.colors.primary.main
         },
         "&.active": {
-          color: Theme39.colors.primary.contrastText,
-          background: Theme39.colors.primary.main,
-          borderLeft: `3px solid ${Theme39.colors.primary.main}`
+          color: Theme38.colors.primary.contrastText,
+          background: Theme38.colors.primary.main,
+          borderLeft: `3px solid ${Theme38.colors.primary.main}`
         }
       }
     }
@@ -40304,19 +39999,19 @@ NavItem = __decorateClass([
 ], NavItem);
 
 // packages/breadcrumb/src/style/breadcrumb.css.ts
-var Theme40 = theme_exports.ThemeVars;
+var Theme39 = theme_exports.ThemeVars;
 cssRule("i-breadcrumb", {
   $nest: {
     "i-label": {
       padding: 5,
       margin: "0 5px",
-      color: Theme40.colors.primary.main
+      color: Theme39.colors.primary.main
     },
     "i-icon": {
       margin: "0 5px",
-      height: Theme40.typography.fontSize,
-      width: Theme40.typography.fontSize,
-      fill: Theme40.colors.primary.main
+      height: Theme39.typography.fontSize,
+      width: Theme39.typography.fontSize,
+      fill: Theme39.colors.primary.main
     }
   }
 });
@@ -40384,7 +40079,7 @@ Breadcrumb = __decorateClass([
 ], Breadcrumb);
 
 // packages/form/src/styles/index.css.ts
-var Theme41 = theme_exports.ThemeVars;
+var Theme40 = theme_exports.ThemeVars;
 var formStyle = style({
   gap: 10
 });
@@ -40395,7 +40090,7 @@ var formGroupStyle = style({
   justifyContent: "center"
 });
 var groupStyle = style({
-  border: `1px solid ${Theme41.divider}`,
+  border: `1px solid ${Theme40.divider}`,
   borderRadius: 5,
   width: "100%",
   marginBottom: 5
@@ -40412,8 +40107,8 @@ var groupBodyStyle = style({
 });
 var collapseBtnStyle = style({
   cursor: "pointer",
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize
 });
 var inputStyle = style({
   width: "100%"
@@ -40433,17 +40128,17 @@ var buttonStyle = style({
 });
 var iconButtonStyle = style({
   cursor: "pointer",
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize
 });
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme41.divider}`,
+  borderBottom: `1px solid ${Theme40.divider}`,
   marginBottom: 10
 });
 var listBtnAddStyle = style({
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize,
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize,
   cursor: "pointer",
   placeSelf: "center"
 });
@@ -40526,19 +40221,19 @@ var listVerticalLayoutStyle = style({
 var listItemBtnDelete = style({
   cursor: "pointer",
   placeSelf: "center",
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize
+  height: Theme40.typography.fontSize,
+  width: Theme40.typography.fontSize
 });
 var tabsStyle = style({
   marginBottom: 41
 });
 var cardStyle = style({
-  background: Theme41.background.main,
-  border: `1px solid ${Theme41.divider}`
+  background: Theme40.background.main,
+  border: `1px solid ${Theme40.divider}`
 });
 var cardHeader = style({
   padding: 20,
-  borderBottom: `1px solid ${Theme41.divider}`,
+  borderBottom: `1px solid ${Theme40.divider}`,
   cursor: "pointer"
 });
 var cardBody = style({
@@ -40787,7 +40482,8 @@ var Form = class extends Control {
                   } else if (field.tagName === "I-RADIO-GROUP") {
                     field.selectedValue = rowData;
                   } else if (field.tagName === "I-DATEPICKER") {
-                    field.value = moment(rowData);
+                    let datepicker = field;
+                    datepicker.value = moment(rowData, datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
                   }
                 }
               } else {
@@ -40807,7 +40503,8 @@ var Form = class extends Control {
                   } else if (field.tagName === "I-RADIO-GROUP") {
                     field.selectedValue = columnData;
                   } else if (field.tagName === "I-DATEPICKER") {
-                    field.value = moment(columnData);
+                    let datepicker = field;
+                    datepicker.value = moment(columnData, datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
                   } else if (field.tagName === "I-UPLOAD") {
                     this.setDataUpload(columnData, field);
                   }
@@ -40870,7 +40567,8 @@ var Form = class extends Control {
             input.selectedItem = input.items.find((v) => v.value === value) || input.items[0];
             break;
           case "I-DATEPICKER":
-            input.value = moment(value);
+            let datepicker = input;
+            datepicker.value = moment(value, datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
             break;
           case "I-UPLOAD":
             this.setDataUpload(value, input);
@@ -40886,7 +40584,7 @@ var Form = class extends Control {
     return data;
   }
   async getDataBySchema(schema, scope = "#", parentElm, listItem) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
     if (!schema)
       return void 0;
     let _control;
@@ -40916,7 +40614,8 @@ var Form = class extends Control {
           case "I-COMBO-BOX":
             return (_b = control.value) == null ? void 0 : _b.value;
           case "I-DATEPICKER":
-            return control.value;
+            let datepicker = control;
+            return (_c = datepicker.value) == null ? void 0 : _c.format(datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
           case "I-UPLOAD":
             const uploader = control;
             const file = uploader.fileList[0];
@@ -40925,12 +40624,16 @@ var Form = class extends Control {
                 const dataUrl = await uploader.toBase64(file);
                 return dataUrl;
               } else if (schema.format === "data-cid") {
-                let cid = (_c = file.cid) == null ? void 0 : _c.cid;
+                let cid = (_d = file.cid) == null ? void 0 : _d.cid;
                 if (!cid)
                   return void 0;
-                let result = await fetch(`https://ipfs.scom.dev/ipfs/${cid}`);
-                if (result.status !== 200) {
-                  await uploader.upload();
+                try {
+                  try {
+                    let result = await fetch(`https://ipfs.scom.dev/ipfs/${cid}`);
+                  } catch (e) {
+                    await uploader.upload();
+                  }
+                } catch (e) {
                 }
                 return cid;
               } else
@@ -40948,7 +40651,7 @@ var Form = class extends Control {
           case "I-INPUT":
             return control.value ? parseInt(control.value) : void 0;
           case "I-COMBO-BOX":
-            return parseFloat((_d = control.value) == null ? void 0 : _d.value);
+            return parseFloat((_e = control.value) == null ? void 0 : _e.value);
           default:
             return void 0;
         }
@@ -40960,7 +40663,7 @@ var Form = class extends Control {
           case "I-INPUT":
             return control.value ? parseFloat(control.value) : void 0;
           case "I-COMBO-BOX":
-            return parseFloat((_e = control.value) == null ? void 0 : _e.value);
+            return parseFloat((_f = control.value) == null ? void 0 : _f.value);
           default:
             return void 0;
         }
@@ -40988,11 +40691,11 @@ var Form = class extends Control {
       return obj;
     } else if (schema.type === "array") {
       if (parentElm) {
-        _control = (_f = parentElm.querySelector('[role="list-item"]')) == null ? void 0 : _f.parentElement;
+        _control = (_g = parentElm.querySelector('[role="list-item"]')) == null ? void 0 : _g.parentElement;
       } else if (listItem) {
-        _control = (_g = listItem.querySelector('[role="list-item"]')) == null ? void 0 : _g.parentElement;
+        _control = (_h = listItem.querySelector('[role="list-item"]')) == null ? void 0 : _h.parentElement;
       }
-      const grid = _control || ((_h = this._formControls[scope]) == null ? void 0 : _h.input);
+      const grid = _control || ((_i = this._formControls[scope]) == null ? void 0 : _i.input);
       const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
       if (!(schema.items instanceof Array) && typeof schema.items === "object") {
         const currentSchema = schema.items;

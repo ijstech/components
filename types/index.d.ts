@@ -9775,10 +9775,8 @@ declare module "packages/data-grid/src/dataGrid" {
 declare module "@ijstech/components/dataGrid" {
     export { DataGrid, DataGridCell } from "packages/data-grid/src/dataGrid";
 }
-declare module "packages/markdown/src/style/markdown.css" { }
 declare module "packages/markdown/src/markdown" {
     import { Control, ControlElement } from "@ijstech/components/base";
-    import "packages/markdown/src/style/markdown.css";
     export interface MarkdownElement extends ControlElement {
         caption?: string;
         src?: string;
@@ -9795,7 +9793,7 @@ declare module "packages/markdown/src/markdown" {
         private marked;
         gitbookProcess: boolean;
         fileRoot: string;
-        constructor();
+        constructor(parent?: Control, options?: MarkdownElement);
         private getRenderer;
         load(text: string): Promise<string>;
         beforeRender(text: string): Promise<void>;
@@ -9809,6 +9807,7 @@ declare module "packages/markdown/src/index" {
 }
 declare module "packages/markdown-editor/src/markdown-editor" {
     import { Container, Control, ControlElement } from "@ijstech/components/base";
+    import { Markdown } from "packages/markdown/src/index";
     export interface MarkdownEditorElement extends ControlElement {
         mode?: 'wysiwyg' | 'markdown';
         theme?: 'light' | 'dark';
@@ -9835,7 +9834,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private editor;
         private editorPlugins;
         private editorObj;
-        private viewerObj;
+        private mdViewer;
         private elm;
         private _theme;
         private _mode;
@@ -9872,7 +9871,6 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         }[]);
         static create(options?: MarkdownEditorElement, parent?: Container): Promise<MarkdownEditor>;
         constructor(parent?: Control, options?: MarkdownEditorElement);
-        private loadLib;
         private loadPlugin;
         private loadPlugins;
         private addCSS;
@@ -9880,7 +9878,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private renderEditor;
         getMarkdownValue(): any;
         getEditorElm(): any;
-        getViewerElm(): any;
+        getViewerElm(): Markdown | null;
         protected init(): Promise<void>;
     }
 }
