@@ -28795,7 +28795,7 @@ var Application = class {
     ;
     return null;
   }
-  async init(scconfigPath) {
+  async init(scconfigPath, customData) {
     let scconfig = JSON.parse(await this.getContent(scconfigPath));
     if (!scconfig.rootDir) {
       if (scconfigPath.indexOf("/") > 0) {
@@ -28829,6 +28829,8 @@ var Application = class {
       scconfig.rootDir = rootDir;
     }
     ;
+    if (customData)
+      scconfig.customData = customData;
     return this.newModule(scconfig.main, scconfig);
   }
   async newModule(module2, options) {
@@ -29149,7 +29151,7 @@ cssRule("i-code-editor", {
       border: "1px solid #eee",
       borderRadius: "4px"
     },
-    "#toolbar button:hover, select:hover, button:focus, select:focus": {
+    "#toolbar button:hover, i-code-editor #toolbar select:hover, i-code-editor #toolbar button:focus, i-code-editor #toolbar select:focus": {
       backgroundColor: "darkslategrey"
     },
     "#execution-tray": {
@@ -32656,6 +32658,23 @@ DataGrid = __decorateClass([
   customElements2("i-data-grid")
 ], DataGrid);
 
+// packages/markdown/src/styles/index.css.ts
+var Theme25 = theme_exports.ThemeVars;
+cssRule("i-markdown", {
+  fontFamily: Theme25.typography.fontFamily,
+  fontSize: Theme25.typography.fontSize
+});
+cssRaw(`/*!
+ * TOAST UI Editor : Code Syntax Highlight Plugin
+ * @version 3.0.0 | Thu Jun 17 2021
+ * @author NHN FE Development Lab <dl_javascript@nhn.com>
+ * @license MIT*/pre[class*="language-"]{overflow:visible}code[class*=language-],pre[class*=language-]{color:#000;background:0 0;text-shadow:0 1px #fff;font-family:Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace;font-size:1em;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}code[class*=language-] ::-moz-selection,code[class*=language-]::-moz-selection,pre[class*=language-] ::-moz-selection,pre[class*=language-]::-moz-selection{text-shadow:none;background:#b3d4fc}code[class*=language-] ::selection,code[class*=language-]::selection,pre[class*=language-] ::selection,pre[class*=language-]::selection{text-shadow:none;background:#b3d4fc}@media print{code[class*=language-],pre[class*=language-]{text-shadow:none}}pre[class*=language-]{padding:1em;margin:.5em 0;overflow:auto}:not(pre)>code[class*=language-],pre[class*=language-]{background:#f5f2f0}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal}.token.cdata,.token.comment,.token.doctype,.token.prolog{color:#708090}.token.punctuation{color:#999}.token.namespace{opacity:.7}.token.boolean,.token.constant,.token.deleted,.token.number,.token.property,.token.symbol,.token.tag{color:#905}.token.attr-name,.token.builtin,.token.char,.token.inserted,.token.selector,.token.string{color:#690}.language-css .token.string,.style .token.string,.token.entity,.token.operator,.token.url{color:#9a6e3a;background:hsla(0,0%,100%,.5)}.token.atrule,.token.attr-value,.token.keyword{color:#07a}.token.class-name,.token.function{color:#dd4a68}.token.important,.token.regex,.token.variable{color:#e90}.token.bold,.token.important{font-weight:700}.token.italic{font-style:italic}.token.entity{cursor:help}.toastui-editor-dark .ProseMirror,.toastui-editor-dark .toastui-editor-contents p,.toastui-editor-dark .toastui-editor-contents h1,.toastui-editor-dark .toastui-editor-contents h2,.toastui-editor-dark .toastui-editor-contents h3,.toastui-editor-dark .toastui-editor-contents h4,.toastui-editor-dark .toastui-editor-contents h5,.toastui-editor-dark .toastui-editor-contents h6{color:#fff}.toastui-editor-dark .toastui-editor-contents h1,.toastui-editor-dark .toastui-editor-contents h2{border-color:#fff}.toastui-editor-dark .toastui-editor-contents del{color:#777980}.toastui-editor-dark .toastui-editor-contents blockquote{border-color:#303135}.toastui-editor-dark .toastui-editor-contents blockquote p,.toastui-editor-dark .toastui-editor-contents blockquote ul,.toastui-editor-dark .toastui-editor-contents blockquote ol{color:#777980}.toastui-editor-dark .toastui-editor-contents pre{background-color:#232428}.toastui-editor-dark .toastui-editor-contents pre code{background-color:transparent;color:#fff}.toastui-editor-dark .toastui-editor-contents code{color:#c1798b;background-color:#35262a}.toastui-editor-dark .toastui-editor-contents div{color:#fff}.toastui-editor-dark .toastui-editor-contents .toastui-editor-ww-code-block:after{background-color:#232428;border:1px solid #393b42;color:#eee;background-image:url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI1LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IuugiOydtOyWtF8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiCgkgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMzAgMzAiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDMwIDMwOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe2ZpbGwtcnVsZTpldmVub2RkO2NsaXAtcnVsZTpldmVub2RkO2ZpbGw6I2ZmZjt9Cjwvc3R5bGU+CjxnPgoJPGc+CgkJPGc+CgkJCTxnPgoJCQkJPGc+CgkJCQkJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE1LjUsMTIuNWwyLDJMMTIsMjBoLTJ2LTJMMTUuNSwxMi41eiBNMTgsMTBsMiwybC0xLjUsMS41bC0yLTJMMTgsMTB6Ii8+CgkJCQk8L2c+CgkJCTwvZz4KCQk8L2c+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==)}.toastui-editor-dark .toastui-editor-contents .toastui-editor-custom-block-editor{background:#392d31;color:#fff;border-color:#327491}.toastui-editor-dark .toastui-editor-contents table{border-color:#303238}.toastui-editor-dark .toastui-editor-contents table th,.toastui-editor-dark .toastui-editor-contents table td{border-color:#303238}.toastui-editor-dark .toastui-editor-contents table th{background-color:#3a3c42}.toastui-editor-dark .toastui-editor-contents table td,.toastui-editor-dark .toastui-editor-contents table td p{color:#fff}.toastui-editor-dark .toastui-editor-contents td.toastui-editor-cell-selected{background-color:rgba(103,204,255,0.5)}.toastui-editor-dark .toastui-editor-contents th.toastui-editor-cell-selected{background-color:rgba(103,204,255,0.3)}.toastui-editor-dark .toastui-editor-contents ul,.toastui-editor-dark .toastui-editor-contents menu,.toastui-editor-dark .toastui-editor-contents ol,.toastui-editor-dark .toastui-editor-contents dir{color:#55575f}.toastui-editor-dark .toastui-editor-contents ul > li::before{background-color:#55575f}.toastui-editor-dark .toastui-editor-contents hr{border-color:#55575f}.toastui-editor-dark .toastui-editor-contents a{color:#4b96e6}.toastui-editor-dark .toastui-editor-contents a:hover{color:#1f70de}.toastui-editor-dark .toastui-editor-contents .image-link:hover::before{border-color:#393b42;background-color:#232428;background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIj4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KICAgICAgICA8ZyBzdHJva2U9IiNFRUUiIHN0cm9rZS13aWR0aD0iMS41Ij4KICAgICAgICAgICAgPGc+CiAgICAgICAgICAgICAgICA8Zz4KICAgICAgICAgICAgICAgICAgICA8cGF0aCBkPSJNNy42NjUgMTUuMDdsLTEuODE5LS4wMDJjLTEuNDg2IDAtMi42OTItMS4yMjgtMi42OTItMi43NDR2LS4xOTJjMC0xLjUxNSAxLjIwNi0yLjc0NCAyLjY5Mi0yLjc0NGgzLjg0NmMxLjQ4NyAwIDIuNjkyIDEuMjI5IDIuNjkyIDIuNzQ0di4xOTIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMDQ1IC0xNzQzKSB0cmFuc2xhdGUoMTA0MCAxNzM4KSB0cmFuc2xhdGUoNSA1KSBzY2FsZSgxIC0xKSByb3RhdGUoNDUgMzcuMjkzIDApIi8+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTEyLjMyNiA0LjkzNGwxLjgyMi4wMDJjMS40ODcgMCAyLjY5MyAxLjIyOCAyLjY5MyAyLjc0NHYuMTkyYzAgMS41MTUtMS4yMDYgMi43NDQtMi42OTMgMi43NDRoLTMuODQ1Yy0xLjQ4NyAwLTIuNjkyLTEuMjI5LTIuNjkyLTIuNzQ0VjcuNjgiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMDQ1IC0xNzQzKSB0cmFuc2xhdGUoMTA0MCAxNzM4KSB0cmFuc2xhdGUoNSA1KSBzY2FsZSgxIC0xKSByb3RhdGUoNDUgMzAuOTk2IDApIi8+CiAgICAgICAgICAgICAgICA8L2c+CiAgICAgICAgICAgIDwvZz4KICAgICAgICA8L2c+CiAgICA8L2c+Cjwvc3ZnPgo=);box-shadow:0 2px 4px 0 rgba(0,0,0,0.08)}.toastui-editor-dark .toastui-editor-contents .task-list-item::before{background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgc3Ryb2tlPSIjNTU1NzVGIj4KICAgICAgICAgICAgPGc+CiAgICAgICAgICAgICAgICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTAzMCAtMzE2KSB0cmFuc2xhdGUoNzg4IDE5MikgdHJhbnNsYXRlKDI0MiAxMjQpIj4KICAgICAgICAgICAgICAgICAgICA8cmVjdCB3aWR0aD0iMTciIGhlaWdodD0iMTciIHg9Ii41IiB5PSIuNSIgcng9IjIiLz4KICAgICAgICAgICAgICAgIDwvZz4KICAgICAgICAgICAgPC9nPgogICAgICAgIDwvZz4KICAgIDwvZz4KPC9zdmc+Cg==);background-color:transparent}.toastui-editor-dark .toastui-editor-contents .task-list-item.checked::before{background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGcgZmlsbD0iIzRCOTZFNiI+CiAgICAgICAgICAgIDxnPgogICAgICAgICAgICAgICAgPGc+CiAgICAgICAgICAgICAgICAgICAgPHBhdGggZD0iTTE2IDBjMS4xMDUgMCAyIC44OTUgMiAydjE0YzAgMS4xMDUtLjg5NSAyLTIgMkgyYy0xLjEwNSAwLTItLjg5NS0yLTJWMkMwIC44OTUuODk1IDAgMiAwaDE0em0tMS43OTMgNS4yOTNjLS4zOS0uMzktMS4wMjQtLjM5LTEuNDE0IDBMNy41IDEwLjU4NSA1LjIwNyA4LjI5M2wtLjA5NC0uMDgzYy0uMzkyLS4zMDUtLjk2LS4yNzgtMS4zMi4wODMtLjM5LjM5LS4zOSAxLjAyNCAwIDEuNDE0bDMgMyAuMDk0LjA4M2MuMzkyLjMwNS45Ni4yNzggMS4zMi0uMDgzbDYtNiAuMDgzLS4wOTRjLjMwNS0uMzkyLjI3OC0uOTYtLjA4My0xLjMyeiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTEwNTAgLTI5NikgdHJhbnNsYXRlKDc4OCAxOTIpIHRyYW5zbGF0ZSgyNjIgMTA0KSIvPgogICAgICAgICAgICAgICAgPC9nPgogICAgICAgICAgICA8L2c+CiAgICAgICAgPC9nPgogICAgPC9nPgo8L3N2Zz4K)}.toastui-editor-dark .toastui-editor-contents .toastui-editor-md-preview-highlight::after{background-color:rgba(255,250,193,0.5)}.toastui-editor-dark .toastui-editor-contents th.toastui-editor-md-preview-highlight,.toastui-editor-dark .toastui-editor-contents td.toastui-editor-md-preview-highlight{background-color:rgba(255,250,193,0.5)}.toastui-editor-dark .toastui-editor-contents th.toastui-editor-md-preview-highlight{color:#fff}.toastui-editor-dark .toastui-editor-contents th.toastui-editor-md-preview-highlight,.toastui-editor-dark .toastui-editor-contents td.toastui-editor-md-preview-highlight{background-color:rgba(255,250,193,0.25)}.toastui-editor-dark .toastui-editor-contents .toastui-editor-md-preview-highlight::after{background-color:rgba(255,250,193,0.25)}`);
+cssRaw(`@charset "utf-8";/*!
+ * @toast-ui/editor
+ * @version 3.2.1 | Thu Sep 29 2022
+ * @author NHN Cloud FE Development Lab <dl_javascript@nhn.com>
+ * @license MIT*/.toastui-editor-md-container .toastui-editor-md-preview .toastui-editor-contents{padding-top:8px}.toastui-editor-ww-container .toastui-editor-contents{box-sizing:border-box;height:inherit;margin:0;overflow:auto;padding:16px 25px 0}.toastui-editor-ww-container .toastui-editor-contents p{margin:0}.toastui-editor-contents{font-family:Open Sans,Helvetica Neue,Helvetica,Arial,\uB098\uB214\uBC14\uB978\uACE0\uB515,Nanum Barun Gothic,\uB9D1\uC740\uACE0\uB515,Malgun Gothic,sans-serif;font-size:13px;margin:0;padding:0;z-index:20}.toastui-editor-contents :not(table){box-sizing:content-box;line-height:160%}.toastui-editor-contents address,.toastui-editor-contents cite,.toastui-editor-contents dfn,.toastui-editor-contents em,.toastui-editor-contents i,.toastui-editor-contents var{font-style:italic}.toastui-editor-contents strong{font-weight:700}.toastui-editor-contents p{color:#222;margin:10px 0}.toastui-editor-contents>div>div:first-of-type h1,.toastui-editor-contents>h1:first-of-type{margin-top:14px}.toastui-editor-contents h1,.toastui-editor-contents h2,.toastui-editor-contents h3,.toastui-editor-contents h4,.toastui-editor-contents h5,.toastui-editor-contents h6{color:#222;font-weight:700}i-markdown.toastui-editor-contents h1{border-bottom:0;font-size:24px;line-height:28px;margin:52px 0 15px;padding-bottom:7px}i-markdown.toastui-editor-contents h2{border-bottom:0;font-size:22px;line-height:23px;margin:20px 0 13px;padding-bottom:7px}.toastui-editor-contents h3{font-size:20px;margin:18px 0 2px}.toastui-editor-contents h4{font-size:18px;margin:10px 0 2px}.toastui-editor-contents h3,.toastui-editor-contents h4{line-height:18px}.toastui-editor-contents h5{font-size:16px}.toastui-editor-contents h6{font-size:14px}.toastui-editor-contents h5,.toastui-editor-contents h6{line-height:17px;margin:9px 0 -4px}.toastui-editor-contents del{color:#999}.toastui-editor-contents blockquote{border-left:4px solid #e5e5e5;color:#999;margin:14px 0;padding:0 16px}.toastui-editor-contents blockquote ol,.toastui-editor-contents blockquote p,.toastui-editor-contents blockquote ul{color:#999}.toastui-editor-contents blockquote>:first-child{margin-top:0}.toastui-editor-contents blockquote>:last-child{margin-bottom:0}.toastui-editor-contents code,.toastui-editor-contents pre{border:0;border-radius:0;font-family:Consolas,Courier,Apple SD \uC0B0\uB3CC\uACE0\uB515 Neo,-apple-system,Lucida Grande,Apple SD Gothic Neo,\uB9D1\uC740 \uACE0\uB515,Malgun Gothic,Segoe UI,\uB3CB\uC6C0,dotum,sans-serif}.toastui-editor-contents pre{background-color:#f4f7f8;margin:2px 0 8px;padding:18px}.toastui-editor-contents code{background-color:#f9f2f4;border-radius:2px;color:#c1798b;letter-spacing:-.3px;padding:2px 3px}.toastui-editor-contents pre code{background-color:transparent;color:inherit;padding:0;white-space:pre-wrap}.toastui-editor-contents img{box-sizing:border-box;margin:4px 0 10px;max-width:100%;vertical-align:top}.toastui-editor-contents table{border:1px solid rgba(0,0,0,.1);border-collapse:collapse;box-sizing:border-box;color:#222;margin:12px 0 14px;width:auto}.toastui-editor-contents table td,.toastui-editor-contents table th{border:1px solid rgba(0,0,0,.1);height:32px;padding:5px 14px 5px 12px}.toastui-editor-contents table th{background-color:#555;color:#fff;font-weight:300;padding-top:6px}.toastui-editor-contents th p{color:#fff;margin:0}.toastui-editor-contents td p{margin:0;padding:0 2px}.toastui-editor-contents td.toastui-editor-cell-selected{background-color:#d8dfec}.toastui-editor-contents th.toastui-editor-cell-selected{background-color:#908f8f}.toastui-editor-contents dir,.toastui-editor-contents menu,.toastui-editor-contents ol,.toastui-editor-contents ul{color:#222;display:block;list-style-type:none;margin:6px 0 10px;padding-left:24px}.toastui-editor-contents ol{counter-reset:li;list-style-type:none}.toastui-editor-contents ol>li{counter-increment:li}.toastui-editor-contents ol>li:before,.toastui-editor-contents ul>li:before{display:inline-block;position:absolute}.toastui-editor-contents ul>li:before{background-color:#ccc;border-radius:50%;content:"";height:5px;margin-left:-17px;margin-top:6px;width:5px}.toastui-editor-contents ol>li:before{color:#aaa;content:"." counter(li);direction:rtl;margin-left:-28px;text-align:right;width:24px}.toastui-editor-contents ol ol,.toastui-editor-contents ol ul,.toastui-editor-contents ul ol,.toastui-editor-contents ul ul{margin-bottom:0!important;margin-top:0!important}.toastui-editor-contents ol li,.toastui-editor-contents ul li{position:relative}.toastui-editor-contents ol p,.toastui-editor-contents ul p{margin:0}.toastui-editor-contents hr{border-top:1px solid #eee;margin:16px 0}.toastui-editor-contents a{color:#4b96e6;text-decoration:underline}.toastui-editor-contents a:hover{color:#1f70de}.toastui-editor-contents .image-link{position:relative}.toastui-editor-contents .image-link:hover:before{background:#fff url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGcgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Im01LjY4NyAxMC4yOTQtMS4yODUgMS4yODhjLTEuMDUgMS4wNS0xLjAzNSAyLjc3Mi4wMzcgMy44NDRsLjEzNS4xMzVjMS4wNzIgMS4wNzIgMi43OTQgMS4wODggMy44NDQuMDM3bDIuNzItMi43MmMxLjA1MS0xLjA1IDEuMDM0LTIuNzcyLS4wMzctMy44NDNsLS4xMzYtLjEzNiIvPjxwYXRoIGQ9Im0xNC4zMDUgOS43MTMgMS4yODctMS4yOWMxLjA1Mi0xLjA1MSAxLjAzNi0yLjc3My0uMDM2LTMuODQ0bC0uMTM1LS4xMzZjLTEuMDcyLTEuMDcyLTIuNzk0LTEuMDg4LTMuODQ1LS4wMzZMOC44NTcgNy4xMjZjLTEuMDUxIDEuMDUxLTEuMDM0IDIuNzcyLjAzNyAzLjg0M2wuMTM2LjEzNiIvPjwvZz48L3N2Zz4=) no-repeat;background-position:50%;border:1px solid #c9ccd5;border-radius:50%;box-shadow:0 2px 4px 0 rgba(0,0,0,.08);content:"";cursor:pointer;height:30px;position:absolute;right:0;width:30px}.toastui-editor-contents .task-list-item{border:0;list-style:none;margin-left:-24px;padding-left:24px}.toastui-editor-contents .task-list-item:before{background-position:50%;background-repeat:no-repeat;background-size:18px 18px;background:transparent url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCI+PHJlY3Qgd2lkdGg9IjE3IiBoZWlnaHQ9IjE3IiB4PSIuNSIgeT0iLjUiIHJ4PSIyIiBmaWxsPSIjRkZGIiBzdHJva2U9IiNDQ0MiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvc3ZnPg==);border-radius:2px;content:"";cursor:pointer;height:18px;left:0;margin-left:0;margin-top:0;position:absolute;top:1px;width:18px}.toastui-editor-contents .task-list-item.checked:before{background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCI+PHBhdGggZD0iTTE2IDBhMiAyIDAgMCAxIDIgMnYxNGEyIDIgMCAwIDEtMiAySDJhMiAyIDAgMCAxLTItMlYyYTIgMiAwIDAgMSAyLTJoMTR6bS0xLjc5MyA1LjI5M2ExIDEgMCAwIDAtMS40MTQgMEw3LjUgMTAuNTg1IDUuMjA3IDguMjkzbC0uMDk0LS4wODNhMSAxIDAgMCAwLTEuMzIgMS40OTdsMyAzIC4wOTQuMDgzYTEgMSAwIDAgMCAxLjMyLS4wODNsNi02IC4wODMtLjA5NGExIDEgMCAwIDAtLjA4My0xLjMyeiIgZmlsbD0iIzRCOTZFNiIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+)}.toastui-editor-contents .toastui-editor-ww-code-block{position:relative}.toastui-editor-contents .toastui-editor-ww-code-block:after{background:#e5e9ea url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMCAzMCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMzAgMzAiIHhtbDpzcGFjZT0icHJlc2VydmUiPjxwYXRoIGQ9Im0xNS41IDEyLjUgMiAyTDEyIDIwaC0ydi0ybDUuNS01LjV6TTE4IDEwbDIgMi0xLjUgMS41LTItMkwxOCAxMHoiIHN0eWxlPSJmaWxsLXJ1bGU6ZXZlbm9kZDtjbGlwLXJ1bGU6ZXZlbm9kZDtmaWxsOiM1NTUiLz48L3N2Zz4=) no-repeat;background-position:100%;background-size:30px 30px;border-radius:2px;color:#333;content:attr(data-language);cursor:pointer;display:inline-block;font-size:13px;font-weight:700;height:24px;padding:3px 35px 0 10px;position:absolute;right:10px;top:10px}.toastui-editor-contents-placeholder:before{color:grey;content:attr(data-placeholder);line-height:160%;position:absolute}.toastui-editor-md-preview .toastui-editor-contents h1{min-height:28px}.toastui-editor-md-preview .toastui-editor-contents h2{min-height:23px}.toastui-editor-md-preview .toastui-editor-contents blockquote{min-height:20px}.toastui-editor-md-preview .toastui-editor-contents li{min-height:22px}.toastui-editor-contents .toastui-editor-md-preview-highlight{position:relative;z-index:0}.toastui-editor-contents .toastui-editor-md-preview-highlight:after{background-color:rgba(255,245,131,.5);border-radius:4px;bottom:-4px;content:"";left:-4px;position:absolute;right:-4px;top:-4px;z-index:-1}.toastui-editor-contents h1.toastui-editor-md-preview-highlight:after,.toastui-editor-contents h2.toastui-editor-md-preview-highlight:after{bottom:0}.toastui-editor-contents td.toastui-editor-md-preview-highlight:after,.toastui-editor-contents th.toastui-editor-md-preview-highlight:after{display:none}.toastui-editor-contents td.toastui-editor-md-preview-highlight,.toastui-editor-contents th.toastui-editor-md-preview-highlight{background-color:rgba(255,245,131,.5)}.toastui-editor-contents th.toastui-editor-md-preview-highlight{color:#222}`);
+
 // packages/markdown/src/markdown.ts
 var libs = [`${LibPath}lib/marked/marked.umd.js`];
 var Markdown = class extends Control {
@@ -32672,8 +32691,12 @@ var Markdown = class extends Control {
       this.marked = await this.loadLib();
     let renderer = this.getRenderer();
     this.marked.use({ renderer });
-    text = await this.marked.parse(text);
-    text = await this.processText(text);
+    if (text) {
+      text = await this.marked.parse(text);
+      text = await this.processText(text);
+    } else {
+      text = "";
+    }
     this.innerHTML = text;
     return this.innerHTML;
   }
@@ -32756,8 +32779,15 @@ var MarkdownEditor = class extends Control {
   }
   set theme(value) {
     this._theme = value;
-    if (!this.editor)
+    if (!this.editor) {
+      if (this.viewer) {
+        if (this.theme === "light")
+          this.elm.classList.remove("toastui-editor-dark");
+        else
+          this.elm.classList.add("toastui-editor-dark");
+      }
       return;
+    }
     this.renderEditor(true);
   }
   get previewStyle() {
@@ -32859,10 +32889,10 @@ var MarkdownEditor = class extends Control {
     document.head.append(link);
   }
   async initEditor() {
-    for (const item of editorCSS) {
-      this.addCSS(item.href, item.name);
-    }
     if (!this.viewer) {
+      for (const item of editorCSS) {
+        this.addCSS(item.href, item.name);
+      }
       await this.loadPlugins();
     }
     try {
@@ -32886,6 +32916,8 @@ var MarkdownEditor = class extends Control {
       this.elm.appendChild(this.mdViewer);
       if (this.theme === "light")
         this.elm.classList.remove("toastui-editor-dark");
+      else
+        this.elm.classList.add("toastui-editor-dark");
     } else {
       if (!this.elm) {
         this.elm = this.createElement("div", this);
@@ -32975,7 +33007,7 @@ MarkdownEditor = __decorateClass([
 ], MarkdownEditor);
 
 // packages/menu/src/style/menu.css.ts
-var Theme25 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 cssRule("i-context-menu", {
   display: "none"
 });
@@ -32993,8 +33025,8 @@ var fadeInRight = keyframes({
   }
 });
 var menuStyle = style({
-  fontFamily: Theme25.typography.fontFamily,
-  fontSize: Theme25.typography.fontSize,
+  fontFamily: Theme26.typography.fontFamily,
+  fontSize: Theme26.typography.fontSize,
   position: "relative",
   overflow: "hidden",
   $nest: {
@@ -33024,7 +33056,7 @@ var menuStyle = style({
         ".menu-item-arrow-active": {
           transform: "rotate(180deg)",
           transition: "transform 0.25s",
-          fill: `${Theme25.text.primary} !important`
+          fill: `${Theme26.text.primary} !important`
         },
         "li": {
           position: "relative",
@@ -33032,7 +33064,7 @@ var menuStyle = style({
             "&:hover": {
               $nest: {
                 ".menu-item": {
-                  color: Theme25.colors.primary.main
+                  color: Theme26.colors.primary.main
                 },
                 ".menu-item-arrow-active": {
                   fill: "currentColor !important"
@@ -33048,7 +33080,7 @@ var menuStyle = style({
 var meunItemStyle = style({
   position: "relative",
   display: "block",
-  color: Theme25.text.secondary,
+  color: Theme26.text.secondary,
   $nest: {
     ".menu-item": {
       position: "relative",
@@ -33068,8 +33100,8 @@ var meunItemStyle = style({
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme25.action.hover,
-      color: Theme25.text.primary
+      background: Theme26.action.hover,
+      color: Theme26.text.primary
     },
     ".menu-item.menu-active > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -33833,13 +33865,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme26.typography.fontFamily,
-  fontSize: Theme26.typography.fontSize,
+  fontFamily: Theme27.typography.fontFamily,
+  fontSize: Theme27.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -33873,7 +33905,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme26.text.primary,
+      color: Theme27.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
@@ -33907,7 +33939,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme26.divider}`,
+          borderLeft: `1px solid ${Theme27.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -33916,12 +33948,12 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme26.action.selected,
-          border: `1px solid ${Theme26.colors.info.dark}`,
-          color: Theme26.text.primary
+          backgroundColor: Theme27.action.selected,
+          border: `1px solid ${Theme27.colors.info.dark}`,
+          color: Theme27.text.primary
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme26.action.hover,
+          backgroundColor: Theme27.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -33949,8 +33981,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme26.colors.primary.main,
-          color: Theme26.colors.primary.contrastText,
+          background: Theme27.colors.primary.main,
+          color: Theme27.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -33991,7 +34023,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme26.divider}`,
+          borderLeft: `1px solid ${Theme27.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -34007,15 +34039,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme26.divider}`,
-          borderLeft: `1px solid ${Theme26.divider}`,
+          borderBottom: `1px solid ${Theme27.divider}`,
+          borderLeft: `1px solid ${Theme27.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme26.divider}`,
-          borderRight: `0.5px solid ${Theme26.divider}`,
+          borderTop: `1px solid ${Theme27.divider}`,
+          borderRight: `0.5px solid ${Theme27.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -34034,7 +34066,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme26.colors.primary.main}`
+          borderBottom: `2px solid ${Theme27.colors.primary.main}`
         }
       }
     },
@@ -34061,11 +34093,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme27.text.secondary,
+  fill: Theme28.text.secondary,
   width: 12,
   height: 12
 };
@@ -34539,11 +34571,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme28.typography.fontFamily,
-  fontSize: Theme28.typography.fontSize,
+  fontFamily: Theme29.typography.fontFamily,
+  fontSize: Theme29.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -35054,16 +35086,16 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme30 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme29.typography.fontFamily,
-  fontSize: Theme29.typography.fontSize,
+  fontFamily: Theme30.typography.fontFamily,
+  fontSize: Theme30.typography.fontSize,
   lineHeight: "25px",
-  color: Theme29.text.primary,
+  color: Theme30.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -35071,7 +35103,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme29.text.primary,
+      color: Theme30.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -35087,7 +35119,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme29.text.disabled,
+      color: Theme30.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -35334,7 +35366,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -35347,9 +35379,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme30.typography.fontFamily,
-  fontSize: Theme30.typography.fontSize,
-  color: Theme30.text.primary,
+  fontFamily: Theme31.typography.fontFamily,
+  fontSize: Theme31.typography.fontSize,
+  color: Theme31.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -35372,13 +35404,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme30.colors.error.light
+          backgroundColor: Theme31.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme30.colors.error.light
+          backgroundColor: Theme31.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme30.colors.error.light
+          borderColor: Theme31.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -35386,13 +35418,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme30.colors.success.light
+          backgroundColor: Theme31.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme30.colors.success.light
+          backgroundColor: Theme31.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme30.colors.success.light
+          borderColor: Theme31.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -35400,13 +35432,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme30.colors.warning.light
+          backgroundColor: Theme31.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme30.colors.warning.light
+          backgroundColor: Theme31.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme30.colors.warning.light
+          borderColor: Theme31.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -35414,14 +35446,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme30.colors.primary.light
+          backgroundColor: Theme31.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme30.colors.primary.light
+          backgroundColor: Theme31.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme30.colors.primary.light
+          borderColor: Theme31.colors.primary.light
         }
       }
     },
@@ -35443,11 +35475,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme30.divider
+              backgroundColor: Theme31.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme30.divider
+              backgroundColor: Theme31.divider
             }
           }
         },
@@ -35472,7 +35504,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme30.divider,
+          borderColor: Theme31.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -35528,7 +35560,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -35572,7 +35604,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme31.colors.primary.main;
+    return this._strokeColor || Theme32.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -35707,11 +35739,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme31.colors.success.main;
+      ret = Theme32.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme31.divider;
+    return Theme32.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -35799,11 +35831,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme32.typography.fontFamily,
-  fontSize: Theme32.typography.fontSize,
-  color: Theme32.text.primary,
+  fontFamily: Theme33.typography.fontFamily,
+  fontSize: Theme33.typography.fontSize,
+  color: Theme33.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -35825,26 +35857,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme32.divider}`
+      borderBottom: `1px solid ${Theme33.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme32.divider}`,
+      borderBottom: `1px solid ${Theme33.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme32.background.paper,
-      color: Theme32.text.secondary
+      background: Theme33.background.paper,
+      color: Theme33.text.secondary
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme32.divider}`,
-          borderLeft: `1px solid ${Theme32.divider}`,
+          borderTop: `1px solid ${Theme33.divider}`,
+          borderLeft: `1px solid ${Theme33.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme32.divider} !important`,
-          borderBottom: `1px solid ${Theme32.divider}`
+          borderRight: `1px solid ${Theme33.divider} !important`,
+          borderBottom: `1px solid ${Theme33.divider}`
         }
       }
     },
@@ -35865,7 +35897,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme32.colors.primary.main
+          fill: Theme33.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -35894,12 +35926,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme32.text.primary
+          fill: Theme33.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme32.divider}`
+      borderRight: `1px solid ${Theme33.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -35970,7 +36002,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -36025,7 +36057,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme33.text.primary
+        fill: Theme34.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -36033,7 +36065,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme33.text.primary
+        fill: Theme34.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -36486,7 +36518,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme34 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -36507,7 +36539,7 @@ cssRule("i-carousel-slider", {
     ".slider-arrow": {
       width: 28,
       height: 28,
-      fill: Theme34.colors.primary.main,
+      fill: Theme35.colors.primary.main,
       cursor: "pointer"
     },
     ".slider-arrow-hidden": {
@@ -36540,7 +36572,7 @@ cssRule("i-carousel-slider", {
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme34.colors.primary.main}`,
+          border: `2px solid ${Theme35.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -36551,7 +36583,7 @@ cssRule("i-carousel-slider", {
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme34.colors.primary.main
+          backgroundColor: Theme35.colors.primary.main
         }
       }
     }
@@ -37057,7 +37089,7 @@ Video = __decorateClass([
 ], Video);
 
 // packages/schema-designer/src/uiSchema.ts
-var Theme35 = theme_exports.ThemeVars;
+var Theme36 = theme_exports.ThemeVars;
 var dataUITypes = [
   { label: "VerticalLayout", value: "VerticalLayout" },
   { label: "HorizontalLayout", value: "HorizontalLayout" },
@@ -37311,7 +37343,7 @@ var SchemaDesignerUI = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme35.colors.primary.contrastText
+      fill: Theme36.colors.primary.contrastText
     }));
     btnAddElement.onClick = () => {
       this.createUISchema(pnlUIElements, currentLayout, true);
@@ -37400,7 +37432,7 @@ var SchemaDesignerUI = class extends Container {
           visible: false,
           width: 12,
           height: 12,
-          fill: Theme35.colors.secondary.main,
+          fill: Theme36.colors.secondary.main,
           tooltip: {
             content: "Remove this property",
             trigger: "hover"
@@ -37455,7 +37487,7 @@ var SchemaDesignerUI = class extends Container {
               visible: false,
               width: 12,
               height: 12,
-              fill: Theme35.colors.secondary.main,
+              fill: Theme36.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -37557,13 +37589,13 @@ var SchemaDesignerUI = class extends Container {
                   display: "flex",
                   padding: { top: 8, bottom: 8, left: 16, right: 16 },
                   border: { radius: 8 },
-                  background: { color: Theme35.action.selected }
+                  background: { color: Theme36.action.selected }
                 });
                 const iconTimesEnum = new Icon(pnlEnum, {
                   name: "times",
                   width: 14,
                   height: 14,
-                  fill: Theme35.colors.secondary.main,
+                  fill: Theme36.colors.secondary.main,
                   position: "absolute",
                   right: 2,
                   top: 2
@@ -37595,7 +37627,7 @@ var SchemaDesignerUI = class extends Container {
               position: "absolute",
               top: 5,
               right: 5,
-              fill: Theme35.colors.secondary.main,
+              fill: Theme36.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -37803,7 +37835,7 @@ var SchemaDesignerUI = class extends Container {
         name: "plus",
         width: "1em",
         height: "1em",
-        fill: Theme35.colors.primary.contrastText
+        fill: Theme36.colors.primary.contrastText
       }));
       const pnlFormDetail = new Panel(void 0, {
         padding: { top: 10, bottom: 10, left: 10, right: 10 }
@@ -38014,7 +38046,7 @@ var SchemaDesignerUI = class extends Container {
         name: "times-circle",
         width: 12,
         height: 12,
-        fill: Theme35.colors.secondary.main,
+        fill: Theme36.colors.secondary.main,
         visible: false
       });
       iconClear.onClick = () => {
@@ -38108,7 +38140,7 @@ var SchemaDesignerUI = class extends Container {
     if (isChildren) {
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme35.colors.secondary.main} !important` },
+        background: { color: `${Theme36.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         height: 28,
@@ -38118,7 +38150,7 @@ var SchemaDesignerUI = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme35.colors.primary.contrastText
+        fill: Theme36.colors.primary.contrastText
       }));
       btnDelete.onClick = () => {
         deleteElement();
@@ -38132,7 +38164,7 @@ var SchemaDesignerUI = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme35.colors.primary.contrastText
+        fill: Theme36.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -38205,12 +38237,12 @@ SchemaDesignerUI = __decorateClass([
 ], SchemaDesignerUI);
 
 // packages/schema-designer/src/style/schema-designer.css.ts
-var Theme36 = theme_exports.ThemeVars;
+var Theme37 = theme_exports.ThemeVars;
 var scrollBar = {
   "&::-webkit-scrollbar-track": {
     borderRadius: "12px",
     border: "1px solid transparent",
-    background: Theme36.action.hover
+    background: Theme37.action.hover
   },
   "&::-webkit-scrollbar": {
     width: "8px",
@@ -38218,7 +38250,7 @@ var scrollBar = {
   },
   "&::-webkit-scrollbar-thumb": {
     borderRadius: "12px",
-    background: Theme36.action.active
+    background: Theme37.action.active
   }
 };
 cssRule("i-schema-designer", {
@@ -38244,12 +38276,12 @@ cssRule("i-schema-designer", {
           height: "30px !important",
           width: "100% !important",
           border: 0,
-          borderBottom: `0.5px solid ${Theme36.divider}`,
+          borderBottom: `0.5px solid ${Theme37.divider}`,
           background: "transparent"
         },
         "textarea": {
           height: "100% !important",
-          border: `0.5px solid ${Theme36.divider}`,
+          border: `0.5px solid ${Theme37.divider}`,
           borderRadius: "1em",
           background: "transparent",
           $nest: scrollBar
@@ -38267,7 +38299,7 @@ cssRule("i-schema-designer", {
           background: "transparent !important",
           height: "30px !important",
           border: "0 !important",
-          borderBottom: `0.5px solid ${Theme36.divider} !important`
+          borderBottom: `0.5px solid ${Theme37.divider} !important`
         },
         ".selection": {
           background: "transparent",
@@ -38276,7 +38308,7 @@ cssRule("i-schema-designer", {
         },
         "span.icon-btn": {
           border: "0",
-          borderBottom: `0.5px solid ${Theme36.divider}`,
+          borderBottom: `0.5px solid ${Theme37.divider}`,
           borderRadius: "0",
           height: "30px !important",
           width: "32px !important",
@@ -38303,8 +38335,8 @@ cssRule("i-schema-designer", {
       }
     },
     "i-button": {
-      background: Theme36.colors.primary.main,
-      color: Theme36.colors.primary.contrastText
+      background: Theme37.colors.primary.main,
+      color: Theme37.colors.primary.contrastText
     },
     ".cs-wrapper--header": {
       padding: "5px 10px",
@@ -38317,12 +38349,12 @@ cssRule("i-schema-designer", {
     ".cs-prefix--items": {
       $nest: {
         ".cs-box--shadow": {
-          boxShadow: Theme36.shadows[2]
+          boxShadow: Theme37.shadows[2]
         }
       }
     },
     ".cs-box--enum": {
-      boxShadow: Theme36.shadows[2],
+      boxShadow: Theme37.shadows[2],
       padding: "8px 16px",
       borderRadius: 8,
       minWidth: 100,
@@ -38357,7 +38389,7 @@ cssRule("i-schema-designer", {
 });
 
 // packages/schema-designer/src/schemaDesigner.ts
-var Theme37 = theme_exports.ThemeVars;
+var Theme38 = theme_exports.ThemeVars;
 var dataTypes = [
   { label: "string", value: "string" },
   { label: "number", value: "number" },
@@ -38602,7 +38634,7 @@ var SchemaDesigner = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme37.colors.primary.contrastText
+      fill: Theme38.colors.primary.contrastText
     }));
     const hStackActions = new HStack(void 0, {
       verticalAlignment: "center",
@@ -38690,7 +38722,7 @@ var SchemaDesigner = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme37.colors.primary.contrastText
+        fill: Theme38.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -38705,7 +38737,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme37.colors.secondary.main,
+        fill: Theme38.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -38725,7 +38757,7 @@ var SchemaDesigner = class extends Container {
         name: "exclamation-circle",
         width: 12,
         height: 12,
-        fill: Theme37.colors.secondary.main,
+        fill: Theme38.colors.secondary.main,
         tooltip: {
           content: "Invalid field",
           trigger: "hover"
@@ -38734,7 +38766,7 @@ var SchemaDesigner = class extends Container {
       });
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme37.colors.secondary.main} !important` },
+        background: { color: `${Theme38.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         padding: { top: 6, bottom: 6, left: 12, right: 12 }
@@ -38743,7 +38775,7 @@ var SchemaDesigner = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme37.colors.primary.contrastText
+        fill: Theme38.colors.primary.contrastText
       }));
       btnDelete.setAttribute("action", "delete");
       btnDelete.onClick = async () => {
@@ -38989,13 +39021,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme37.action.selected }
+          background: { color: Theme38.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme37.colors.secondary.main,
+          fill: Theme38.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -39039,7 +39071,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme37.colors.secondary.main,
+        fill: Theme38.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39128,13 +39160,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme37.action.selected }
+          background: { color: Theme38.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme37.colors.secondary.main,
+          fill: Theme38.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -39173,7 +39205,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme37.colors.secondary.main,
+        fill: Theme38.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39272,7 +39304,7 @@ var SchemaDesigner = class extends Container {
         name: "times",
         width: 14,
         height: 14,
-        fill: Theme37.colors.secondary.main,
+        fill: Theme38.colors.secondary.main,
         position: "absolute",
         right: 4,
         top: 4
@@ -39358,7 +39390,7 @@ var SchemaDesigner = class extends Container {
     if (parentFields.length) {
       new Label(vStack, {
         caption: "Advanced options",
-        font: { size: "16px", color: Theme37.colors.primary.main }
+        font: { size: "16px", color: Theme38.colors.primary.main }
       });
     }
     const gridLayout = new GridLayout(vStack, {
@@ -39403,7 +39435,7 @@ var SchemaDesigner = class extends Container {
         width: 12,
         height: 12,
         position: notCheckbox ? "absolute" : "relative",
-        fill: Theme37.colors.secondary.main,
+        fill: Theme38.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39634,9 +39666,9 @@ SchemaDesigner = __decorateClass([
 ], SchemaDesigner);
 
 // packages/navigator/src/style/navigator.css.ts
-var Theme38 = theme_exports.ThemeVars;
+var Theme39 = theme_exports.ThemeVars;
 cssRule("i-nav", {
-  border: `1px solid ${Theme38.divider}`,
+  border: `1px solid ${Theme39.divider}`,
   $nest: {
     "> i-vstack": {
       alignItems: "center",
@@ -39645,7 +39677,7 @@ cssRule("i-nav", {
         ".search-container": {
           width: "100%",
           padding: 10,
-          borderBottom: `1px solid ${Theme38.divider}`,
+          borderBottom: `1px solid ${Theme39.divider}`,
           alignItems: "center",
           gap: 5,
           $nest: {
@@ -39657,7 +39689,7 @@ cssRule("i-nav", {
                 "input": {
                   background: "transparent",
                   border: "0",
-                  borderBottom: `1px solid ${Theme38.divider}`
+                  borderBottom: `1px solid ${Theme39.divider}`
                 }
               }
             }
@@ -39672,9 +39704,9 @@ cssRule("i-nav", {
     },
     "i-nav-item": {
       cursor: "pointer",
-      background: Theme38.background.main,
+      background: Theme39.background.main,
       borderLeft: "3px solid transparent",
-      borderBottom: `1px solid ${Theme38.divider}`,
+      borderBottom: `1px solid ${Theme39.divider}`,
       $nest: {
         "> i-grid-layout": {
           height: 50,
@@ -39683,14 +39715,14 @@ cssRule("i-nav", {
           alignItems: "center"
         },
         "i-icon": {
-          height: Theme38.typography.fontSize,
-          width: Theme38.typography.fontSize,
-          fill: Theme38.colors.primary.main
+          height: Theme39.typography.fontSize,
+          width: Theme39.typography.fontSize,
+          fill: Theme39.colors.primary.main
         },
         "&.active": {
-          color: Theme38.colors.primary.contrastText,
-          background: Theme38.colors.primary.main,
-          borderLeft: `3px solid ${Theme38.colors.primary.main}`
+          color: Theme39.colors.primary.contrastText,
+          background: Theme39.colors.primary.main,
+          borderLeft: `3px solid ${Theme39.colors.primary.main}`
         }
       }
     }
@@ -39999,19 +40031,19 @@ NavItem = __decorateClass([
 ], NavItem);
 
 // packages/breadcrumb/src/style/breadcrumb.css.ts
-var Theme39 = theme_exports.ThemeVars;
+var Theme40 = theme_exports.ThemeVars;
 cssRule("i-breadcrumb", {
   $nest: {
     "i-label": {
       padding: 5,
       margin: "0 5px",
-      color: Theme39.colors.primary.main
+      color: Theme40.colors.primary.main
     },
     "i-icon": {
       margin: "0 5px",
-      height: Theme39.typography.fontSize,
-      width: Theme39.typography.fontSize,
-      fill: Theme39.colors.primary.main
+      height: Theme40.typography.fontSize,
+      width: Theme40.typography.fontSize,
+      fill: Theme40.colors.primary.main
     }
   }
 });
@@ -40079,7 +40111,7 @@ Breadcrumb = __decorateClass([
 ], Breadcrumb);
 
 // packages/form/src/styles/index.css.ts
-var Theme40 = theme_exports.ThemeVars;
+var Theme41 = theme_exports.ThemeVars;
 var formStyle = style({
   gap: 10
 });
@@ -40090,7 +40122,7 @@ var formGroupStyle = style({
   justifyContent: "center"
 });
 var groupStyle = style({
-  border: `1px solid ${Theme40.divider}`,
+  border: `1px solid ${Theme41.divider}`,
   borderRadius: 5,
   width: "100%",
   marginBottom: 5
@@ -40107,11 +40139,27 @@ var groupBodyStyle = style({
 });
 var collapseBtnStyle = style({
   cursor: "pointer",
-  height: Theme40.typography.fontSize,
-  width: Theme40.typography.fontSize
+  height: Theme41.typography.fontSize,
+  width: Theme41.typography.fontSize
 });
 var inputStyle = style({
-  width: "100%"
+  width: "100% !important",
+  $nest: {
+    "& > input, & > textarea": {
+      width: "100% !important",
+      maxWidth: "100%",
+      padding: "0.5rem 1rem",
+      color: Theme41.input.fontColor,
+      backgroundColor: Theme41.input.background,
+      borderColor: Theme41.input.background,
+      borderRadius: "0.625rem",
+      outline: "none"
+    },
+    "& > input:focus, & > textarea:focus": {
+      backgroundColor: `darken(${Theme41.input.background}, 20%)`,
+      borderColor: `darken(${Theme41.input.background}, 20%)`
+    }
+  }
 });
 var datePickerStyle = style({
   width: "100% !important",
@@ -40122,25 +40170,69 @@ var datePickerStyle = style({
     }
   }
 });
-var comboBoxStyle = style({});
+var comboBoxStyle = style({
+  width: "100% !important",
+  $nest: {
+    ".selection": {
+      width: "100% !important",
+      maxWidth: "100%",
+      padding: "0.5rem 1rem",
+      color: Theme41.input.fontColor,
+      backgroundColor: Theme41.input.background,
+      borderColor: Theme41.input.background,
+      borderRadius: "0.625rem"
+    },
+    ".selection input": {
+      color: "inherit",
+      backgroundColor: "inherit",
+      padding: 0
+    },
+    ".selection:focus-within": {
+      backgroundColor: `darken(${Theme41.input.background}, 20%)`,
+      borderColor: `darken(${Theme41.input.background}, 20%)`
+    },
+    "> .icon-btn": {
+      borderColor: Theme41.input.background,
+      borderRadius: "0.625rem"
+    }
+  }
+});
 var buttonStyle = style({
   padding: 5
 });
 var iconButtonStyle = style({
   cursor: "pointer",
-  height: Theme40.typography.fontSize,
-  width: Theme40.typography.fontSize
+  height: Theme41.typography.fontSize,
+  width: Theme41.typography.fontSize
+});
+var checkboxStyle = style({
+  $nest: {
+    ".checkmark": {
+      width: "22px",
+      height: "22px",
+      borderRadius: "6px"
+    },
+    ".checkmark:after": {
+      width: "4px",
+      height: "8px",
+      top: "4px"
+    }
+  }
 });
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme40.divider}`,
-  marginBottom: 10
+  borderBottom: `1px solid ${Theme41.divider}`,
+  marginBottom: 10,
+  minHeight: "60px",
+  alignItems: "center",
+  fontWeight: 600
 });
 var listBtnAddStyle = style({
-  height: Theme40.typography.fontSize,
-  width: Theme40.typography.fontSize,
-  cursor: "pointer",
-  placeSelf: "center"
+  color: Theme41.colors.primary.contrastText,
+  backgroundColor: Theme41.colors.primary.main,
+  padding: "0.5rem 1rem",
+  borderRadius: 0,
+  cursor: "pointer"
 });
 var listColumnHeaderStyle = style({
   padding: "10px 0",
@@ -40221,19 +40313,57 @@ var listVerticalLayoutStyle = style({
 var listItemBtnDelete = style({
   cursor: "pointer",
   placeSelf: "center",
-  height: Theme40.typography.fontSize,
-  width: Theme40.typography.fontSize
+  height: Theme41.typography.fontSize,
+  width: Theme41.typography.fontSize
 });
 var tabsStyle = style({
-  marginBottom: 41
+  marginBottom: 41,
+  $nest: {
+    ".tabs-nav-wrap": {
+      $nest: {
+        ".tabs-nav": {
+          borderColor: "transparent",
+          height: "54px"
+        },
+        "i-tab": {
+          border: 0,
+          fontFamily: Theme41.typography.fontFamily,
+          fontSize: Theme41.typography.fontSize,
+          fontWeight: 600,
+          borderBottom: "1px solid transparent",
+          background: "transparent",
+          color: Theme41.text.secondary,
+          margin: "0 0.75rem",
+          padding: "0.5rem 0",
+          transition: "color .2s ease",
+          $nest: {
+            "&:first-of-type": {
+              marginLeft: 0
+            },
+            "&:not(.disabled):hover": {
+              color: Theme41.text.primary
+            },
+            "&:not(.disabled).active": {
+              background: "transparent",
+              color: Theme41.colors.info.main,
+              borderBottom: `1px solid ${Theme41.colors.info.main}`
+            },
+            ".tab-item": {
+              padding: 0
+            }
+          }
+        }
+      }
+    }
+  }
 });
 var cardStyle = style({
-  background: Theme40.background.main,
-  border: `1px solid ${Theme40.divider}`
+  background: Theme41.background.main,
+  border: `1px solid ${Theme41.divider}`
 });
 var cardHeader = style({
   padding: 20,
-  borderBottom: `1px solid ${Theme40.divider}`,
+  borderBottom: `1px solid ${Theme41.divider}`,
   cursor: "pointer"
 });
 var cardBody = style({
@@ -40744,7 +40874,9 @@ var Form = class extends Control {
         },
         background: {
           color: this._formOptions.clearButtonOptions.backgroundColor || DEFAULT_OPTIONS.clearButtonOptions.backgroundColor
-        }
+        },
+        padding: { top: "0.65rem", bottom: "0.65rem", left: "1rem", right: "1rem" },
+        border: { radius: "0px" }
       });
       btnClear.classList.add(buttonStyle);
       if ((_b = this._formOptions.clearButtonOptions) == null ? void 0 : _b.onClick)
@@ -40763,7 +40895,9 @@ var Form = class extends Control {
         },
         background: {
           color: this._formOptions.confirmButtonOptions.backgroundColor || DEFAULT_OPTIONS.confirmButtonOptions.backgroundColor
-        }
+        },
+        padding: { top: "0.65rem", bottom: "0.65rem", left: "1rem", right: "1rem" },
+        border: { radius: "0px" }
       });
       btnConfirm.classList.add(buttonStyle);
       btnConfirm.onClick = async () => {
@@ -40821,6 +40955,13 @@ var Form = class extends Control {
           value: item
         }));
       }
+      if ((schemaOptions == null ? void 0 : schemaOptions.format) === "radio") {
+        items = items.map((v) => ({
+          caption: v.label,
+          value: v.value
+        }));
+        return this.renderRadioGroup(parent, scope, items, controlOptions, labelProp);
+      }
       return this.renderComboBox(parent, scope, items, controlOptions, labelProp);
     } else if (schema.type === "string") {
       if (["date", "time", "date-time"].includes(schema.format || "")) {
@@ -40834,6 +40975,8 @@ var Form = class extends Control {
         return this.renderUploader(parent, scope, controlOptions);
       } else if (schema.format === "color") {
         return this.renderColorPicker(parent, scope, controlOptions, labelProp);
+      } else if ((schemaOptions == null ? void 0 : schemaOptions.multi) === true) {
+        return this.renderTextArea(parent, scope, controlOptions, labelProp);
       } else {
         return this.renderInput(parent, scope, controlOptions, labelProp);
       }
@@ -41219,6 +41362,7 @@ var Form = class extends Control {
     const vstack = new VStack(wrapper, { gap: 4 });
     const input = new Input(vstack, {
       inputType: "text",
+      height: "42px",
       width: "100%"
     });
     input.onChanged = () => {
@@ -41233,6 +41377,7 @@ var Form = class extends Control {
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
+    input.classList.add(inputStyle);
     const description = this.renderLabel(vstack, options, "description");
     const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
@@ -41255,6 +41400,7 @@ var Form = class extends Control {
     const vstack = new VStack(wrapper, { gap: 4 });
     const input = new Input(vstack, {
       inputType: "number",
+      height: "42px",
       width: "100%"
     });
     input.onChanged = () => {
@@ -41429,11 +41575,14 @@ var Form = class extends Control {
     const vstack = new VStack(wrapper, { gap: 4 });
     const input = new ComboBox(vstack, {
       items,
+      height: "42px",
       icon: {
         name: "caret-down"
       }
     });
     input.onChanged = () => {
+      if (labelProp) {
+      }
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
     };
     input.setAttribute("role", "field");
@@ -41468,6 +41617,8 @@ var Form = class extends Control {
       radioItems: items
     });
     input.onChanged = () => {
+      if (labelProp) {
+      }
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
     };
     input.setAttribute("role", "field");
@@ -41505,6 +41656,7 @@ var Form = class extends Control {
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
+    input.classList.add(checkboxStyle);
     const description = this.renderLabel(vstack, options, "description");
     const error = this.renderLabel(vstack, options, "error");
     this._formControls[scope] = {
@@ -41520,7 +41672,7 @@ var Form = class extends Control {
     const field = scope.split("/").pop() || "";
     wrapper.setAttribute("array-field", field);
     wrapper.setAttribute("role", "array");
-    const header = new GridLayout(wrapper, { templateColumns: ["1fr", "50px"] });
+    const header = new GridLayout(wrapper, { templateColumns: ["1fr", "80px"] });
     header.classList.add(listHeaderStyle);
     const hstack = new HStack(header, { gap: 2 });
     new Label(hstack, { caption: options.caption });
@@ -41530,7 +41682,13 @@ var Form = class extends Control {
         font: { color: "#ff0000" }
       });
     }
-    const btnAdd = new Icon(header, { name: "plus" });
+    const btnAdd = new Button(header, { caption: "Add" });
+    btnAdd.prepend(new Icon(void 0, {
+      name: "plus",
+      width: "1em",
+      height: "1em",
+      fill: theme.colors.primary.contrastText
+    }));
     btnAdd.classList.add(listBtnAddStyle);
     const columnHeader = new VStack(wrapper);
     const body = new VStack(wrapper, {

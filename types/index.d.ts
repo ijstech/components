@@ -6162,7 +6162,7 @@ declare module "packages/application/src/index" {
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
         private getModulePath;
         initModule(modulePath: string, script: string): Promise<string | null>;
-        init(scconfigPath: string): Promise<Module | null>;
+        init(scconfigPath: string, customData?: Record<string, any>): Promise<Module | null>;
         newModule(module: string, options?: IHasDependencies): Promise<Module | null>;
         copyToClipboard(value: string): Promise<boolean>;
         xssSanitize(value: string): string;
@@ -9775,8 +9775,10 @@ declare module "packages/data-grid/src/dataGrid" {
 declare module "@ijstech/components/dataGrid" {
     export { DataGrid, DataGridCell } from "packages/data-grid/src/dataGrid";
 }
+declare module "packages/markdown/src/styles/index.css" { }
 declare module "packages/markdown/src/markdown" {
     import { Control, ControlElement } from "@ijstech/components/base";
+    import "packages/markdown/src/styles/index.css";
     export interface MarkdownElement extends ControlElement {
         caption?: string;
         src?: string;
@@ -11118,6 +11120,7 @@ declare module "packages/form/src/styles/index.css" {
     export const comboBoxStyle: string;
     export const buttonStyle: string;
     export const iconButtonStyle: string;
+    export const checkboxStyle: string;
     export const listHeaderStyle: string;
     export const listBtnAddStyle: string;
     export const listColumnHeaderStyle: string;
