@@ -22485,7 +22485,7 @@ var Upload = class extends Control {
       this.caption = this.getAttribute("caption", true);
       this.draggable = this.getAttribute("draggable", true, false);
       this._uploadDragElm = new UploadDrag(this, {
-        caption: this.caption,
+        caption: this.caption || "Drag a file or click to upload",
         disabled: !this.enabled || !this.draggable,
         onBeforeDrop: (source) => {
           if (this.onBeforeDrop)
@@ -22502,11 +22502,28 @@ var Upload = class extends Control {
       this.accept = this.getAttribute("accept");
       if (!this.enabled)
         this._fileElm.setAttribute("disabled", "");
-      const btn = new Button(this, {
-        caption: "Choose an image"
+      const panel = new VStack(void 0, {
+        alignItems: "center"
       });
-      btn.className = `i-upload_btn ${!this.enabled && "disabled"}`;
-      this._wrapperFileElm.appendChild(btn);
+      const icon = new Icon(panel, {
+        name: "arrow-down",
+        height: 32,
+        width: 32,
+        margin: {
+          bottom: 20
+        },
+        fill: Theme12.divider
+      });
+      if (!this.draggable) {
+        const label = new Label(panel, {
+          caption: "Click to upload",
+          font: {
+            size: "18px"
+          }
+        });
+      }
+      ;
+      this._wrapperFileElm.appendChild(panel);
       const fileListAttr = this.getAttribute("showFileList", true);
       if (fileListAttr && !this._fileListElm) {
         this._fileListElm = this.createElement("div", this);
@@ -28337,6 +28354,15 @@ var Application = class {
     }
     ;
   }
+  calculateElementScconfigPath(packageName) {
+    let options = this._initOptions;
+    let rootDir = (options == null ? void 0 : options.rootDir) ? options == null ? void 0 : options.rootDir : "";
+    if (!rootDir.endsWith("/"))
+      rootDir = rootDir + "/";
+    let libDir = (options == null ? void 0 : options.libDir) ? (options == null ? void 0 : options.libDir) + "/" : "libs/";
+    let path = rootDir + libDir + packageName + "/scconfig.json";
+    return path;
+  }
   async createElement(name, lazyLoad, attributes, modulePath) {
     name = name.split("/").pop() || name;
     let elementName = `i-${name}`;
@@ -28345,7 +28371,28 @@ var Application = class {
       if (window.customElements.get(elementName)) {
         result = document.createElement(elementName);
       } else {
-        let loaded = await this.loadPackage(`@scom/${name}`, modulePath || "*");
+        let packageName = `@scom/${name}`;
+        let scconfigPath = this.calculateElementScconfigPath(packageName);
+        if (scconfigPath) {
+          let scconfigResponse = await fetch(scconfigPath);
+          if (scconfigResponse.status == 200) {
+            let scconfig = await scconfigResponse.json();
+            if (scconfig) {
+              let promises = [];
+              for (let dependency of scconfig.dependencies) {
+                if (dependency === "@ijstech/components" || this.packageNames.has(dependency))
+                  continue;
+                promises.push(this.loadPackage(dependency, modulePath || "*"));
+              }
+              ;
+              await Promise.all(promises);
+            }
+            ;
+          }
+          ;
+        }
+        ;
+        let loaded = await this.loadPackage(packageName, modulePath || "*");
         if (loaded)
           result = document.createElement(elementName);
       }
@@ -30742,8 +30789,11 @@ var DataGrid = class extends Control {
   refresh() {
     super.refresh();
     this.highlightCurrCell();
-    this._scrollBox.style.height = this.heightValue + "px";
-    this._scrollBox.style.width = this.widthValue + "px";
+    if (this._scrollBox) {
+      this._scrollBox.style.height = this.heightValue + "px";
+      this._scrollBox.style.width = this.widthValue + "px";
+    }
+    ;
   }
   deleteRow(row) {
     if (this._dataBindingContext && this._dataBindingContext["readOnly"])
@@ -32681,6 +32731,17 @@ var Markdown = class extends Control {
   constructor(parent, options) {
     super(parent, options);
     this.gitbookProcess = true;
+    this._theme = "light";
+  }
+  get theme() {
+    return this._theme;
+  }
+  set theme(value) {
+    this._theme = value;
+    if (this._theme === "light")
+      this.classList.remove("toastui-editor-dark");
+    else
+      this.classList.add("toastui-editor-dark");
   }
   getRenderer() {
     const renderer = {};
@@ -32697,11 +32758,13 @@ var Markdown = class extends Control {
     } else {
       text = "";
     }
-    this.innerHTML = text;
-    return this.innerHTML;
+    if (!this.elm)
+      this.elm = this.createElement("div", this);
+    this.elm.innerHTML = text;
+    return this.elm.innerHTML;
   }
   async beforeRender(text) {
-    this.innerHTML = text;
+    this.elm.innerHTML = text;
   }
   async processText(text) {
     if (this.gitbookProcess) {
@@ -32718,7 +32781,8 @@ var Markdown = class extends Control {
   }
   init() {
     super.init();
-    this.classList.add("toastui-editor-contents");
+    this.elm = this.createElement("div", this);
+    this.elm.classList.add("toastui-editor-contents");
   }
 };
 Markdown = __decorateClass([
@@ -32780,11 +32844,8 @@ var MarkdownEditor = class extends Control {
   set theme(value) {
     this._theme = value;
     if (!this.editor) {
-      if (this.viewer) {
-        if (this.theme === "light")
-          this.elm.classList.remove("toastui-editor-dark");
-        else
-          this.elm.classList.add("toastui-editor-dark");
+      if (this.mdViewer) {
+        this.mdViewer.theme = value;
       }
       return;
     }
@@ -32913,11 +32974,8 @@ var MarkdownEditor = class extends Control {
         this.elm.style.height = "auto";
       }
       this.mdViewer = new Markdown();
+      this.mdViewer.theme = this.theme;
       this.elm.appendChild(this.mdViewer);
-      if (this.theme === "light")
-        this.elm.classList.remove("toastui-editor-dark");
-      else
-        this.elm.classList.add("toastui-editor-dark");
     } else {
       if (!this.elm) {
         this.elm = this.createElement("div", this);
@@ -40155,18 +40213,36 @@ var inputStyle = style({
       borderRadius: "0.625rem",
       outline: "none"
     },
-    "& > input:focus, & > textarea:focus": {
-      backgroundColor: `darken(${Theme41.input.background}, 20%)`,
-      borderColor: `darken(${Theme41.input.background}, 20%)`
+    "i-color .input-span": {
+      borderRadius: "0.625rem",
+      $nest: {
+        "> span": {
+          borderRadius: "0.375rem"
+        }
+      }
     }
   }
 });
 var datePickerStyle = style({
+  display: "inline-flex",
   width: "100% !important",
+  borderRadius: "0.625rem",
   $nest: {
     "> input": {
       width: "calc(100% - 24px) !important",
-      maxWidth: "calc(100% - 24px)"
+      maxWidth: "calc(100% - 24px)",
+      padding: "0.5rem 1rem",
+      color: Theme41.input.fontColor,
+      backgroundColor: Theme41.input.background,
+      borderColor: Theme41.input.background,
+      outline: "none"
+    },
+    "> input:focus ~ .datepicker-toggle": {
+      borderColor: Theme41.colors.info.main
+    },
+    ".datepicker-toggle": {
+      backgroundColor: Theme41.input.background,
+      width: "42px"
     }
   }
 });
@@ -40180,20 +40256,18 @@ var comboBoxStyle = style({
       color: Theme41.input.fontColor,
       backgroundColor: Theme41.input.background,
       borderColor: Theme41.input.background,
-      borderRadius: "0.625rem"
+      borderRadius: "0.625rem!important"
     },
     ".selection input": {
       color: "inherit",
       backgroundColor: "inherit",
       padding: 0
     },
-    ".selection:focus-within": {
-      backgroundColor: `darken(${Theme41.input.background}, 20%)`,
-      borderColor: `darken(${Theme41.input.background}, 20%)`
-    },
     "> .icon-btn": {
+      justifyContent: "center",
       borderColor: Theme41.input.background,
-      borderRadius: "0.625rem"
+      borderRadius: "0.625rem",
+      width: "42px"
     }
   }
 });
@@ -40358,7 +40432,6 @@ var tabsStyle = style({
   }
 });
 var cardStyle = style({
-  background: Theme41.background.main,
   border: `1px solid ${Theme41.divider}`
 });
 var cardHeader = style({
@@ -40375,7 +40448,8 @@ var uploadStyle = style({
   margin: 0,
   $nest: {
     "> .i-upload-wrapper": {
-      marginBottom: 0
+      marginBottom: 0,
+      borderRadius: 5
     }
   }
 });
@@ -40410,13 +40484,15 @@ var Form = class extends Control {
     this._formRules = [];
     this._formControls = {};
     this.validateOnValueChanged = async (currentControl, parent, scope, caption) => {
-      const data = await this.getFormData();
-      const validationResult = this.validate(data, this.jsonSchema, { changing: false });
+      var _a, _b;
+      const data = (_a = this.validationData) != null ? _a : await this.getFormData();
+      const validationResult = (_b = this.validationResult) != null ? _b : this.validate(data, this.jsonSchema, { changing: false });
       let showErrMsg = false;
       let errMsg = "";
+      const isSingleItem = parent.closest('[single-item="true"]');
       let _scope = scope;
       const parentListItem = parent.closest('[role="list-item"]');
-      if (parentListItem) {
+      if (parentListItem && !isSingleItem) {
         let parentFields = [];
         const getParentIdxs = async (_parent) => {
           if (!_parent)
@@ -40483,7 +40559,7 @@ var Form = class extends Control {
         return;
       }
       if ((validationResult == null ? void 0 : validationResult.valid) == false) {
-        const err = validationResult.errors.find((f) => f.scope === scope);
+        const err = validationResult.errors.find((f) => f.scope === (isSingleItem ? scope.replace("/items", "") : scope));
         if (err) {
           showErrMsg = true;
           errMsg = err.message;
@@ -40576,19 +40652,24 @@ var Form = class extends Control {
     }
   }
   setData(scope, value, parentElm) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     let _control;
+    if (this._formOptions.customControls && typeof ((_a = this._formOptions.customControls[scope]) == null ? void 0 : _a.setData) === "function") {
+      _control = this._formControls[scope].input;
+      if (_control)
+        this._formOptions.customControls[scope].setData(_control, value);
+    }
     if (typeof value === "object") {
       if (value instanceof Array) {
         if (parentElm) {
           const currentFld = scope.split("/").pop();
-          _control = (_a = parentElm.querySelector(`[array-field="${currentFld}"]`)) == null ? void 0 : _a.lastChild;
+          _control = (_b = parentElm.querySelector(`[array-field="${currentFld}"]`)) == null ? void 0 : _b.lastChild;
         }
-        const grid = _control || ((_b = this._formControls[scope]) == null ? void 0 : _b.input);
+        const grid = _control || ((_c = this._formControls[scope]) == null ? void 0 : _c.input);
         if (grid) {
           grid.clearInnerHTML();
           for (const data of value) {
-            const schema = (_c = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _c.items;
+            const schema = (_d = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _d.items;
             this.renderCard(grid, scope, schema, {});
           }
           const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
@@ -40672,7 +40753,7 @@ var Form = class extends Control {
       if (parentElm) {
         _control = parentElm.querySelector(`[scope="${scope}"]`);
       }
-      const input = _control || ((_d = this._formControls[scope]) == null ? void 0 : _d.input);
+      const input = _control || ((_e = this._formControls[scope]) == null ? void 0 : _e.input);
       if (!input && value === void 0) {
         const currentFld = scope.split("/").pop();
         const objElm = parentElm == null ? void 0 : parentElm.querySelector(`[object-field="${currentFld}"]`);
@@ -40707,14 +40788,14 @@ var Form = class extends Control {
       }
     }
   }
-  async getFormData() {
+  async getFormData(isErrorShown) {
     if (!this._jsonSchema)
       return void 0;
-    const data = await this.getDataBySchema(this._jsonSchema);
+    const data = await this.getDataBySchema(this._jsonSchema, "#", isErrorShown);
     return data;
   }
-  async getDataBySchema(schema, scope = "#", parentElm, listItem) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+  async getDataBySchema(schema, scope = "#", isErrorShown, parentElm, listItem) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
     if (!schema)
       return void 0;
     let _control;
@@ -40736,16 +40817,31 @@ var Form = class extends Control {
     } else {
       control = _control || ((_a = this._formControls[scope]) == null ? void 0 : _a.input);
     }
+    const checkValidation = () => {
+      if (isErrorShown && control) {
+        const actControl = control;
+        if (actControl.querySelector("i-color")) {
+          actControl.onClosed();
+        } else {
+          actControl.onChanged();
+        }
+      }
+    };
+    if (this._formOptions.customControls && typeof ((_b = this._formOptions.customControls[scope]) == null ? void 0 : _b.getData) === "function") {
+      checkValidation();
+      return this._formOptions.customControls[scope].getData(control);
+    }
     if (schema.type === "string") {
       if (control) {
+        checkValidation();
         switch (control.tagName) {
           case "I-INPUT":
             return control.value;
           case "I-COMBO-BOX":
-            return (_b = control.value) == null ? void 0 : _b.value;
+            return (_c = control.value) == null ? void 0 : _c.value;
           case "I-DATEPICKER":
             let datepicker = control;
-            return (_c = datepicker.value) == null ? void 0 : _c.format(datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
+            return (_d = datepicker.value) == null ? void 0 : _d.format(datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
           case "I-UPLOAD":
             const uploader = control;
             const file = uploader.fileList[0];
@@ -40754,7 +40850,7 @@ var Form = class extends Control {
                 const dataUrl = await uploader.toBase64(file);
                 return dataUrl;
               } else if (schema.format === "data-cid") {
-                let cid = (_d = file.cid) == null ? void 0 : _d.cid;
+                let cid = (_e = file.cid) == null ? void 0 : _e.cid;
                 if (!cid)
                   return void 0;
                 try {
@@ -40777,21 +40873,10 @@ var Form = class extends Control {
         return void 0;
     } else if (schema.type === "integer") {
       if (control) {
+        checkValidation();
         switch (control.tagName) {
           case "I-INPUT":
             return control.value ? parseInt(control.value) : void 0;
-          case "I-COMBO-BOX":
-            return parseFloat((_e = control.value) == null ? void 0 : _e.value);
-          default:
-            return void 0;
-        }
-      } else
-        return void 0;
-    } else if (schema.type === "number") {
-      if (control) {
-        switch (control.tagName) {
-          case "I-INPUT":
-            return control.value ? parseFloat(control.value) : void 0;
           case "I-COMBO-BOX":
             return parseFloat((_f = control.value) == null ? void 0 : _f.value);
           default:
@@ -40799,8 +40884,22 @@ var Form = class extends Control {
         }
       } else
         return void 0;
+    } else if (schema.type === "number") {
+      if (control) {
+        checkValidation();
+        switch (control.tagName) {
+          case "I-INPUT":
+            return control.value ? parseFloat(control.value) : void 0;
+          case "I-COMBO-BOX":
+            return parseFloat((_g = control.value) == null ? void 0 : _g.value);
+          default:
+            return void 0;
+        }
+      } else
+        return void 0;
     } else if (schema.type === "boolean") {
       if (control) {
+        checkValidation();
         switch (control.tagName) {
           case "I-CHECKBOX":
             return control.checked;
@@ -40816,24 +40915,25 @@ var Form = class extends Control {
       for (const propertyName in properties) {
         const currentSchema = properties[propertyName];
         const currentScope = `${scope}/properties/${propertyName}`;
-        obj[propertyName] = await this.getDataBySchema(currentSchema, currentScope, parentElm, listItem);
+        obj[propertyName] = await this.getDataBySchema(currentSchema, currentScope, isErrorShown, parentElm, listItem);
       }
       return obj;
     } else if (schema.type === "array") {
       if (parentElm) {
-        _control = (_g = parentElm.querySelector('[role="list-item"]')) == null ? void 0 : _g.parentElement;
+        _control = (_h = parentElm.querySelector('[role="list-item"]')) == null ? void 0 : _h.parentElement;
       } else if (listItem) {
-        _control = (_h = listItem.querySelector('[role="list-item"]')) == null ? void 0 : _h.parentElement;
+        _control = (_i = listItem.querySelector('[role="list-item"]')) == null ? void 0 : _i.parentElement;
       }
-      const grid = _control || ((_i = this._formControls[scope]) == null ? void 0 : _i.input);
+      const grid = _control || ((_j = this._formControls[scope]) == null ? void 0 : _j.input);
       const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
       if (!(schema.items instanceof Array) && typeof schema.items === "object") {
         const currentSchema = schema.items;
         if (listItems && listItems.length > 0) {
           const list = [];
+          const newScope = currentSchema.type === "string" ? scope + "/items" : "#";
           for (let i = 0; i < listItems.length; i++) {
             const listItem2 = listItems[i];
-            const data = await this.getDataBySchema(currentSchema, "#", parentElm, listItem2);
+            const data = await this.getDataBySchema(currentSchema, newScope, isErrorShown, parentElm, listItem2);
             list.push(data);
           }
           return list;
@@ -40901,11 +41001,14 @@ var Form = class extends Control {
       });
       btnConfirm.classList.add(buttonStyle);
       btnConfirm.onClick = async () => {
-        var _a2;
-        const data = await this.getFormData();
-        const validationResult = this.validate(data, this._jsonSchema, { changing: false });
-        if (validationResult.valid && ((_a2 = this._formOptions.confirmButtonOptions) == null ? void 0 : _a2.onClick))
+        var _a2, _b2;
+        this.validationData = await this.getFormData();
+        this.validationResult = this.validate(this.validationData, this._jsonSchema, { changing: false });
+        await this.getFormData(true);
+        if (((_a2 = this.validationResult) == null ? void 0 : _a2.valid) && ((_b2 = this._formOptions.confirmButtonOptions) == null ? void 0 : _b2.onClick))
           this._formOptions.confirmButtonOptions.onClick();
+        this.validationData = null;
+        this.validationResult = null;
       };
       pnlButton.appendChild(btnConfirm);
     }
@@ -40935,6 +41038,18 @@ var Form = class extends Control {
       required: isRequired,
       hideLabel
     };
+    if (this._formOptions.customControls) {
+      if (this._formOptions.customControls[scope]) {
+        const customRenderer = this._formOptions.customControls[scope];
+        console.log("customRenderer", customRenderer);
+        const control = customRenderer.render();
+        parent.appendChild(control);
+        this._formControls[scope] = {
+          input: control
+        };
+        return;
+      }
+    }
     if (schema.enum && schema.enum.length > 0 || schema.oneOf && schema.oneOf.length > 0) {
       let items = [];
       if (schema.oneOf && schema.oneOf.length > 0) {
@@ -41244,7 +41359,7 @@ var Form = class extends Control {
   validateRule(elm, effect, value, schema) {
     let isValid = false;
     if (schema.const) {
-      if (value === schema.const.toString())
+      if (value === schema.const)
         isValid = true;
     } else if (schema.enum) {
       const stringEnum = schema.enum.map((v) => v.toString());
@@ -41475,7 +41590,9 @@ var Form = class extends Control {
     }
     const vstack = new VStack(wrapper, { gap: 4 });
     const input = new Input(vstack, {
-      inputType: "color"
+      inputType: "color",
+      height: "42px",
+      width: "100%"
     });
     input.onClosed = () => {
       if (labelProp)
@@ -41545,6 +41662,7 @@ var Form = class extends Control {
       dateTimeFormat = ((_a = this._formOptions.dateTimeFormat) == null ? void 0 : _a.date) || DEFAULT_OPTIONS.dateTimeFormat.date;
     const input = new Datepicker(vstack, {
       type,
+      height: "42px",
       dateTimeFormat
     });
     input.onChanged = () => this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
@@ -41640,7 +41758,7 @@ var Form = class extends Control {
     const field = scope.substr(scope.lastIndexOf("/") + 1);
     const wrapper = new Panel(parent);
     wrapper.classList.add(formGroupStyle);
-    const vstack = new VStack(wrapper, { gap: 4 });
+    const vstack = new VStack(wrapper, { gap: 4, width: "100%" });
     const input = new Checkbox(vstack, {
       caption: options.caption
     });
@@ -41911,7 +42029,8 @@ var Form = class extends Control {
         }
         return [];
       }
-      if (value === void 0 || value === "" || value instanceof Array && !value.length) {
+      const isEmptyValue = value === void 0 || value === "" || value instanceof Array && (!value.length || value.findIndex((v) => v === void 0 || v === "") !== -1);
+      if (isEmptyValue) {
         if (schema2.required && typeof schema2.required === "boolean") {
           addError("is missing and it is required", scope);
         }

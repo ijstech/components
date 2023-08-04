@@ -4422,142 +4422,6 @@ declare module "packages/ipfs/src/index" {
     }
     export function hashFiles(files: IFile[], version?: number): Promise<ICidInfo>;
 }
-declare module "packages/image/src/style/image.css" { }
-declare module "packages/image/src/image" {
-    import { Control, ControlElement } from "@ijstech/components/base";
-    import "packages/image/src/style/image.css";
-    export interface ImageElement extends ControlElement {
-        rotate?: number;
-        url?: string;
-        fallbackUrl?: string;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-image']: ImageElement;
-            }
-        }
-    }
-    export class Image extends Control {
-        private imageElm;
-        private _wrapCropElm;
-        private _wrapResizeElm;
-        private _imageClippedElm;
-        private _url;
-        private _rotate;
-        private _fallbackUrl;
-        constructor(parent?: Control, options?: any);
-        get rotate(): number;
-        set rotate(value: any);
-        get url(): string;
-        set url(value: string);
-        protected init(): void;
-        static create(options?: ImageElement, parent?: Control): Promise<Image>;
-    }
-}
-declare module "packages/image/src/index" {
-    export { Image, ImageElement } from "packages/image/src/image";
-}
-declare module "packages/upload/src/style/upload.css" { }
-declare module "packages/upload/src/upload" {
-    import { Control, ControlElement } from "@ijstech/components/base";
-    import "packages/upload/src/style/upload.css";
-    type beforeDropCallback = (target: Upload) => void;
-    type changedCallback = (target: Upload, files: UploadRawFile[]) => void;
-    type removedCallback = (target: Upload, file?: File) => void;
-    type uploadingCallback = (target: Upload, file: File) => Promise<boolean>;
-    type addedCallback = (target: Upload, file: File) => Promise<boolean>;
-    export const genFileId: () => number;
-    export interface UploadRawFile extends File {
-        uid?: number;
-        path?: string;
-        cid?: {
-            cid: string;
-            size: number;
-        };
-    }
-    export interface UploadElement extends ControlElement {
-        fileList?: File[];
-        multiple?: boolean;
-        accept?: string;
-        draggable?: boolean;
-        caption?: string;
-        showFileList?: boolean;
-        onBeforeDrop?: beforeDropCallback;
-        onChanged?: changedCallback;
-        onRemoved?: removedCallback;
-        onAdded?: addedCallback;
-        onUploading?: uploadingCallback;
-    }
-    interface UploadDragElement extends ControlElement {
-        fileList?: File[];
-        caption?: string;
-        disabled?: boolean;
-        onBeforeDrop?: any;
-        onDrop?: any;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-upload']: UploadElement;
-                ['i-upload-drag']: UploadDragElement;
-            }
-        }
-    }
-    export class Upload extends Control {
-        private _wrapperElm;
-        private _wrapperFileElm;
-        private _fileElm;
-        private _previewElm;
-        private _previewImgElm;
-        private _previewRemoveElm;
-        private _wrapImgElm;
-        private _fileListElm;
-        private _uploadDragElm;
-        private _caption;
-        private _accept;
-        private _draggable;
-        private _multiple;
-        private isPreviewing;
-        onBeforeDrop: beforeDropCallback;
-        onChanged: changedCallback;
-        onRemoved: removedCallback;
-        onAdded: addedCallback;
-        onUploading: uploadingCallback;
-        private _dt;
-        private _fileList;
-        constructor(parent?: Control, options?: any);
-        get caption(): string;
-        set caption(value: string);
-        get accept(): string;
-        set accept(value: string);
-        get draggable(): boolean;
-        set draggable(value: boolean);
-        get multiple(): boolean;
-        set multiple(value: boolean);
-        get fileList(): UploadRawFile[];
-        set fileList(value: UploadRawFile[]);
-        get enabled(): boolean;
-        set enabled(value: boolean);
-        private addFile;
-        private previewFile;
-        private handleUpload;
-        private proccessFiles;
-        private checkBeforeUpload;
-        private updateFileListUI;
-        private renderPreview;
-        private handleRemoveImagePreview;
-        private handleRemove;
-        toBase64(file: File): Promise<unknown>;
-        preview(uri: string): void;
-        clear(): void;
-        upload(): Promise<void>;
-        addFiles(): void;
-        addFolder(): void;
-        protected init(): void;
-        static create(options?: UploadElement, parent?: Control): Promise<Upload>;
-    }
-}
 declare module "packages/link/src/style/link.css" { }
 declare module "packages/link/src/link" {
     import { Control, ControlElement } from "@ijstech/components/base";
@@ -4628,94 +4492,6 @@ declare module "packages/label/src/label" {
 }
 declare module "packages/label/src/index" {
     export { Label, LabelElement } from "packages/label/src/label";
-}
-declare module "packages/modal/src/style/modal.css" {
-    export const overlayStyle: string;
-    export const wrapperStyle: string;
-    export const noBackdropStyle: string;
-    export const visibleStyle: string;
-    export const modalStyle: string;
-    export const titleStyle: string;
-}
-declare module "packages/modal/src/modal" {
-    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "@ijstech/components/base";
-    import { Icon, IconElement } from "packages/icon/src/index";
-    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left';
-    type eventCallback = (target: Control) => void;
-    type ModalPositionType = "fixed" | "absolute";
-    export interface ModalElement extends ControlElement {
-        title?: string;
-        showBackdrop?: boolean;
-        closeIcon?: IconElement;
-        popupPlacement?: modalPopupPlacementType;
-        closeOnBackdropClick?: boolean;
-        item?: Control;
-        onOpen?: eventCallback;
-        onClose?: eventCallback;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-modal']: ModalElement;
-            }
-        }
-    }
-    export class Modal extends Container {
-        private wrapperDiv;
-        private titleSpan;
-        private modalDiv;
-        private overlayDiv;
-        private _closeIcon;
-        private _placement;
-        private _closeOnBackdropClick;
-        private _showBackdrop;
-        private _wrapperPositionAt;
-        private insideClick;
-        private boundHandleModalMouseDown;
-        private boundHandleModalMouseUp;
-        protected _onOpen: eventCallback;
-        onClose: eventCallback;
-        constructor(parent?: Control, options?: any);
-        get visible(): boolean;
-        set visible(value: boolean);
-        get onOpen(): any;
-        set onOpen(callback: any);
-        get title(): string;
-        set title(value: string);
-        get popupPlacement(): modalPopupPlacementType;
-        set popupPlacement(value: modalPopupPlacementType);
-        get closeIcon(): Icon | null;
-        set closeIcon(elm: Icon | null);
-        get closeOnBackdropClick(): boolean;
-        set closeOnBackdropClick(value: boolean);
-        get showBackdrop(): boolean;
-        set showBackdrop(value: boolean);
-        get item(): Control;
-        set item(value: Control);
-        get position(): ModalPositionType;
-        set position(value: ModalPositionType);
-        private positionAt;
-        private positionAtFix;
-        private positionAtAbsolute;
-        private getWrapperFixCoords;
-        private getWrapperAbsoluteCoords;
-        protected _handleOnShow(event: Event): void;
-        private handleModalMouseDown;
-        private handleModalMouseUp;
-        private updateModal;
-        refresh(): void;
-        get background(): Background;
-        set background(value: IBackground);
-        get width(): number | string;
-        set width(value: number | string);
-        get border(): Border;
-        set border(value: IBorder);
-        protected init(): void;
-        static create(options?: ModalElement, parent?: Container): Promise<Modal>;
-    }
-}
-declare module "packages/modal/src/index" {
-    export { Modal, ModalElement, modalPopupPlacementType } from "packages/modal/src/modal";
 }
 declare module "packages/layout/src/style/panel.css" {
     import { IGridLayoutMediaQuery, IStackMediaQuery, StackDirectionType } from "packages/layout/src/index";
@@ -4983,6 +4759,230 @@ declare module "packages/layout/src/index" {
     export { Panel, PanelElement } from "packages/layout/src/panel";
     export { CardLayout, CardLayoutElement } from "packages/layout/src/card";
     export { IGridLayoutMediaQuery, GridLayout, GridLayoutElement } from "packages/layout/src/grid";
+}
+declare module "packages/image/src/style/image.css" { }
+declare module "packages/image/src/image" {
+    import { Control, ControlElement } from "@ijstech/components/base";
+    import "packages/image/src/style/image.css";
+    export interface ImageElement extends ControlElement {
+        rotate?: number;
+        url?: string;
+        fallbackUrl?: string;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-image']: ImageElement;
+            }
+        }
+    }
+    export class Image extends Control {
+        private imageElm;
+        private _wrapCropElm;
+        private _wrapResizeElm;
+        private _imageClippedElm;
+        private _url;
+        private _rotate;
+        private _fallbackUrl;
+        constructor(parent?: Control, options?: any);
+        get rotate(): number;
+        set rotate(value: any);
+        get url(): string;
+        set url(value: string);
+        protected init(): void;
+        static create(options?: ImageElement, parent?: Control): Promise<Image>;
+    }
+}
+declare module "packages/image/src/index" {
+    export { Image, ImageElement } from "packages/image/src/image";
+}
+declare module "packages/upload/src/style/upload.css" { }
+declare module "packages/upload/src/upload" {
+    import { Control, ControlElement } from "@ijstech/components/base";
+    import "packages/upload/src/style/upload.css";
+    type beforeDropCallback = (target: Upload) => void;
+    type changedCallback = (target: Upload, files: UploadRawFile[]) => void;
+    type removedCallback = (target: Upload, file?: File) => void;
+    type uploadingCallback = (target: Upload, file: File) => Promise<boolean>;
+    type addedCallback = (target: Upload, file: File) => Promise<boolean>;
+    export const genFileId: () => number;
+    export interface UploadRawFile extends File {
+        uid?: number;
+        path?: string;
+        cid?: {
+            cid: string;
+            size: number;
+        };
+    }
+    export interface UploadElement extends ControlElement {
+        fileList?: File[];
+        multiple?: boolean;
+        accept?: string;
+        draggable?: boolean;
+        caption?: string;
+        showFileList?: boolean;
+        onBeforeDrop?: beforeDropCallback;
+        onChanged?: changedCallback;
+        onRemoved?: removedCallback;
+        onAdded?: addedCallback;
+        onUploading?: uploadingCallback;
+    }
+    interface UploadDragElement extends ControlElement {
+        fileList?: File[];
+        caption?: string;
+        disabled?: boolean;
+        onBeforeDrop?: any;
+        onDrop?: any;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-upload']: UploadElement;
+                ['i-upload-drag']: UploadDragElement;
+            }
+        }
+    }
+    export class Upload extends Control {
+        private _wrapperElm;
+        private _wrapperFileElm;
+        private _fileElm;
+        private _previewElm;
+        private _previewImgElm;
+        private _previewRemoveElm;
+        private _wrapImgElm;
+        private _fileListElm;
+        private _uploadDragElm;
+        private _caption;
+        private _accept;
+        private _draggable;
+        private _multiple;
+        private isPreviewing;
+        onBeforeDrop: beforeDropCallback;
+        onChanged: changedCallback;
+        onRemoved: removedCallback;
+        onAdded: addedCallback;
+        onUploading: uploadingCallback;
+        private _dt;
+        private _fileList;
+        constructor(parent?: Control, options?: any);
+        get caption(): string;
+        set caption(value: string);
+        get accept(): string;
+        set accept(value: string);
+        get draggable(): boolean;
+        set draggable(value: boolean);
+        get multiple(): boolean;
+        set multiple(value: boolean);
+        get fileList(): UploadRawFile[];
+        set fileList(value: UploadRawFile[]);
+        get enabled(): boolean;
+        set enabled(value: boolean);
+        private addFile;
+        private previewFile;
+        private handleUpload;
+        private proccessFiles;
+        private checkBeforeUpload;
+        private updateFileListUI;
+        private renderPreview;
+        private handleRemoveImagePreview;
+        private handleRemove;
+        toBase64(file: File): Promise<unknown>;
+        preview(uri: string): void;
+        clear(): void;
+        upload(): Promise<void>;
+        addFiles(): void;
+        addFolder(): void;
+        protected init(): void;
+        static create(options?: UploadElement, parent?: Control): Promise<Upload>;
+    }
+}
+declare module "packages/modal/src/style/modal.css" {
+    export const overlayStyle: string;
+    export const wrapperStyle: string;
+    export const noBackdropStyle: string;
+    export const visibleStyle: string;
+    export const modalStyle: string;
+    export const titleStyle: string;
+}
+declare module "packages/modal/src/modal" {
+    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "@ijstech/components/base";
+    import { Icon, IconElement } from "packages/icon/src/index";
+    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left';
+    type eventCallback = (target: Control) => void;
+    type ModalPositionType = "fixed" | "absolute";
+    export interface ModalElement extends ControlElement {
+        title?: string;
+        showBackdrop?: boolean;
+        closeIcon?: IconElement;
+        popupPlacement?: modalPopupPlacementType;
+        closeOnBackdropClick?: boolean;
+        item?: Control;
+        onOpen?: eventCallback;
+        onClose?: eventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-modal']: ModalElement;
+            }
+        }
+    }
+    export class Modal extends Container {
+        private wrapperDiv;
+        private titleSpan;
+        private modalDiv;
+        private overlayDiv;
+        private _closeIcon;
+        private _placement;
+        private _closeOnBackdropClick;
+        private _showBackdrop;
+        private _wrapperPositionAt;
+        private insideClick;
+        private boundHandleModalMouseDown;
+        private boundHandleModalMouseUp;
+        protected _onOpen: eventCallback;
+        onClose: eventCallback;
+        constructor(parent?: Control, options?: any);
+        get visible(): boolean;
+        set visible(value: boolean);
+        get onOpen(): any;
+        set onOpen(callback: any);
+        get title(): string;
+        set title(value: string);
+        get popupPlacement(): modalPopupPlacementType;
+        set popupPlacement(value: modalPopupPlacementType);
+        get closeIcon(): Icon | null;
+        set closeIcon(elm: Icon | null);
+        get closeOnBackdropClick(): boolean;
+        set closeOnBackdropClick(value: boolean);
+        get showBackdrop(): boolean;
+        set showBackdrop(value: boolean);
+        get item(): Control;
+        set item(value: Control);
+        get position(): ModalPositionType;
+        set position(value: ModalPositionType);
+        private positionAt;
+        private positionAtFix;
+        private positionAtAbsolute;
+        private getWrapperFixCoords;
+        private getWrapperAbsoluteCoords;
+        protected _handleOnShow(event: Event): void;
+        private handleModalMouseDown;
+        private handleModalMouseUp;
+        private updateModal;
+        refresh(): void;
+        get background(): Background;
+        set background(value: IBackground);
+        get width(): number | string;
+        set width(value: number | string);
+        get border(): Border;
+        set border(value: IBorder);
+        protected init(): void;
+        static create(options?: ModalElement, parent?: Container): Promise<Modal>;
+    }
+}
+declare module "packages/modal/src/index" {
+    export { Modal, ModalElement, modalPopupPlacementType } from "packages/modal/src/modal";
 }
 declare module "packages/upload/src/style/upload-modal.css" { }
 declare module "packages/upload/src/upload-modal" {
@@ -6137,6 +6137,7 @@ declare module "packages/application/src/index" {
         get EventBus(): EventBus;
         static get Instance(): Application;
         assets(name: string): any;
+        private calculateElementScconfigPath;
         createElement(name: string, lazyLoad?: boolean, attributes?: {
             [name: string]: string;
         }, modulePath?: string): Promise<HTMLElement | undefined>;
@@ -9792,12 +9793,16 @@ declare module "packages/markdown/src/markdown" {
         }
     }
     export class Markdown extends Control {
+        private elm;
         private marked;
         gitbookProcess: boolean;
         fileRoot: string;
+        private _theme;
         constructor(parent?: Control, options?: MarkdownElement);
+        get theme(): 'light' | 'dark';
+        set theme(value: 'light' | 'dark');
         private getRenderer;
-        load(text: string): Promise<string>;
+        load(text: string): Promise<any>;
         beforeRender(text: string): Promise<void>;
         processText(text: string): Promise<string>;
         loadLib(): Promise<unknown>;
@@ -11403,6 +11408,13 @@ declare module "packages/form/src/form" {
             time?: string;
             dateTime?: string;
         };
+        customControls?: {
+            [key: string]: {
+                render: () => Control;
+                getData: (control: Control) => any;
+                setData: (control: Control, value: any) => void;
+            };
+        };
     }
     export class Form extends Control {
         private _jsonSchema;
@@ -11410,6 +11422,8 @@ declare module "packages/form/src/form" {
         private _formOptions;
         private _formRules;
         private _formControls;
+        private validationData;
+        private validationResult;
         constructor(parent?: Control, options?: any);
         protected init(): void;
         set formOptions(options: any);
@@ -11421,7 +11435,7 @@ declare module "packages/form/src/form" {
         clearFormData(): void;
         setFormData(data: any): void;
         private setData;
-        getFormData(): Promise<any>;
+        getFormData(isErrorShown?: boolean): Promise<any>;
         private getDataBySchema;
         renderForm(): void;
         private renderFormByJSONSchema;
