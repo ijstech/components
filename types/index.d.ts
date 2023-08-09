@@ -6157,9 +6157,12 @@ declare module "packages/application/src/index" {
         loadScript(modulePath: string, script?: string): Promise<boolean>;
         getContent(modulePath: string): Promise<string>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
+        private calculatePackageModulePath;
+        private retrievePackageScript;
         loadPackage(packageName: string, modulePath?: string): Promise<{
             [name: string]: any;
         } | null>;
+        private dynamicImportPackage;
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
         private getModulePath;
         initModule(modulePath: string, script: string): Promise<string | null>;
@@ -9812,9 +9815,11 @@ declare module "packages/markdown/src/markdown" {
 declare module "packages/markdown/src/index" {
     export { Markdown, MarkdownElement } from "packages/markdown/src/markdown";
 }
+declare module "packages/markdown-editor/src/styles/index.css" { }
 declare module "packages/markdown-editor/src/markdown-editor" {
     import { Container, Control, ControlElement } from "@ijstech/components/base";
     import { Markdown } from "packages/markdown/src/index";
+    import "packages/markdown-editor/src/styles/index.css";
     export interface MarkdownEditorElement extends ControlElement {
         mode?: 'wysiwyg' | 'markdown';
         theme?: 'light' | 'dark';
@@ -11415,6 +11420,7 @@ declare module "packages/form/src/form" {
                 setData: (control: Control, value: any) => void;
             };
         };
+        onChange?: (control: Control, value?: any) => void;
     }
     export class Form extends Control {
         private _jsonSchema;
