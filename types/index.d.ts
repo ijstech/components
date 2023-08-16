@@ -11142,6 +11142,7 @@ declare module "packages/form/src/styles/index.css" {
     export const cardHeader: string;
     export const cardBody: string;
     export const uploadStyle: string;
+    export const tokenInputStyle: string;
 }
 declare module "packages/form/src/types/jsonSchema4" {
     export type IJSONSchema4TypeName = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null' | 'any';
@@ -11449,6 +11450,7 @@ declare module "packages/form/src/form" {
         private setupRules;
         private setupControlRule;
         private validateRule;
+        private validateAllRule;
         private getDataSchemaByScope;
         private renderGroup;
         private renderLabel;

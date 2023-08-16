@@ -20452,7 +20452,7 @@ var Modal = class extends Container {
     const target = event.target;
     this.insideClick = true;
     if (this.closeOnBackdropClick) {
-      this.insideClick = this.modalDiv.contains(target);
+      this.insideClick = this.showBackdrop ? target !== this.wrapperDiv : this.modalDiv.contains(target);
     } else if (!this.showBackdrop) {
       let parent = this._parent || this.linkTo || this.parentElement;
       this.insideClick = this.modalDiv.contains(target) || (parent == null ? void 0 : parent.contains(target));
@@ -21972,8 +21972,11 @@ cssRule("i-upload", {
     ".i-upload_preview-img": {
       maxHeight: "inherit",
       maxWidth: "100%",
-      display: "table",
-      margin: "auto"
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "100%"
     },
     ".i-upload_preview-crop": {
       position: "absolute",
@@ -22333,6 +22336,7 @@ var Upload = class extends Control {
     }
     this.updateFileListUI(this._dt.files);
     this.previewFile(this._dt.files);
+    console.log(this._dt.files);
     if (this.onChanged)
       this.onChanged(this, this.fileList);
   }
@@ -22438,7 +22442,10 @@ var Upload = class extends Control {
       return;
     this.isPreviewing = true;
     this._wrapImgElm.innerHTML = "";
-    this._previewImgElm = new Image2();
+    this._previewImgElm = new Image2(void 0, {
+      width: "auto",
+      height: "100%"
+    });
     this._wrapImgElm.appendChild(this._previewImgElm);
     this._previewImgElm.url = uri;
     this._previewElm.style.display = "block";
@@ -32822,6 +32829,9 @@ cssRule("i-markdown-editor", {
     },
     ".toastui-editor-contents ul li:has(input[type='checkbox']):before": {
       content: "none"
+    },
+    ".toastui-editor-md-container": {
+      backgroundColor: "#fff"
     }
   }
 });
@@ -40491,6 +40501,28 @@ var uploadStyle = style({
     }
   }
 });
+var tokenInputStyle = style({
+  $nest: {
+    "#gridTokenInput": {
+      border: "1px solid var(--divider) !important",
+      borderRadius: "5px !important",
+      padding: "0.275rem !important"
+    },
+    "#btnToken": {
+      display: "flex",
+      justifyContent: "space-between",
+      $nest: {
+        "i-icon": {
+          width: "20px !important",
+          height: "20px !important"
+        }
+      }
+    },
+    "i-vstack.custom-border": {
+      marginBlock: "0 !important"
+    }
+  }
+});
 
 // packages/form/src/form.ts
 var theme = theme_exports.ThemeVars;
@@ -40688,6 +40720,7 @@ var Form = class extends Control {
       const scope = `#/properties/${key2}`;
       this.setData(scope, value);
     }
+    this.validateAllRule();
   }
   setData(scope, value, parentElm) {
     var _a, _b, _c, _d, _e;
@@ -40858,9 +40891,9 @@ var Form = class extends Control {
     const checkValidation = () => {
       if (isErrorShown && control) {
         const actControl = control;
-        if (actControl.querySelector("i-color")) {
+        if (actControl.querySelector("i-color") && typeof actControl.onClosed === "function") {
           actControl.onClosed();
-        } else {
+        } else if (typeof actControl.onChanged === "function") {
           actControl.onChanged();
         }
       }
@@ -41079,11 +41112,21 @@ var Form = class extends Control {
     if (this._formOptions.customControls) {
       if (this._formOptions.customControls[scope]) {
         const customRenderer = this._formOptions.customControls[scope];
-        console.log("customRenderer", customRenderer);
+        const vstack = new VStack(parent, { gap: 4 });
         const control = customRenderer.render();
-        parent.appendChild(control);
+        if (control.tagName === "I-SCOM-TOKEN-INPUT") {
+          control.classList.add(tokenInputStyle);
+        }
+        control.onChanged = () => {
+          this.validateOnValueChanged(control, parent, scope, labelName);
+        };
+        const label = this.renderLabel(vstack, controlOptions, "caption");
+        vstack.appendChild(control);
+        const error = this.renderLabel(vstack, controlOptions, "error");
         this._formControls[scope] = {
-          input: control
+          input: control,
+          label,
+          error
         };
         return;
       }
@@ -41362,33 +41405,59 @@ var Form = class extends Control {
         this.setupControlRule(elm, rule.effect, control, rule.condition.schema);
       }
     }
+    this.validateAllRule();
   }
   setupControlRule(elm, effect, control, schema) {
     if (!elm || !effect || !control || !schema)
       return;
     if (control.tagName === "I-INPUT") {
+      let cachedOnChanged;
+      if (control.onChanged)
+        cachedOnChanged = control.onChanged;
       control.onChanged = () => {
+        if (cachedOnChanged)
+          cachedOnChanged();
         const value = control.value;
         this.validateRule(elm, effect, value, schema);
       };
     } else if (control.tagName === "I-COMBO-BOX") {
+      let cachedOnChanged;
+      if (control.onChanged)
+        cachedOnChanged = control.onChanged;
       control.onChanged = () => {
         var _a;
+        if (cachedOnChanged)
+          cachedOnChanged();
         const value = (_a = control.value) == null ? void 0 : _a.value;
         this.validateRule(elm, effect, value, schema);
       };
     } else if (control.tagName === "I-DATEPICKER") {
+      let cachedOnChanged;
+      if (control.onChanged)
+        cachedOnChanged = control.onChanged;
       control.onChanged = () => {
+        if (cachedOnChanged)
+          cachedOnChanged();
         const value = control.value;
         this.validateRule(elm, effect, value, schema);
       };
     } else if (control.tagName === "I-CHECKBOX") {
+      let cachedOnChanged;
+      if (control.onChanged)
+        cachedOnChanged = control.onChanged;
       control.onChanged = () => {
+        if (cachedOnChanged)
+          cachedOnChanged();
         const value = control.checked;
         this.validateRule(elm, effect, value, schema);
       };
     } else if (control.tagName === "I-RADIO-GROUP") {
+      let cachedOnChanged;
+      if (control.onChanged)
+        cachedOnChanged = control.onChanged;
       control.onChanged = () => {
+        if (cachedOnChanged)
+          cachedOnChanged();
         const value = control.selectedValue;
         this.validateRule(elm, effect, value, schema);
       };
@@ -41420,6 +41489,40 @@ var Form = class extends Control {
       elm.enabled = isValid;
     else if (effect === "DISABLE")
       elm.enabled = !isValid;
+  }
+  validateAllRule() {
+    var _a, _b;
+    if (!this._formRules || this._formRules && this._formRules.length === 0)
+      return;
+    for (const ruleObj of this._formRules) {
+      const { elm, rule } = ruleObj;
+      if (!elm)
+        continue;
+      if (!rule)
+        continue;
+      if (rule && (!rule.condition || !rule.effect))
+        continue;
+      if (rule && rule.condition && (!rule.condition.scope || !rule.condition.schema))
+        continue;
+      if ((_a = rule.condition) == null ? void 0 : _a.scope) {
+        const control = this._formControls[rule.condition.scope].input;
+        if (!control)
+          continue;
+        let value;
+        if (control.tagName === "I-INPUT") {
+          value = control.value;
+        } else if (control.tagName === "I-COMBO-BOX") {
+          value = (_b = control.value) == null ? void 0 : _b.value;
+        } else if (control.tagName === "I-DATEPICKER") {
+          value = control.value;
+        } else if (control.tagName === "I-CHECKBOX") {
+          value = control.checked;
+        } else if (control.tagName === "I-RADIO-GROUP") {
+          value = control.selectedValue;
+        }
+        this.validateRule(elm, rule.effect, value, rule.condition.schema);
+      }
+    }
   }
   getDataSchemaByScope(scope, jsonSchema) {
     const segments = scope.split("/");
