@@ -3787,7 +3787,7 @@ declare module "packages/base/src/component" {
         private _propInfo;
         constructor(parent?: Component, options?: any, defaults?: any);
         connectedCallback(): void;
-        disconnectCallback(): void;
+        disconnectedCallback(): void;
         protected parseDesignPropValue(value: string): any;
         _getDesignPropValue(prop: string): string;
         _setDesignPropValue(prop: string, value: string): void;
@@ -3860,7 +3860,7 @@ declare module "packages/tooltip/src/tooltip" {
         get maxWidth(): string;
         set maxWidth(value: string);
         private show;
-        private close;
+        close(): void;
         private onHandleClick;
         private renderTooltip;
         private initEvents;
@@ -4059,7 +4059,7 @@ declare module "packages/base/src/control" {
         set parent(value: Control | undefined);
         protected getSpacingValue(value: string | number): string;
         connectedCallback(): void;
-        disconnectCallback(): void;
+        disconnectedCallback(): void;
         protected getParentHeight(): number;
         protected getParentWidth(): number;
         protected getParentOccupiedLeft(): number;
@@ -5273,7 +5273,7 @@ declare module "packages/combo-box/src/combo-box" {
         private onItemClick;
         clear(): void;
         protected init(): void;
-        disconnectCallback(): void;
+        disconnectedCallback(): void;
         static create(options?: ComboBoxElement, parent?: Control): Promise<ComboBox>;
     }
 }
@@ -9824,6 +9824,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         mode?: 'wysiwyg' | 'markdown';
         theme?: 'light' | 'dark';
         previewStyle?: 'tab' | 'vertical';
+        hideModeSwitch?: boolean;
         value?: string;
         viewer?: boolean;
         width?: string;
@@ -9857,6 +9858,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private _toolbarItems;
         private _customPlugins;
         private _widgetRules;
+        private _hideModeSwitch;
         get mode(): 'wysiwyg' | 'markdown';
         set mode(value: 'wysiwyg' | 'markdown');
         get theme(): 'light' | 'dark';
@@ -9881,6 +9883,8 @@ declare module "packages/markdown-editor/src/markdown-editor" {
             rule: string | object;
             toDOM: (text: string) => any;
         }[]);
+        get hideModeSwitch(): boolean;
+        set hideModeSwitch(value: boolean);
         static create(options?: MarkdownEditorElement, parent?: Container): Promise<MarkdownEditor>;
         constructor(parent?: Control, options?: MarkdownEditorElement);
         private loadPlugin;
@@ -10804,7 +10808,7 @@ declare module "packages/carousel/src/carousel" {
         get swipe(): boolean;
         set swipe(value: boolean);
         get isArrow(): boolean;
-        disconnectCallback(): void;
+        disconnectedCallback(): void;
         private updateArrows;
         private updateSliderByArrows;
         private updateWrapperClass;
@@ -11441,6 +11445,7 @@ declare module "packages/form/src/form" {
         get uiSchema(): IUISchema;
         clearFormData(): void;
         setFormData(data: any): void;
+        private setCustomData;
         private setData;
         getFormData(isErrorShown?: boolean): Promise<any>;
         private getDataBySchema;
