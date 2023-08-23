@@ -4451,12 +4451,11 @@ declare module "packages/link/src/link" {
 declare module "packages/link/src/index" {
     export { Link, LinkElement } from "packages/link/src/link";
 }
-declare module "packages/label/src/style/label.css" {
-    export const captionStyle: string;
-}
+declare module "packages/label/src/style/label.css" { }
 declare module "packages/label/src/label" {
     import { Control, ControlElement } from "@ijstech/components/base";
     import { Link, LinkElement } from "packages/link/src/index";
+    import "packages/label/src/style/label.css";
     type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
     type OverflowWrapType = 'normal' | 'break-word' | 'anywhere' | 'inherit' | 'initial' | 'revert' | 'unset';
     export interface LabelElement extends ControlElement {
