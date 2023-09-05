@@ -942,6 +942,10 @@ declare module "packages/style/src/theme" {
             background: string;
             fontColor: string;
         };
+        editor: {
+            background: string;
+            fontColor: string;
+        };
     }
     export interface IThemeVariables {
         action: {
@@ -1009,6 +1013,10 @@ declare module "packages/style/src/theme" {
             fontColor: string;
         };
         combobox: {
+            background: string;
+            fontColor: string;
+        };
+        editor: {
             background: string;
             fontColor: string;
         };
@@ -4421,6 +4429,7 @@ declare module "packages/ipfs/src/index" {
         };
     }
     export function hashFiles(files: IFile[], version?: number): Promise<ICidInfo>;
+    export function cidToSri(cid: string): Promise<string>;
 }
 declare module "packages/link/src/style/link.css" { }
 declare module "packages/link/src/link" {
@@ -4915,6 +4924,8 @@ declare module "packages/modal/src/modal" {
         closeIcon?: IconElement;
         popupPlacement?: modalPopupPlacementType;
         closeOnBackdropClick?: boolean;
+        isChildFixed?: boolean;
+        closeOnScrollChildFixed?: boolean;
         item?: Control;
         onOpen?: eventCallback;
         onClose?: eventCallback;
@@ -4936,6 +4947,10 @@ declare module "packages/modal/src/modal" {
         private _closeOnBackdropClick;
         private _showBackdrop;
         private _wrapperPositionAt;
+        private _isChildFixed;
+        private _closeOnScrollChildFixed;
+        private hasInitializedChildFixed;
+        private mapScrollTop;
         private insideClick;
         private boundHandleModalMouseDown;
         private boundHandleModalMouseUp;
@@ -4960,6 +4975,13 @@ declare module "packages/modal/src/modal" {
         set item(value: Control);
         get position(): ModalPositionType;
         set position(value: ModalPositionType);
+        get isChildFixed(): boolean;
+        set isChildFixed(value: boolean);
+        get closeOnScrollChildFixed(): boolean;
+        set closeOnScrollChildFixed(value: boolean);
+        private generateUUID;
+        private setChildFixed;
+        private positionAtChildFixed;
         private positionAt;
         private positionAtFix;
         private positionAtAbsolute;
@@ -5155,6 +5177,7 @@ declare module "packages/tab/src/tab" {
         private dropHandler;
         refresh(): void;
         protected init(): void;
+        private initTabsNav;
         static create(options?: TabsElement, parent?: Container): Promise<Tabs>;
     }
     export class Tab extends Container {
@@ -5569,7 +5592,6 @@ declare module "packages/color/src/color" {
         set captionWidth(value: number | string);
         get height(): number;
         set height(value: number | string);
-        private generateUUID;
         protected init(): Promise<void>;
         private onOpenPicker;
         private onClosePicker;
@@ -11383,7 +11405,7 @@ declare module "packages/form/src/types/index" {
     }
 }
 declare module "packages/form/src/form" {
-    import { Control, ControlElement } from "@ijstech/components/base";
+    import { Control, ControlElement, notifyMouseEventCallback } from "@ijstech/components/base";
     import { IDataSchema, IUISchema, ValidationResult } from "packages/form/src/types/index";
     import "packages/form/src/styles/index.css";
     export { IDataSchema, IUISchema };
@@ -11405,7 +11427,7 @@ declare module "packages/form/src/form" {
         backgroundColor?: string;
         fontColor?: string;
         hide?: boolean;
-        onClick?: () => void;
+        onClick?: notifyMouseEventCallback;
     }
     export interface IFormOptions {
         columnsPerRow?: number;
@@ -11448,6 +11470,7 @@ declare module "packages/form/src/form" {
         private setData;
         getFormData(isErrorShown?: boolean): Promise<any>;
         private getDataBySchema;
+        private isNumber;
         renderForm(): void;
         private renderFormByJSONSchema;
         private renderFormByUISchema;
