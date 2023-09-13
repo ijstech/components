@@ -942,10 +942,6 @@ declare module "packages/style/src/theme" {
             background: string;
             fontColor: string;
         };
-        editor: {
-            background: string;
-            fontColor: string;
-        };
     }
     export interface IThemeVariables {
         action: {
@@ -1013,10 +1009,6 @@ declare module "packages/style/src/theme" {
             fontColor: string;
         };
         combobox: {
-            background: string;
-            fontColor: string;
-        };
-        editor: {
             background: string;
             fontColor: string;
         };

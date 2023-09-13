@@ -11778,9 +11778,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// ../../node_modules/moment/moment.js
+// node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "../../node_modules/moment/moment.js"(exports, module2) {
+  "node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -16014,10 +16014,6 @@ var defaultTheme = {
   combobox: {
     background: "#fff",
     fontColor: "#000"
-  },
-  editor: {
-    background: "#fff",
-    fontColor: "#000"
   }
 };
 var darkTheme = {
@@ -16123,10 +16119,6 @@ var darkTheme = {
     fontColor: "#000"
   },
   combobox: {
-    background: "#fff",
-    fontColor: "#000"
-  },
-  editor: {
     background: "#fff",
     fontColor: "#000"
   }
@@ -24376,7 +24368,7 @@ var ComboBox = class extends Control {
   }
   getItemIndex(items, item) {
     const value = item == null ? void 0 : item.value.toString();
-    if (!value)
+    if (!value && value !== "")
       return -1;
     const index = items.findIndex((_item) => {
       return _item.value.toString().toLowerCase() === value.toLowerCase();
@@ -26064,6 +26056,7 @@ var ColorPicker = class extends Control {
       this.inputMap.set(item, input);
       const span = this.createElement("span", inputWrap);
       span.style.textTransform = "uppercase";
+      span.style.color = "#222";
       span.innerHTML = item;
     }
   }
@@ -32899,7 +32892,8 @@ DataGrid = __decorateClass([
 var Theme25 = theme_exports.ThemeVars;
 cssRule("i-markdown", {
   fontFamily: Theme25.typography.fontFamily,
-  fontSize: Theme25.typography.fontSize
+  fontSize: Theme25.typography.fontSize,
+  color: `var(--custom-text-color, ${Theme25.text.primary})`
 });
 
 // packages/markdown/src/markdown.ts
@@ -37298,6 +37292,12 @@ var Video = class extends Container {
       this.sourceElm = this.createElement("source", this.videoElm);
     if (this.sourceElm)
       this.sourceElm.src = value;
+    if (this.player) {
+      this.player.src({
+        src: value,
+        type: "application/x-mpegURL"
+      });
+    }
   }
   init() {
     if (!this.initialized) {
@@ -37319,12 +37319,13 @@ var Video = class extends Container {
           autoplay: false,
           controls: true,
           fluid: true,
-          aspectRatio: "16:9",
           responsive: true,
           inactivityTimeout: 500,
           preload: "auto",
           techOrder: ["html5"],
-          plugins: {}
+          plugins: {},
+          height: "100%",
+          width: "100%"
         });
       });
     }
