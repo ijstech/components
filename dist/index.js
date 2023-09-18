@@ -40713,6 +40713,14 @@ var Form = class extends Control {
     super(parent, options);
     this._formRules = [];
     this._formControls = {};
+    this.replacePhrase = (str) => {
+      return str.replace(/([^\/]+)\/items\/properties/g, function(match, p1) {
+        if (p1 === "properties") {
+          return match;
+        }
+        return `${p1}/properties`;
+      });
+    };
     this.validateOnValueChanged = async (currentControl, parent, scope, caption) => {
       var _a, _b;
       const data = (_a = this.validationData) != null ? _a : await this.getFormData();
@@ -40742,15 +40750,7 @@ var Form = class extends Control {
         };
         await getParentIdxs(parentListItem);
         if (scope.includes("/items/properties")) {
-          const replacePhrase = (str) => {
-            return str.replace(/([^\/]+)\/items\/properties/g, function(match, p1) {
-              if (p1 === "properties") {
-                return match;
-              }
-              return `${p1}/properties`;
-            });
-          };
-          _scope = replacePhrase(scope);
+          _scope = this.replacePhrase(scope);
         }
         const scopeWithoutIdx = _scope.replace("#", "");
         const getListFields = (property) => {
@@ -40903,13 +40903,17 @@ var Form = class extends Control {
   }
   setCustomData(scope, value, control, customData) {
     var _a;
-    if (this._formOptions.customControls && typeof ((_a = this._formOptions.customControls[scope]) == null ? void 0 : _a.setData) === "function") {
-      const _control = control || this._formControls[scope].input;
+    let newScope = scope;
+    if (newScope.includes("/items/properties")) {
+      newScope = this.replacePhrase(scope);
+    }
+    if (this._formOptions.customControls && !!((_a = this._formOptions.customControls[newScope]) == null ? void 0 : _a.setData)) {
+      const _control = control || this._formControls[newScope].input;
       if (_control) {
         if (_control.tagName === "I-SCOM-TOKEN-INPUT" && !value && customData) {
-          this._formOptions.customControls[scope].setData(_control, customData.symbol);
+          this._formOptions.customControls[newScope].setData(_control, customData.symbol);
         } else {
-          this._formOptions.customControls[scope].setData(_control, value);
+          this._formOptions.customControls[newScope].setData(_control, value);
         }
       }
     }
@@ -41021,6 +41025,10 @@ var Form = class extends Control {
     } else {
       if (parentElm) {
         _control = parentElm.querySelector(`[scope="${scope}"]`);
+        if (!_control) {
+          const customScope = scope.includes("/items/properties") ? this.replacePhrase(scope) : scope;
+          _control = parentElm.querySelector(`[custom-control="${customScope}"]`);
+        }
       }
       const input = _control || ((_d = this._formControls[scope]) == null ? void 0 : _d.input);
       if (!input && value === void 0) {
@@ -41035,24 +41043,28 @@ var Form = class extends Control {
         return;
       }
       if (input) {
-        switch (input.tagName) {
-          case "I-INPUT":
-            input.value = value;
-            break;
-          case "I-CHECKBOX":
-            input.checked = value;
-            break;
-          case "I-COMBO-BOX":
-            input.value = value;
-            input.selectedItem = input.items.find((v) => v.value === value) || input.items[0];
-            break;
-          case "I-DATEPICKER":
-            let datepicker = input;
-            datepicker.value = moment(value, datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
-            break;
-          case "I-UPLOAD":
-            this.setDataUpload(value, input);
-            break;
+        if (input.getAttribute("custom-control")) {
+          this.setCustomData(input.getAttribute("custom-control"), value, input, customData);
+        } else {
+          switch (input.tagName) {
+            case "I-INPUT":
+              input.value = value;
+              break;
+            case "I-CHECKBOX":
+              input.checked = value;
+              break;
+            case "I-COMBO-BOX":
+              input.value = value;
+              input.selectedItem = input.items.find((v) => v.value === value) || input.items[0];
+              break;
+            case "I-DATEPICKER":
+              let datepicker = input;
+              datepicker.value = moment(value, datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
+              break;
+            case "I-UPLOAD":
+              this.setDataUpload(value, input);
+              break;
+          }
         }
       }
     }
@@ -41212,7 +41224,7 @@ var Form = class extends Control {
           const newScope = currentSchema.type === "string" ? scope + "/items" : "#";
           for (let i = 0; i < listItems.length; i++) {
             const listItem2 = listItems[i];
-            const data = await this.getDataBySchema(currentSchema, newScope, isErrorShown, parentElm, listItem2, scope);
+            const data = await this.getDataBySchema(currentSchema, newScope, isErrorShown, parentElm, listItem2, customParentScope);
             list.push(data);
           }
           return list;
@@ -41327,7 +41339,10 @@ var Form = class extends Control {
       hideLabel
     };
     if (this._formOptions.customControls) {
-      const customControlScope = parentProp ? `${parentProp}${scope.replace("#", "")}` : scope;
+      let customControlScope = parentProp ? `${parentProp}${scope.replace("#", "")}` : scope;
+      if (customControlScope.includes("/items/properties")) {
+        customControlScope = this.replacePhrase(customControlScope);
+      }
       if (this._formOptions.customControls[customControlScope]) {
         const customRenderer = this._formOptions.customControls[customControlScope];
         const wrapper = new Panel(parent, {

@@ -11465,6 +11465,7 @@ declare module "packages/form/src/form" {
         private isNumber;
         renderForm(): void;
         private renderFormByJSONSchema;
+        private replacePhrase;
         private renderFormByUISchema;
         private setupRules;
         private setupControlRule;
