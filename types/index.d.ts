@@ -6045,6 +6045,19 @@ declare module "packages/application/src/jsonUI" {
     }
     export function renderUI(target: Control, options: IRenderUIOptions, confirmCallback?: (result: boolean, data: any) => void, valueChangedCallback?: (data: any, errMsg: string) => void): void;
 }
+declare module "packages/moment/src/index" {
+    import Moment from 'moment';
+    var moment: typeof Moment;
+    export { moment };
+}
+declare module "packages/application/src/formatUtils" {
+    export class FormatUtils {
+        static unixToFormattedDate(unixTimestamp: number): string;
+        static truncateTxHash(hash: string, length?: number): string;
+        static truncateWalletAddress(address: string): string;
+        static formatNumberWithSeparators(value: BigInt | string | number, decimalFigures?: number): string;
+    }
+}
 declare module "packages/application/src/index" {
     import { Module } from "packages/module/src/index";
     import { EventBus } from "packages/application/src/event-bus";
@@ -6187,6 +6200,7 @@ declare module "packages/application/src/index" {
     export const application: Application;
     export { EventBus, IEventBus } from "packages/application/src/event-bus";
     export { IDataSchema, IUISchema, IRenderUIOptions, renderUI, DataSchemaValidator } from "packages/application/src/jsonUI";
+    export { FormatUtils } from "packages/application/src/formatUtils";
     export default application;
 }
 declare module "packages/icon/src/style/icon.css" { }
@@ -10843,11 +10857,6 @@ declare module "packages/carousel/src/carousel" {
 declare module "packages/carousel/src/index" {
     export { CarouselSlider } from "packages/carousel/src/carousel";
 }
-declare module "packages/moment/src/index" {
-    import Moment from 'moment';
-    var moment: typeof Moment;
-    export { moment };
-}
 declare module "packages/video/src/style/video.css" { }
 declare module "packages/video/src/video" {
     import { Container, ControlElement, Control } from "@ijstech/components/base";
@@ -11500,7 +11509,7 @@ declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, getCustomElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "@ijstech/components/base";
     export { Alert } from "packages/alert/src/index";
-    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IRenderUIOptions, DataSchemaValidator, renderUI } from "packages/application/src/index";
+    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IRenderUIOptions, DataSchemaValidator, renderUI, FormatUtils } from "packages/application/src/index";
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
     export { ComboBox, IComboItem } from "packages/combo-box/src/index";

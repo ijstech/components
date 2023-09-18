@@ -15501,6 +15501,7 @@ __export(exports, {
   Datepicker: () => Datepicker,
   EventBus: () => EventBus,
   Form: () => Form,
+  FormatUtils: () => FormatUtils,
   GridLayout: () => GridLayout,
   HStack: () => HStack,
   IPFS: () => src_exports2,
@@ -28460,6 +28461,60 @@ function convertFieldNameToLabel(name) {
   return label;
 }
 
+// packages/moment/src/index.ts
+RequireJS.config({
+  paths: {
+    "@moment": `${LibPath}lib/moment/2.29.1/moment.js`
+  }
+});
+var moment;
+RequireJS.require(["@moment"], (_moment) => {
+  moment = _moment;
+});
+
+// packages/application/src/formatUtils.ts
+var FormatUtils = class {
+  static unixToFormattedDate(unixTimestamp) {
+    return moment.unix(unixTimestamp).format("YYYY-MM-DD HH:mm:ss");
+  }
+  static truncateTxHash(hash, length = 20) {
+    return hash.substring(0, length) + "...";
+  }
+  static truncateWalletAddress(address) {
+    return address.substring(0, 6) + "..." + address.substring(address.length - 4);
+  }
+  static formatNumberWithSeparators(value, decimalFigures) {
+    let stringValue;
+    if (typeof value === "string") {
+      stringValue = value;
+    } else {
+      stringValue = value.toString();
+    }
+    let [integerPart, decimalPart] = stringValue.split(".");
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    if (decimalFigures !== void 0) {
+      if (decimalFigures === 0) {
+        return formattedInteger;
+      }
+      if (decimalPart) {
+        let count = 0;
+        let endIndex = 0;
+        for (let i = 0; i < decimalPart.length; i++) {
+          if (count >= decimalFigures)
+            break;
+          if (decimalPart[i] !== "0")
+            count++;
+          endIndex = i;
+        }
+        decimalPart = decimalPart.slice(0, endIndex + 1);
+      } else {
+        decimalPart = "0".repeat(decimalFigures);
+      }
+    }
+    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+  }
+};
+
 // packages/application/src/index.ts
 var API_IPFS_BASEURL = "/api/ipfs/v0";
 var IpfsDataType;
@@ -29676,7 +29731,7 @@ CodeDiffEditor = __decorateClass([
 ], CodeDiffEditor);
 
 // packages/data-grid/src/dataGrid.ts
-var import_moment2 = __toModule(require_moment());
+var import_moment3 = __toModule(require_moment());
 
 // packages/data-grid/src/style/dataGrid.css.ts
 var Theme24 = theme_exports.ThemeVars;
@@ -31688,7 +31743,7 @@ var DataGrid = class extends Control {
       if (cell.value != void 0) {
         editor.value = cell.value;
       } else {
-        editor.value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+        editor.value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
       }
       let inputElm = editor.getElementsByTagName("input")[0];
       inputElm.style.height = "";
@@ -31707,7 +31762,7 @@ var DataGrid = class extends Control {
       if (cell.value != void 0) {
         editor.value = cell.value;
       } else {
-        editor.value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+        editor.value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
       }
       let inputElm = editor.getElementsByTagName("input")[0];
       inputElm.style.height = "";
@@ -31726,7 +31781,7 @@ var DataGrid = class extends Control {
       if (cell.value != void 0) {
         editor.value = cell.value;
       } else {
-        editor.value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+        editor.value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
       }
       let inputElm = editor.getElementsByTagName("input")[0];
       inputElm.style.height = "";
@@ -32273,15 +32328,15 @@ var DataGrid = class extends Control {
           break;
         case "datePicker":
           if (cell.value == void 0 || cell.value == "")
-            cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+            cell._value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
           break;
         case "dateTimePicker":
           if (cell.value == void 0 || cell.value == "")
-            cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+            cell._value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
           break;
         case "timePicker":
           if (cell.value == void 0 || cell.value == "")
-            cell._value = import_moment2.default.unix(import_moment2.default.now() / 1e3);
+            cell._value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
           break;
         case "comboBox":
           let colOrRowComboItems = this.mode == "vertical" ? this.cols(cell.col).comboItems : this.rows(cell.row).comboItems;
@@ -37244,17 +37299,6 @@ var CarouselItem = class extends Container {
 CarouselItem = __decorateClass([
   customElements2("i-carousel-item")
 ], CarouselItem);
-
-// packages/moment/src/index.ts
-RequireJS.config({
-  paths: {
-    "@moment": `${LibPath}lib/moment/2.29.1/moment.js`
-  }
-});
-var moment;
-RequireJS.require(["@moment"], (_moment) => {
-  moment = _moment;
-});
 
 // packages/video/src/style/video.css.ts
 cssRule("i-video", {
