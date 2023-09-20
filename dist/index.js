@@ -22780,7 +22780,7 @@ cssRule("i-upload-modal", {
         ".modal": {
           padding: 0,
           height: "auto",
-          backgroundColor: Theme13.colors.primary.contrastText,
+          backgroundColor: Theme13.background.modal,
           borderRadius: "10px",
           boxShadow: "0 1px 5px 0 rgb(0 0 0 / 12%), 0 2px 10px 0 rgb(0 0 0 / 8%), 0 1px 20px 0 rgb(0 0 0 / 8%)",
           overflow: "auto",
