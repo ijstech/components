@@ -23287,7 +23287,7 @@ var UploadModal = class extends Control {
   }
   async onUpload() {
     return new Promise(async (resolve, reject) => {
-      var _a, _b, _c, _d, _e;
+      var _a, _b, _c, _d, _e, _f;
       if (!this.fileListData.length)
         reject();
       this._uploadBtnElm.caption = "Uploading files to IPFS...";
@@ -23320,15 +23320,27 @@ var UploadModal = class extends Control {
           console.log("uploadToResult: ", uploadResult);
           if (uploadResult && uploadResult.data) {
             uploadResult.data.name = this.parentDir.name;
-            console.log("uploadToResult before sync: ", this.parentDir);
-            const syncResult = await application.uploadTo(this.rootCid, [
-              { cid: uploadResult.data }
-            ]);
-            console.log("syncResult: ", syncResult);
-            if (syncResult && syncResult.data) {
+            if (this.parentDir.cid !== this.rootCid) {
+              const syncResult = await application.uploadTo(this.rootCid, [
+                { cid: uploadResult.data }
+              ]);
+              console.log("syncResult: ", syncResult);
+              if (syncResult && syncResult.data) {
+                if (this.onBeforeUploaded)
+                  this.onBeforeUploaded(this, syncResult.data);
+              }
+            } else {
               if (this.onBeforeUploaded)
-                this.onBeforeUploaded(this, syncResult.data);
+                this.onBeforeUploaded(this, uploadResult.data);
             }
+            for (let i = 0; i < this.fileListData.length; i++) {
+              const file = this.fileListData[i];
+              if (this.onUploaded && file.file.cid)
+                this.onUploaded(this, file.file, (_b = file.file.cid) == null ? void 0 : _b.cid);
+              file.status = 1;
+            }
+            this.renderFilterBar();
+            this.renderFileList();
           }
         } catch (err) {
           console.log("Error! ", err);
@@ -23349,17 +23361,17 @@ var UploadModal = class extends Control {
           } else {
             const file = this.fileListData[i];
             file.url = `/ipfs/${cidItems.cid}${file.file.path || file.file.name}`;
-            if ([1, 3].includes(file.status) || !((_b = file.file.cid) == null ? void 0 : _b.cid)) {
+            if ([1, 3].includes(file.status) || !((_c = file.file.cid) == null ? void 0 : _c.cid)) {
               continue;
             }
             this.fileListData[i].status = 3;
             this.renderFilterBar();
-            if (uploadUrl[(_c = file.file.cid) == null ? void 0 : _c.cid]) {
+            if (uploadUrl[(_d = file.file.cid) == null ? void 0 : _d.cid]) {
               try {
-                let result = await application.upload(uploadUrl[(_d = file.file.cid) == null ? void 0 : _d.cid], file.file);
+                let result = await application.upload(uploadUrl[(_e = file.file.cid) == null ? void 0 : _e.cid], file.file);
                 console.log("uploaded fileListData result: ", result);
                 if (this.onUploaded)
-                  this.onUploaded(this, file.file, (_e = file.file.cid) == null ? void 0 : _e.cid);
+                  this.onUploaded(this, file.file, (_f = file.file.cid) == null ? void 0 : _f.cid);
                 this.fileListData[i].status = 1;
                 this.renderFilterBar();
                 this.renderFileList();
@@ -28958,22 +28970,109 @@ var Application = class {
     if (this.packages[packageModulePath])
       return this.packages[packageModulePath];
     let script = "";
-    if (this.bundleLibs[packageName])
-      script = this.bundleLibs[packageName];
-    else
-      script = await this.getScript(packageModulePath);
+    script = await this.getScript(packageModulePath);
     return script;
   }
   async loadPackage(packageName, modulePath) {
     let packageModulePath = await this.calculatePackageModulePath(packageName, modulePath);
     if (!packageModulePath)
       return null;
+    try {
+      let m = window["require"](packageName);
+      if (m) {
+        if (!this.packageNames.has(packageName))
+          this.packageNames.add(packageName);
+        this.packages[packageModulePath] = m.default || m;
+        return m.default || m;
+      }
+      ;
+    } catch (err) {
+    }
+    ;
     let script = await this.retrievePackageScript(packageName, packageModulePath);
     if (script) {
       return this.dynamicImportPackage(script, packageName, packageModulePath);
     }
     ;
     return null;
+  }
+  async loadPackages(packages) {
+    let paths = [];
+    let packs = [];
+    let script = "";
+    for (let i = 0; i < packages.length; i++) {
+      let pack = packages[i];
+      let m;
+      try {
+        m = window["require"](pack);
+      } catch (err) {
+      }
+      ;
+      let path = this.getModulePath(pack);
+      if (m) {
+        this.packages[path] = m.default || m;
+      } else {
+        if (!this.packages[path]) {
+          packs.push(pack);
+          paths.push(path);
+        }
+        ;
+      }
+    }
+    ;
+    if (paths.length > 0) {
+      if (this._initOptions && this._initOptions.modules) {
+        for (let idx = paths.length - 1; idx >= 0; idx--) {
+          let pack = packs[idx];
+          let module2 = this._initOptions.modules[pack];
+          if (module2 && module2.dependencies) {
+            for (let i = 0; i < module2.dependencies.length; i++) {
+              let dependency = module2.dependencies[i];
+              let depIdx = packs.indexOf(dependency);
+              if (depIdx > idx) {
+                paths.splice(idx, 0, paths[depIdx]);
+                packs.splice(idx, 0, packs[depIdx]);
+                paths.splice(depIdx + 1, 1);
+                packs.splice(depIdx + 1, 1);
+              }
+              ;
+            }
+            ;
+          }
+          ;
+        }
+        ;
+      }
+      ;
+      let result = await Promise.all(paths.map((u) => fetch(u)));
+      for (let i = 0; i < paths.length; i++) {
+        let pack = packs[i];
+        let path = paths[i];
+        path = path.split("/").slice(0, -1).join("/");
+        if (this._initOptions && this._initOptions.modules && this._initOptions.modules[pack])
+          script += `application.currentModuleDir=application.rootDir+'modules/${this._initOptions.modules[pack].path}';
+`;
+        else
+          script += `application.currentModuleDir=application.rootDir+'libs/${pack}';
+`;
+        script += await result[i].text() + "\n";
+      }
+      ;
+      await import(`data:text/javascript,${encodeURIComponent(script)}`);
+      for (let i = 0; i < paths.length; i++) {
+        let pack = packs[i];
+        let path = paths[i];
+        let m = window["require"](pack);
+        if (m) {
+          if (!this.packageNames.has(pack))
+            this.packageNames.add(pack);
+          this.packages[path] = m.default || m;
+        }
+        ;
+      }
+      ;
+    }
+    ;
   }
   async dynamicImportPackage(script, packageName, packageModulePath) {
     _currentDefineModule = null;
@@ -29120,32 +29219,20 @@ var Application = class {
     if (options) {
       if (options.main) {
         this._initOptions = options;
-        if (options.bundle) {
-          try {
-            let rootDir = (options == null ? void 0 : options.rootDir) ? options == null ? void 0 : options.rootDir : "";
-            if (!rootDir.endsWith("/"))
-              rootDir += "/";
-            let content = await this.getScript(rootDir + "bundle.json");
-            if (content) {
-              this.bundleLibs = JSON.parse(content);
-            }
-            ;
-          } catch (err) {
-            this.bundleLibs = {};
-          }
-          ;
-        }
-        ;
       }
       ;
       if (!this._assets && options.assets)
         this._assets = await this.loadPackage(options.assets) || {};
       if (options.dependencies) {
+        let packages = [];
         for (let p in options.dependencies) {
-          if (p != options.main)
-            await this.loadPackage(p, options.dependencies[p]);
+          if (p != options.main) {
+            packages.push(p);
+          }
+          ;
         }
         ;
+        await this.loadPackages(packages);
       }
       ;
     }
@@ -29189,15 +29276,34 @@ var Application = class {
     else {
       if (this._initOptions && this._initOptions.modules && this._initOptions.modules[module2] && this._initOptions.modules[module2].dependencies) {
         let dependencies = this._initOptions.modules[module2].dependencies;
-        for (let i = 0; i < dependencies.length; i++) {
-          let dep = dependencies[i];
-          let path = this.getModulePath(dep);
-          if (!this.packages[path]) {
-            await this.loadPackage(dep, path);
+        await this.loadPackages(dependencies);
+      }
+      ;
+      try {
+        let m = window["require"](module2);
+        if (m) {
+          let module3 = m.default || m;
+          if (module3) {
+            this.currentModulePath = modulePath;
+            if (modulePath.indexOf("://") > 0)
+              this.currentModuleDir = modulePath.split("/").slice(0, -1).join("/");
+            else if (!modulePath.startsWith("/"))
+              this.currentModuleDir = this.LibHost + this.rootDir + modulePath.split("/").slice(0, -1).join("/");
+            else
+              this.currentModuleDir = this.LibHost + modulePath.split("/").slice(0, -1).join("/");
+            this.id++;
+            let elmId2 = `i-module--${this.id}`;
+            let Module2 = class extends module3 {
+            };
+            this.modulesId[modulePath] = elmId2;
+            this.modules[modulePath] = Module2;
+            customElements.define(elmId2, Module2);
+            let result = new Module2(null, options);
+            return result;
           }
           ;
         }
-        ;
+      } catch (err) {
       }
       ;
       if (this.bundleLibs[module2])

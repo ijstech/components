@@ -6188,6 +6188,7 @@ declare module "packages/application/src/index" {
         loadPackage(packageName: string, modulePath?: string): Promise<{
             [name: string]: any;
         } | null>;
+        loadPackages(packages: string[]): Promise<void>;
         private dynamicImportPackage;
         loadModule(modulePath: string, options?: IHasDependencies): Promise<Module | null>;
         private getModulePath;
