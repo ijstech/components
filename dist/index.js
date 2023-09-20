@@ -28603,10 +28603,22 @@ var Application = class {
                 if (dependency === "@ijstech/components" || this.packageNames.has(dependency))
                   continue;
                 let packageModulePath = await this.calculatePackageModulePath(dependency, modulePath || "*");
-                if (!packageModulePath)
+                if (!packageModulePath || this.packages[packageModulePath])
                   continue;
+                try {
+                  let m = window["require"](dependency);
+                  if (m) {
+                    if (!this.packageNames.has(dependency))
+                      this.packageNames.add(dependency);
+                    this.packages[packageModulePath] = m.default || m;
+                    continue;
+                  }
+                  ;
+                } catch (err) {
+                }
+                ;
                 packageModulePathMap[dependency] = packageModulePath;
-                promisesMap[dependency] = this.retrievePackageScript(dependency, packageModulePath);
+                promisesMap[dependency] = this.getScript(packageModulePath);
               }
               ;
               let dependenciesArr = Object.keys(promisesMap);
@@ -28966,13 +28978,6 @@ var Application = class {
     }
     return modulePath;
   }
-  async retrievePackageScript(packageName, packageModulePath) {
-    if (this.packages[packageModulePath])
-      return this.packages[packageModulePath];
-    let script = "";
-    script = await this.getScript(packageModulePath);
-    return script;
-  }
   async loadPackage(packageName, modulePath) {
     let packageModulePath = await this.calculatePackageModulePath(packageName, modulePath);
     if (!packageModulePath)
@@ -28989,7 +28994,7 @@ var Application = class {
     } catch (err) {
     }
     ;
-    let script = await this.retrievePackageScript(packageName, packageModulePath);
+    let script = await this.getScript(packageModulePath);
     if (script) {
       return this.dynamicImportPackage(script, packageName, packageModulePath);
     }

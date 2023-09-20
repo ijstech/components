@@ -6184,7 +6184,6 @@ declare module "packages/application/src/index" {
         getContent(modulePath: string): Promise<string>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
         private calculatePackageModulePath;
-        private retrievePackageScript;
         loadPackage(packageName: string, modulePath?: string): Promise<{
             [name: string]: any;
         } | null>;
