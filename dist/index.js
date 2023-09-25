@@ -28495,37 +28495,174 @@ var FormatUtils = class {
   static truncateWalletAddress(address) {
     return address.substring(0, 6) + "..." + address.substring(address.length - 4);
   }
-  static formatNumberWithSeparators(value, decimalFigures) {
-    let stringValue;
-    if (typeof value === "string") {
-      stringValue = value;
-    } else {
-      stringValue = value.toString();
+  static formatNumber(value, options) {
+    if (!value)
+      return "0";
+    const { decimalFigures, useSeparators = true, roundingMethod = "floor", minValue, shortScale = false } = options || {};
+    let stringValue = typeof value === "string" ? value : value.toString();
+    stringValue = stringValue.trim();
+    if (stringValue === "0")
+      return "0";
+    if (minValue !== void 0) {
+      const compareResult = this.compareToMinValue(stringValue, minValue.toString());
+      if (compareResult === -1)
+        return `<${minValue}`;
+    }
+    const hasExponential = stringValue.includes("e");
+    stringValue = hasExponential ? this.removeExponential(stringValue) : stringValue;
+    let suffix = "";
+    if (shortScale) {
+      const { value: newValue2, suffix: newSuffix } = this.scaleValue(stringValue);
+      if (newValue2)
+        stringValue = newValue2;
+      suffix = newSuffix;
     }
     let [integerPart, decimalPart] = stringValue.split(".");
-    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    if (decimalFigures !== void 0) {
-      if (decimalFigures === 0) {
-        return formattedInteger;
+    const formattedInteger = useSeparators ? integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : integerPart;
+    if (decimalFigures === void 0 || decimalFigures < 0) {
+      return (decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger) + suffix;
+    }
+    let newValue = "";
+    if (decimalFigures && decimalFigures > 0) {
+      const formattedDecimal = this.processDecimalPart(decimalPart, integerPart, options);
+      newValue = formattedDecimal ? `${formattedInteger}.${formattedDecimal}` : formattedInteger;
+    } else {
+      const newInteger = this.roundIntegerPart(decimalPart, integerPart, roundingMethod);
+      newValue = useSeparators ? newInteger.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : newInteger;
+    }
+    return (newValue.length > 18 ? newValue.substring(0, 18) + "..." : newValue) + suffix;
+  }
+  static scaleValue(value) {
+    let [integerPart] = value.split(".");
+    const absBigInteger = BigInt(integerPart.replace(/\-|\s+/g, ""));
+    const newBigValue = new BigDecimal(value);
+    let newValue = "";
+    let suffix = "";
+    if (absBigInteger >= 1e9) {
+      newValue = newBigValue.divide(new BigDecimal("1000000000")).toString();
+      suffix = "B";
+    } else if (absBigInteger >= 1e6) {
+      newValue = newBigValue.divide(new BigDecimal("1000000")).toString();
+      suffix = "M";
+    } else if (absBigInteger >= 1e3) {
+      newValue = newBigValue.divide(new BigDecimal("1000")).toString();
+      suffix = "K";
+    }
+    return { value: newValue, suffix };
+  }
+  static removeExponential(value) {
+    let [numberPart, ePart] = value.split("e");
+    numberPart = numberPart.replace(".", "");
+    const powValue = Number(ePart) > 0 ? Number(ePart) : Number(ePart) * -1;
+    const eValue = (10 ** powValue).toLocaleString("en-US", { useGrouping: false });
+    const rightPart = Math.abs(numberPart.length - eValue.length);
+    if (Number(ePart) < 0) {
+      return "0." + "0".repeat(Math.abs(rightPart) - 1) + numberPart;
+    } else {
+      return numberPart + "0".repeat(rightPart);
+    }
+  }
+  static compareToMinValue(stringValue, minValue) {
+    let [integerPart1, decimalPart1 = ""] = stringValue.split(".");
+    let [integerPart2, decimalPart2 = ""] = minValue.split(".");
+    const maxDecimals = Math.max(decimalPart1.length, decimalPart2.length);
+    const bigValue1 = BigInt(integerPart1 + decimalPart1.padEnd(maxDecimals, "0"));
+    const bigValue2 = BigInt(integerPart2 + decimalPart2.padEnd(maxDecimals, "0"));
+    if (bigValue1 > bigValue2) {
+      return 1;
+    } else if (bigValue1 < bigValue2) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
+  static processDecimalPart(decimalPart, integerPart, options) {
+    const { decimalFigures = 0, roundingMethod = "floor" } = options || {};
+    if (decimalPart) {
+      let count = 0;
+      let endIndex = 0;
+      for (let i = 0; i < decimalPart.length; i++) {
+        if (count >= decimalFigures)
+          break;
+        if (decimalPart[i] !== "0")
+          count++;
+        endIndex = i;
       }
-      if (decimalPart) {
-        let count = 0;
-        let endIndex = 0;
-        for (let i = 0; i < decimalPart.length; i++) {
-          if (count >= decimalFigures)
-            break;
-          if (decimalPart[i] !== "0")
-            count++;
-          endIndex = i;
-        }
-        decimalPart = decimalPart.slice(0, endIndex + 1);
-      } else {
-        decimalPart = "0".repeat(decimalFigures);
+      const initialDecimalPart = decimalPart.slice(0, endIndex + 1);
+      const decimalArr = initialDecimalPart.split("");
+      switch (roundingMethod) {
+        case "round":
+          decimalPart = this.customRound([...decimalArr], decimalFigures, 5);
+          break;
+        case "ceil":
+          decimalPart = integerPart.startsWith("-") ? initialDecimalPart : this.customRound([...decimalArr], decimalFigures, 1);
+          break;
+        default:
+          decimalPart = initialDecimalPart;
+      }
+    } else {
+      decimalPart = "0".repeat(decimalFigures);
+    }
+    return decimalPart;
+  }
+  static customRound(decimalArr, decimalFigures, roundingNumber) {
+    for (let i = decimalArr.length - 1; i > 0; i--) {
+      if (i <= decimalFigures)
+        break;
+      const decimalNum = +decimalArr[i];
+      if (decimalNum >= roundingNumber && i - 1 > 0) {
+        decimalArr[i] = "0";
+        decimalArr[i - 1] = `${+decimalArr[i - 1] + 1}`;
       }
     }
-    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+    return decimalArr.join("");
+  }
+  static roundIntegerPart(decimalPart, integerPart, roundingMethod) {
+    const firstDecimal = decimalPart && decimalPart.charAt(0);
+    const notRounding = integerPart.startsWith("-") && roundingMethod === "ceil" || roundingMethod === "floor" || !firstDecimal || roundingMethod === "round" && +firstDecimal < 5 || roundingMethod === "ceil" && +firstDecimal < 1;
+    return notRounding ? integerPart : this.incrementLastDigit(integerPart);
+  }
+  static incrementLastDigit(integerPart) {
+    let chars = integerPart.split("") || [];
+    let isNegative = chars[0] === "-";
+    isNegative && chars.shift();
+    if (chars[chars.length - 1] === "9") {
+      for (let i = chars.length - 1; i > 0; i--) {
+        const num = +chars[i];
+        if (num >= 9 && i - 1 > 0) {
+          chars[i] = "0";
+          chars[i - 1] = `${+chars[i - 1] + 1}`;
+        }
+      }
+    } else {
+      chars[chars.length - 1] = `${+chars[chars.length - 1] + 1}`;
+    }
+    if (isNegative)
+      chars.unshift("-");
+    return chars.join("");
   }
 };
+var _BigDecimal = class {
+  constructor(value) {
+    let [integerPart, decimalPart = ""] = value.split(".");
+    decimalPart = decimalPart.padEnd(_BigDecimal.decimals, "0");
+    this.bigVal = BigInt(integerPart + decimalPart);
+  }
+  static fromBigInt(bigVal) {
+    return Object.assign(Object.create(_BigDecimal.prototype), { bigVal });
+  }
+  toString() {
+    const str = this.bigVal.toString().padStart(_BigDecimal.decimals + 1, "0");
+    return str.slice(0, -_BigDecimal.decimals) + "." + str.slice(-_BigDecimal.decimals).replace(/\.?0+$/, "");
+  }
+  divide(value) {
+    if (!value)
+      throw new Error("Cannot divide to empty value");
+    return _BigDecimal.fromBigInt(this.bigVal * BigInt("1" + "0".repeat(_BigDecimal.decimals)) / value.bigVal);
+  }
+};
+var BigDecimal = _BigDecimal;
+BigDecimal.decimals = 18;
 
 // packages/application/src/index.ts
 var API_IPFS_BASEURL = "/api/ipfs/v0";

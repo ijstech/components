@@ -6051,11 +6051,34 @@ declare module "packages/moment/src/index" {
     export { moment };
 }
 declare module "packages/application/src/formatUtils" {
+    type RoundingMethod = 'floor' | 'round' | 'ceil';
+    export interface IFormatNumberOptions {
+        useSeparators?: boolean;
+        roundingMethod?: RoundingMethod;
+        decimalFigures?: number;
+        minValue?: number | string;
+        shortScale?: boolean;
+    }
     export class FormatUtils {
         static unixToFormattedDate(unixTimestamp: number): string;
         static truncateTxHash(hash: string, length?: number): string;
         static truncateWalletAddress(address: string): string;
-        static formatNumberWithSeparators(value: BigInt | string | number, decimalFigures?: number): string;
+        static formatNumber(value: BigInt | string | number, options?: IFormatNumberOptions): string;
+        private static scaleValue;
+        private static removeExponential;
+        private static compareToMinValue;
+        private static processDecimalPart;
+        private static customRound;
+        private static roundIntegerPart;
+        private static incrementLastDigit;
+    }
+    export class BigDecimal {
+        static decimals: number;
+        private bigVal;
+        constructor(value: string);
+        static fromBigInt(bigVal: bigint): any;
+        toString(): string;
+        divide(value: BigDecimal): any;
     }
 }
 declare module "packages/application/src/index" {
@@ -6200,7 +6223,7 @@ declare module "packages/application/src/index" {
     export const application: Application;
     export { EventBus, IEventBus } from "packages/application/src/event-bus";
     export { IDataSchema, IUISchema, IRenderUIOptions, renderUI, DataSchemaValidator } from "packages/application/src/jsonUI";
-    export { FormatUtils } from "packages/application/src/formatUtils";
+    export { FormatUtils, IFormatNumberOptions } from "packages/application/src/formatUtils";
     export default application;
 }
 declare module "packages/icon/src/style/icon.css" { }
@@ -11509,7 +11532,7 @@ declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { customModule, customElements, getCustomElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace } from "@ijstech/components/base";
     export { Alert } from "packages/alert/src/index";
-    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IRenderUIOptions, DataSchemaValidator, renderUI, FormatUtils } from "packages/application/src/index";
+    export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IRenderUIOptions, DataSchemaValidator, renderUI, FormatUtils, IFormatNumberOptions } from "packages/application/src/index";
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
     export { ComboBox, IComboItem } from "packages/combo-box/src/index";
