@@ -3881,7 +3881,7 @@ declare module "packages/base/src/control" {
         properties: T;
     }
     export type SpaceProps = 'margin' | 'padding';
-    class SpaceValue implements ISpace {
+    export class SpaceValue implements ISpace {
         private _value;
         private _prop;
         private _owner;
@@ -4185,7 +4185,7 @@ declare module "packages/base/src/types" {
 declare module "@ijstech/components/base" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "packages/base/src/observable";
     export { IFont, Component, BorderSides, ISpace, IStack, FontStyle, IOverflow, IBackground, TextTransform, ICustomEventParam } from "packages/base/src/component";
-    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border, IControlMediaQueryProps, IControlMediaQuery, IContextMenu } from "packages/base/src/control";
+    export { IBorder, BorderStylesSideType, IBorderSideStyles, IMediaQuery, DisplayType, PositionType, Background, Border, SpaceValue, IControlMediaQueryProps, IControlMediaQuery, IContextMenu } from "packages/base/src/control";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground, ICustomProperties } from "packages/base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType, IControlMediaQuery } from "packages/base/src/control";
     import { ITooltip } from "packages/tooltip/src/index";
@@ -4762,12 +4762,14 @@ declare module "packages/layout/src/index" {
 }
 declare module "packages/image/src/style/image.css" { }
 declare module "packages/image/src/image" {
-    import { Control, ControlElement } from "@ijstech/components/base";
+    import { Control, ControlElement, IBorder, Border } from "@ijstech/components/base";
     import "packages/image/src/style/image.css";
+    type ObjectFitType = 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
     export interface ImageElement extends ControlElement {
         rotate?: number;
         url?: string;
         fallbackUrl?: string;
+        objectFit?: ObjectFitType;
     }
     global {
         namespace JSX {
@@ -4778,17 +4780,19 @@ declare module "packages/image/src/image" {
     }
     export class Image extends Control {
         private imageElm;
-        private _wrapCropElm;
-        private _wrapResizeElm;
-        private _imageClippedElm;
         private _url;
         private _rotate;
         private _fallbackUrl;
+        private _objectFit;
         constructor(parent?: Control, options?: any);
         get rotate(): number;
         set rotate(value: any);
         get url(): string;
         set url(value: string);
+        get objectFit(): ObjectFitType;
+        set objectFit(value: ObjectFitType);
+        get border(): Border;
+        set border(value: IBorder);
         protected init(): void;
         static create(options?: ImageElement, parent?: Control): Promise<Image>;
     }
@@ -4897,19 +4901,32 @@ declare module "packages/upload/src/upload" {
     }
 }
 declare module "packages/modal/src/style/modal.css" {
+    import { IModalMediaQuery } from "packages/modal/src/modal";
     export const overlayStyle: string;
     export const wrapperStyle: string;
     export const noBackdropStyle: string;
     export const visibleStyle: string;
     export const modalStyle: string;
     export const titleStyle: string;
+    export const getModalMediaQueriesStyleClass: (mediaQueries: IModalMediaQuery[]) => string;
 }
 declare module "packages/modal/src/modal" {
-    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border } from "@ijstech/components/base";
+    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border, IMediaQuery, IControlMediaQueryProps, ISpace } from "@ijstech/components/base";
     import { Icon, IconElement } from "packages/icon/src/index";
     export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left';
     type eventCallback = (target: Control) => void;
     type ModalPositionType = "fixed" | "absolute";
+    export interface IModalMediaQueryProps extends IControlMediaQueryProps {
+        showBackdrop?: boolean;
+        popupPlacement?: 'center' | 'bottom' | 'top';
+        maxWidth?: string | number;
+        maxHeight?: string | number;
+        height?: string | number;
+        minWidth?: string | number;
+        width?: string | number;
+        position?: ModalPositionType;
+    }
+    export type IModalMediaQuery = IMediaQuery<IModalMediaQueryProps>;
     export interface ModalElement extends ControlElement {
         title?: string;
         showBackdrop?: boolean;
@@ -4919,6 +4936,7 @@ declare module "packages/modal/src/modal" {
         isChildFixed?: boolean;
         closeOnScrollChildFixed?: boolean;
         item?: Control;
+        mediaQueries?: IModalMediaQuery[];
         onOpen?: eventCallback;
         onClose?: eventCallback;
     }
@@ -4941,6 +4959,7 @@ declare module "packages/modal/src/modal" {
         private _wrapperPositionAt;
         private _isChildFixed;
         private _closeOnScrollChildFixed;
+        private _mediaQueries;
         private hasInitializedChildFixed;
         private mapScrollTop;
         private insideClick;
@@ -4971,6 +4990,8 @@ declare module "packages/modal/src/modal" {
         set isChildFixed(value: boolean);
         get closeOnScrollChildFixed(): boolean;
         set closeOnScrollChildFixed(value: boolean);
+        get mediaQueries(): IModalMediaQuery[];
+        set mediaQueries(value: IModalMediaQuery[]);
         private generateUUID;
         private setChildFixed;
         private positionAtChildFixed;
@@ -4990,6 +5011,8 @@ declare module "packages/modal/src/modal" {
         set width(value: number | string);
         get border(): Border;
         set border(value: IBorder);
+        get padding(): ISpace;
+        set padding(value: ISpace);
         protected init(): void;
         static create(options?: ModalElement, parent?: Container): Promise<Modal>;
     }
@@ -9867,7 +9890,7 @@ declare module "packages/markdown/src/index" {
 }
 declare module "packages/markdown-editor/src/styles/index.css" { }
 declare module "packages/markdown-editor/src/markdown-editor" {
-    import { Container, Control, ControlElement } from "@ijstech/components/base";
+    import { Container, Control, ControlElement, notifyEventCallback } from "@ijstech/components/base";
     import { Markdown } from "packages/markdown/src/index";
     import "packages/markdown-editor/src/styles/index.css";
     export interface MarkdownEditorElement extends ControlElement {
@@ -9885,6 +9908,8 @@ declare module "packages/markdown-editor/src/markdown-editor" {
             rule: string | object;
             toDOM: (text: string) => any;
         }[];
+        placeholder?: string;
+        onChanged?: notifyEventCallback;
     }
     global {
         namespace JSX {
@@ -9909,6 +9934,8 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private _customPlugins;
         private _widgetRules;
         private _hideModeSwitch;
+        private _placeholder;
+        onChanged: notifyEventCallback;
         get mode(): 'wysiwyg' | 'markdown';
         set mode(value: 'wysiwyg' | 'markdown');
         get theme(): 'light' | 'dark';
@@ -9935,6 +9962,8 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         }[]);
         get hideModeSwitch(): boolean;
         set hideModeSwitch(value: boolean);
+        get placeholder(): string;
+        set placeholder(value: string);
         static create(options?: MarkdownEditorElement, parent?: Container): Promise<MarkdownEditor>;
         constructor(parent?: Control, options?: MarkdownEditorElement);
         private loadPlugin;
