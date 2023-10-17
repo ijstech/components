@@ -655,7 +655,7 @@ pre[class*=language-] {
 
 .toastui-editor-dark .toastui-editor-md-container,
 .toastui-editor-dark .toastui-editor-ww-container {
-  background-color: #121212;
+  /* background-color: #121212; */
 }
 
 .toastui-editor-dark .toastui-editor-defaultUI-toolbar {

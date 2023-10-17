@@ -15506,6 +15506,7 @@ __export(exports, {
   HStack: () => HStack,
   IPFS: () => src_exports2,
   Icon: () => Icon,
+  IdUtils: () => IdUtils,
   Iframe: () => Iframe,
   Image: () => Image2,
   Input: () => Input,
@@ -17327,6 +17328,7 @@ var Component = class extends HTMLElement {
     super();
     this._readyCallback = [];
     this.attrs = {};
+    this._uuid = IdUtils.generateUUID();
     this.options = options || {};
     this.defaults = defaults || {};
     initObservables(this);
@@ -17438,6 +17440,9 @@ var Component = class extends HTMLElement {
     if (removeAfter && result)
       this.style[name] = result;
     return result;
+  }
+  get uuid() {
+    return this._uuid;
   }
   get id() {
     return this.getAttribute("id");
@@ -17705,7 +17710,8 @@ var getSpacingValue = (value) => {
     return value + "px";
   return value;
 };
-var getControlMediaQueriesStyle = (mediaQueries) => {
+var getControlMediaQueriesStyle = (mediaQueries, props) => {
+  var _a;
   let styleObj = {
     $nest: {}
   };
@@ -17723,7 +17729,8 @@ var getControlMediaQueriesStyle = (mediaQueries) => {
         styleObj["$nest"][mediaQueryRule] = {};
         if (typeof mediaQuery.properties.visible === "boolean") {
           const visible = mediaQuery.properties.visible;
-          styleObj["$nest"][mediaQueryRule]["display"] = visible ? "flex !important" : "none !important";
+          const currentDisplay = (_a = props == null ? void 0 : props.display) != null ? _a : "flex";
+          styleObj["$nest"][mediaQueryRule]["display"] = visible ? `${currentDisplay} !important` : "none !important";
         }
         if (mediaQuery.properties.padding) {
           const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.padding;
@@ -17789,8 +17796,8 @@ var getControlMediaQueriesStyle = (mediaQueries) => {
   }
   return styleObj;
 };
-var getControlMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+var getControlMediaQueriesStyleClass = (mediaQueries, props) => {
+  let styleObj = getControlMediaQueriesStyle(mediaQueries, props);
   return style(styleObj);
 };
 
@@ -18194,6 +18201,7 @@ var SpaceValue = class {
     this._owner = owner;
     this._value = value;
     this._prop = prop;
+    this.update();
   }
   get left() {
     return this._value.left;
@@ -18223,20 +18231,27 @@ var SpaceValue = class {
     this._value.bottom = value;
     this.update();
   }
+  getSpacingValue(value) {
+    if (typeof value === "number")
+      return value + "px";
+    if (value === "auto")
+      return value;
+    const unit = value.replace(/^-?\d+(\.\d+)?/g, "");
+    const number = value.replace(unit, "");
+    const isValidUnit = ["px", "em", "rem", "%"].includes(unit);
+    return isValidUnit ? value : `${number}px`;
+  }
   update(value) {
     if (value)
       this._value = value;
-    else {
-      switch (this._prop) {
-        case "margin":
-          this._owner.margin = this._value;
-          break;
-        case "padding":
-          if (this._owner instanceof Container)
-            this._owner.padding = this._value;
-          break;
-      }
-      ;
+    const { top = 0, right = 0, bottom = 0, left = 0 } = this._value;
+    switch (this._prop) {
+      case "margin":
+        this._owner.style.margin = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
+        break;
+      case "padding":
+        this._owner.style.padding = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
+        break;
     }
     ;
   }
@@ -18474,7 +18489,8 @@ var Background = class {
     this.setBackgroundStyle();
   }
   get image() {
-    return this._value.image || "";
+    var _a;
+    return ((_a = this._value) == null ? void 0 : _a.image) || "";
   }
   set image(value) {
     if (!this._value) {
@@ -18608,8 +18624,6 @@ var Control = class extends Component {
       this._margin = new SpaceValue(this, value, "margin");
     else
       this._margin.update(value);
-    const { top = 0, right = 0, bottom = 0, left = 0 } = value;
-    this.style.margin = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
   }
   get marginStyle() {
     return (side) => this.getMarginStyle()[side];
@@ -18622,8 +18636,6 @@ var Control = class extends Component {
       this._padding = new SpaceValue(this, value, "padding");
     else
       this._padding.update(value);
-    const { top = 0, right = 0, bottom = 0, left = 0 } = value;
-    this.style.padding = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
   }
   get paddingStyle() {
     return (side) => this.getPaddingStyle()[side];
@@ -18658,16 +18670,6 @@ var Control = class extends Component {
           this._parent.refresh();
       }
     }
-  }
-  getSpacingValue(value) {
-    if (typeof value === "number")
-      return value + "px";
-    if (value === "auto")
-      return value;
-    const unit = value.replace(/^-?\d+(\.\d+)?/g, "");
-    const number = value.replace(unit, "");
-    const isValidUnit = ["px", "em", "rem", "%"].includes(unit);
-    return isValidUnit ? value : `${number}px`;
   }
   connectedCallback() {
     super.connectedCallback();
@@ -19069,6 +19071,7 @@ var Control = class extends Component {
     this.setAttributeToProperty("minWidth");
     this.setAttributeToProperty("stack");
     this.setAttributeToProperty("grid");
+    this.setAttributeToProperty("display");
     if (this._left != null || this._top != null)
       this.style.position = "absolute";
     if (this.getAttribute("enabled") !== false)
@@ -19094,7 +19097,9 @@ var Control = class extends Component {
       this.border = new Border(this, border);
     }
     this.setAttributeToProperty("overflow");
-    this.setAttributeToProperty("display");
+    this.setAttributeToProperty("cursor");
+    this.setAttributeToProperty("letterSpacing");
+    this.setAttributeToProperty("boxShadow");
   }
   setElementPosition(elm, prop, value) {
     if (value != null && !isNaN(value)) {
@@ -19322,7 +19327,7 @@ var Control = class extends Component {
   }
   set display(value) {
     this._display = value;
-    this.style.display = value;
+    this.style.display = this.visible === false ? "none" : value;
   }
   get anchor() {
     return this._anchor || DefaultAnchor;
@@ -19337,12 +19342,34 @@ var Control = class extends Component {
   set opacity(value) {
     this.style.opacity = typeof value === "string" ? value : `${value}`;
   }
+  get cursor() {
+    return this.style.cursor;
+  }
+  set cursor(value) {
+    this.style.cursor = value;
+  }
+  get letterSpacing() {
+    return this.style.letterSpacing;
+  }
+  set letterSpacing(value) {
+    if (!isNaN(Number(value))) {
+      this.style.letterSpacing = value + "px";
+    } else {
+      this.style.letterSpacing = value + "";
+    }
+  }
+  get boxShadow() {
+    return this.style.boxShadow;
+  }
+  set boxShadow(value) {
+    this.style.boxShadow = value;
+  }
   get mediaQueries() {
     return this._cmediaQueries;
   }
   set mediaQueries(value) {
     this._cmediaQueries = value;
-    let style2 = getControlMediaQueriesStyleClass(this._cmediaQueries);
+    let style2 = getControlMediaQueriesStyleClass(this._cmediaQueries, { display: this.display });
     this._mediaStyle && this.classList.remove(this._mediaStyle);
     this._mediaStyle = style2;
     this.classList.add(style2);
@@ -19521,6 +19548,551 @@ function customModule(target) {
   _currentDefineModule = target;
 }
 
+// packages/application/src/event-bus.ts
+var _EventBus = class {
+  constructor() {
+    this.subscribers = {};
+  }
+  static getInstance() {
+    if (this.instance === void 0) {
+      this.instance = new _EventBus();
+    }
+    return this.instance;
+  }
+  dispatch(event, arg) {
+    const subscriber = this.subscribers[event];
+    if (subscriber === void 0) {
+      return;
+    }
+    Object.keys(subscriber).forEach((key2) => subscriber[key2](arg));
+  }
+  register(sender, event, callback) {
+    const id = this.getNextId();
+    if (!this.subscribers[event])
+      this.subscribers[event] = {};
+    this.subscribers[event][id] = callback.bind(sender);
+    return {
+      unregister: () => {
+        delete this.subscribers[event][id];
+        if (Object.keys(this.subscribers[event]).length === 0)
+          delete this.subscribers[event];
+      }
+    };
+  }
+  getNextId() {
+    return _EventBus.nextId++;
+  }
+};
+var EventBus = _EventBus;
+EventBus.nextId = 0;
+EventBus.instance = void 0;
+
+// packages/checkbox/src/style/checkbox.css.ts
+var Theme2 = theme_exports.ThemeVars;
+cssRule("i-checkbox", {
+  fontFamily: Theme2.typography.fontFamily,
+  fontSize: Theme2.typography.fontSize,
+  userSelect: "none",
+  "$nest": {
+    ".i-checkbox": {
+      display: "inline-flex",
+      alignItems: "center",
+      position: "relative",
+      maxWidth: "100%"
+    },
+    ".i-checkbox_input": {
+      cursor: "pointer",
+      whiteSpace: "nowrap",
+      display: "inline-flex",
+      position: "relative"
+    },
+    ".checkmark": {
+      width: 15,
+      height: 15,
+      display: "inline-block",
+      position: "relative",
+      backgroundColor: Theme2.background.paper,
+      border: `1px solid ${Theme2.divider}`,
+      boxSizing: "border-box",
+      transition: "border-color .25s cubic-bezier(.71,-.46,.29,1.46),background-color .25s cubic-bezier(.71,-.46,.29,1.46)"
+    },
+    ".i-checkbox_label": {
+      boxSizing: "border-box",
+      color: Theme2.text.primary,
+      display: "inline-block",
+      paddingLeft: 8,
+      maxWidth: "100%"
+    },
+    "input": {
+      opacity: 0,
+      width: 0,
+      height: 0,
+      position: "absolute",
+      top: 0,
+      left: 0
+    },
+    "&.is-checked": {
+      "$nest": {
+        ".i-checkbox_label": {
+          color: Theme2.colors.info.main
+        },
+        ".checkmark": {
+          backgroundColor: Theme2.colors.info.main
+        },
+        ".checkmark:after": {
+          transform: "rotate(45deg) scaleY(1)"
+        },
+        ".is-indeterminate .checkmark:after": {
+          transform: "none"
+        }
+      }
+    },
+    "&:not(.disabled):hover input ~ .checkmark": {
+      borderColor: Theme2.colors.info.main
+    },
+    "&.disabled": {
+      cursor: "not-allowed"
+    },
+    ".checkmark:after": {
+      content: "''",
+      boxSizing: "content-box",
+      border: `1px solid ${Theme2.background.paper}`,
+      borderLeft: 0,
+      borderTop: 0,
+      height: 7.5,
+      left: "35%",
+      top: 1,
+      transform: "rotate(45deg) scaleY(0)",
+      width: 3.5,
+      transition: "transform .15s ease-in .05s",
+      transformOrigin: "center",
+      display: "inline-block",
+      position: "absolute"
+    },
+    ".is-indeterminate .checkmark": {
+      backgroundColor: Theme2.colors.info.main
+    },
+    ".is-indeterminate .checkmark:after": {
+      width: "80%",
+      height: 0,
+      top: "50%",
+      left: "10%",
+      borderRight: 0,
+      transform: "none"
+    }
+  }
+});
+
+// packages/checkbox/src/checkbox.ts
+var Checkbox = class extends Control {
+  constructor(parent, options) {
+    super(parent, options, {
+      height: 30
+    });
+  }
+  get caption() {
+    return this._caption;
+  }
+  set caption(value) {
+    this._caption = value;
+    if (!value)
+      this.captionSpanElm.style.display = "none";
+    else
+      this.captionSpanElm.style.display = "";
+    this.captionSpanElm && (this.captionSpanElm.innerHTML = value);
+  }
+  get captionWidth() {
+    return this._captionWidth;
+  }
+  set captionWidth(value) {
+    if (!value)
+      return;
+    this._captionWidth = value;
+    this.setElementPosition(this.captionSpanElm, "width", value);
+  }
+  get height() {
+    return this.offsetHeight;
+  }
+  set height(value) {
+    this.setPosition("height", value);
+  }
+  get indeterminate() {
+    return this._indeterminate;
+  }
+  set indeterminate(value) {
+    this._indeterminate = value;
+    if (this.inputSpanElm)
+      value ? this.inputSpanElm.classList.add("is-indeterminate") : this.inputSpanElm.classList.remove("is-indeterminate");
+    this.inputElm.indeterminate = value;
+  }
+  get checked() {
+    return this._checked;
+  }
+  set checked(value) {
+    this._checked = value;
+    this.addClass(value, "is-checked");
+    this.inputElm && (this.inputElm.checked = value);
+  }
+  get value() {
+    return this.inputElm.value;
+  }
+  set value(data) {
+    this.inputElm.value = data;
+  }
+  get readOnly() {
+    return this._readOnly;
+  }
+  set readOnly(value) {
+    this._readOnly = value;
+    if (this.inputElm) {
+      this.inputElm.readOnly = value;
+    }
+  }
+  _handleChange(event) {
+    if (this.readOnly)
+      return;
+    this.checked = this.inputElm.checked || false;
+    this.addClass(this.checked, "is-checked");
+    if (this.onChanged)
+      this.onChanged(this, event);
+  }
+  addClass(value, className) {
+    if (value)
+      this.classList.add(className);
+    else
+      this.classList.remove(className);
+  }
+  init() {
+    if (!this.captionSpanElm) {
+      this.wrapperElm = this.createElement("label", this);
+      if (this.height)
+        this.wrapperElm.style.height = this.height + "px";
+      this.wrapperElm.classList.add("i-checkbox");
+      this.inputSpanElm = this.createElement("span", this.wrapperElm);
+      this.inputSpanElm.classList.add("i-checkbox_input");
+      this.inputElm = this.createElement("input", this.inputSpanElm);
+      this.inputElm.type = "checkbox";
+      const disabled = this.getAttribute("enabled") === false;
+      this.inputElm.disabled = disabled;
+      this.readOnly = this.getAttribute("readOnly", true, false);
+      this.checkmarklElm = this.createElement("span");
+      this.checkmarklElm.classList.add("checkmark");
+      this.inputSpanElm.appendChild(this.checkmarklElm);
+      this.inputElm.addEventListener("input", this._handleChange.bind(this));
+      this.captionSpanElm = this.createElement("span", this.wrapperElm);
+      this.captionSpanElm.classList.add("i-checkbox_label");
+      this.captionWidth = this.getAttribute("captionWidth", true);
+      this.caption = this.getAttribute("caption", true);
+      this.value = this.caption;
+      this.checked = this.getAttribute("checked", true, false);
+      this.indeterminate = this.getAttribute("indeterminate", true);
+      this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
+      super.init();
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Checkbox = __decorateClass([
+  customElements2("i-checkbox")
+], Checkbox);
+
+// packages/application/src/globalEvent.ts
+function getControl(target) {
+  if (target instanceof Control) {
+    return target;
+  }
+  if ((target instanceof HTMLElement || target instanceof SVGElement) && target.parentElement)
+    return getControl(target.parentElement);
+  return null;
+}
+var GlobalEvents = class {
+  constructor() {
+    this.bindEvents();
+  }
+  abortEvent(event) {
+    event.stopPropagation();
+  }
+  _handleClick(event) {
+    let control = getControl(event.target);
+    if (control && !(control instanceof Checkbox)) {
+      if (control.enabled) {
+        if (control._handleClick(event)) {
+          event.stopPropagation();
+        }
+        ;
+      }
+      ;
+    }
+    ;
+  }
+  _handleMouseDown(event) {
+    let control = getControl(event.target);
+    if (control == null ? void 0 : control.enabled) {
+      if (control._handleMouseDown(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+  }
+  _handleMouseMove(event) {
+    let control = getControl(event.target);
+    if (control == null ? void 0 : control.enabled) {
+      if (control._handleMouseMove(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+  }
+  _handleMouseUp(event) {
+    let control = getControl(event.target);
+    if (control == null ? void 0 : control.enabled) {
+      if (control._handleMouseUp(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+  }
+  _handleDblClick(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled) {
+        if (control._handleDblClick(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }
+  }
+  _handleKeyDown(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled) {
+        if (control._handleKeyDown(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }
+  }
+  _handleKeyUp(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled) {
+        if (control._handleKeyUp(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    }
+  }
+  _handleContextMenu(event) {
+    let control = getControl(event.target);
+    if (control) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (control.enabled)
+        control._handleContextMenu(event);
+    }
+  }
+  _handleTouchStart(event) {
+  }
+  _handleTouchEnd(event) {
+  }
+  _handleTouchMove(event) {
+  }
+  _handleChange(event) {
+  }
+  _handleMouseWheel(event) {
+    let control = getControl(event.target);
+    if (control) {
+      event.stopPropagation();
+      if (control.enabled && control._handleMouseWheel)
+        control._handleMouseWheel(event);
+    }
+  }
+  _handleFocus(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled && control._handleFocus)
+        control._handleFocus(event);
+    }
+  }
+  _handleBlur(event) {
+    let control = getControl(event.target);
+    if (control) {
+      if (control.enabled && control._handleBlur)
+        control._handleBlur(event);
+    }
+  }
+  bindEvents() {
+    window.addEventListener("mousedown", this._handleMouseDown.bind(this));
+    window.addEventListener("mousemove", this._handleMouseMove.bind(this));
+    window.addEventListener("mouseup", this._handleMouseUp.bind(this));
+    document.addEventListener("click", this._handleClick.bind(this));
+    window.addEventListener("dblclick", this._handleDblClick.bind(this));
+    window.oncontextmenu = this._handleContextMenu.bind(this);
+    window.addEventListener("keydown", this._handleKeyDown);
+    window.addEventListener("keyup", this._handleKeyUp);
+    window.addEventListener("touchstart", this._handleTouchStart);
+    window.addEventListener("touchend", this._handleTouchEnd);
+    window.addEventListener("touchmove", this._handleTouchMove);
+    window.addEventListener("change", this._handleChange);
+    window.addEventListener("wheel", this._handleMouseWheel, { passive: false });
+    window.addEventListener("focus", this._handleFocus, true);
+    window.addEventListener("blur", this._handleBlur, true);
+  }
+};
+
+// packages/application/src/styles/index.css.ts
+var Theme3 = theme_exports.ThemeVars;
+var applicationStyle = style({
+  height: "100%",
+  $nest: {
+    "body": {
+      height: "100%"
+    }
+  }
+});
+
+// packages/ipfs/src/index.ts
+var src_exports2 = {};
+__export(src_exports2, {
+  cidToSri: () => cidToSri,
+  hashContent: () => hashContent,
+  hashFile: () => hashFile,
+  hashFiles: () => hashFiles,
+  hashItems: () => hashItems,
+  parse: () => parse
+});
+var import_ipfs_utils = __toModule(require("@ijstech/ipfs-utils"));
+function parse(cid) {
+  return import_ipfs_utils.default.parse(cid);
+}
+async function hashItems(items, version) {
+  let result = await import_ipfs_utils.default.hashItems(items || [], version);
+  result.type = "dir";
+  result.links = items;
+  return result;
+}
+async function hashContent(content, version) {
+  if (version == void 0)
+    version = 1;
+  if (content.length == 0)
+    return await import_ipfs_utils.default.hashContent("", version);
+  let result;
+  if (version == 1) {
+    result = await import_ipfs_utils.default.hashFile(content, version, {
+      rawLeaves: true,
+      maxChunkSize: 1048576,
+      maxChildrenPerNode: 1024
+    });
+  } else
+    result = await import_ipfs_utils.default.hashFile(content, version);
+  result.type = "file";
+  return result;
+}
+async function hashFile(file, version) {
+  if (version == void 0)
+    version = 1;
+  if (file.size == 0)
+    return await import_ipfs_utils.default.hashContent("", version);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.addEventListener("error", (event) => {
+      reject("Error occurred reading file");
+    });
+    reader.addEventListener("load", async (event) => {
+      const data = new Uint8Array(event.target.result);
+      let result = await import_ipfs_utils.default.hashFile(data, version, {
+        rawLeaves: true,
+        maxChunkSize: 1048576,
+        maxChildrenPerNode: 1024
+      });
+      resolve(result);
+    });
+  });
+}
+function convertToTree(items) {
+  const root = {
+    $idx: {},
+    links: []
+  };
+  for (const item of items) {
+    if (item.path && item.cid) {
+      const paths = item.path.split("/");
+      let node = root;
+      for (const path of paths) {
+        if (path) {
+          if (!node.$idx[path]) {
+            let item2 = {
+              $idx: {},
+              links: [],
+              name: path,
+              type: "dir"
+            };
+            node.$idx[path] = item2;
+            node.links.push(item2);
+          }
+          ;
+          node = node.$idx[path];
+        }
+        ;
+      }
+      ;
+      delete node.links;
+      delete node.$idx;
+      node.type = "file";
+      node.size = item.cid.size;
+      node.cid = item.cid.cid;
+    }
+    ;
+  }
+  ;
+  return root;
+}
+async function hashTree(tree) {
+  delete tree.$idx;
+  let items = tree.links;
+  if (items) {
+    for (const item of items) {
+      delete item.$idx;
+      if (item.type == "dir") {
+        await hashTree(item);
+      }
+      ;
+    }
+    ;
+    let cid = await hashItems(items);
+    tree.type = "dir";
+    tree.cid = cid.cid;
+    tree.size = cid.size;
+  }
+  ;
+  return tree;
+}
+async function hashFiles(files, version) {
+  if (version == void 0)
+    version = 1;
+  return new Promise(async (resolve, reject) => {
+    try {
+      let tree = convertToTree(files);
+      let cid = await hashTree(tree);
+      resolve(cid);
+    } catch (err) {
+      reject(err);
+    }
+    ;
+  });
+}
+async function cidToSri(cid) {
+  return await import_ipfs_utils.default.cidToSri(cid);
+}
+
 // packages/image/src/style/image.css.ts
 cssRule("i-image", {
   position: "relative",
@@ -19571,6 +20143,9 @@ var Image2 = class extends Control {
       this.imageElm.onerror = function() {
         self._fallbackUrl && (this.src = self._fallbackUrl);
       };
+      if (this._borderValue) {
+        this._border = new Border(this.imageElm, this._borderValue);
+      }
     }
   }
   get objectFit() {
@@ -19586,6 +20161,7 @@ var Image2 = class extends Control {
     return this._border;
   }
   set border(value) {
+    this._borderValue = value;
     if (this.imageElm) {
       this._border = new Border(this.imageElm, value);
     }
@@ -19601,8 +20177,11 @@ var Image2 = class extends Control {
       this.objectFit = objectFit;
     let border = this.getAttribute("border", true);
     if (border) {
-      this._border = new Border(this.imageElm, border);
-      this.style.border = "none";
+      this._borderValue = border;
+      if (this.imageElm) {
+        this._border = new Border(this.imageElm, border);
+        this.style.border = "none";
+      }
     }
   }
   static async create(options, parent) {
@@ -19616,7 +20195,7 @@ Image2 = __decorateClass([
 ], Image2);
 
 // packages/icon/src/style/icon.css.ts
-var Theme2 = theme_exports.ThemeVars;
+var Theme4 = theme_exports.ThemeVars;
 var spinnerAnim2 = keyframes({
   "0%": {
     transform: "rotate(0deg)"
@@ -19629,7 +20208,7 @@ cssRule("i-icon", {
   display: "inline-block",
   $nest: {
     "svg": {
-      fill: Theme2.text.primary,
+      fill: Theme4.text.primary,
       verticalAlign: "top",
       width: "100%",
       height: "100%"
@@ -19739,187 +20318,15 @@ Icon = __decorateClass([
   customElements2("i-icon")
 ], Icon);
 
-// packages/button/src/style/button.css.ts
-var Theme3 = theme_exports.ThemeVars;
-cssRule("i-button", {
-  background: Theme3.colors.primary.main,
-  boxShadow: Theme3.shadows[2],
-  color: Theme3.text.primary,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  borderRadius: 4,
-  fontFamily: Theme3.typography.fontFamily,
-  fontSize: Theme3.typography.fontSize,
-  gap: 5,
-  cursor: "pointer",
-  $nest: {
-    "&:not(.disabled):hover": {},
-    "&.disabled": {
-      color: Theme3.text.disabled,
-      boxShadow: Theme3.shadows[0],
-      background: Theme3.action.disabledBackground
-    },
-    "i-icon": {
-      display: "inline-block",
-      fill: Theme3.text.primary,
-      verticalAlign: "middle"
-    },
-    ".caption": {
-      paddingRight: ".5rem"
-    },
-    "&.is-spinning, &.is-spinning:not(.disabled):hover, &.is-spinning:not(.disabled):focus": {
-      color: Theme3.text.disabled,
-      boxShadow: Theme3.shadows[0],
-      background: Theme3.action.disabledBackground,
-      cursor: "default"
-    }
-  }
-});
-
-// packages/button/src/button.ts
-var defaultIcon = {
-  width: 16,
-  height: 16,
-  fill: theme_exports.ThemeVars.text.primary
-};
-var Button = class extends Control {
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  get caption() {
-    return this.captionElm.innerHTML;
-  }
-  set caption(value) {
-    this.captionElm.innerHTML = value;
-    this.captionElm.style.display = value ? "" : "none";
-  }
-  get icon() {
-    if (!this._icon) {
-      this._icon = new Icon(this, defaultIcon);
-      this.prependIcon(this._icon);
-    }
-    return this._icon;
-  }
-  set icon(value) {
-    if (this._icon && this.contains(this._icon))
-      this.removeChild(this._icon);
-    this._icon = value;
-    this.prependIcon(this._icon);
-  }
-  get rightIcon() {
-    if (!this._rightIcon) {
-      this._rightIcon = new Icon(this, {
-        ...defaultIcon,
-        name: "spinner"
-      });
-      this.appendIcon(this._rightIcon);
-    }
-    return this._rightIcon;
-  }
-  set rightIcon(value) {
-    if (this._rightIcon && this.contains(this._rightIcon))
-      this.removeChild(this._rightIcon);
-    this._rightIcon = value;
-    this.appendIcon(this._rightIcon);
-  }
-  get enabled() {
-    return super.enabled;
-  }
-  set enabled(value) {
-    var _a, _b, _c, _d;
-    super.enabled = value;
-    if (!value && this._background) {
-      let bg = "";
-      ((_a = this._background) == null ? void 0 : _a.image) && (bg += `url(${(_b = this._background) == null ? void 0 : _b.image})`);
-      ((_c = this._background) == null ? void 0 : _c.color) && (bg += `${(_d = this._background) == null ? void 0 : _d.color}`);
-      this.style.background = bg;
-    }
-  }
-  get isSpinning() {
-    return this._icon && this._icon.spin && this._icon.visible || this._rightIcon && this._rightIcon.spin && this._rightIcon.visible;
-  }
-  prependIcon(icon) {
-    if (!icon)
-      return;
-    this.appendChild(icon);
-    this.captionElm && this.insertBefore(icon, this.captionElm);
-  }
-  appendIcon(icon) {
-    if (!icon)
-      return;
-    this.appendChild(icon);
-    this.captionElm && this.insertBefore(this.captionElm, icon);
-  }
-  updateButton() {
-    var _a, _b, _c, _d;
-    if (this.isSpinning)
-      this.classList.add("is-spinning");
-    else
-      this.classList.remove("is-spinning");
-    if (!this.enabled && this._background) {
-      let bg = "";
-      ((_a = this._background) == null ? void 0 : _a.image) && (bg += `url(${(_b = this._background) == null ? void 0 : _b.image})`);
-      ((_c = this._background) == null ? void 0 : _c.color) && (bg += `${(_d = this._background) == null ? void 0 : _d.color}`);
-      this.style.background = bg;
-    }
-  }
-  _handleClick(event) {
-    if (this.isSpinning || !this.enabled)
-      return false;
-    return super._handleClick(event);
-  }
-  refresh() {
-    super.refresh();
-    this.updateButton();
-  }
-  init() {
-    if (!this.captionElm) {
-      super.init();
-      this.onClick = this.getAttribute("onClick", true) || this.onClick;
-      this.captionElm = this.createElement("span", this);
-      let caption = this.getAttribute("caption", true, "");
-      this.caption = caption;
-      let iconAttr = this.getAttribute("icon", true);
-      if (iconAttr) {
-        iconAttr = { ...defaultIcon, ...iconAttr };
-        const icon = new Icon(this, iconAttr);
-        this.icon = icon;
-      }
-      let rightIconAttr = this.getAttribute("rightIcon", true);
-      if (rightIconAttr) {
-        rightIconAttr = { ...defaultIcon, name: "spinner", ...rightIconAttr };
-        const icon = new Icon(this, rightIconAttr);
-        this.rightIcon = icon;
-      }
-    }
-  }
-};
-Button = __decorateClass([
-  customElements2("i-button", {
-    icon: "closed-captioning",
-    className: "Button",
-    props: {
-      caption: { type: "string" }
-    },
-    events: {}
-  })
-], Button);
-
 // packages/link/src/style/link.css.ts
-var Theme4 = theme_exports.ThemeVars;
+var Theme5 = theme_exports.ThemeVars;
 cssRule("i-link", {
   display: "block",
   cursor: "pointer",
   textTransform: "inherit",
   $nest: {
     "&:hover *": {
-      color: Theme4.colors.primary.dark
+      color: Theme5.colors.primary.dark
     },
     "> a": {
       display: "inline",
@@ -19999,12 +20406,12 @@ Link = __decorateClass([
 ], Link);
 
 // packages/label/src/style/label.css.ts
-var Theme5 = theme_exports.ThemeVars;
+var Theme6 = theme_exports.ThemeVars;
 cssRule("i-label", {
   display: "inline-block",
-  color: Theme5.text.primary,
-  fontFamily: Theme5.typography.fontFamily,
-  fontSize: Theme5.typography.fontSize
+  color: Theme6.text.primary,
+  fontFamily: Theme6.typography.fontFamily,
+  fontSize: Theme6.typography.fontSize
 });
 
 // packages/label/src/label.ts
@@ -20063,6 +20470,34 @@ var Label = class extends Control {
   set overflowWrap(value) {
     this.style.overflowWrap = value;
   }
+  get textOverflow() {
+    return this.style.textOverflow;
+  }
+  set textOverflow(value) {
+    if (!value)
+      return;
+    this.style.textOverflow = value;
+    this.style.whiteSpace = "nowrap";
+    this.overflow = "hidden";
+  }
+  get lineClamp() {
+    return Number(this.style.webkitLineClamp);
+  }
+  set lineClamp(value) {
+    this.style.webkitLineClamp = `${value}`;
+    this.style.overflow = "hidden";
+    this.style.webkitBoxOrient = "vertical";
+    this.display = "-webkit-box";
+    this.overflow = "hidden";
+  }
+  get display() {
+    return this._display;
+  }
+  set display(value) {
+    const isNotNone = value !== "none";
+    this._display = this.lineClamp && isNotNone ? "-webkit-box" : value;
+    this.style.display = this._display;
+  }
   init() {
     if (!this.captionSpan) {
       let childNodes = [];
@@ -20090,6 +20525,12 @@ var Label = class extends Control {
       const overflowWrap = this.getAttribute("overflowWrap", true);
       if (overflowWrap)
         this.overflowWrap = overflowWrap;
+      const textOverflow = this.getAttribute("textOverflow", true);
+      if (textOverflow)
+        this.textOverflow = textOverflow;
+      const lineClamp = this.getAttribute("lineClamp", true);
+      if (lineClamp)
+        this.lineClamp = lineClamp;
       super.init();
     }
   }
@@ -20109,749 +20550,6 @@ Label = __decorateClass([
     events: {}
   })
 ], Label);
-
-// packages/modal/src/style/modal.css.ts
-var Theme6 = theme_exports.ThemeVars;
-var overlayStyle = style({
-  backgroundColor: "rgba(12, 18, 52, 0.7)",
-  position: "fixed",
-  left: 0,
-  top: 0,
-  width: "100%",
-  height: "100%",
-  opacity: 0,
-  visibility: "hidden",
-  zIndex: 1e3,
-  transition: "visibility 0s linear .25s, opacity .25s",
-  $nest: {
-    "&.show": {
-      opacity: "1",
-      visibility: "visible",
-      transition: "visibility 0s linear, opacity .25s"
-    }
-  }
-});
-var wrapperStyle = style({
-  position: "fixed",
-  left: 0,
-  top: 0,
-  width: "100%",
-  height: "100%",
-  opacity: 0,
-  visibility: "hidden",
-  transform: "scale(0.8)",
-  transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-  zIndex: 1e3,
-  overflow: "auto"
-});
-var noBackdropStyle = style({
-  position: "inherit",
-  top: 0,
-  left: 0,
-  opacity: 0,
-  visibility: "hidden",
-  transform: "scale(0.8)",
-  transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-  zIndex: 1e3,
-  overflow: "auto",
-  width: "100%",
-  maxWidth: "inherit",
-  $nest: {
-    ".modal": {
-      margin: "0"
-    }
-  }
-});
-var visibleStyle = style({
-  opacity: "1",
-  visibility: "visible",
-  transform: "scale(1)",
-  transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
-});
-var modalStyle = style({
-  fontFamily: "Helvetica",
-  fontSize: "14px",
-  padding: "10px 10px 5px 10px",
-  backgroundColor: Theme6.background.modal,
-  position: "relative",
-  borderRadius: "2px",
-  minWidth: "300px",
-  width: "inherit",
-  maxWidth: "100%"
-});
-var titleStyle = style({
-  fontSize: "18px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  $nest: {
-    "span": {
-      color: Theme6.colors.primary.main
-    },
-    "i-icon": {
-      display: "inline-block",
-      cursor: "pointer"
-    }
-  }
-});
-var getStringValue = (value) => {
-  return typeof value === "string" ? `${value} !important` : `${value}px !important`;
-};
-var getModalMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
-  for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
-    if (mediaQueryRule) {
-      const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
-      const ruleObj = styleObj["$nest"][mediaQueryRule];
-      styleObj["$nest"][mediaQueryRule] = {
-        ...ruleObj,
-        $nest: {
-          ...nestObj,
-          "&.show > .modal-overlay": {},
-          ".modal-wrapper": {},
-          ".modal": {}
-        }
-      };
-      if (mediaQuery.properties.showBackdrop) {
-        const showBackdrop = mediaQuery.properties.showBackdrop;
-        if (showBackdrop) {
-          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["visibility"] = "visible !important";
-          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["opacity"] = "1 !important";
-        } else {
-          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["visibility"] = "hidden !important";
-          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["opacity"] = "0 !important";
-        }
-      }
-      if (mediaQuery.properties.position) {
-        const position = mediaQuery.properties.position;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["position"] = `${position} !important`;
-      }
-      if (mediaQuery.properties.maxWidth !== void 0 && mediaQuery.properties.maxWidth !== null) {
-        const maxWidth = getStringValue(mediaQuery.properties.maxWidth);
-        styleObj["$nest"][mediaQueryRule]["maxWidth"] = maxWidth;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxWidth"] = maxWidth;
-      }
-      if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
-        const maxHeight = getStringValue(mediaQuery.properties.maxHeight);
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxHeight"] = maxHeight;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = "auto";
-      }
-      if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
-        const height = getStringValue(mediaQuery.properties.height);
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["height"] = height;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = "auto";
-      }
-      if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
-        const width = getStringValue(mediaQuery.properties.width);
-        styleObj["$nest"][mediaQueryRule]["width"] = width;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["width"] = width;
-      }
-      if (mediaQuery.properties.minWidth !== void 0 && mediaQuery.properties.minWidth !== null) {
-        const minWidth = getStringValue(mediaQuery.properties.minWidth);
-        styleObj["$nest"][mediaQueryRule]["minWidth"] = minWidth;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["minWidth"] = minWidth;
-      }
-      if (mediaQuery.properties.popupPlacement) {
-        const placement = mediaQuery.properties.popupPlacement;
-        let positionObj = {
-          top: "unset",
-          left: "unset",
-          right: "unset",
-          bottom: "unset"
-        };
-        if (placement === "bottom") {
-          positionObj.top = "auto !important";
-          positionObj.left = "0 !important";
-          positionObj.bottom = "0 !important";
-        } else if (placement === "top") {
-          positionObj.top = "0 !important";
-          positionObj.left = "0 !important";
-        } else if (placement === "center") {
-          positionObj.top = "50% !important";
-          positionObj.left = "50% !important";
-        }
-        for (let pos in positionObj) {
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"][pos] = positionObj[pos];
-        }
-      }
-      if (mediaQuery.properties.border) {
-        const { radius, width, style: style2, color, bottom, top, left, right } = mediaQuery.properties.border;
-        if (width !== void 0 && width !== null)
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["border"] = `${width || ""} ${style2 || ""} ${color || ""}!important`;
-        if (radius) {
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["borderRadius"] = "unset";
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderRadius"] = `${getSpacingValue(radius)} !important`;
-        }
-        if (bottom)
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderBottom"] = `${getSpacingValue(bottom.width || "")} ${bottom.style || ""} ${bottom.color || ""}!important`;
-        if (top)
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderTop"] = `${getSpacingValue(top.width || "") || ""} ${top.style || ""} ${top.color || ""}!important`;
-        if (left)
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderLeft"] = `${getSpacingValue(left.width || "")} ${left.style || ""} ${left.color || ""}!important`;
-        if (right)
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderRight"] = `${getSpacingValue(right.width || "")} ${right.style || ""} ${right.color || ""}!important`;
-      }
-      if (mediaQuery.properties.padding) {
-        const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.padding;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["padding"] = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)} !important`;
-      }
-    }
-  }
-  return style(styleObj);
-};
-
-// packages/modal/src/modal.ts
-var Theme7 = theme_exports.ThemeVars;
-var showEvent = new Event("show");
-var Modal = class extends Container {
-  constructor(parent, options) {
-    super(parent, options, {
-      showClose: true,
-      showBackdrop: true,
-      closeOnBackdropClick: true,
-      popupPlacement: "center"
-    });
-    this.hasInitializedChildFixed = false;
-    this.mapScrollTop = {};
-    this.boundHandleModalMouseDown = this.handleModalMouseDown.bind(this);
-    this.boundHandleModalMouseUp = this.handleModalMouseUp.bind(this);
-  }
-  get visible() {
-    var _a;
-    return ((_a = this.wrapperDiv) == null ? void 0 : _a.classList.contains(visibleStyle)) || false;
-  }
-  set visible(value) {
-    var _a, _b;
-    this.positionAtChildFixed(value);
-    if (value) {
-      this.wrapperDiv.classList.add(visibleStyle);
-      this.dispatchEvent(showEvent);
-      if (this.showBackdrop) {
-        this.overlayDiv.classList.add("show");
-        document.body.style.overflow = "hidden";
-        const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
-        if (parentModal) {
-          parentModal.wrapperDiv.style.overflow = "hidden";
-          parentModal.wrapperDiv.scrollTop = 0;
-        }
-        this.wrapperDiv.style.overflow = "hidden auto";
-      }
-      document.addEventListener("mousedown", this.boundHandleModalMouseDown);
-      document.addEventListener("mouseup", this.boundHandleModalMouseUp);
-    } else {
-      this.wrapperDiv.classList.remove(visibleStyle);
-      this.overlayDiv.classList.remove("show");
-      if (this.showBackdrop) {
-        const parentModal = (_b = this.parentElement) == null ? void 0 : _b.closest("i-modal");
-        if (parentModal) {
-          parentModal.wrapperDiv.style.overflow = "hidden auto";
-          document.body.style.overflow = "hidden";
-        } else {
-          document.body.style.overflow = "hidden auto";
-        }
-      }
-      if (this.isChildFixed) {
-        this.wrapperDiv.style.display = "none";
-      }
-      this.onClose && this.onClose(this);
-      document.removeEventListener("mousedown", this.boundHandleModalMouseDown);
-      document.removeEventListener("mouseup", this.boundHandleModalMouseUp);
-    }
-  }
-  get onOpen() {
-    return this._onOpen;
-  }
-  set onOpen(callback) {
-    this._onOpen = callback;
-  }
-  get title() {
-    const titleElm = this.titleSpan.querySelector("span");
-    return (titleElm == null ? void 0 : titleElm.innerHTML) || "";
-  }
-  set title(value) {
-    const titleElm = this.titleSpan.querySelector("span");
-    titleElm && (titleElm.innerHTML = value || "");
-  }
-  get popupPlacement() {
-    return this._placement;
-  }
-  set popupPlacement(value) {
-    this._placement = value;
-  }
-  get closeIcon() {
-    return this._closeIcon;
-  }
-  set closeIcon(elm) {
-    if (this._closeIcon && this.titleSpan.contains(this._closeIcon))
-      this.titleSpan.removeChild(this._closeIcon);
-    this._closeIcon = elm;
-    if (this._closeIcon) {
-      this._closeIcon.classList.add("i-modal-close");
-      this._closeIcon.onClick = () => this.visible = false;
-      this.titleSpan.appendChild(this._closeIcon);
-    }
-  }
-  get closeOnBackdropClick() {
-    return this._closeOnBackdropClick;
-  }
-  set closeOnBackdropClick(value) {
-    this._closeOnBackdropClick = typeof value === "boolean" ? value : true;
-  }
-  get showBackdrop() {
-    return this._showBackdrop;
-  }
-  set showBackdrop(value) {
-    this._showBackdrop = typeof value === "boolean" ? value : true;
-    if (this._showBackdrop) {
-      this.wrapperDiv.classList.add(wrapperStyle);
-      this.style.position = "unset";
-    } else {
-      this.style.position = "absolute";
-      this.style.left = "0px";
-      this.style.top = "0px";
-      this.wrapperDiv.classList.add(noBackdropStyle);
-    }
-  }
-  get item() {
-    return this.modalDiv.children[0];
-  }
-  set item(value) {
-    if (value instanceof Control) {
-      this.modalDiv.innerHTML = "";
-      value && this.modalDiv.appendChild(value);
-    }
-  }
-  get position() {
-    return this._wrapperPositionAt;
-  }
-  set position(value) {
-    this._wrapperPositionAt = value;
-  }
-  get isChildFixed() {
-    return this._isChildFixed;
-  }
-  set isChildFixed(value) {
-    this._isChildFixed = value;
-    if (value) {
-      this.setChildFixed();
-    } else {
-      this.style.position = "unset";
-    }
-  }
-  get closeOnScrollChildFixed() {
-    return this._closeOnScrollChildFixed;
-  }
-  set closeOnScrollChildFixed(value) {
-    this._closeOnScrollChildFixed = value;
-  }
-  get mediaQueries() {
-    return this._mediaQueries;
-  }
-  set mediaQueries(value) {
-    this._mediaQueries = value;
-    let style2 = getModalMediaQueriesStyleClass(this._mediaQueries);
-    this._mediaStyle && this.classList.remove(this._mediaStyle);
-    this._mediaStyle = style2;
-    this.classList.add(style2);
-  }
-  generateUUID() {
-    const uuid = "xxxxxxxx-xxxx-xxxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-      let r = Math.random() * 16 | 0, v = c == "x" ? r : r & 3 | 8;
-      return v.toString(16);
-    });
-    return uuid;
-  }
-  setChildFixed() {
-    this.style.position = "fixed";
-    this.zIndex = 9999;
-    this.mapScrollTop = {};
-    const getScrollY = (elm) => {
-      let scrollID = elm.getAttribute("scroll-id");
-      if (!scrollID) {
-        scrollID = this.generateUUID();
-        elm.setAttribute("scroll-id", scrollID);
-      }
-      this.mapScrollTop[scrollID] = elm.scrollTop;
-    };
-    const onParentScroll = (e) => {
-      if (this.visible && this.closeOnScrollChildFixed) {
-        this.visible = false;
-      }
-      if (e && !e.target.offsetParent && e.target.getAttribute) {
-        getScrollY(e.target);
-      }
-      if (this.visible && !this.closeOnScrollChildFixed) {
-        this.positionAtChildFixed(true);
-      }
-    };
-    let parentElement = this.parentNode;
-    while (parentElement) {
-      this.hasInitializedChildFixed = true;
-      parentElement.addEventListener("scroll", (e) => onParentScroll(e));
-      parentElement = parentElement.parentNode;
-      if (parentElement === document.body) {
-        document.addEventListener("scroll", (e) => onParentScroll(e));
-        break;
-      } else if (parentElement && !parentElement.offsetParent && parentElement.scrollTop && typeof parentElement.getAttribute === "function") {
-        getScrollY(parentElement);
-      }
-    }
-  }
-  positionAtChildFixed(value) {
-    if (this.isChildFixed) {
-      if (!this.hasInitializedChildFixed) {
-        this.setChildFixed();
-      }
-      if (this.wrapperDiv) {
-        this.wrapperDiv.style.position = !value ? "unset" : "relative";
-        this.wrapperDiv.style.display = !value ? "none" : "block";
-      }
-      if (value && this.parentElement) {
-        const { x, y, height } = this.parentElement.getBoundingClientRect();
-        const mdClientRect = this.getBoundingClientRect();
-        const { innerHeight, innerWidth } = window;
-        const elmHeight = mdClientRect.height + (height || 20);
-        const elmWidth = mdClientRect.width;
-        let totalScrollY = 0;
-        for (const key2 in this.mapScrollTop) {
-          totalScrollY += this.mapScrollTop[key2];
-        }
-        if (y + elmHeight > innerHeight) {
-          const elmTop = y - elmHeight + totalScrollY;
-          this.style.top = `${elmTop < 0 ? 0 : y - elmHeight + totalScrollY}px`;
-        } else {
-          this.style.top = `${y + totalScrollY}px`;
-        }
-        if (x + elmWidth > innerWidth) {
-          this.style.left = `${innerWidth - elmWidth}px`;
-        } else {
-          this.style.left = `${x}px`;
-        }
-      }
-    }
-  }
-  positionAt(placement) {
-    if (this.showBackdrop) {
-      this.positionAtFix(placement);
-    } else {
-      this.positionAtAbsolute(placement);
-    }
-  }
-  positionAtFix(placement) {
-    let parent = document.body;
-    let coords = this.getWrapperFixCoords(parent, placement);
-    this.wrapperDiv.style.width = "100%";
-    this.wrapperDiv.style.height = "100%";
-    this.wrapperDiv.style.paddingLeft = coords.left + "px";
-    this.wrapperDiv.style.paddingTop = coords.top + "px";
-  }
-  positionAtAbsolute(placement) {
-    let parent = this._parent || this.linkTo || this.parentElement || document.body;
-    let coords;
-    if (this.position === "fixed") {
-      coords = this.getWrapperFixCoords(parent, placement);
-    } else {
-      coords = this.getWrapperAbsoluteCoords(parent, placement);
-    }
-    this.wrapperDiv.style.height = "inherit";
-    this.wrapperDiv.style.width = "inherit";
-    this.wrapperDiv.style.left = coords.left + "px";
-    this.wrapperDiv.style.top = coords.top + "px";
-  }
-  getWrapperFixCoords(parent, placement) {
-    const parentCoords = parent.getBoundingClientRect();
-    let left = 0;
-    let top = 0;
-    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parentCoords.height;
-    switch (placement) {
-      case "center":
-        top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
-        left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2 - 1;
-        break;
-      case "top":
-        top = this.showBackdrop ? 0 : parentCoords.top;
-        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
-        break;
-      case "topLeft":
-        top = this.showBackdrop ? 0 : parentCoords.top;
-        left = parentCoords.left;
-        break;
-      case "topRight":
-        top = this.showBackdrop ? 0 : parentCoords.top;
-        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
-        break;
-      case "bottom":
-        top = parentCoords.top + parentHeight;
-        if (this.showBackdrop)
-          top = top - this.modalDiv.offsetHeight - 1;
-        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
-        break;
-      case "bottomLeft":
-        top = parentCoords.top + parentHeight;
-        if (this.showBackdrop)
-          top = top - this.modalDiv.offsetHeight;
-        left = parentCoords.left;
-        break;
-      case "bottomRight":
-        top = parentCoords.top + parentHeight;
-        if (this.showBackdrop)
-          top = top - this.modalDiv.offsetHeight;
-        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
-        break;
-      case "rightTop":
-        top = parentCoords.top;
-        left = parentCoords.right;
-        if (parentCoords.right + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
-          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
-        }
-        break;
-    }
-    left = left < 0 ? parentCoords.left : left;
-    top = top < 0 ? parentCoords.top : top;
-    return { top, left };
-  }
-  getWrapperAbsoluteCoords(parent, placement) {
-    const parentCoords = parent.getBoundingClientRect();
-    let left = 0;
-    let top = 0;
-    let max;
-    switch (placement) {
-      case "center":
-        left = (parentCoords.width - this.modalDiv.offsetWidth) / 2;
-        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-        break;
-      case "top":
-      case "topLeft":
-        if (this.isChildFixed) {
-          top = this.getParentOccupiedTop();
-          left = this.getParentOccupiedLeft();
-          break;
-        }
-      case "topRight":
-        if (this.isChildFixed) {
-          top = this.getParentOccupiedTop();
-          left = parentCoords.width - this.getParentOccupiedRight() - this.modalDiv.offsetWidth;
-          break;
-        }
-        if (parentCoords.top - this.modalDiv.offsetHeight >= 0) {
-          top = -this.modalDiv.offsetHeight;
-        } else {
-          if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
-            max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-            top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-          } else {
-            top = parentCoords.height;
-          }
-        }
-        break;
-      case "bottom":
-      case "bottomLeft":
-        if (this.isChildFixed) {
-          left = 0;
-          top = parentCoords.height;
-          break;
-        }
-      case "bottomRight":
-        if (this.isChildFixed) {
-          top = parentCoords.height;
-          left = parentCoords.width - this.modalDiv.offsetWidth;
-          break;
-        }
-        if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
-          if (parentCoords.y - this.modalDiv.offsetHeight < 0) {
-            max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-            top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-          } else {
-            top = -this.modalDiv.offsetHeight;
-          }
-        } else {
-          top = parentCoords.height;
-        }
-        break;
-      case "rightTop":
-        top = 0;
-        left = parentCoords.width;
-        break;
-      case "left":
-        max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-        top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-        left = -this.modalDiv.offsetWidth - 8;
-        break;
-    }
-    if (this.isChildFixed) {
-      if (placement !== "bottomRight" && placement !== "left")
-        left = left < 0 ? parentCoords.left : left;
-      if (placement !== "left")
-        top = top < 0 ? parentCoords.top : top;
-      return { top, left };
-    }
-    if (placement === "topRight" || placement === "bottomRight") {
-      if (parentCoords.right - this.modalDiv.offsetWidth >= 0) {
-        left = parentCoords.width - this.modalDiv.offsetWidth;
-      } else {
-        left = -parentCoords.left;
-      }
-    } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
-      if (window.innerWidth >= parentCoords.left + this.modalDiv.offsetWidth) {
-        left = 0;
-      } else {
-        left = Math.min(parentCoords.width - this.modalDiv.offsetWidth, window.innerWidth - parentCoords.left - this.modalDiv.offsetWidth);
-      }
-    }
-    return { top, left };
-  }
-  _handleOnShow(event) {
-    if (this.popupPlacement && this.enabled)
-      this.positionAt(this.popupPlacement);
-    if (this.enabled && this._onOpen) {
-      event.preventDefault();
-      this._onOpen(this);
-    }
-  }
-  handleModalMouseDown(event) {
-    const target = event.target;
-    this.insideClick = true;
-    if (this.closeOnBackdropClick) {
-      this.insideClick = this.showBackdrop ? target !== this.wrapperDiv : this.modalDiv.contains(target);
-    } else if (!this.showBackdrop) {
-      let parent = this._parent || this.linkTo || this.parentElement;
-      this.insideClick = this.modalDiv.contains(target) || (parent == null ? void 0 : parent.contains(target));
-    }
-  }
-  handleModalMouseUp(event) {
-    if (!this.insideClick)
-      this.visible = false;
-  }
-  updateModal(name, value) {
-    if (!isNaN(Number(value)))
-      this.modalDiv.style[name] = value + "px";
-    else
-      this.modalDiv.style[name] = value;
-  }
-  refresh() {
-    super.refresh(true);
-    if (this.visible && this.popupPlacement) {
-      this.positionAt(this.popupPlacement);
-    }
-  }
-  get background() {
-    return this._background;
-  }
-  set background(value) {
-    if (!this._background) {
-      this._background = new Background(this.modalDiv, value);
-    } else {
-      this._background.setBackgroundStyle(value);
-    }
-  }
-  get width() {
-    return !isNaN(this._width) ? this._width : this.offsetWidth;
-  }
-  set width(value) {
-    this._width = value;
-    this.updateModal("width", value);
-  }
-  get border() {
-    return this._border;
-  }
-  set border(value) {
-    this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, value);
-  }
-  get padding() {
-    return this._padding;
-  }
-  set padding(value) {
-    if (!this._padding)
-      this._padding = new SpaceValue(this, value, "padding");
-    else
-      this._padding.update(value);
-    const { top = 0, right = 0, bottom = 0, left = 0 } = value;
-    this.modalDiv.style.padding = `${this.getSpacingValue(top)} ${this.getSpacingValue(right)} ${this.getSpacingValue(bottom)} ${this.getSpacingValue(left)}`;
-  }
-  init() {
-    var _a;
-    if (!this.wrapperDiv) {
-      if ((_a = this.options) == null ? void 0 : _a.onClose)
-        this.onClose = this.options.onClose;
-      this.popupPlacement = this.getAttribute("popupPlacement", true);
-      this.closeOnBackdropClick = this.getAttribute("closeOnBackdropClick", true);
-      this.wrapperDiv = this.createElement("div", this);
-      this.wrapperDiv.classList.add("modal-wrapper");
-      this.showBackdrop = this.getAttribute("showBackdrop", true);
-      this.modalDiv = this.createElement("div", this.wrapperDiv);
-      this.titleSpan = this.createElement("div", this.modalDiv);
-      this.titleSpan.classList.add(titleStyle, "i-modal_header");
-      this.createElement("span", this.titleSpan);
-      this.title = this.getAttribute("title", true);
-      const closeIconAttr = this.getAttribute("closeIcon", true);
-      if (closeIconAttr) {
-        closeIconAttr.height = closeIconAttr.height || "16px";
-        closeIconAttr.width = closeIconAttr.width || "16px";
-        closeIconAttr.fill = closeIconAttr.fill || Theme7.colors.primary.main;
-        this.closeIcon = new Icon(void 0, closeIconAttr);
-      }
-      while (this.childNodes.length > 1) {
-        this.modalDiv.appendChild(this.childNodes[0]);
-      }
-      this.overlayDiv = this.createElement("div", this);
-      this.prepend(this.overlayDiv);
-      this.overlayDiv.classList.add(overlayStyle);
-      this.overlayDiv.classList.add("modal-overlay");
-      this.modalDiv.classList.add(modalStyle);
-      this.modalDiv.classList.add("modal");
-      this.addEventListener("show", this._handleOnShow.bind(this));
-      window.addEventListener("keydown", (event) => {
-        if (!this.visible)
-          return;
-        if (event.key === "Escape") {
-          this.visible = false;
-        }
-      });
-      const isChildFixed = this.getAttribute("isChildFixed", true);
-      if (isChildFixed)
-        this.isChildFixed = isChildFixed;
-      const closeOnScrollChildFixed = this.getAttribute("closeOnScrollChildFixed", true);
-      this.closeOnScrollChildFixed = closeOnScrollChildFixed;
-      const itemAttr = this.getAttribute("item", true);
-      if (itemAttr)
-        this.item = itemAttr;
-      super.init();
-      this.maxWidth && this.updateModal("maxWidth", this.maxWidth);
-      this.minWidth && this.updateModal("minWidth", this.minWidth);
-      this.minHeight && this.updateModal("minHeight", this.minHeight);
-      this.maxHeight && this.updateModal("maxHeight", this.maxHeight);
-      let border = this.getAttribute("border", true);
-      if (border) {
-        this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, border);
-        this.style.border = "none";
-      }
-      let padding = this.getAttribute("padding", true);
-      if (padding) {
-        this._padding = new SpaceValue(this.modalDiv, padding, "padding");
-      }
-      this.mediaQueries = this.getAttribute("mediaQueries", true, []);
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Modal = __decorateClass([
-  customElements2("i-modal")
-], Modal);
 
 // packages/layout/src/style/panel.css.ts
 var panelStyle = style({
@@ -20918,10 +20616,6 @@ var getStackMediaQueriesStyleClass = (mediaQueries) => {
       }
       if (mediaQuery.properties.top !== null && mediaQuery.properties.top !== void 0) {
         styleObj["$nest"][mediaQueryRule]["top"] = `${mediaQuery.properties.top} !important`;
-      }
-      if (typeof mediaQuery.properties.visible === "boolean") {
-        const visible = mediaQuery.properties.visible;
-        styleObj["$nest"][mediaQueryRule]["display"] = visible ? "flex !important" : "none !important";
       }
     }
   }
@@ -21456,764 +21150,8 @@ CardLayout = __decorateClass([
   customElements2("i-card-layout")
 ], CardLayout);
 
-// packages/alert/src/style/alert.css.ts
-cssRule("i-alert", {
-  $nest: {
-    ".modal": {
-      padding: 0,
-      borderRadius: 4
-    }
-  }
-});
-
-// packages/alert/src/alert.ts
-var Alert = class extends Control {
-  constructor(parent, options) {
-    super(parent, options);
-    this.closeModal = () => {
-      this.mdAlert.visible = false;
-    };
-    this.showModal = () => {
-      this.renderUI();
-      this.mdAlert.visible = true;
-    };
-    this.closeModal = this.closeModal.bind(this);
-  }
-  get status() {
-    return this._status;
-  }
-  set status(value) {
-    this._status = value;
-  }
-  get title() {
-    return this._title;
-  }
-  set title(value) {
-    this._title = value;
-  }
-  get content() {
-    return this._content;
-  }
-  set content(value) {
-    this._content = value;
-  }
-  get link() {
-    return this._link;
-  }
-  set link(value) {
-    this._link = value;
-  }
-  get iconName() {
-    switch (this.status) {
-      case "error":
-        return "times";
-      case "warning":
-      case "confirm":
-        return "exclamation";
-      case "success":
-        return "check";
-      default:
-        return "spinner";
-    }
-  }
-  get color() {
-    switch (this.status) {
-      case "error":
-        return theme_exports.ThemeVars.colors.error.main;
-      case "warning":
-      case "confirm":
-        return theme_exports.ThemeVars.colors.warning.main;
-      case "success":
-        return theme_exports.ThemeVars.colors.success.main;
-      default:
-        return theme_exports.ThemeVars.colors.primary.main;
-    }
-  }
-  renderUI() {
-    this.pnlMain.clearInnerHTML();
-    const wrapperElm = new VStack(this.pnlMain, {
-      horizontalAlignment: "center",
-      gap: "1.75rem"
-    });
-    const border = this.status === "loading" ? {} : {
-      border: {
-        width: 2,
-        style: "solid",
-        color: this.color,
-        radius: "50%"
-      }
-    };
-    const paddingSize = this.status === "loading" ? "0.25rem" : "0.6rem";
-    new Icon(wrapperElm, {
-      width: 55,
-      height: 55,
-      name: this.iconName,
-      fill: this.color,
-      padding: {
-        top: paddingSize,
-        bottom: paddingSize,
-        left: paddingSize,
-        right: paddingSize
-      },
-      spin: this.status === "loading",
-      ...border
-    });
-    this.renderContent(wrapperElm);
-    this.renderLink(wrapperElm);
-    this.renderButtons(wrapperElm);
-  }
-  renderContent(wrapperElm) {
-    if (!this.title && !this.content)
-      return [];
-    const contentElm = new VStack(wrapperElm, {
-      horizontalAlignment: "center",
-      gap: "0.75rem",
-      lineHeight: 1.5
-    });
-    this.title ? new Label(contentElm, {
-      caption: this.title,
-      font: { size: "1.25rem", bold: true }
-    }) : null;
-    this.content ? new Label(contentElm, {
-      caption: this.content,
-      overflowWrap: "anywhere"
-    }) : null;
-  }
-  renderLink(wrapperElm) {
-    if (this.link)
-      new Label(wrapperElm, {
-        class: "text-center",
-        caption: this.link.caption,
-        font: { size: "0.875rem" },
-        link: { href: this.link.href, target: "_blank" },
-        overflowWrap: "anywhere"
-      });
-  }
-  renderButtons(wrapperElm) {
-    if (this.status === "confirm") {
-      const hStack = new HStack(wrapperElm, {
-        verticalAlignment: "center",
-        gap: "0.5rem"
-      });
-      new Button(hStack, {
-        padding: {
-          top: "0.5rem",
-          bottom: "0.5rem",
-          left: "2rem",
-          right: "2rem"
-        },
-        caption: "Cancel",
-        font: { color: theme_exports.ThemeVars.colors.secondary.contrastText },
-        background: { color: theme_exports.ThemeVars.colors.secondary.main },
-        onClick: () => this.closeModal()
-      });
-      new Button(hStack, {
-        padding: {
-          top: "0.5rem",
-          bottom: "0.5rem",
-          left: "2rem",
-          right: "2rem"
-        },
-        caption: "Confirm",
-        font: { color: theme_exports.ThemeVars.colors.primary.contrastText },
-        onClick: () => {
-          if (this.onConfirm) {
-            this.onConfirm();
-          }
-          this.closeModal();
-        }
-      });
-    } else {
-      new Button(wrapperElm, {
-        padding: {
-          top: "0.5rem",
-          bottom: "0.5rem",
-          left: "2rem",
-          right: "2rem"
-        },
-        caption: "Close",
-        font: { color: theme_exports.ThemeVars.colors.primary.contrastText },
-        onClick: () => this.closeModal()
-      });
-    }
-  }
-  async init() {
-    if (!this.mdAlert) {
-      super.init();
-      this.status = this.getAttribute("status", true);
-      this.title = this.getAttribute("title", true);
-      this.content = this.getAttribute("content", true);
-      this.link = this.getAttribute("link", true);
-      this.onClose = this.getAttribute("onClose", true);
-      this.onConfirm = this.getAttribute("onConfirm", true);
-      this.mdAlert = await Modal.create({
-        width: "400px"
-      });
-      this.appendChild(this.mdAlert);
-      this.pnlMain = new Panel(this, {
-        width: "100%",
-        padding: {
-          top: "1.5rem",
-          bottom: "1.5rem",
-          left: "1.5rem",
-          right: "1.5rem"
-        }
-      });
-      this.mdAlert.item = this.pnlMain;
-    }
-  }
-};
-Alert = __decorateClass([
-  customElements2("i-alert")
-], Alert);
-
-// packages/application/src/event-bus.ts
-var _EventBus = class {
-  constructor() {
-    this.subscribers = {};
-  }
-  static getInstance() {
-    if (this.instance === void 0) {
-      this.instance = new _EventBus();
-    }
-    return this.instance;
-  }
-  dispatch(event, arg) {
-    const subscriber = this.subscribers[event];
-    if (subscriber === void 0) {
-      return;
-    }
-    Object.keys(subscriber).forEach((key2) => subscriber[key2](arg));
-  }
-  register(sender, event, callback) {
-    const id = this.getNextId();
-    if (!this.subscribers[event])
-      this.subscribers[event] = {};
-    this.subscribers[event][id] = callback.bind(sender);
-    return {
-      unregister: () => {
-        delete this.subscribers[event][id];
-        if (Object.keys(this.subscribers[event]).length === 0)
-          delete this.subscribers[event];
-      }
-    };
-  }
-  getNextId() {
-    return _EventBus.nextId++;
-  }
-};
-var EventBus = _EventBus;
-EventBus.nextId = 0;
-EventBus.instance = void 0;
-
-// packages/checkbox/src/style/checkbox.css.ts
-var Theme8 = theme_exports.ThemeVars;
-cssRule("i-checkbox", {
-  fontFamily: Theme8.typography.fontFamily,
-  fontSize: Theme8.typography.fontSize,
-  userSelect: "none",
-  "$nest": {
-    ".i-checkbox": {
-      display: "inline-flex",
-      alignItems: "center",
-      position: "relative",
-      maxWidth: "100%"
-    },
-    ".i-checkbox_input": {
-      cursor: "pointer",
-      whiteSpace: "nowrap",
-      display: "inline-flex",
-      position: "relative"
-    },
-    ".checkmark": {
-      width: 15,
-      height: 15,
-      display: "inline-block",
-      position: "relative",
-      backgroundColor: Theme8.background.paper,
-      border: `1px solid ${Theme8.divider}`,
-      boxSizing: "border-box",
-      transition: "border-color .25s cubic-bezier(.71,-.46,.29,1.46),background-color .25s cubic-bezier(.71,-.46,.29,1.46)"
-    },
-    ".i-checkbox_label": {
-      boxSizing: "border-box",
-      color: Theme8.text.primary,
-      display: "inline-block",
-      paddingLeft: 8,
-      maxWidth: "100%"
-    },
-    "input": {
-      opacity: 0,
-      width: 0,
-      height: 0,
-      position: "absolute",
-      top: 0,
-      left: 0
-    },
-    "&.is-checked": {
-      "$nest": {
-        ".i-checkbox_label": {
-          color: Theme8.colors.info.main
-        },
-        ".checkmark": {
-          backgroundColor: Theme8.colors.info.main
-        },
-        ".checkmark:after": {
-          transform: "rotate(45deg) scaleY(1)"
-        },
-        ".is-indeterminate .checkmark:after": {
-          transform: "none"
-        }
-      }
-    },
-    "&:not(.disabled):hover input ~ .checkmark": {
-      borderColor: Theme8.colors.info.main
-    },
-    "&.disabled": {
-      cursor: "not-allowed"
-    },
-    ".checkmark:after": {
-      content: "''",
-      boxSizing: "content-box",
-      border: `1px solid ${Theme8.background.paper}`,
-      borderLeft: 0,
-      borderTop: 0,
-      height: 7.5,
-      left: "35%",
-      top: 1,
-      transform: "rotate(45deg) scaleY(0)",
-      width: 3.5,
-      transition: "transform .15s ease-in .05s",
-      transformOrigin: "center",
-      display: "inline-block",
-      position: "absolute"
-    },
-    ".is-indeterminate .checkmark": {
-      backgroundColor: Theme8.colors.info.main
-    },
-    ".is-indeterminate .checkmark:after": {
-      width: "80%",
-      height: 0,
-      top: "50%",
-      left: "10%",
-      borderRight: 0,
-      transform: "none"
-    }
-  }
-});
-
-// packages/checkbox/src/checkbox.ts
-var Checkbox = class extends Control {
-  constructor(parent, options) {
-    super(parent, options, {
-      height: 30
-    });
-  }
-  get caption() {
-    return this._caption;
-  }
-  set caption(value) {
-    this._caption = value;
-    if (!value)
-      this.captionSpanElm.style.display = "none";
-    else
-      this.captionSpanElm.style.display = "";
-    this.captionSpanElm && (this.captionSpanElm.innerHTML = value);
-  }
-  get captionWidth() {
-    return this._captionWidth;
-  }
-  set captionWidth(value) {
-    if (!value)
-      return;
-    this._captionWidth = value;
-    this.setElementPosition(this.captionSpanElm, "width", value);
-  }
-  get height() {
-    return this.offsetHeight;
-  }
-  set height(value) {
-    this.setPosition("height", value);
-  }
-  get indeterminate() {
-    return this._indeterminate;
-  }
-  set indeterminate(value) {
-    this._indeterminate = value;
-    if (this.inputSpanElm)
-      value ? this.inputSpanElm.classList.add("is-indeterminate") : this.inputSpanElm.classList.remove("is-indeterminate");
-    this.inputElm.indeterminate = value;
-  }
-  get checked() {
-    return this._checked;
-  }
-  set checked(value) {
-    this._checked = value;
-    this.addClass(value, "is-checked");
-    this.inputElm && (this.inputElm.checked = value);
-  }
-  get value() {
-    return this.inputElm.value;
-  }
-  set value(data) {
-    this.inputElm.value = data;
-  }
-  get readOnly() {
-    return this._readOnly;
-  }
-  set readOnly(value) {
-    this._readOnly = value;
-    if (this.inputElm) {
-      this.inputElm.readOnly = value;
-    }
-  }
-  _handleChange(event) {
-    if (this.readOnly)
-      return;
-    this.checked = this.inputElm.checked || false;
-    this.addClass(this.checked, "is-checked");
-    if (this.onChanged)
-      this.onChanged(this, event);
-  }
-  addClass(value, className) {
-    if (value)
-      this.classList.add(className);
-    else
-      this.classList.remove(className);
-  }
-  init() {
-    if (!this.captionSpanElm) {
-      this.wrapperElm = this.createElement("label", this);
-      if (this.height)
-        this.wrapperElm.style.height = this.height + "px";
-      this.wrapperElm.classList.add("i-checkbox");
-      this.inputSpanElm = this.createElement("span", this.wrapperElm);
-      this.inputSpanElm.classList.add("i-checkbox_input");
-      this.inputElm = this.createElement("input", this.inputSpanElm);
-      this.inputElm.type = "checkbox";
-      const disabled = this.getAttribute("enabled") === false;
-      this.inputElm.disabled = disabled;
-      this.readOnly = this.getAttribute("readOnly", true, false);
-      this.checkmarklElm = this.createElement("span");
-      this.checkmarklElm.classList.add("checkmark");
-      this.inputSpanElm.appendChild(this.checkmarklElm);
-      this.inputElm.addEventListener("input", this._handleChange.bind(this));
-      this.captionSpanElm = this.createElement("span", this.wrapperElm);
-      this.captionSpanElm.classList.add("i-checkbox_label");
-      this.captionWidth = this.getAttribute("captionWidth", true);
-      this.caption = this.getAttribute("caption", true);
-      this.value = this.caption;
-      this.checked = this.getAttribute("checked", true, false);
-      this.indeterminate = this.getAttribute("indeterminate", true);
-      this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
-      super.init();
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Checkbox = __decorateClass([
-  customElements2("i-checkbox")
-], Checkbox);
-
-// packages/application/src/globalEvent.ts
-function getControl(target) {
-  if (target instanceof Control) {
-    return target;
-  }
-  if ((target instanceof HTMLElement || target instanceof SVGElement) && target.parentElement)
-    return getControl(target.parentElement);
-  return null;
-}
-var GlobalEvents = class {
-  constructor() {
-    this.bindEvents();
-  }
-  abortEvent(event) {
-    event.stopPropagation();
-  }
-  _handleClick(event) {
-    let control = getControl(event.target);
-    if (control && !(control instanceof Checkbox)) {
-      if (control.enabled) {
-        if (control._handleClick(event)) {
-          event.stopPropagation();
-        }
-        ;
-      }
-      ;
-    }
-    ;
-  }
-  _handleMouseDown(event) {
-    let control = getControl(event.target);
-    if (control == null ? void 0 : control.enabled) {
-      if (control._handleMouseDown(event)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-  }
-  _handleMouseMove(event) {
-    let control = getControl(event.target);
-    if (control == null ? void 0 : control.enabled) {
-      if (control._handleMouseMove(event)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-  }
-  _handleMouseUp(event) {
-    let control = getControl(event.target);
-    if (control == null ? void 0 : control.enabled) {
-      if (control._handleMouseUp(event)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-  }
-  _handleDblClick(event) {
-    let control = getControl(event.target);
-    if (control) {
-      if (control.enabled) {
-        if (control._handleDblClick(event)) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }
-    }
-  }
-  _handleKeyDown(event) {
-    let control = getControl(event.target);
-    if (control) {
-      if (control.enabled) {
-        if (control._handleKeyDown(event)) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }
-    }
-  }
-  _handleKeyUp(event) {
-    let control = getControl(event.target);
-    if (control) {
-      if (control.enabled) {
-        if (control._handleKeyUp(event)) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }
-    }
-  }
-  _handleContextMenu(event) {
-    let control = getControl(event.target);
-    if (control) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (control.enabled)
-        control._handleContextMenu(event);
-    }
-  }
-  _handleTouchStart(event) {
-  }
-  _handleTouchEnd(event) {
-  }
-  _handleTouchMove(event) {
-  }
-  _handleChange(event) {
-  }
-  _handleMouseWheel(event) {
-    let control = getControl(event.target);
-    if (control) {
-      event.stopPropagation();
-      if (control.enabled && control._handleMouseWheel)
-        control._handleMouseWheel(event);
-    }
-  }
-  _handleFocus(event) {
-    let control = getControl(event.target);
-    if (control) {
-      if (control.enabled && control._handleFocus)
-        control._handleFocus(event);
-    }
-  }
-  _handleBlur(event) {
-    let control = getControl(event.target);
-    if (control) {
-      if (control.enabled && control._handleBlur)
-        control._handleBlur(event);
-    }
-  }
-  bindEvents() {
-    window.addEventListener("mousedown", this._handleMouseDown.bind(this));
-    window.addEventListener("mousemove", this._handleMouseMove.bind(this));
-    window.addEventListener("mouseup", this._handleMouseUp.bind(this));
-    document.addEventListener("click", this._handleClick.bind(this));
-    window.addEventListener("dblclick", this._handleDblClick.bind(this));
-    window.oncontextmenu = this._handleContextMenu.bind(this);
-    window.addEventListener("keydown", this._handleKeyDown);
-    window.addEventListener("keyup", this._handleKeyUp);
-    window.addEventListener("touchstart", this._handleTouchStart);
-    window.addEventListener("touchend", this._handleTouchEnd);
-    window.addEventListener("touchmove", this._handleTouchMove);
-    window.addEventListener("change", this._handleChange);
-    window.addEventListener("wheel", this._handleMouseWheel, { passive: false });
-    window.addEventListener("focus", this._handleFocus, true);
-    window.addEventListener("blur", this._handleBlur, true);
-  }
-};
-
-// packages/application/src/styles/index.css.ts
-var Theme9 = theme_exports.ThemeVars;
-var applicationStyle = style({
-  height: "100%",
-  $nest: {
-    "body": {
-      height: "100%"
-    }
-  }
-});
-
-// packages/ipfs/src/index.ts
-var src_exports2 = {};
-__export(src_exports2, {
-  cidToSri: () => cidToSri,
-  hashContent: () => hashContent,
-  hashFile: () => hashFile,
-  hashFiles: () => hashFiles,
-  hashItems: () => hashItems,
-  parse: () => parse
-});
-var import_ipfs_utils = __toModule(require("@ijstech/ipfs-utils"));
-function parse(cid) {
-  return import_ipfs_utils.default.parse(cid);
-}
-async function hashItems(items, version) {
-  let result = await import_ipfs_utils.default.hashItems(items || [], version);
-  result.type = "dir";
-  result.links = items;
-  return result;
-}
-async function hashContent(content, version) {
-  if (version == void 0)
-    version = 1;
-  if (content.length == 0)
-    return await import_ipfs_utils.default.hashContent("", version);
-  let result;
-  if (version == 1) {
-    result = await import_ipfs_utils.default.hashFile(content, version, {
-      rawLeaves: true,
-      maxChunkSize: 1048576,
-      maxChildrenPerNode: 1024
-    });
-  } else
-    result = await import_ipfs_utils.default.hashFile(content, version);
-  result.type = "file";
-  return result;
-}
-async function hashFile(file, version) {
-  if (version == void 0)
-    version = 1;
-  if (file.size == 0)
-    return await import_ipfs_utils.default.hashContent("", version);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
-    reader.addEventListener("error", (event) => {
-      reject("Error occurred reading file");
-    });
-    reader.addEventListener("load", async (event) => {
-      const data = new Uint8Array(event.target.result);
-      let result = await import_ipfs_utils.default.hashFile(data, version, {
-        rawLeaves: true,
-        maxChunkSize: 1048576,
-        maxChildrenPerNode: 1024
-      });
-      resolve(result);
-    });
-  });
-}
-function convertToTree(items) {
-  const root = {
-    $idx: {},
-    links: []
-  };
-  for (const item of items) {
-    if (item.path && item.cid) {
-      const paths = item.path.split("/");
-      let node = root;
-      for (const path of paths) {
-        if (path) {
-          if (!node.$idx[path]) {
-            let item2 = {
-              $idx: {},
-              links: [],
-              name: path,
-              type: "dir"
-            };
-            node.$idx[path] = item2;
-            node.links.push(item2);
-          }
-          ;
-          node = node.$idx[path];
-        }
-        ;
-      }
-      ;
-      delete node.links;
-      delete node.$idx;
-      node.type = "file";
-      node.size = item.cid.size;
-      node.cid = item.cid.cid;
-    }
-    ;
-  }
-  ;
-  return root;
-}
-async function hashTree(tree) {
-  delete tree.$idx;
-  let items = tree.links;
-  if (items) {
-    for (const item of items) {
-      delete item.$idx;
-      if (item.type == "dir") {
-        await hashTree(item);
-      }
-      ;
-    }
-    ;
-    let cid = await hashItems(items);
-    tree.type = "dir";
-    tree.cid = cid.cid;
-    tree.size = cid.size;
-  }
-  ;
-  return tree;
-}
-async function hashFiles(files, version) {
-  if (version == void 0)
-    version = 1;
-  return new Promise(async (resolve, reject) => {
-    try {
-      let tree = convertToTree(files);
-      let cid = await hashTree(tree);
-      resolve(cid);
-    } catch (err) {
-      reject(err);
-    }
-    ;
-  });
-}
-async function cidToSri(cid) {
-  return await import_ipfs_utils.default.cidToSri(cid);
-}
-
 // packages/upload/src/style/upload.css.ts
-var Theme10 = theme_exports.ThemeVars;
+var Theme7 = theme_exports.ThemeVars;
 cssRule("i-upload", {
   margin: "1rem 0",
   listStyle: "none",
@@ -22226,7 +21164,7 @@ cssRule("i-upload", {
   $nest: {
     ".i-upload-wrapper": {
       position: "relative",
-      border: `2px dashed ${Theme10.divider}`,
+      border: `2px dashed ${Theme7.divider}`,
       width: "100%",
       display: "flex",
       flexDirection: "column",
@@ -22246,8 +21184,8 @@ cssRule("i-upload", {
       marginTop: "4rem"
     },
     ".i-upload-dragger_active": {
-      border: `2px dashed ${Theme10.colors.primary.main}`,
-      backgroundColor: Theme10.colors.info.light,
+      border: `2px dashed ${Theme7.colors.primary.main}`,
+      backgroundColor: Theme7.colors.info.light,
       opacity: "0.8"
     },
     'input[type="file"]': {
@@ -22276,7 +21214,7 @@ cssRule("i-upload", {
     },
     ".i-upload_preview-crop": {
       position: "absolute",
-      border: `1px dashed ${Theme10.background.paper}`,
+      border: `1px dashed ${Theme7.background.paper}`,
       width: 150,
       height: 150,
       left: "50%",
@@ -22340,7 +21278,7 @@ cssRule("i-upload", {
       display: "block"
     },
     ".i-upload_list.i-upload_list-text .i-upload_list-item:hover": {
-      backgroundColor: Theme10.background.default
+      backgroundColor: Theme7.background.default
     },
     ".i-upload_list.i-upload_list-text .i-upload_list-item": {
       width: "100%",
@@ -22362,7 +21300,7 @@ cssRule("i-upload", {
 });
 
 // packages/upload/src/upload.ts
-var Theme11 = theme_exports.ThemeVars;
+var Theme8 = theme_exports.ThemeVars;
 var fileId = 1;
 var genFileId = () => Date.now() + fileId++;
 var UploadDrag = class extends Control {
@@ -22506,7 +21444,7 @@ var UploadDrag = class extends Control {
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-drag_area");
       this._labelElm = this.createElement("span", this._wrapperElm);
-      this._labelElm.style.color = Theme11.text.primary;
+      this._labelElm.style.color = Theme8.text.primary;
       this.caption = this.getAttribute("caption", true);
       this.disabled = this.getAttribute("disabled", true);
       this.addEventListener("dragenter", this.handleOnDragEnter.bind(this));
@@ -22674,7 +21612,7 @@ var Upload = class extends Control {
         const removeIcon = new Icon(void 0, {
           width: 12,
           height: 12,
-          fill: Theme11.action.active,
+          fill: Theme8.action.active,
           name: "trash"
         });
         itemElm.appendChild(removeIcon);
@@ -22697,7 +21635,7 @@ var Upload = class extends Control {
     this._previewRemoveElm.classList.add("i-upload_preview-remove");
     this._previewRemoveElm.onclick = this.handleRemoveImagePreview.bind(this);
     const span = this.createElement("span", this._previewRemoveElm);
-    span.style.fontFamily = Theme11.typography.fontFamily;
+    span.style.fontFamily = Theme8.typography.fontFamily;
     span.innerHTML = "Click to remove";
   }
   handleRemoveImagePreview(event) {
@@ -22814,7 +21752,7 @@ var Upload = class extends Control {
         margin: {
           bottom: 20
         },
-        fill: Theme11.divider
+        fill: Theme8.divider
       });
       new Label(panel, {
         caption: this.caption || (this.draggable ? "Drag a file or click to upload" : "Click to upload"),
@@ -22851,6 +21789,921 @@ var Upload = class extends Control {
 Upload = __decorateClass([
   customElements2("i-upload")
 ], Upload);
+
+// packages/button/src/style/button.css.ts
+var Theme9 = theme_exports.ThemeVars;
+cssRule("i-button", {
+  background: Theme9.colors.primary.main,
+  boxShadow: Theme9.shadows[2],
+  color: Theme9.text.primary,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: 4,
+  fontFamily: Theme9.typography.fontFamily,
+  fontSize: Theme9.typography.fontSize,
+  gap: 5,
+  cursor: "pointer",
+  $nest: {
+    "&:not(.disabled):hover": {},
+    "&.disabled": {
+      color: Theme9.text.disabled,
+      boxShadow: Theme9.shadows[0],
+      background: Theme9.action.disabledBackground
+    },
+    "i-icon": {
+      display: "inline-block",
+      fill: Theme9.text.primary,
+      verticalAlign: "middle"
+    },
+    ".caption": {
+      paddingRight: ".5rem"
+    },
+    "&.is-spinning, &.is-spinning:not(.disabled):hover, &.is-spinning:not(.disabled):focus": {
+      color: Theme9.text.disabled,
+      boxShadow: Theme9.shadows[0],
+      background: Theme9.action.disabledBackground,
+      cursor: "default"
+    }
+  }
+});
+
+// packages/button/src/button.ts
+var defaultIcon = {
+  width: 16,
+  height: 16,
+  fill: theme_exports.ThemeVars.text.primary
+};
+var Button = class extends Control {
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get caption() {
+    return this.captionElm.innerHTML;
+  }
+  set caption(value) {
+    this.captionElm.innerHTML = value;
+    this.captionElm.style.display = value ? "" : "none";
+  }
+  get icon() {
+    if (!this._icon) {
+      this._icon = new Icon(this, defaultIcon);
+      this.prependIcon(this._icon);
+    }
+    return this._icon;
+  }
+  set icon(value) {
+    if (this._icon && this.contains(this._icon))
+      this.removeChild(this._icon);
+    this._icon = value;
+    this.prependIcon(this._icon);
+  }
+  get rightIcon() {
+    if (!this._rightIcon) {
+      this._rightIcon = new Icon(this, {
+        ...defaultIcon,
+        name: "spinner"
+      });
+      this.appendIcon(this._rightIcon);
+    }
+    return this._rightIcon;
+  }
+  set rightIcon(value) {
+    if (this._rightIcon && this.contains(this._rightIcon))
+      this.removeChild(this._rightIcon);
+    this._rightIcon = value;
+    this.appendIcon(this._rightIcon);
+  }
+  get enabled() {
+    return super.enabled;
+  }
+  set enabled(value) {
+    var _a, _b, _c, _d;
+    super.enabled = value;
+    if (!value && this._background) {
+      let bg = "";
+      ((_a = this._background) == null ? void 0 : _a.image) && (bg += `url(${(_b = this._background) == null ? void 0 : _b.image})`);
+      ((_c = this._background) == null ? void 0 : _c.color) && (bg += `${(_d = this._background) == null ? void 0 : _d.color}`);
+      this.style.background = bg;
+    }
+  }
+  get isSpinning() {
+    return this._icon && this._icon.spin && this._icon.visible || this._rightIcon && this._rightIcon.spin && this._rightIcon.visible;
+  }
+  prependIcon(icon) {
+    if (!icon)
+      return;
+    this.appendChild(icon);
+    this.captionElm && this.insertBefore(icon, this.captionElm);
+  }
+  appendIcon(icon) {
+    if (!icon)
+      return;
+    this.appendChild(icon);
+    this.captionElm && this.insertBefore(this.captionElm, icon);
+  }
+  updateButton() {
+    var _a, _b, _c, _d;
+    if (this.isSpinning)
+      this.classList.add("is-spinning");
+    else
+      this.classList.remove("is-spinning");
+    if (!this.enabled && this._background) {
+      let bg = "";
+      ((_a = this._background) == null ? void 0 : _a.image) && (bg += `url(${(_b = this._background) == null ? void 0 : _b.image})`);
+      ((_c = this._background) == null ? void 0 : _c.color) && (bg += `${(_d = this._background) == null ? void 0 : _d.color}`);
+      this.style.background = bg;
+    }
+  }
+  _handleClick(event) {
+    if (this.isSpinning || !this.enabled)
+      return false;
+    return super._handleClick(event);
+  }
+  refresh() {
+    super.refresh();
+    this.updateButton();
+  }
+  init() {
+    if (!this.captionElm) {
+      super.init();
+      this.onClick = this.getAttribute("onClick", true) || this.onClick;
+      this.captionElm = this.createElement("span", this);
+      let caption = this.getAttribute("caption", true, "");
+      this.caption = caption;
+      let iconAttr = this.getAttribute("icon", true);
+      if (iconAttr) {
+        iconAttr = { ...defaultIcon, ...iconAttr };
+        const icon = new Icon(this, iconAttr);
+        this.icon = icon;
+      }
+      let rightIconAttr = this.getAttribute("rightIcon", true);
+      if (rightIconAttr) {
+        rightIconAttr = { ...defaultIcon, name: "spinner", ...rightIconAttr };
+        const icon = new Icon(this, rightIconAttr);
+        this.rightIcon = icon;
+      }
+    }
+  }
+};
+Button = __decorateClass([
+  customElements2("i-button", {
+    icon: "closed-captioning",
+    className: "Button",
+    props: {
+      caption: { type: "string" }
+    },
+    events: {}
+  })
+], Button);
+
+// packages/modal/src/style/modal.css.ts
+var Theme10 = theme_exports.ThemeVars;
+var overlayStyle = style({
+  backgroundColor: "rgba(12, 18, 52, 0.7)",
+  position: "fixed",
+  left: 0,
+  top: 0,
+  width: "100%",
+  height: "100%",
+  opacity: 0,
+  visibility: "hidden",
+  zIndex: 1e3,
+  transition: "visibility 0s linear .25s, opacity .25s",
+  $nest: {
+    "&.show": {
+      opacity: "1",
+      visibility: "visible",
+      transition: "visibility 0s linear, opacity .25s"
+    }
+  }
+});
+var wrapperStyle = style({
+  position: "fixed",
+  left: 0,
+  top: 0,
+  width: "100%",
+  height: "100%",
+  opacity: 0,
+  visibility: "hidden",
+  transform: "scale(0.8)",
+  transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
+  zIndex: 1e3,
+  overflow: "auto"
+});
+var noBackdropStyle = style({
+  position: "inherit",
+  top: 0,
+  left: 0,
+  opacity: 0,
+  visibility: "hidden",
+  transform: "scale(0.8)",
+  transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
+  zIndex: 1e3,
+  overflow: "auto",
+  width: "100%",
+  maxWidth: "inherit",
+  $nest: {
+    ".modal": {
+      margin: "0"
+    }
+  }
+});
+var visibleStyle = style({
+  opacity: "1",
+  visibility: "visible",
+  transform: "scale(1)",
+  transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
+});
+var modalStyle = style({
+  fontFamily: "Helvetica",
+  fontSize: "14px",
+  padding: "10px 10px 5px 10px",
+  backgroundColor: Theme10.background.modal,
+  position: "relative",
+  borderRadius: "2px",
+  minWidth: "300px",
+  width: "inherit",
+  maxWidth: "100%"
+});
+var titleStyle = style({
+  fontSize: "18px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  $nest: {
+    "span": {
+      color: Theme10.colors.primary.main
+    },
+    "i-icon": {
+      display: "inline-block",
+      cursor: "pointer"
+    }
+  }
+});
+var getStringValue = (value) => {
+  return typeof value === "string" ? `${value} !important` : `${value}px !important`;
+};
+var getModalMediaQueriesStyleClass = (mediaQueries) => {
+  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  for (let mediaQuery of mediaQueries) {
+    let mediaQueryRule;
+    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
+    } else if (mediaQuery.minWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
+    } else if (mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
+    }
+    if (mediaQueryRule) {
+      const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
+      const ruleObj = styleObj["$nest"][mediaQueryRule];
+      styleObj["$nest"][mediaQueryRule] = {
+        ...ruleObj,
+        $nest: {
+          ...nestObj,
+          "&.show > .modal-overlay": {},
+          ".modal-wrapper": {},
+          ".modal": {}
+        }
+      };
+      if (mediaQuery.properties.showBackdrop) {
+        const showBackdrop = mediaQuery.properties.showBackdrop;
+        if (showBackdrop) {
+          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["visibility"] = "visible !important";
+          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["opacity"] = "1 !important";
+        } else {
+          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["visibility"] = "hidden !important";
+          styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["opacity"] = "0 !important";
+        }
+      }
+      if (mediaQuery.properties.position) {
+        const position = mediaQuery.properties.position;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["position"] = `${position} !important`;
+      }
+      if (mediaQuery.properties.maxWidth !== void 0 && mediaQuery.properties.maxWidth !== null) {
+        const maxWidth = getStringValue(mediaQuery.properties.maxWidth);
+        styleObj["$nest"][mediaQueryRule]["maxWidth"] = maxWidth;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxWidth"] = maxWidth;
+      }
+      if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
+        const maxHeight = getStringValue(mediaQuery.properties.maxHeight);
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxHeight"] = maxHeight;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = "auto";
+      }
+      if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
+        const height = getStringValue(mediaQuery.properties.height);
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["height"] = height;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = "auto";
+      }
+      if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
+        const width = getStringValue(mediaQuery.properties.width);
+        styleObj["$nest"][mediaQueryRule]["width"] = width;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["width"] = width;
+      }
+      if (mediaQuery.properties.minWidth !== void 0 && mediaQuery.properties.minWidth !== null) {
+        const minWidth = getStringValue(mediaQuery.properties.minWidth);
+        styleObj["$nest"][mediaQueryRule]["minWidth"] = minWidth;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["minWidth"] = minWidth;
+      }
+      if (mediaQuery.properties.popupPlacement) {
+        const placement = mediaQuery.properties.popupPlacement;
+        let positionObj = {
+          top: "unset",
+          left: "unset",
+          right: "unset",
+          bottom: "unset"
+        };
+        if (placement === "bottom") {
+          positionObj.top = "auto !important";
+          positionObj.left = "0 !important";
+          positionObj.bottom = "0 !important";
+        } else if (placement === "top") {
+          positionObj.top = "0 !important";
+          positionObj.left = "0 !important";
+        } else if (placement === "center") {
+          positionObj.top = "50% !important";
+          positionObj.left = "50% !important";
+        }
+        for (let pos in positionObj) {
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"][pos] = positionObj[pos];
+        }
+      }
+      if (mediaQuery.properties.border) {
+        const { radius, width, style: style2, color, bottom, top, left, right } = mediaQuery.properties.border;
+        if (width !== void 0 && width !== null)
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["border"] = `${width || ""} ${style2 || ""} ${color || ""}!important`;
+        if (radius) {
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["borderRadius"] = "unset";
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderRadius"] = `${getSpacingValue(radius)} !important`;
+        }
+        if (bottom)
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderBottom"] = `${getSpacingValue(bottom.width || "")} ${bottom.style || ""} ${bottom.color || ""}!important`;
+        if (top)
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderTop"] = `${getSpacingValue(top.width || "") || ""} ${top.style || ""} ${top.color || ""}!important`;
+        if (left)
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderLeft"] = `${getSpacingValue(left.width || "")} ${left.style || ""} ${left.color || ""}!important`;
+        if (right)
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderRight"] = `${getSpacingValue(right.width || "")} ${right.style || ""} ${right.color || ""}!important`;
+      }
+      if (mediaQuery.properties.padding) {
+        const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.padding;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["padding"] = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)} !important`;
+      }
+    }
+  }
+  return style(styleObj);
+};
+
+// packages/modal/src/modal.ts
+var Theme11 = theme_exports.ThemeVars;
+var showEvent = new Event("show");
+var Modal = class extends Container {
+  constructor(parent, options) {
+    super(parent, options, {
+      showClose: true,
+      showBackdrop: true,
+      closeOnBackdropClick: true,
+      popupPlacement: "center"
+    });
+    this.hasInitializedChildFixed = false;
+    this.mapScrollTop = {};
+    this.boundHandleModalMouseDown = this.handleModalMouseDown.bind(this);
+    this.boundHandleModalMouseUp = this.handleModalMouseUp.bind(this);
+  }
+  get visible() {
+    var _a;
+    return ((_a = this.wrapperDiv) == null ? void 0 : _a.classList.contains(visibleStyle)) || false;
+  }
+  set visible(value) {
+    var _a, _b;
+    this.positionAtChildFixed(value);
+    if (value) {
+      this.wrapperDiv.classList.add(visibleStyle);
+      this.dispatchEvent(showEvent);
+      if (this.showBackdrop) {
+        this.overlayDiv.classList.add("show");
+        document.body.style.overflow = "hidden";
+        const parentModal = (_a = this.parentElement) == null ? void 0 : _a.closest("i-modal");
+        if (parentModal) {
+          parentModal.wrapperDiv.style.overflow = "hidden";
+          parentModal.wrapperDiv.scrollTop = 0;
+        }
+        this.wrapperDiv.style.overflow = "hidden auto";
+      }
+      document.addEventListener("mousedown", this.boundHandleModalMouseDown);
+      document.addEventListener("mouseup", this.boundHandleModalMouseUp);
+    } else {
+      this.wrapperDiv.classList.remove(visibleStyle);
+      this.overlayDiv.classList.remove("show");
+      if (this.showBackdrop) {
+        const parentModal = (_b = this.parentElement) == null ? void 0 : _b.closest("i-modal");
+        if (parentModal) {
+          parentModal.wrapperDiv.style.overflow = "hidden auto";
+          document.body.style.overflow = "hidden";
+        } else {
+          document.body.style.overflow = "hidden auto";
+        }
+      }
+      if (this.isChildFixed) {
+        this.wrapperDiv.style.display = "none";
+      }
+      this.onClose && this.onClose(this);
+      document.removeEventListener("mousedown", this.boundHandleModalMouseDown);
+      document.removeEventListener("mouseup", this.boundHandleModalMouseUp);
+    }
+  }
+  get onOpen() {
+    return this._onOpen;
+  }
+  set onOpen(callback) {
+    this._onOpen = callback;
+  }
+  get title() {
+    const titleElm = this.titleSpan.querySelector("span");
+    return (titleElm == null ? void 0 : titleElm.innerHTML) || "";
+  }
+  set title(value) {
+    const titleElm = this.titleSpan.querySelector("span");
+    titleElm && (titleElm.innerHTML = value || "");
+  }
+  get popupPlacement() {
+    return this._placement;
+  }
+  set popupPlacement(value) {
+    this._placement = value;
+  }
+  get closeIcon() {
+    return this._closeIcon;
+  }
+  set closeIcon(elm) {
+    if (this._closeIcon && this.titleSpan.contains(this._closeIcon))
+      this.titleSpan.removeChild(this._closeIcon);
+    this._closeIcon = elm;
+    if (this._closeIcon) {
+      this._closeIcon.classList.add("i-modal-close");
+      this._closeIcon.onClick = () => this.visible = false;
+      this.titleSpan.appendChild(this._closeIcon);
+    }
+  }
+  get closeOnBackdropClick() {
+    return this._closeOnBackdropClick;
+  }
+  set closeOnBackdropClick(value) {
+    this._closeOnBackdropClick = typeof value === "boolean" ? value : true;
+  }
+  get showBackdrop() {
+    return this._showBackdrop;
+  }
+  set showBackdrop(value) {
+    this._showBackdrop = typeof value === "boolean" ? value : true;
+    if (this._showBackdrop) {
+      this.wrapperDiv.classList.add(wrapperStyle);
+      this.style.position = "unset";
+    } else {
+      this.style.position = "absolute";
+      this.style.left = "0px";
+      this.style.top = "0px";
+      this.wrapperDiv.classList.add(noBackdropStyle);
+    }
+  }
+  get item() {
+    return this.modalDiv.children[0];
+  }
+  set item(value) {
+    if (value instanceof Control) {
+      this.modalDiv.innerHTML = "";
+      value && this.modalDiv.appendChild(value);
+    }
+  }
+  get position() {
+    return this._wrapperPositionAt;
+  }
+  set position(value) {
+    this._wrapperPositionAt = value;
+  }
+  get isChildFixed() {
+    return this._isChildFixed;
+  }
+  set isChildFixed(value) {
+    this._isChildFixed = value;
+    if (value) {
+      this.setChildFixed();
+    } else {
+      this.style.position = "unset";
+    }
+  }
+  get closeOnScrollChildFixed() {
+    return this._closeOnScrollChildFixed;
+  }
+  set closeOnScrollChildFixed(value) {
+    this._closeOnScrollChildFixed = value;
+  }
+  get mediaQueries() {
+    return this._mediaQueries;
+  }
+  set mediaQueries(value) {
+    this._mediaQueries = value;
+    let style2 = getModalMediaQueriesStyleClass(this._mediaQueries);
+    this._mediaStyle && this.classList.remove(this._mediaStyle);
+    this._mediaStyle = style2;
+    this.classList.add(style2);
+  }
+  setChildFixed() {
+    this.style.position = "fixed";
+    this.zIndex = 9999;
+    this.mapScrollTop = {};
+    const getScrollY = (elm) => {
+      let scrollID = elm.getAttribute("scroll-id");
+      if (!scrollID) {
+        scrollID = IdUtils.generateUUID();
+        elm.setAttribute("scroll-id", scrollID);
+      }
+      this.mapScrollTop[scrollID] = elm.scrollTop;
+    };
+    const onParentScroll = (e) => {
+      if (this.visible && this.closeOnScrollChildFixed) {
+        this.visible = false;
+      }
+      if (e && !e.target.offsetParent && e.target.getAttribute) {
+        getScrollY(e.target);
+      }
+      if (this.visible && !this.closeOnScrollChildFixed) {
+        this.positionAtChildFixed(true);
+      }
+    };
+    let parentElement = this.parentNode;
+    while (parentElement) {
+      this.hasInitializedChildFixed = true;
+      parentElement.addEventListener("scroll", (e) => onParentScroll(e));
+      parentElement = parentElement.parentNode;
+      if (parentElement === document.body) {
+        document.addEventListener("scroll", (e) => onParentScroll(e));
+        break;
+      } else if (parentElement && !parentElement.offsetParent && parentElement.scrollTop && typeof parentElement.getAttribute === "function") {
+        getScrollY(parentElement);
+      }
+    }
+  }
+  positionAtChildFixed(value) {
+    if (this.isChildFixed) {
+      if (!this.hasInitializedChildFixed) {
+        this.setChildFixed();
+      }
+      if (this.wrapperDiv) {
+        this.wrapperDiv.style.position = !value ? "unset" : "relative";
+        this.wrapperDiv.style.display = !value ? "none" : "block";
+      }
+      if (value && this.parentElement) {
+        const { x, y, height } = this.parentElement.getBoundingClientRect();
+        const mdClientRect = this.getBoundingClientRect();
+        const { innerHeight, innerWidth } = window;
+        const elmHeight = mdClientRect.height + (height || 20);
+        const elmWidth = mdClientRect.width;
+        let totalScrollY = 0;
+        for (const key2 in this.mapScrollTop) {
+          totalScrollY += this.mapScrollTop[key2];
+        }
+        if (y + elmHeight > innerHeight) {
+          const elmTop = y - elmHeight + totalScrollY;
+          this.style.top = `${elmTop < 0 ? 0 : y - elmHeight + totalScrollY}px`;
+        } else {
+          this.style.top = `${y + totalScrollY}px`;
+        }
+        if (x + elmWidth > innerWidth) {
+          this.style.left = `${innerWidth - elmWidth}px`;
+        } else {
+          this.style.left = `${x}px`;
+        }
+      }
+    }
+  }
+  positionAt(placement) {
+    if (this.showBackdrop) {
+      this.positionAtFix(placement);
+    } else {
+      this.positionAtAbsolute(placement);
+    }
+  }
+  positionAtFix(placement) {
+    let parent = document.body;
+    let coords = this.getWrapperFixCoords(parent, placement);
+    this.wrapperDiv.style.width = "100%";
+    this.wrapperDiv.style.height = "100%";
+    this.wrapperDiv.style.paddingLeft = coords.left + "px";
+    this.wrapperDiv.style.paddingTop = coords.top + "px";
+  }
+  positionAtAbsolute(placement) {
+    let parent = this._parent || this.linkTo || this.parentElement || document.body;
+    let coords;
+    if (this.position === "fixed") {
+      coords = this.getWrapperFixCoords(parent, placement);
+    } else {
+      coords = this.getWrapperAbsoluteCoords(parent, placement);
+    }
+    this.wrapperDiv.style.height = "inherit";
+    this.wrapperDiv.style.width = "inherit";
+    this.wrapperDiv.style.left = coords.left + "px";
+    this.wrapperDiv.style.top = coords.top + "px";
+  }
+  getWrapperFixCoords(parent, placement) {
+    const parentCoords = parent.getBoundingClientRect();
+    let left = 0;
+    let top = 0;
+    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parentCoords.height;
+    switch (placement) {
+      case "center":
+        top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
+        left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2 - 1;
+        break;
+      case "top":
+        top = this.showBackdrop ? 0 : parentCoords.top;
+        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
+        break;
+      case "topLeft":
+        top = this.showBackdrop ? 0 : parentCoords.top;
+        left = parentCoords.left;
+        break;
+      case "topRight":
+        top = this.showBackdrop ? 0 : parentCoords.top;
+        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
+        break;
+      case "bottom":
+        top = parentCoords.top + parentHeight;
+        if (this.showBackdrop)
+          top = top - this.modalDiv.offsetHeight - 1;
+        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
+        break;
+      case "bottomLeft":
+        top = parentCoords.top + parentHeight;
+        if (this.showBackdrop)
+          top = top - this.modalDiv.offsetHeight;
+        left = parentCoords.left;
+        break;
+      case "bottomRight":
+        top = parentCoords.top + parentHeight;
+        if (this.showBackdrop)
+          top = top - this.modalDiv.offsetHeight;
+        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
+        break;
+      case "rightTop":
+        top = parentCoords.top;
+        left = parentCoords.right;
+        if (parentCoords.right + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
+          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
+        }
+        break;
+    }
+    left = left < 0 ? parentCoords.left : left;
+    top = top < 0 ? parentCoords.top : top;
+    return { top, left };
+  }
+  getWrapperAbsoluteCoords(parent, placement) {
+    const parentCoords = parent.getBoundingClientRect();
+    let left = 0;
+    let top = 0;
+    let max;
+    switch (placement) {
+      case "center":
+        left = (parentCoords.width - this.modalDiv.offsetWidth) / 2;
+        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+        break;
+      case "top":
+      case "topLeft":
+        if (this.isChildFixed) {
+          top = this.getParentOccupiedTop();
+          left = this.getParentOccupiedLeft();
+          break;
+        }
+      case "topRight":
+        if (this.isChildFixed) {
+          top = this.getParentOccupiedTop();
+          left = parentCoords.width - this.getParentOccupiedRight() - this.modalDiv.offsetWidth;
+          break;
+        }
+        if (parentCoords.top - this.modalDiv.offsetHeight >= 0) {
+          top = -this.modalDiv.offsetHeight;
+        } else {
+          if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
+            max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
+            top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+          } else {
+            top = parentCoords.height;
+          }
+        }
+        break;
+      case "bottom":
+      case "bottomLeft":
+        if (this.isChildFixed) {
+          left = 0;
+          top = parentCoords.height;
+          break;
+        }
+      case "bottomRight":
+        if (this.isChildFixed) {
+          top = parentCoords.height;
+          left = parentCoords.width - this.modalDiv.offsetWidth;
+          break;
+        }
+        if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
+          if (parentCoords.y - this.modalDiv.offsetHeight < 0) {
+            max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
+            top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+          } else {
+            top = -this.modalDiv.offsetHeight;
+          }
+        } else {
+          top = parentCoords.height;
+        }
+        break;
+      case "rightTop":
+        top = 0;
+        left = parentCoords.width;
+        break;
+      case "left":
+        max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
+        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+        top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+        left = -this.modalDiv.offsetWidth - 8;
+        break;
+    }
+    if (this.isChildFixed) {
+      if (placement !== "bottomRight" && placement !== "left")
+        left = left < 0 ? parentCoords.left : left;
+      if (placement !== "left")
+        top = top < 0 ? parentCoords.top : top;
+      return { top, left };
+    }
+    if (placement === "topRight" || placement === "bottomRight") {
+      if (parentCoords.right - this.modalDiv.offsetWidth >= 0) {
+        left = parentCoords.width - this.modalDiv.offsetWidth;
+      } else {
+        left = -parentCoords.left;
+      }
+    } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
+      if (window.innerWidth >= parentCoords.left + this.modalDiv.offsetWidth) {
+        left = 0;
+      } else {
+        left = Math.min(parentCoords.width - this.modalDiv.offsetWidth, window.innerWidth - parentCoords.left - this.modalDiv.offsetWidth);
+      }
+    }
+    return { top, left };
+  }
+  _handleOnShow(event) {
+    if (this.popupPlacement && this.enabled)
+      this.positionAt(this.popupPlacement);
+    if (this.enabled && this._onOpen) {
+      event.preventDefault();
+      this._onOpen(this);
+    }
+  }
+  handleModalMouseDown(event) {
+    const target = event.target;
+    this.insideClick = true;
+    if (this.closeOnBackdropClick) {
+      this.insideClick = this.showBackdrop ? target !== this.wrapperDiv : this.modalDiv.contains(target);
+    } else if (!this.showBackdrop) {
+      let parent = this._parent || this.linkTo || this.parentElement;
+      this.insideClick = this.modalDiv.contains(target) || (parent == null ? void 0 : parent.contains(target));
+    }
+  }
+  handleModalMouseUp(event) {
+    if (!this.insideClick)
+      this.visible = false;
+  }
+  updateModal(name, value) {
+    if (!isNaN(Number(value)))
+      this.modalDiv.style[name] = value + "px";
+    else
+      this.modalDiv.style[name] = value;
+  }
+  refresh() {
+    super.refresh(true);
+    if (this.visible && this.popupPlacement) {
+      this.positionAt(this.popupPlacement);
+    }
+  }
+  get background() {
+    return this._background;
+  }
+  set background(value) {
+    if (!this._background) {
+      this._background = new Background(this.modalDiv, value);
+    } else {
+      this._background.setBackgroundStyle(value);
+    }
+  }
+  get width() {
+    return !isNaN(this._width) ? this._width : this.offsetWidth;
+  }
+  set width(value) {
+    this._width = value;
+    this.updateModal("width", value);
+  }
+  get border() {
+    return this._border;
+  }
+  set border(value) {
+    this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, value);
+  }
+  get padding() {
+    return this._padding;
+  }
+  set padding(value) {
+    if (!this._padding)
+      this._padding = new SpaceValue(this.modalDiv, value, "padding");
+    else
+      this._padding.update(value);
+  }
+  get boxShadow() {
+    return (this.showBackdrop ? this.modalDiv : this.wrapperDiv).style.boxShadow;
+  }
+  set boxShadow(value) {
+    (this.showBackdrop ? this.modalDiv : this.wrapperDiv).style.boxShadow = value;
+  }
+  init() {
+    var _a;
+    if (!this.wrapperDiv) {
+      if ((_a = this.options) == null ? void 0 : _a.onClose)
+        this.onClose = this.options.onClose;
+      this.popupPlacement = this.getAttribute("popupPlacement", true);
+      this.closeOnBackdropClick = this.getAttribute("closeOnBackdropClick", true);
+      this.wrapperDiv = this.createElement("div", this);
+      this.wrapperDiv.classList.add("modal-wrapper");
+      this.showBackdrop = this.getAttribute("showBackdrop", true);
+      this.modalDiv = this.createElement("div", this.wrapperDiv);
+      this.titleSpan = this.createElement("div", this.modalDiv);
+      this.titleSpan.classList.add(titleStyle, "i-modal_header");
+      this.createElement("span", this.titleSpan);
+      this.title = this.getAttribute("title", true);
+      const closeIconAttr = this.getAttribute("closeIcon", true);
+      if (closeIconAttr) {
+        closeIconAttr.height = closeIconAttr.height || "16px";
+        closeIconAttr.width = closeIconAttr.width || "16px";
+        closeIconAttr.fill = closeIconAttr.fill || Theme11.colors.primary.main;
+        this.closeIcon = new Icon(void 0, closeIconAttr);
+      }
+      while (this.childNodes.length > 1) {
+        this.modalDiv.appendChild(this.childNodes[0]);
+      }
+      this.overlayDiv = this.createElement("div", this);
+      this.prepend(this.overlayDiv);
+      this.overlayDiv.classList.add(overlayStyle);
+      this.overlayDiv.classList.add("modal-overlay");
+      this.modalDiv.classList.add(modalStyle);
+      this.modalDiv.classList.add("modal");
+      this.addEventListener("show", this._handleOnShow.bind(this));
+      window.addEventListener("keydown", (event) => {
+        if (!this.visible)
+          return;
+        if (event.key === "Escape") {
+          this.visible = false;
+        }
+      });
+      const isChildFixed = this.getAttribute("isChildFixed", true);
+      if (isChildFixed)
+        this.isChildFixed = isChildFixed;
+      const closeOnScrollChildFixed = this.getAttribute("closeOnScrollChildFixed", true);
+      this.closeOnScrollChildFixed = closeOnScrollChildFixed;
+      const itemAttr = this.getAttribute("item", true);
+      if (itemAttr)
+        this.item = itemAttr;
+      super.init();
+      this.maxWidth && this.updateModal("maxWidth", this.maxWidth);
+      this.minWidth && this.updateModal("minWidth", this.minWidth);
+      this.minHeight && this.updateModal("minHeight", this.minHeight);
+      this.maxHeight && this.updateModal("maxHeight", this.maxHeight);
+      let border = this.getAttribute("border", true);
+      if (border) {
+        this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, border);
+        this.style.border = "none";
+      }
+      let padding = this.getAttribute("padding", true);
+      if (padding) {
+        this._padding = new SpaceValue(this.modalDiv, padding, "padding");
+      }
+      let boxShadow = this.getAttribute("boxShadow", true);
+      if (boxShadow)
+        this.boxShadow = boxShadow;
+      this.mediaQueries = this.getAttribute("mediaQueries", true, []);
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Modal = __decorateClass([
+  customElements2("i-modal")
+], Modal);
 
 // packages/upload/src/style/upload-modal.css.ts
 var Theme12 = theme_exports.ThemeVars;
@@ -28759,6 +28612,20 @@ var _BigDecimal = class {
 var BigDecimal = _BigDecimal;
 BigDecimal.decimals = 18;
 
+// packages/application/src/idUtils.ts
+var IdUtils = class {
+  static generateUUID(length) {
+    const uuid = "xxxxxxxx-xxxx-xxxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+      let r = Math.random() * 16 | 0, v = c == "x" ? r : r & 3 | 8;
+      return v.toString(16);
+    });
+    if (length) {
+      return uuid.substring(0, length);
+    }
+    return uuid;
+  }
+};
+
 // packages/application/src/index.ts
 var API_IPFS_BASEURL = "/api/ipfs/v0";
 var IpfsDataType;
@@ -29592,6 +29459,217 @@ var Application = class {
 };
 window["application"] = Application.Instance;
 var application = Application.Instance;
+
+// packages/alert/src/style/alert.css.ts
+cssRule("i-alert", {
+  $nest: {
+    ".modal": {
+      padding: 0,
+      borderRadius: 4
+    }
+  }
+});
+
+// packages/alert/src/alert.ts
+var Alert = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+    this.closeModal = () => {
+      this.mdAlert.visible = false;
+    };
+    this.showModal = () => {
+      this.renderUI();
+      this.mdAlert.visible = true;
+    };
+    this.closeModal = this.closeModal.bind(this);
+  }
+  get status() {
+    return this._status;
+  }
+  set status(value) {
+    this._status = value;
+  }
+  get title() {
+    return this._title;
+  }
+  set title(value) {
+    this._title = value;
+  }
+  get content() {
+    return this._content;
+  }
+  set content(value) {
+    this._content = value;
+  }
+  get link() {
+    return this._link;
+  }
+  set link(value) {
+    this._link = value;
+  }
+  get iconName() {
+    switch (this.status) {
+      case "error":
+        return "times";
+      case "warning":
+      case "confirm":
+        return "exclamation";
+      case "success":
+        return "check";
+      default:
+        return "spinner";
+    }
+  }
+  get color() {
+    switch (this.status) {
+      case "error":
+        return theme_exports.ThemeVars.colors.error.main;
+      case "warning":
+      case "confirm":
+        return theme_exports.ThemeVars.colors.warning.main;
+      case "success":
+        return theme_exports.ThemeVars.colors.success.main;
+      default:
+        return theme_exports.ThemeVars.colors.primary.main;
+    }
+  }
+  renderUI() {
+    this.pnlMain.clearInnerHTML();
+    const wrapperElm = new VStack(this.pnlMain, {
+      horizontalAlignment: "center",
+      gap: "1.75rem"
+    });
+    const border = this.status === "loading" ? {} : {
+      border: {
+        width: 2,
+        style: "solid",
+        color: this.color,
+        radius: "50%"
+      }
+    };
+    const paddingSize = this.status === "loading" ? "0.25rem" : "0.6rem";
+    new Icon(wrapperElm, {
+      width: 55,
+      height: 55,
+      name: this.iconName,
+      fill: this.color,
+      padding: {
+        top: paddingSize,
+        bottom: paddingSize,
+        left: paddingSize,
+        right: paddingSize
+      },
+      spin: this.status === "loading",
+      ...border
+    });
+    this.renderContent(wrapperElm);
+    this.renderLink(wrapperElm);
+    this.renderButtons(wrapperElm);
+  }
+  renderContent(wrapperElm) {
+    if (!this.title && !this.content)
+      return [];
+    const contentElm = new VStack(wrapperElm, {
+      horizontalAlignment: "center",
+      gap: "0.75rem",
+      lineHeight: 1.5
+    });
+    this.title ? new Label(contentElm, {
+      caption: this.title,
+      font: { size: "1.25rem", bold: true }
+    }) : null;
+    this.content ? new Label(contentElm, {
+      caption: this.content,
+      overflowWrap: "anywhere"
+    }) : null;
+  }
+  renderLink(wrapperElm) {
+    if (this.link)
+      new Label(wrapperElm, {
+        class: "text-center",
+        caption: this.link.caption,
+        font: { size: "0.875rem" },
+        link: { href: this.link.href, target: "_blank" },
+        overflowWrap: "anywhere"
+      });
+  }
+  renderButtons(wrapperElm) {
+    if (this.status === "confirm") {
+      const hStack = new HStack(wrapperElm, {
+        verticalAlignment: "center",
+        gap: "0.5rem"
+      });
+      new Button(hStack, {
+        padding: {
+          top: "0.5rem",
+          bottom: "0.5rem",
+          left: "2rem",
+          right: "2rem"
+        },
+        caption: "Cancel",
+        font: { color: theme_exports.ThemeVars.colors.secondary.contrastText },
+        background: { color: theme_exports.ThemeVars.colors.secondary.main },
+        onClick: () => this.closeModal()
+      });
+      new Button(hStack, {
+        padding: {
+          top: "0.5rem",
+          bottom: "0.5rem",
+          left: "2rem",
+          right: "2rem"
+        },
+        caption: "Confirm",
+        font: { color: theme_exports.ThemeVars.colors.primary.contrastText },
+        onClick: () => {
+          if (this.onConfirm) {
+            this.onConfirm();
+          }
+          this.closeModal();
+        }
+      });
+    } else {
+      new Button(wrapperElm, {
+        padding: {
+          top: "0.5rem",
+          bottom: "0.5rem",
+          left: "2rem",
+          right: "2rem"
+        },
+        caption: "Close",
+        font: { color: theme_exports.ThemeVars.colors.primary.contrastText },
+        onClick: () => this.closeModal()
+      });
+    }
+  }
+  async init() {
+    if (!this.mdAlert) {
+      super.init();
+      this.status = this.getAttribute("status", true);
+      this.title = this.getAttribute("title", true);
+      this.content = this.getAttribute("content", true);
+      this.link = this.getAttribute("link", true);
+      this.onClose = this.getAttribute("onClose", true);
+      this.onConfirm = this.getAttribute("onConfirm", true);
+      this.mdAlert = await Modal.create({
+        width: "400px"
+      });
+      this.appendChild(this.mdAlert);
+      this.pnlMain = new Panel(this, {
+        width: "100%",
+        padding: {
+          top: "1.5rem",
+          bottom: "1.5rem",
+          left: "1.5rem",
+          right: "1.5rem"
+        }
+      });
+      this.mdAlert.item = this.pnlMain;
+    }
+  }
+};
+Alert = __decorateClass([
+  customElements2("i-alert")
+], Alert);
 
 // packages/code-editor/src/monaco.ts
 function getLanguageType(fileName) {
@@ -33312,6 +33390,18 @@ var Markdown = class extends Control {
     else
       this.classList.add("toastui-editor-dark");
   }
+  get padding() {
+    return this._padding;
+  }
+  set padding(value) {
+    this._space = value;
+    if (!this.elm)
+      return;
+    if (!this._padding)
+      this._padding = new SpaceValue(this.elm, value, "padding");
+    else
+      this._padding.update(value);
+  }
   getRenderer() {
     const renderer = {};
     return renderer;
@@ -33330,6 +33420,8 @@ var Markdown = class extends Control {
     if (!this.elm)
       this.elm = this.createElement("div", this);
     this.elm.innerHTML = text;
+    if (!this._padding && this._space)
+      this.padding = this._space;
     return this.elm.innerHTML;
   }
   async beforeRender(text) {
@@ -33352,6 +33444,10 @@ var Markdown = class extends Control {
     super.init();
     this.elm = this.createElement("div", this);
     this.elm.classList.add("toastui-editor-contents");
+    let padding = this.getAttribute("padding", true);
+    if (padding) {
+      this._padding = new SpaceValue(this.elm, padding, "padding");
+    }
   }
 };
 Markdown = __decorateClass([
@@ -33362,6 +33458,7 @@ Markdown = __decorateClass([
 var Theme25 = theme_exports.ThemeVars;
 
 // packages/markdown-editor/src/markdown-editor.ts
+var Theme26 = theme_exports.ThemeVars;
 var TOOLBAR_ITEMS_DEFAULT = [
   ["heading", "bold", "italic", "strike"],
   ["hr", "quote"],
@@ -33473,7 +33570,11 @@ var MarkdownEditor = class extends Control {
     return this._toolbarItems || TOOLBAR_ITEMS_DEFAULT;
   }
   set toolbarItems(items) {
+    var _a;
     this._toolbarItems = items;
+    const toolbar = this.querySelector(".toastui-editor-toolbar");
+    if (toolbar && !((_a = this.toolbarItems) == null ? void 0 : _a.length))
+      toolbar.style.display = "none";
     if (!this.editor)
       return;
     this.renderEditor(true);
@@ -33511,6 +33612,32 @@ var MarkdownEditor = class extends Control {
     this._placeholder = value != null ? value : "";
     if (this.editorObj)
       this.renderEditor(true);
+  }
+  get padding() {
+    return this._padding;
+  }
+  set padding(value) {
+    if (!this.elm)
+      return;
+    if (!this._padding)
+      this._padding = new SpaceValue(this.elm, value, "padding");
+    else
+      this._padding.update(value);
+    const { top = 0, right = 0, bottom = 0, left = 0 } = value;
+    const padding = `${this._padding.getSpacingValue(top)} ${this._padding.getSpacingValue(right)} ${this._padding.getSpacingValue(bottom)} ${this._padding.getSpacingValue(left)}`;
+    const ProseMirrors = this.querySelectorAll(".ProseMirror");
+    for (let elm of ProseMirrors) {
+      elm.style.padding = padding;
+    }
+    this.elm.style.padding = "";
+  }
+  get border() {
+    return this._border;
+  }
+  set border(value) {
+    if (!this.elm)
+      return;
+    this._border = new Border(this.elm, value);
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -33552,7 +33679,11 @@ var MarkdownEditor = class extends Control {
     }
   }
   renderEditor(valueChanged) {
+    var _a, _b;
     const editorPlugins = [...this.editorPlugins].filter(Boolean);
+    let padding = this.getAttribute("padding", true);
+    let font = this.getAttribute("font", true);
+    let border = this.getAttribute("border", true);
     if (this.viewer) {
       if (this.editorObj) {
         this.editorObj.destroy();
@@ -33564,6 +33695,10 @@ var MarkdownEditor = class extends Control {
         this.elm.style.height = "auto";
       }
       this.mdViewer = new Markdown();
+      if (padding)
+        this.mdViewer.padding = padding;
+      if (font)
+        this.mdViewer.font = font;
       this.mdViewer.theme = this.theme;
       this.elm.appendChild(this.mdViewer);
     } else {
@@ -33584,7 +33719,7 @@ var MarkdownEditor = class extends Control {
         plugins: [...editorPlugins, ...this.plugins],
         widgetRules: this.widgetRules,
         hideModeSwitch: this.hideModeSwitch,
-        minHeight: "300px",
+        minHeight: (_a = this.minHeight) != null ? _a : "300px",
         placeholder: this.placeholder,
         events: {
           change: (event) => {
@@ -33595,6 +33730,18 @@ var MarkdownEditor = class extends Control {
       });
       if (this.theme === "light")
         this.elm.classList.remove("toastui-editor-dark");
+      const toolbar = this.querySelector(".toastui-editor-toolbar");
+      if (toolbar && !((_b = this.toolbarItems) == null ? void 0 : _b.length))
+        toolbar.style.display = "none";
+      if (!this._padding)
+        this.padding = padding;
+    }
+    this.elm.style.background = "inherit";
+    this.elm.style.fontSize = "inherit";
+    if (border) {
+      this._border = new Border(this.elm, border);
+      this.style.border = "none";
+      this.style.borderRadius = "unset";
     }
   }
   getMarkdownValue() {
@@ -33667,7 +33814,7 @@ MarkdownEditor = __decorateClass([
 ], MarkdownEditor);
 
 // packages/menu/src/style/menu.css.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 cssRule("i-context-menu", {
   display: "none"
 });
@@ -33685,8 +33832,8 @@ var fadeInRight = keyframes({
   }
 });
 var menuStyle = style({
-  fontFamily: Theme26.typography.fontFamily,
-  fontSize: Theme26.typography.fontSize,
+  fontFamily: Theme27.typography.fontFamily,
+  fontSize: Theme27.typography.fontSize,
   position: "relative",
   overflow: "hidden",
   $nest: {
@@ -33716,7 +33863,7 @@ var menuStyle = style({
         ".menu-item-arrow-active": {
           transform: "rotate(180deg)",
           transition: "transform 0.25s",
-          fill: `${Theme26.text.primary} !important`
+          fill: `${Theme27.text.primary} !important`
         },
         "li": {
           position: "relative",
@@ -33724,7 +33871,7 @@ var menuStyle = style({
             "&:hover": {
               $nest: {
                 ".menu-item": {
-                  color: Theme26.colors.primary.main
+                  color: Theme27.colors.primary.main
                 },
                 ".menu-item-arrow-active": {
                   fill: "currentColor !important"
@@ -33740,7 +33887,7 @@ var menuStyle = style({
 var meunItemStyle = style({
   position: "relative",
   display: "block",
-  color: Theme26.text.secondary,
+  color: Theme27.text.secondary,
   $nest: {
     ".menu-item": {
       position: "relative",
@@ -33760,8 +33907,8 @@ var meunItemStyle = style({
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme26.action.hover,
-      color: Theme26.text.primary
+      background: Theme27.action.hover,
+      color: Theme27.text.primary
     },
     ".menu-item.menu-active > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -34526,13 +34673,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme27.typography.fontFamily,
-  fontSize: Theme27.typography.fontSize,
+  fontFamily: Theme28.typography.fontFamily,
+  fontSize: Theme28.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -34566,7 +34713,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme27.text.primary,
+      color: Theme28.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
@@ -34600,7 +34747,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme27.divider}`,
+          borderLeft: `1px solid ${Theme28.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -34609,12 +34756,12 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme27.action.selected,
-          border: `1px solid ${Theme27.colors.info.dark}`,
-          color: Theme27.text.primary
+          backgroundColor: Theme28.action.selected,
+          border: `1px solid ${Theme28.colors.info.dark}`,
+          color: Theme28.text.primary
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme27.action.hover,
+          backgroundColor: Theme28.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -34642,8 +34789,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme27.colors.primary.main,
-          color: Theme27.colors.primary.contrastText,
+          background: Theme28.colors.primary.main,
+          color: Theme28.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -34684,7 +34831,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme27.divider}`,
+          borderLeft: `1px solid ${Theme28.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -34700,15 +34847,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme27.divider}`,
-          borderLeft: `1px solid ${Theme27.divider}`,
+          borderBottom: `1px solid ${Theme28.divider}`,
+          borderLeft: `1px solid ${Theme28.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme27.divider}`,
-          borderRight: `0.5px solid ${Theme27.divider}`,
+          borderTop: `1px solid ${Theme28.divider}`,
+          borderRight: `0.5px solid ${Theme28.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -34727,7 +34874,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme27.colors.primary.main}`
+          borderBottom: `2px solid ${Theme28.colors.primary.main}`
         }
       }
     },
@@ -34754,11 +34901,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme28.text.secondary,
+  fill: Theme29.text.secondary,
   width: 12,
   height: 12
 };
@@ -35232,11 +35379,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme30 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme29.typography.fontFamily,
-  fontSize: Theme29.typography.fontSize,
+  fontFamily: Theme30.typography.fontFamily,
+  fontSize: Theme30.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -35747,16 +35894,16 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme30.typography.fontFamily,
-  fontSize: Theme30.typography.fontSize,
+  fontFamily: Theme31.typography.fontFamily,
+  fontSize: Theme31.typography.fontSize,
   lineHeight: "25px",
-  color: Theme30.text.primary,
+  color: Theme31.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -35764,7 +35911,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme30.text.primary,
+      color: Theme31.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -35780,7 +35927,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme30.text.disabled,
+      color: Theme31.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -36027,7 +36174,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -36040,9 +36187,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme31.typography.fontFamily,
-  fontSize: Theme31.typography.fontSize,
-  color: Theme31.text.primary,
+  fontFamily: Theme32.typography.fontFamily,
+  fontSize: Theme32.typography.fontSize,
+  color: Theme32.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -36065,13 +36212,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.error.light
+          backgroundColor: Theme32.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.error.light
+          backgroundColor: Theme32.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme31.colors.error.light
+          borderColor: Theme32.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -36079,13 +36226,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.success.light
+          backgroundColor: Theme32.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.success.light
+          backgroundColor: Theme32.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme31.colors.success.light
+          borderColor: Theme32.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -36093,13 +36240,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.warning.light
+          backgroundColor: Theme32.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.warning.light
+          backgroundColor: Theme32.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme31.colors.warning.light
+          borderColor: Theme32.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -36107,14 +36254,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme31.colors.primary.light
+          backgroundColor: Theme32.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme31.colors.primary.light
+          backgroundColor: Theme32.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme31.colors.primary.light
+          borderColor: Theme32.colors.primary.light
         }
       }
     },
@@ -36136,11 +36283,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme31.divider
+              backgroundColor: Theme32.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme31.divider
+              backgroundColor: Theme32.divider
             }
           }
         },
@@ -36165,7 +36312,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme31.divider,
+          borderColor: Theme32.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -36221,7 +36368,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -36265,7 +36412,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme32.colors.primary.main;
+    return this._strokeColor || Theme33.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -36400,11 +36547,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme32.colors.success.main;
+      ret = Theme33.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme32.divider;
+    return Theme33.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -36492,11 +36639,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme33.typography.fontFamily,
-  fontSize: Theme33.typography.fontSize,
-  color: Theme33.text.primary,
+  fontFamily: Theme34.typography.fontFamily,
+  fontSize: Theme34.typography.fontSize,
+  color: Theme34.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -36518,26 +36665,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme33.divider}`
+      borderBottom: `1px solid ${Theme34.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme33.divider}`,
+      borderBottom: `1px solid ${Theme34.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme33.background.paper,
-      color: Theme33.text.secondary
+      background: Theme34.background.paper,
+      color: Theme34.text.secondary
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme33.divider}`,
-          borderLeft: `1px solid ${Theme33.divider}`,
+          borderTop: `1px solid ${Theme34.divider}`,
+          borderLeft: `1px solid ${Theme34.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme33.divider} !important`,
-          borderBottom: `1px solid ${Theme33.divider}`
+          borderRight: `1px solid ${Theme34.divider} !important`,
+          borderBottom: `1px solid ${Theme34.divider}`
         }
       }
     },
@@ -36558,7 +36705,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme33.colors.primary.main
+          fill: Theme34.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -36587,12 +36734,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme33.text.primary
+          fill: Theme34.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme33.divider}`
+      borderRight: `1px solid ${Theme34.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -36647,7 +36794,6 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
                 }
               }
             };
-            console.log(fieldName, styleObj["$nest"][mediaQueryRule]["$nest"][`[data-fieldname="${fieldName}"]`]);
           }
         }
       }
@@ -36663,7 +36809,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme34 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -36718,7 +36864,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme34.text.primary
+        fill: Theme35.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -36726,7 +36872,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme34.text.primary
+        fill: Theme35.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -37179,7 +37325,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme35 = theme_exports.ThemeVars;
+var Theme36 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
   display: "block",
   position: "relative",
@@ -37200,7 +37346,7 @@ cssRule("i-carousel-slider", {
     ".slider-arrow": {
       width: 28,
       height: 28,
-      fill: Theme35.colors.primary.main,
+      fill: Theme36.colors.primary.main,
       cursor: "pointer"
     },
     ".slider-arrow-hidden": {
@@ -37233,7 +37379,7 @@ cssRule("i-carousel-slider", {
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme35.colors.primary.main}`,
+          border: `2px solid ${Theme36.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -37244,7 +37390,7 @@ cssRule("i-carousel-slider", {
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme35.colors.primary.main
+          backgroundColor: Theme36.colors.primary.main
         }
       }
     }
@@ -37664,7 +37810,13 @@ CarouselItem = __decorateClass([
 
 // packages/video/src/style/video.css.ts
 cssRule("i-video", {
-  $nest: {}
+  $nest: {
+    ".video-js  .vjs-big-play-button": {
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)"
+    }
+  }
 });
 
 // packages/video/src/video.ts
@@ -37705,6 +37857,16 @@ var Video = class extends Container {
       });
     }
   }
+  get border() {
+    return this._border;
+  }
+  set border(value) {
+    var _a;
+    const video = (_a = this.videoElm) == null ? void 0 : _a.querySelector("video");
+    if (!video)
+      return;
+    this._border = new Border(video, value);
+  }
   init() {
     if (!this.initialized) {
       super.init();
@@ -37719,6 +37881,7 @@ var Video = class extends Container {
       this.sourceElm = this.createElement("source", this.videoElm);
       this.sourceElm.type = "application/x-mpegURL";
       this.url = this.getAttribute("url", true);
+      const border = this.getAttribute("border", true);
       RequireJS.require(reqs, function(videojs) {
         self.player = videojs(id, {
           playsinline: true,
@@ -37733,6 +37896,9 @@ var Video = class extends Container {
           height: "100%",
           width: "100%"
         });
+        const video = self.videoElm.querySelector("video");
+        if (video && border)
+          self._border = new Border(video, border);
       });
     }
   }
@@ -37747,7 +37913,7 @@ Video = __decorateClass([
 ], Video);
 
 // packages/schema-designer/src/uiSchema.ts
-var Theme36 = theme_exports.ThemeVars;
+var Theme37 = theme_exports.ThemeVars;
 var dataUITypes = [
   { label: "VerticalLayout", value: "VerticalLayout" },
   { label: "HorizontalLayout", value: "HorizontalLayout" },
@@ -38001,7 +38167,7 @@ var SchemaDesignerUI = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme36.colors.primary.contrastText
+      fill: Theme37.colors.primary.contrastText
     }));
     btnAddElement.onClick = () => {
       this.createUISchema(pnlUIElements, currentLayout, true);
@@ -38090,7 +38256,7 @@ var SchemaDesignerUI = class extends Container {
           visible: false,
           width: 12,
           height: 12,
-          fill: Theme36.colors.secondary.main,
+          fill: Theme37.colors.secondary.main,
           tooltip: {
             content: "Remove this property",
             trigger: "hover"
@@ -38145,7 +38311,7 @@ var SchemaDesignerUI = class extends Container {
               visible: false,
               width: 12,
               height: 12,
-              fill: Theme36.colors.secondary.main,
+              fill: Theme37.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -38247,13 +38413,13 @@ var SchemaDesignerUI = class extends Container {
                   display: "flex",
                   padding: { top: 8, bottom: 8, left: 16, right: 16 },
                   border: { radius: 8 },
-                  background: { color: Theme36.action.selected }
+                  background: { color: Theme37.action.selected }
                 });
                 const iconTimesEnum = new Icon(pnlEnum, {
                   name: "times",
                   width: 14,
                   height: 14,
-                  fill: Theme36.colors.secondary.main,
+                  fill: Theme37.colors.secondary.main,
                   position: "absolute",
                   right: 2,
                   top: 2
@@ -38285,7 +38451,7 @@ var SchemaDesignerUI = class extends Container {
               position: "absolute",
               top: 5,
               right: 5,
-              fill: Theme36.colors.secondary.main,
+              fill: Theme37.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -38493,7 +38659,7 @@ var SchemaDesignerUI = class extends Container {
         name: "plus",
         width: "1em",
         height: "1em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       }));
       const pnlFormDetail = new Panel(void 0, {
         padding: { top: 10, bottom: 10, left: 10, right: 10 }
@@ -38704,7 +38870,7 @@ var SchemaDesignerUI = class extends Container {
         name: "times-circle",
         width: 12,
         height: 12,
-        fill: Theme36.colors.secondary.main,
+        fill: Theme37.colors.secondary.main,
         visible: false
       });
       iconClear.onClick = () => {
@@ -38798,7 +38964,7 @@ var SchemaDesignerUI = class extends Container {
     if (isChildren) {
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme36.colors.secondary.main} !important` },
+        background: { color: `${Theme37.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         height: 28,
@@ -38808,7 +38974,7 @@ var SchemaDesignerUI = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       }));
       btnDelete.onClick = () => {
         deleteElement();
@@ -38822,7 +38988,7 @@ var SchemaDesignerUI = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme36.colors.primary.contrastText
+        fill: Theme37.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -38895,12 +39061,12 @@ SchemaDesignerUI = __decorateClass([
 ], SchemaDesignerUI);
 
 // packages/schema-designer/src/style/schema-designer.css.ts
-var Theme37 = theme_exports.ThemeVars;
+var Theme38 = theme_exports.ThemeVars;
 var scrollBar = {
   "&::-webkit-scrollbar-track": {
     borderRadius: "12px",
     border: "1px solid transparent",
-    background: Theme37.action.hover
+    background: Theme38.action.hover
   },
   "&::-webkit-scrollbar": {
     width: "8px",
@@ -38908,7 +39074,7 @@ var scrollBar = {
   },
   "&::-webkit-scrollbar-thumb": {
     borderRadius: "12px",
-    background: Theme37.action.active
+    background: Theme38.action.active
   }
 };
 cssRule("i-schema-designer", {
@@ -38934,12 +39100,12 @@ cssRule("i-schema-designer", {
           height: "30px !important",
           width: "100% !important",
           border: 0,
-          borderBottom: `0.5px solid ${Theme37.divider}`,
+          borderBottom: `0.5px solid ${Theme38.divider}`,
           background: "transparent"
         },
         "textarea": {
           height: "100% !important",
-          border: `0.5px solid ${Theme37.divider}`,
+          border: `0.5px solid ${Theme38.divider}`,
           borderRadius: "1em",
           background: "transparent",
           $nest: scrollBar
@@ -38957,7 +39123,7 @@ cssRule("i-schema-designer", {
           background: "transparent !important",
           height: "30px !important",
           border: "0 !important",
-          borderBottom: `0.5px solid ${Theme37.divider} !important`
+          borderBottom: `0.5px solid ${Theme38.divider} !important`
         },
         ".selection": {
           background: "transparent",
@@ -38966,7 +39132,7 @@ cssRule("i-schema-designer", {
         },
         "span.icon-btn": {
           border: "0",
-          borderBottom: `0.5px solid ${Theme37.divider}`,
+          borderBottom: `0.5px solid ${Theme38.divider}`,
           borderRadius: "0",
           height: "30px !important",
           width: "32px !important",
@@ -38993,8 +39159,8 @@ cssRule("i-schema-designer", {
       }
     },
     "i-button": {
-      background: Theme37.colors.primary.main,
-      color: Theme37.colors.primary.contrastText
+      background: Theme38.colors.primary.main,
+      color: Theme38.colors.primary.contrastText
     },
     ".cs-wrapper--header": {
       padding: "5px 10px",
@@ -39007,12 +39173,12 @@ cssRule("i-schema-designer", {
     ".cs-prefix--items": {
       $nest: {
         ".cs-box--shadow": {
-          boxShadow: Theme37.shadows[2]
+          boxShadow: Theme38.shadows[2]
         }
       }
     },
     ".cs-box--enum": {
-      boxShadow: Theme37.shadows[2],
+      boxShadow: Theme38.shadows[2],
       padding: "8px 16px",
       borderRadius: 8,
       minWidth: 100,
@@ -39047,7 +39213,7 @@ cssRule("i-schema-designer", {
 });
 
 // packages/schema-designer/src/schemaDesigner.ts
-var Theme38 = theme_exports.ThemeVars;
+var Theme39 = theme_exports.ThemeVars;
 var dataTypes = [
   { label: "string", value: "string" },
   { label: "number", value: "number" },
@@ -39235,19 +39401,9 @@ var SchemaDesigner = class extends Container {
     }
     return label;
   }
-  generateUUID(length) {
-    const uuid = "xxxxxxxx-xxxx-xxxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-      let r = Math.random() * 16 | 0, v = c == "x" ? r : r & 3 | 8;
-      return v.toString(16);
-    });
-    if (length) {
-      return uuid.substring(0, length);
-    }
-    return uuid;
-  }
   generateFieldName(requiredElm) {
     while (true) {
-      const fieldName = `item-${this.generateUUID(4)}`;
+      const fieldName = `item-${IdUtils.generateUUID(4)}`;
       const oldField = requiredElm.querySelector(`[field-required='${fieldName.toLowerCase()}']`);
       if (!oldField) {
         return fieldName;
@@ -39292,7 +39448,7 @@ var SchemaDesigner = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme38.colors.primary.contrastText
+      fill: Theme39.colors.primary.contrastText
     }));
     const hStackActions = new HStack(void 0, {
       verticalAlignment: "center",
@@ -39380,7 +39536,7 @@ var SchemaDesigner = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme38.colors.primary.contrastText
+        fill: Theme39.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -39395,7 +39551,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39415,7 +39571,7 @@ var SchemaDesigner = class extends Container {
         name: "exclamation-circle",
         width: 12,
         height: 12,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         tooltip: {
           content: "Invalid field",
           trigger: "hover"
@@ -39424,7 +39580,7 @@ var SchemaDesigner = class extends Container {
       });
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme38.colors.secondary.main} !important` },
+        background: { color: `${Theme39.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         padding: { top: 6, bottom: 6, left: 12, right: 12 }
@@ -39433,7 +39589,7 @@ var SchemaDesigner = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme38.colors.primary.contrastText
+        fill: Theme39.colors.primary.contrastText
       }));
       btnDelete.setAttribute("action", "delete");
       btnDelete.onClick = async () => {
@@ -39679,13 +39835,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme38.action.selected }
+          background: { color: Theme39.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme38.colors.secondary.main,
+          fill: Theme39.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -39729,7 +39885,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39818,13 +39974,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme38.action.selected }
+          background: { color: Theme39.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme38.colors.secondary.main,
+          fill: Theme39.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -39863,7 +40019,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -39962,7 +40118,7 @@ var SchemaDesigner = class extends Container {
         name: "times",
         width: 14,
         height: 14,
-        fill: Theme38.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         position: "absolute",
         right: 4,
         top: 4
@@ -40048,7 +40204,7 @@ var SchemaDesigner = class extends Container {
     if (parentFields.length) {
       new Label(vStack, {
         caption: "Advanced options",
-        font: { size: "16px", color: Theme38.colors.primary.main }
+        font: { size: "16px", color: Theme39.colors.primary.main }
       });
     }
     const gridLayout = new GridLayout(vStack, {
@@ -40093,7 +40249,7 @@ var SchemaDesigner = class extends Container {
         width: 12,
         height: 12,
         position: notCheckbox ? "absolute" : "relative",
-        fill: Theme38.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40313,8 +40469,6 @@ var SchemaDesigner = class extends Container {
     }, pnlJsonData);
     this.txtSchema.classList.add("cs-json--text");
     this.uiSchemaPanel = new SchemaDesignerUI(this.pnlUISchema);
-    this.uuid = this.generateUUID();
-    this.uiSchemaPanel.uuid = this.uuid;
     this.createDataSchema(this.pnlSchemaBuilder, "object");
     this.updateJsonData();
   }
@@ -40324,9 +40478,9 @@ SchemaDesigner = __decorateClass([
 ], SchemaDesigner);
 
 // packages/navigator/src/style/navigator.css.ts
-var Theme39 = theme_exports.ThemeVars;
+var Theme40 = theme_exports.ThemeVars;
 cssRule("i-nav", {
-  border: `1px solid ${Theme39.divider}`,
+  border: `1px solid ${Theme40.divider}`,
   $nest: {
     "> i-vstack": {
       alignItems: "center",
@@ -40335,7 +40489,7 @@ cssRule("i-nav", {
         ".search-container": {
           width: "100%",
           padding: 10,
-          borderBottom: `1px solid ${Theme39.divider}`,
+          borderBottom: `1px solid ${Theme40.divider}`,
           alignItems: "center",
           gap: 5,
           $nest: {
@@ -40347,7 +40501,7 @@ cssRule("i-nav", {
                 "input": {
                   background: "transparent",
                   border: "0",
-                  borderBottom: `1px solid ${Theme39.divider}`
+                  borderBottom: `1px solid ${Theme40.divider}`
                 }
               }
             }
@@ -40362,9 +40516,9 @@ cssRule("i-nav", {
     },
     "i-nav-item": {
       cursor: "pointer",
-      background: Theme39.background.main,
+      background: Theme40.background.main,
       borderLeft: "3px solid transparent",
-      borderBottom: `1px solid ${Theme39.divider}`,
+      borderBottom: `1px solid ${Theme40.divider}`,
       $nest: {
         "> i-grid-layout": {
           height: 50,
@@ -40373,14 +40527,14 @@ cssRule("i-nav", {
           alignItems: "center"
         },
         "i-icon": {
-          height: Theme39.typography.fontSize,
-          width: Theme39.typography.fontSize,
-          fill: Theme39.colors.primary.main
+          height: Theme40.typography.fontSize,
+          width: Theme40.typography.fontSize,
+          fill: Theme40.colors.primary.main
         },
         "&.active": {
-          color: Theme39.colors.primary.contrastText,
-          background: Theme39.colors.primary.main,
-          borderLeft: `3px solid ${Theme39.colors.primary.main}`
+          color: Theme40.colors.primary.contrastText,
+          background: Theme40.colors.primary.main,
+          borderLeft: `3px solid ${Theme40.colors.primary.main}`
         }
       }
     }
@@ -40689,19 +40843,19 @@ NavItem = __decorateClass([
 ], NavItem);
 
 // packages/breadcrumb/src/style/breadcrumb.css.ts
-var Theme40 = theme_exports.ThemeVars;
+var Theme41 = theme_exports.ThemeVars;
 cssRule("i-breadcrumb", {
   $nest: {
     "i-label": {
       padding: 5,
       margin: "0 5px",
-      color: Theme40.colors.primary.main
+      color: Theme41.colors.primary.main
     },
     "i-icon": {
       margin: "0 5px",
-      height: Theme40.typography.fontSize,
-      width: Theme40.typography.fontSize,
-      fill: Theme40.colors.primary.main
+      height: Theme41.typography.fontSize,
+      width: Theme41.typography.fontSize,
+      fill: Theme41.colors.primary.main
     }
   }
 });
@@ -40769,7 +40923,7 @@ Breadcrumb = __decorateClass([
 ], Breadcrumb);
 
 // packages/form/src/styles/index.css.ts
-var Theme41 = theme_exports.ThemeVars;
+var Theme42 = theme_exports.ThemeVars;
 var formStyle = style({
   $nest: {
     "i-vstack > .form-group": {
@@ -40784,7 +40938,7 @@ var formGroupStyle = style({
   justifyContent: "center"
 });
 var groupStyle = style({
-  border: `1px solid ${Theme41.divider}`,
+  border: `1px solid ${Theme42.divider}`,
   borderRadius: 5,
   width: "100%",
   marginBottom: 5
@@ -40801,8 +40955,8 @@ var groupBodyStyle = style({
 });
 var collapseBtnStyle = style({
   cursor: "pointer",
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize
+  height: Theme42.typography.fontSize,
+  width: Theme42.typography.fontSize
 });
 var inputStyle = style({
   width: "100% !important",
@@ -40811,9 +40965,9 @@ var inputStyle = style({
       width: "100% !important",
       maxWidth: "100%",
       padding: "0.5rem 1rem",
-      color: Theme41.input.fontColor,
-      backgroundColor: Theme41.input.background,
-      borderColor: Theme41.input.background,
+      color: Theme42.input.fontColor,
+      backgroundColor: Theme42.input.background,
+      borderColor: Theme42.input.background,
       borderRadius: "0.625rem",
       outline: "none"
     },
@@ -40836,16 +40990,16 @@ var datePickerStyle = style({
       width: "calc(100% - 24px) !important",
       maxWidth: "calc(100% - 24px)",
       padding: "0.5rem 1rem",
-      color: Theme41.input.fontColor,
-      backgroundColor: Theme41.input.background,
-      borderColor: Theme41.input.background,
+      color: Theme42.input.fontColor,
+      backgroundColor: Theme42.input.background,
+      borderColor: Theme42.input.background,
       outline: "none"
     },
     "> input:focus ~ .datepicker-toggle": {
-      borderColor: Theme41.colors.info.main
+      borderColor: Theme42.colors.info.main
     },
     ".datepicker-toggle": {
-      backgroundColor: Theme41.input.background,
+      backgroundColor: Theme42.input.background,
       width: "42px"
     }
   }
@@ -40857,9 +41011,9 @@ var comboBoxStyle = style({
       width: "100% !important",
       maxWidth: "100%",
       padding: "0.5rem 1rem",
-      color: Theme41.input.fontColor,
-      backgroundColor: Theme41.input.background,
-      borderColor: Theme41.input.background,
+      color: Theme42.input.fontColor,
+      backgroundColor: Theme42.input.background,
+      borderColor: Theme42.input.background,
       borderRadius: "0.625rem!important"
     },
     ".selection input": {
@@ -40869,7 +41023,7 @@ var comboBoxStyle = style({
     },
     "> .icon-btn": {
       justifyContent: "center",
-      borderColor: Theme41.input.background,
+      borderColor: Theme42.input.background,
       borderRadius: "0.625rem",
       width: "42px"
     }
@@ -40880,8 +41034,8 @@ var buttonStyle = style({
 });
 var iconButtonStyle = style({
   cursor: "pointer",
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize
+  height: Theme42.typography.fontSize,
+  width: Theme42.typography.fontSize
 });
 var checkboxStyle = style({
   $nest: {
@@ -40899,15 +41053,15 @@ var checkboxStyle = style({
 });
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme41.divider}`,
+  borderBottom: `1px solid ${Theme42.divider}`,
   marginBottom: 10,
   minHeight: "60px",
   alignItems: "center",
   fontWeight: 600
 });
 var listBtnAddStyle = style({
-  color: Theme41.colors.primary.contrastText,
-  backgroundColor: Theme41.colors.primary.main,
+  color: Theme42.colors.primary.contrastText,
+  backgroundColor: Theme42.colors.primary.main,
   padding: "0.5rem 1rem",
   borderRadius: 0,
   cursor: "pointer"
@@ -40991,8 +41145,8 @@ var listVerticalLayoutStyle = style({
 var listItemBtnDelete = style({
   cursor: "pointer",
   placeSelf: "center",
-  height: Theme41.typography.fontSize,
-  width: Theme41.typography.fontSize
+  height: Theme42.typography.fontSize,
+  width: Theme42.typography.fontSize
 });
 var tabsStyle = style({
   marginBottom: 41,
@@ -41005,12 +41159,12 @@ var tabsStyle = style({
         },
         "i-tab": {
           border: 0,
-          fontFamily: Theme41.typography.fontFamily,
-          fontSize: Theme41.typography.fontSize,
+          fontFamily: Theme42.typography.fontFamily,
+          fontSize: Theme42.typography.fontSize,
           fontWeight: 600,
           borderBottom: "1px solid transparent",
           background: "transparent",
-          color: Theme41.text.secondary,
+          color: Theme42.text.secondary,
           margin: "0 0.75rem",
           padding: "0.5rem 0",
           transition: "color .2s ease",
@@ -41019,12 +41173,12 @@ var tabsStyle = style({
               marginLeft: 0
             },
             "&:not(.disabled):hover": {
-              color: Theme41.text.primary
+              color: Theme42.text.primary
             },
             "&:not(.disabled).active": {
               background: "transparent",
-              color: Theme41.colors.info.main,
-              borderBottom: `1px solid ${Theme41.colors.info.main}`
+              color: Theme42.colors.info.main,
+              borderBottom: `1px solid ${Theme42.colors.info.main}`
             },
             ".tab-item": {
               padding: 0
@@ -41039,11 +41193,11 @@ var tabsStyle = style({
   }
 });
 var cardStyle = style({
-  border: `1px solid ${Theme41.divider}`
+  border: `1px solid ${Theme42.divider}`
 });
 var cardHeader = style({
   padding: 20,
-  borderBottom: `1px solid ${Theme41.divider}`,
+  borderBottom: `1px solid ${Theme42.divider}`,
   cursor: "pointer"
 });
 var cardBody = style({
@@ -41053,7 +41207,7 @@ var uploadStyle = style({
   height: "auto",
   width: "100%",
   margin: 0,
-  fontFamily: Theme41.typography.fontFamily,
+  fontFamily: Theme42.typography.fontFamily,
   $nest: {
     "> .i-upload-wrapper": {
       marginBottom: 0,
@@ -41070,7 +41224,7 @@ var tokenInputStyle = style({
       background: "transparent",
       $nest: {
         "&:hover": {
-          borderColor: `${Theme41.colors.primary.main} !important`
+          borderColor: `${Theme42.colors.primary.main} !important`
         }
       }
     },
