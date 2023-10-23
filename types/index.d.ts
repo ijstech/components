@@ -3819,6 +3819,9 @@ declare module "packages/base/src/style/base.css" {
     export const getBorderSideStyleClass: (side: BorderStylesSideType, value: IBorderSideStyles) => string;
     export const getBorderStyleClass: (value: IBorder) => string;
     export const getOverflowStyleClass: (value: IOverflow) => string;
+    export const getBackground: (value: IBackground) => {
+        background: string;
+    };
     export const getBackgroundStyleClass: (value: IBackground) => string;
     export const getSpacingValue: (value: string | number) => string;
     interface IProps {
@@ -3999,8 +4002,17 @@ declare module "packages/base/src/control" {
         margin?: ISpace;
         border?: IBorder;
         visible?: boolean;
+        display?: DisplayType;
         background?: IBackground;
         grid?: IGrid;
+        position?: PositionType;
+        top?: number | string;
+        left?: number | string;
+        right?: number | string;
+        bottom?: number | string;
+        zIndex?: string | number;
+        maxHeight?: string | number;
+        overflow?: IOverflow | OverflowType;
     }
     export type IControlMediaQuery = IMediaQuery<IControlMediaQueryProps>;
     export const ControlProperties: ICustomProperties;
@@ -4206,7 +4218,7 @@ declare module "@ijstech/components/base" {
     import { ITooltip } from "packages/tooltip/src/index";
     export { Control, Container };
     export * as Types from "packages/base/src/types";
-    export { getControlMediaQueriesStyle } from "packages/base/src/style/base.css";
+    export { getControlMediaQueriesStyle, getBackground, getSpacingValue } from "packages/base/src/style/base.css";
     let LibPath: string;
     export { LibPath };
     export const RequireJS: {
@@ -4665,10 +4677,14 @@ declare module "packages/layout/src/style/panel.css" {
     export const alignItemsStartStyle: string;
     export const alignItemsCenterStyle: string;
     export const alignItemsEndStyle: string;
+    export const alignSelfAutoStyle: string;
+    export const alignSelfStretchStyle: string;
+    export const alignSelfStartStyle: string;
+    export const alignSelfCenterStyle: string;
+    export const alignSelfEndStyle: string;
     export const getTemplateColumnsStyleClass: (columns: string[]) => string;
     export const getTemplateRowsStyleClass: (rows: string[]) => string;
     export const getTemplateAreasStyleClass: (templateAreas: string[][]) => string;
-    export const getSpacingValue: (value: string | number) => string;
     export const getGridLayoutMediaQueriesStyleClass: (mediaQueries: IGridLayoutMediaQuery[]) => string;
 }
 declare module "packages/layout/src/stack" {
@@ -4681,6 +4697,7 @@ declare module "packages/layout/src/stack" {
         background?: IBackground;
         justifyContent?: StackJustifyContentType;
         alignItems?: StackAlignItemsType;
+        alignSelf?: StackAlignSelfType;
         position?: PositionType;
         top?: number | string;
     }
@@ -4689,12 +4706,14 @@ declare module "packages/layout/src/stack" {
     export type StackDirectionType = 'horizontal' | 'vertical';
     export type StackJustifyContentType = "start" | "center" | "end" | "space-between";
     export type StackAlignItemsType = "stretch" | "start" | "center" | "end";
+    export type StackAlignSelfType = "auto" | "stretch" | "start" | "center" | "end";
     export interface StackLayoutElement extends ContainerElement {
         gap?: number | string;
         wrap?: StackWrapType;
         direction?: StackDirectionType;
         justifyContent?: StackJustifyContentType;
         alignItems?: StackAlignItemsType;
+        alignSelf?: StackAlignSelfType;
         mediaQueries?: IStackMediaQuery[];
     }
     export type HStackHAlignmentType = StackJustifyContentType;
@@ -4738,6 +4757,7 @@ declare module "packages/layout/src/stack" {
         private _direction;
         private _justifyContent;
         private _alignItems;
+        private _alignSelf;
         private _mediaQueries;
         constructor(parent?: Container, options?: any);
         static create(options?: StackLayoutElement, parent?: Container): Promise<StackLayout>;
@@ -4747,6 +4767,8 @@ declare module "packages/layout/src/stack" {
         set justifyContent(value: StackJustifyContentType);
         get alignItems(): StackAlignItemsType;
         set alignItems(value: StackAlignItemsType);
+        get alignSelf(): StackAlignSelfType;
+        set alignSelf(value: StackAlignSelfType);
         get gap(): number | string;
         set gap(value: number | string);
         get wrap(): StackWrapType;
@@ -10672,7 +10694,9 @@ declare module "packages/progress/src/index" {
 declare module "packages/table/src/style/table.css" {
     import { TableColumnElement } from "packages/table/src/tableColumn";
     import { ITableMediaQuery } from "packages/table/src/table";
+    import { ControlElement } from "@ijstech/components/base";
     export const tableStyle: string;
+    export const getCustomStylesClass: (styles: ControlElement) => string;
     export const getTableMediaQueriesStyleClass: (columns: TableColumnElement[], mediaQueries: ITableMediaQuery[]) => string;
 }
 declare module "packages/table/src/tableCell" {
@@ -10790,6 +10814,8 @@ declare module "packages/table/src/table" {
         pagination?: string;
         expandable?: ITableExpandable;
         mediaQueries?: ITableMediaQuery[];
+        headingStyles?: ControlElement;
+        bodyStyles?: ControlElement;
         onRenderEmptyTable?: emptyCallback;
         onCellClick?: cellClickCallback;
         onColumnSort?: sortCallback;
@@ -10821,6 +10847,10 @@ declare module "packages/table/src/table" {
         private _expandable;
         private _sortConfig;
         private _heading;
+        private _headingStyles;
+        private _bodyStyles;
+        private _bodyStyle;
+        private _headingStyle;
         constructor(parent?: Control, options?: any);
         get data(): any;
         set data(value: any);
@@ -10840,6 +10870,10 @@ declare module "packages/table/src/table" {
         private get columnLength();
         get mediaQueries(): ITableMediaQuery[];
         set mediaQueries(value: ITableMediaQuery[]);
+        get headingStyles(): ControlElement;
+        set headingStyles(value: ControlElement);
+        get bodyStyles(): ControlElement;
+        set bodyStyles(value: ControlElement);
         private onPageChanged;
         private onSortChange;
         private renderHeader;

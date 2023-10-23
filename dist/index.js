@@ -17697,13 +17697,16 @@ var getOverflowStyleClass = (value) => {
   }
   return style(styleObj);
 };
-var getBackgroundStyleClass = (value) => {
-  let styleObj = {};
+var getBackground = (value) => {
+  let styleObj = { background: "" };
   let bg = "";
   value.image && (bg += `url(${value.image})`);
   value.color && (bg += `${value.color}`);
   styleObj.background = bg;
-  return style(styleObj);
+  return styleObj;
+};
+var getBackgroundStyleClass = (value) => {
+  return style(getBackground(value));
 };
 var getSpacingValue = (value) => {
   if (typeof value === "number")
@@ -17727,9 +17730,13 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
       }
       if (mediaQueryRule) {
         styleObj["$nest"][mediaQueryRule] = {};
+        if (mediaQuery.properties.display) {
+          styleObj["$nest"][mediaQueryRule]["display"] = `${mediaQuery.properties.display} !important`;
+        }
         if (typeof mediaQuery.properties.visible === "boolean") {
           const visible = mediaQuery.properties.visible;
-          const currentDisplay = (_a = props == null ? void 0 : props.display) != null ? _a : "flex";
+          const display = mediaQuery.properties.display;
+          const currentDisplay = (_a = display != null ? display : props == null ? void 0 : props.display) != null ? _a : "flex";
           styleObj["$nest"][mediaQueryRule]["display"] = visible ? `${currentDisplay} !important` : "none !important";
         }
         if (mediaQuery.properties.padding) {
@@ -17756,11 +17763,9 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
             styleObj["$nest"][mediaQueryRule]["borderRight"] = `${getSpacingValue(right.width || "")} ${right.style || ""} ${right.color || ""}!important`;
         }
         if (mediaQuery.properties.background) {
-          const { color, image } = mediaQuery.properties.background;
-          let bgString = "";
-          image && (bgString += `url(${image})`);
-          color && (bgString += `${color}`);
-          styleObj["$nest"][mediaQueryRule]["background"] = bgString + "!important";
+          const bgProp = mediaQuery.properties.background;
+          const value = getBackground(bgProp);
+          styleObj["$nest"][mediaQueryRule]["background"] = value.background + "!important";
         }
         if (mediaQuery.properties.grid) {
           const {
@@ -17790,6 +17795,43 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
             styleObj["$nest"][mediaQueryRule]["justifyContent"] = `${horizontalAlignment}!important`;
           if (verticalAlignment)
             styleObj["$nest"][mediaQueryRule]["alignItems"] = `${verticalAlignment}!important`;
+        }
+        if (mediaQuery.properties.position) {
+          styleObj["$nest"][mediaQueryRule]["position"] = `${mediaQuery.properties.position} !important`;
+        }
+        if (mediaQuery.properties.zIndex !== void 0 && mediaQuery.properties.zIndex !== null) {
+          styleObj["$nest"][mediaQueryRule]["zIndex"] = `${mediaQuery.properties.zIndex} !important`;
+        }
+        if (mediaQuery.properties.top !== void 0 && mediaQuery.properties.top !== null) {
+          styleObj["$nest"][mediaQueryRule]["top"] = `${getSpacingValue(mediaQuery.properties.top)} !important`;
+        }
+        if (mediaQuery.properties.left !== void 0 && mediaQuery.properties.left !== null) {
+          styleObj["$nest"][mediaQueryRule]["left"] = `${getSpacingValue(mediaQuery.properties.left)} !important`;
+        }
+        if (mediaQuery.properties.right !== void 0 && mediaQuery.properties.right !== null) {
+          styleObj["$nest"][mediaQueryRule]["right"] = `${getSpacingValue(mediaQuery.properties.right)} !important`;
+        }
+        if (mediaQuery.properties.bottom) {
+          styleObj["$nest"][mediaQueryRule]["bottom"] = `${getSpacingValue(mediaQuery.properties.bottom)} !important`;
+        }
+        if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
+          styleObj["$nest"][mediaQueryRule]["maxHeight"] = `${getSpacingValue(mediaQuery.properties.maxHeight)} !important`;
+        }
+        if (mediaQuery.properties.overflow) {
+          const overflow = mediaQuery.properties.overflow;
+          if (typeof overflow === "string") {
+            styleObj["$nest"][mediaQueryRule]["overflow"] = `${overflow} !important`;
+          } else {
+            const { x, y } = overflow || {};
+            if (x === y) {
+              styleObj["$nest"][mediaQueryRule]["overflow"] = `${x} !important`;
+            } else {
+              if (x)
+                styleObj["$nest"][mediaQueryRule]["overflowX"] = `${x} !important`;
+              if (y)
+                styleObj["$nest"][mediaQueryRule]["overflowY"] = `${y} !important`;
+            }
+          }
         }
       }
     }
@@ -18981,7 +19023,8 @@ var Control = class extends Component {
   }
   refresh() {
     if (this._dock != null) {
-      this.style.position = "absolute";
+      if (!this.position)
+        this.style.position = "absolute";
       switch (this.dock) {
         case "none": {
           if (this.anchor.top === false)
@@ -19072,7 +19115,8 @@ var Control = class extends Component {
     this.setAttributeToProperty("stack");
     this.setAttributeToProperty("grid");
     this.setAttributeToProperty("display");
-    if (this._left != null || this._top != null)
+    this.setAttributeToProperty("position");
+    if ((this._left != null || this._top != null) && !this.position)
       this.style.position = "absolute";
     if (this.getAttribute("enabled") !== false)
       this.classList.add("enabled");
@@ -19080,7 +19124,6 @@ var Control = class extends Component {
       this.enabled = false;
     if (this.getAttribute("visible") == false)
       this.visible = false;
-    this.setAttributeToProperty("position");
     this.setAttributeToProperty("background");
     this.setAttributeToProperty("zIndex");
     this.setAttributeToProperty("lineHeight");
@@ -20103,7 +20146,8 @@ cssRule("i-image", {
       height: "inherit",
       verticalAlign: "middle",
       objectFit: "contain",
-      overflow: "hidden"
+      overflow: "hidden",
+      width: "100%"
     }
   }
 });
@@ -20599,6 +20643,9 @@ var getStackMediaQueriesStyleClass = (mediaQueries) => {
       if (mediaQuery.properties.alignItems) {
         styleObj["$nest"][mediaQueryRule]["alignItems"] = mediaQuery.properties.alignItems;
       }
+      if (mediaQuery.properties.alignSelf) {
+        styleObj["$nest"][mediaQueryRule]["alignSelf"] = mediaQuery.properties.alignSelf;
+      }
       if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
         const width = mediaQuery.properties.width;
         styleObj["$nest"][mediaQueryRule]["width"] = typeof width === "string" ? `${width} !important` : `${width}px !important`;
@@ -20644,6 +20691,21 @@ var alignItemsCenterStyle = style({
 });
 var alignItemsEndStyle = style({
   alignItems: "flex-end"
+});
+var alignSelfAutoStyle = style({
+  alignSelf: "auto"
+});
+var alignSelfStretchStyle = style({
+  alignSelf: "stretch"
+});
+var alignSelfStartStyle = style({
+  alignSelf: "flex-start"
+});
+var alignSelfCenterStyle = style({
+  alignSelf: "center"
+});
+var alignSelfEndStyle = style({
+  alignSelf: "flex-end"
 });
 var getTemplateColumnsStyleClass = (columns) => {
   return style({
@@ -20692,10 +20754,7 @@ var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
         }
         styleObj["$nest"][mediaQueryRule]["gridTemplateAreas"] = `${templateAreasStr} !important`;
       }
-      if (mediaQuery.properties.display) {
-        styleObj["$nest"][mediaQueryRule]["display"] = mediaQuery.properties.display;
-      }
-      if (mediaQuery.properties.gap) {
+      if (mediaQuery.properties.gap !== void 0 && mediaQuery.properties.gap !== null) {
         const gap = mediaQuery.properties.gap;
         if (gap.row) {
           styleObj["$nest"][mediaQueryRule]["rowGap"] = typeof gap.row === "string" ? gap.row : `${gap.row}px`;
@@ -20703,11 +20762,6 @@ var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
         if (gap.column) {
           styleObj["$nest"][mediaQueryRule]["columnGap"] = typeof gap.column === "string" ? gap.column : `${gap.column}px`;
         }
-      }
-      if (typeof mediaQuery.properties.visible === "boolean") {
-        const visible = mediaQuery.properties.visible;
-        const display = mediaQuery.properties.display || "grid";
-        styleObj["$nest"][mediaQueryRule]["display"] = visible ? display + " !important" : "none !important";
       }
     }
   }
@@ -20774,6 +20828,29 @@ var StackLayout = class extends Container {
         break;
     }
   }
+  get alignSelf() {
+    return this._alignSelf;
+  }
+  set alignSelf(value) {
+    this._alignSelf = value || "auto";
+    switch (this._alignSelf) {
+      case "auto":
+        this.classList.add(alignSelfAutoStyle);
+        break;
+      case "stretch":
+        this.classList.add(alignSelfStretchStyle);
+        break;
+      case "start":
+        this.classList.add(alignSelfStartStyle);
+        break;
+      case "center":
+        this.classList.add(alignSelfCenterStyle);
+        break;
+      case "end":
+        this.classList.add(alignSelfEndStyle);
+        break;
+    }
+  }
   get gap() {
     return this._gap;
   }
@@ -20814,6 +20891,7 @@ var StackLayout = class extends Container {
     this.setAttributeToProperty("direction");
     this.setAttributeToProperty("justifyContent");
     this.setAttributeToProperty("alignItems");
+    this.setAttributeToProperty("alignSelf");
     this.setAttributeToProperty("gap");
     this.setAttributeToProperty("wrap");
     this.setAttributeToProperty("mediaQueries");
@@ -21809,7 +21887,8 @@ cssRule("i-button", {
     "&.disabled": {
       color: Theme9.text.disabled,
       boxShadow: Theme9.shadows[0],
-      background: Theme9.action.disabledBackground
+      background: Theme9.action.disabledBackground,
+      cursor: "not-allowed"
     },
     "i-icon": {
       display: "inline-block",
@@ -22094,12 +22173,10 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
       if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
         const maxHeight = getStringValue(mediaQuery.properties.maxHeight);
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxHeight"] = maxHeight;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = "auto";
       }
       if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
         const height = getStringValue(mediaQuery.properties.height);
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["height"] = height;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = "auto";
       }
       if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
         const width = getStringValue(mediaQuery.properties.width);
@@ -22139,7 +22216,7 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
         if (width !== void 0 && width !== null)
           styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["border"] = `${width || ""} ${style2 || ""} ${color || ""}!important`;
         if (radius) {
-          styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["borderRadius"] = "unset";
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["borderRadius"] = "inherit";
           styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderRadius"] = `${getSpacingValue(radius)} !important`;
         }
         if (bottom)
@@ -22154,6 +22231,22 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
       if (mediaQuery.properties.padding) {
         const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.padding;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["padding"] = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)} !important`;
+      }
+      if (mediaQuery.properties.overflow) {
+        const overflow = mediaQuery.properties.overflow;
+        if (typeof overflow === "string") {
+          styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflow"] = `${overflow} !important`;
+        } else {
+          const { x, y } = overflow || {};
+          if (x === y) {
+            styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflow"] = `${x} !important`;
+          } else {
+            if (x)
+              styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowX"] = `${x} !important`;
+            if (y)
+              styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflowY"] = `${y} !important`;
+          }
+        }
       }
     }
   }
@@ -22679,7 +22772,10 @@ var Modal = class extends Container {
       this.maxWidth && this.updateModal("maxWidth", this.maxWidth);
       this.minWidth && this.updateModal("minWidth", this.minWidth);
       this.minHeight && this.updateModal("minHeight", this.minHeight);
-      this.maxHeight && this.updateModal("maxHeight", this.maxHeight);
+      if (this.maxHeight) {
+        this.updateModal("maxHeight", this.maxHeight);
+        this.modalDiv.style.overflowY = "auto";
+      }
       let border = this.getAttribute("border", true);
       if (border) {
         this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, border);
@@ -26361,7 +26457,8 @@ cssRule("i-input", {
       background: Theme21.input.background,
       borderRadius: "inherit",
       fontSize: "inherit",
-      maxHeight: "100%"
+      maxHeight: "100%",
+      maxWidth: "100%"
     },
     ".clear-btn": {
       display: "none",
@@ -26387,14 +26484,11 @@ cssRule("i-input", {
 });
 
 // packages/input/src/input.ts
-var defaultCaptionWidth3 = 40;
 var defaultRows = 4;
+var CLEAR_BTN_WIDTH = 16;
 var Input = class extends Control {
   constructor(parent, options) {
-    super(parent, options, {
-      height: 25,
-      width: 100
-    });
+    super(parent, options, {});
     this._inputCallback = (value) => {
       this._value = value;
     };
@@ -26427,7 +26521,7 @@ var Input = class extends Control {
     if (this._inputControl) {
       this._inputControl.captionWidth = value;
     } else {
-      value = this._caption ? value || defaultCaptionWidth3 : 0;
+      value = value != null ? value : "auto";
       this._captionWidth = value;
       this.labelElm.style.width = value + "px";
     }
@@ -26457,6 +26551,13 @@ var Input = class extends Control {
         value = "";
       this._value = value;
       this.inputElm.value = value;
+      if (this.clearIconElm) {
+        if (this._showClearButton && value) {
+          this.clearIconElm.classList.add("active");
+        } else {
+          this.clearIconElm.classList.remove("active");
+        }
+      }
     }
   }
   get width() {
@@ -26464,11 +26565,12 @@ var Input = class extends Control {
   }
   set width(value) {
     this._width = value;
-    const clearBtnWidth = this._showClearButton ? this._clearBtnWidth : 0;
+    const clearBtnWidth = this._showClearButton ? this._clearBtnWidth : CLEAR_BTN_WIDTH;
     const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
     this.setPosition("width", value);
-    if (this.inputElm)
+    if (this.inputElm) {
       this.inputElm.style.width = `calc(100% - ${captionWidth} - ${clearBtnWidth}px)`;
+    }
   }
   get readOnly() {
     return this._readOnly;
@@ -26568,7 +26670,7 @@ var Input = class extends Control {
     const checked = this.getAttribute("checked", true);
     const enabled = this.getAttribute("enabled", true);
     const background = this.getAttribute("background", true);
-    this._clearBtnWidth = height - 2 || 0;
+    this._clearBtnWidth = height - 2 || CLEAR_BTN_WIDTH;
     switch (type) {
       case "checkbox":
         this._inputControl = new Checkbox(this, {
@@ -34757,7 +34859,6 @@ cssRule("i-tree-view", {
         },
         "i-tree-node.active > .i-tree-node_content": {
           backgroundColor: Theme28.action.selected,
-          border: `1px solid ${Theme28.colors.info.dark}`,
           color: Theme28.text.primary
         },
         ".i-tree-node_content:hover": {
@@ -36650,7 +36751,6 @@ var tableStyle = style({
       overflowX: "auto"
     },
     ".i-table-cell": {
-      padding: "1rem",
       overflowWrap: "break-word",
       position: "relative",
       textOverflow: "ellipsis",
@@ -36672,8 +36772,7 @@ var tableStyle = style({
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme34.background.paper,
-      color: Theme34.text.secondary
+      background: Theme34.action.hover
     },
     "&.i-table--bordered": {
       $nest: {
@@ -36757,6 +36856,30 @@ var tableStyle = style({
     }
   }
 });
+var getCustomStylesClass = (styles) => {
+  var _a;
+  let styleObj = {};
+  const { padding, background, font, cursor, height } = styles || {};
+  const { top = "1rem", right = "1rem", bottom = "1rem", left = "1rem" } = padding || {};
+  styleObj.padding = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)}`;
+  if (font) {
+    const { color = "", size = "", name = "", style: style2 = "", transform = "none", bold, weight = "" } = font;
+    styleObj.color = color;
+    styleObj.fontSize = size;
+    styleObj.fontFamily = name;
+    styleObj.fontStyle = style2;
+    styleObj.textTransform = transform;
+    styleObj.fontWeight = bold ? "bold" : `${weight}`;
+  }
+  if (background)
+    styleObj.background = ((_a = getBackground(background)) == null ? void 0 : _a.background) || "";
+  if (cursor)
+    styleObj.cursor = cursor;
+  if (height !== void 0 && height !== null) {
+    styleObj.height = getSpacingValue(height);
+  }
+  return style(styleObj);
+};
 var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
@@ -36913,12 +37036,10 @@ var TableColumn = class extends Control {
         this.key = this.options.key;
       if (this.options.onRenderCell)
         this.onRenderCell = this.options.onRenderCell.bind(this);
-      if (this.options.grid)
-        this.grid = this.options.grid;
-      if (this.options.display)
-        this.display = this.options.display;
       if (this.options.textAlign)
         this.textAlign = this.options.textAlign;
+      this.setAttributeToProperty("grid");
+      this.setAttributeToProperty("display");
       this.isHeader = this.options.header || false;
       this.visible = typeof this.options.visible === "boolean" ? this.options.visible : true;
       this.columnElm = this.createElement("div", this);
@@ -37016,6 +37137,8 @@ var Table = class extends Control {
     this._rows = [];
     this.firstLoad = true;
     this._sortConfig = {};
+    this._bodyStyle = "";
+    this._headingStyle = "";
   }
   get data() {
     return this._data;
@@ -37112,6 +37235,40 @@ var Table = class extends Control {
     this._mediaStyle = style2;
     this.classList.add(style2);
   }
+  get headingStyles() {
+    return this._headingStyles;
+  }
+  set headingStyles(value) {
+    this._headingStyles = value;
+    const newStyle = getCustomStylesClass(value);
+    if (this._headingStyle) {
+      const ths = this.querySelectorAll("th.i-table-cell");
+      for (let th of ths) {
+        if (th.classList.contains(this._headingStyle)) {
+          th.classList.remove(this._headingStyle);
+          th.classList.add(newStyle);
+        }
+      }
+    }
+    this._headingStyle = newStyle;
+  }
+  get bodyStyles() {
+    return this._bodyStyles;
+  }
+  set bodyStyles(value) {
+    this._bodyStyles = value;
+    const newStyle = getCustomStylesClass(value);
+    if (this._bodyStyle) {
+      const tds = this.querySelectorAll("td.i-table-cell");
+      for (let td of tds) {
+        if (td.classList.contains(this._bodyStyle)) {
+          td.classList.remove(this._bodyStyle);
+          td.classList.add(newStyle);
+        }
+      }
+    }
+    this._bodyStyle = newStyle;
+  }
   onPageChanged(source, value) {
     this.renderBody();
   }
@@ -37124,16 +37281,17 @@ var Table = class extends Control {
       this.onColumnSort(this, key2, value);
   }
   renderHeader() {
+    this._headingStyle = getCustomStylesClass(this.headingStyles);
     this.tHeadElm.innerHTML = "";
     const rowElm = this.createElement("tr", this.tHeadElm);
     if (this.hasExpandColumn) {
       const thElm = this.createElement("th", rowElm);
-      thElm.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
+      thElm.classList.add("i-table-cell", "i-table-cell--expand", "text-center", this._headingStyle);
     }
     this.columns.forEach((column, colIndex) => {
       const thElm = this.createElement("th", rowElm);
       column.visible === false && (thElm.style.display = "none");
-      thElm.classList.add("i-table-cell");
+      thElm.classList.add("i-table-cell", this._headingStyle);
       thElm.setAttribute("data-fieldname", column.fieldName || "action");
       if (column.width)
         thElm.style.width = typeof column.width === "number" ? `${column.width}px` : column.width;
@@ -37182,7 +37340,7 @@ var Table = class extends Control {
       if (expandIcon) {
         const expandTd = this.createElement("td", rowElm);
         expandTd.appendChild(expandIcon(this, false));
-        expandTd.classList.add("i-table-cell", "i-table-cell--expand", "text-center");
+        expandTd.classList.add("i-table-cell", "i-table-cell--expand", "text-center", this._bodyStyle);
       }
     }
     let row = [];
@@ -37196,7 +37354,7 @@ var Table = class extends Control {
       });
       const tdElm = this.createElement("td", rowElm);
       column.visible === false && (tdElm.style.display = "none");
-      tdElm.classList.add("i-table-cell");
+      tdElm.classList.add("i-table-cell", this._bodyStyle);
       tdElm.setAttribute("data-index", colIndex.toString());
       tdElm.setAttribute("data-fieldname", column.fieldName || "action");
       if (column.width)
@@ -37215,6 +37373,7 @@ var Table = class extends Control {
   }
   renderBody() {
     var _a, _b;
+    this._bodyStyle = getCustomStylesClass(this.bodyStyles);
     this.tBodyElm.innerHTML = "";
     if (this.hasData) {
       const currentPage = ((_a = this.pagination) == null ? void 0 : _a.currentPage) || 1;
@@ -37287,6 +37446,8 @@ var Table = class extends Control {
         this.onColumnSort = this.options.onColumnSort;
       if ((_c = this.options) == null ? void 0 : _c.onCellClick)
         this.onCellClick = this.options.onCellClick;
+      this.headingStyles = this.getAttribute("headingStyles", true);
+      this.bodyStyles = this.getAttribute("bodyStyles", true);
       this.wrapperElm = this.createElement("div", this);
       this.wrapperElm.classList.add("i-table-container");
       this._heading = this.getAttribute("heading", true, false);
