@@ -15914,15 +15914,19 @@ var Colors = {
 var defaultTheme = {
   action: {
     active: "rgba(0, 0, 0, 0.54)",
+    activeBackground: "rgba(0, 0, 0, 0.12)",
     activeOpacity: 0.12,
     disabled: "rgba(0, 0, 0, 0.26)",
     disabledBackground: "rgba(0, 0, 0, 0.12)",
     disabledOpacity: 0.38,
-    focus: "rgba(0, 0, 0, 0.12)",
+    focus: "rgba(0, 0, 0, 0.26)",
+    focusBackground: "rgba(0, 0, 0, 0.12)",
     focusOpacity: 0.12,
-    hover: "rgba(0, 0, 0, 0.04)",
+    hover: "rgba(0, 0, 0, 0.12)",
+    hoverBackground: "rgba(0, 0, 0, 0.04)",
     hoverOpacity: 0.04,
-    selected: "rgba(0, 0, 0, 0.08)",
+    selected: "rgba(0, 0, 0, 0.14)",
+    selectedBackground: "rgba(0, 0, 0, 0.08)",
     selectedOpacity: 0.08
   },
   background: {
@@ -15932,7 +15936,7 @@ var defaultTheme = {
     modal: "#ffffff",
     gradient: "linear-gradient(90deg, #a8327f 0%, #d4626a 100%)"
   },
-  breakboints: {
+  breakpoints: {
     xs: 0,
     sm: 600,
     md: 900,
@@ -16021,16 +16025,20 @@ var defaultTheme = {
 var darkTheme = {
   action: {
     active: "#fff",
+    activeBackground: "rgba(0, 0, 0, 0.5)",
     activeOpacity: 0.12,
     disabled: "rgba(255,255,255,0.3)",
     disabledBackground: "rgba(255,255,255, 0.12)",
     disabledOpacity: 0.38,
-    focus: "rgba(255,255,255, 0.12)",
+    focus: "rgba(255,255,255, 0.3)",
+    focusBackground: "rgba(255,255,255,0.12)",
     focusOpacity: 0.12,
-    hover: "rgba(255,255,255,0.08)",
+    hover: "rgba(255,255,255,0.3)",
+    hoverBackground: "rgba(255,255,255,0.08)",
     hoverOpacity: 0.08,
-    selected: "rgba(255,255,255, 0.16)",
-    selectedOpacity: 0.16
+    selected: "rgba(255,255,255, 0.6)",
+    selectedOpacity: 0.16,
+    selectedBackground: "rgba(255,255,255, 0.16)"
   },
   background: {
     default: "#303030",
@@ -16039,7 +16047,7 @@ var darkTheme = {
     modal: "#192046",
     gradient: "linear-gradient(90deg, #a8327f 0%, #d4626a 100%)"
   },
-  breakboints: {
+  breakpoints: {
     xs: 0,
     sm: 600,
     md: 900,
@@ -17811,7 +17819,7 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
         if (mediaQuery.properties.right !== void 0 && mediaQuery.properties.right !== null) {
           styleObj["$nest"][mediaQueryRule]["right"] = `${getSpacingValue(mediaQuery.properties.right)} !important`;
         }
-        if (mediaQuery.properties.bottom) {
+        if (mediaQuery.properties.bottom !== void 0 && mediaQuery.properties.bottom !== null) {
           styleObj["$nest"][mediaQueryRule]["bottom"] = `${getSpacingValue(mediaQuery.properties.bottom)} !important`;
         }
         if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
@@ -17841,6 +17849,11 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
 var getControlMediaQueriesStyleClass = (mediaQueries, props) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries, props);
   return style(styleObj);
+};
+var getOpacityStyleClass = (opacity2) => {
+  return style({
+    opacity: opacity2
+  });
 };
 
 // packages/tooltip/src/style/tooltip.css.ts
@@ -18581,6 +18594,7 @@ var Control = class extends Component {
     this._controls = [];
     this._enabled = true;
     this._visible = true;
+    this.propertyClassMap = {};
     this.parent = parent;
   }
   static async create(options, parent, defaults) {
@@ -19274,10 +19288,11 @@ var Control = class extends Component {
     }
   }
   get zIndex() {
-    return this.style.zIndex;
+    return this._zIndex;
   }
   set zIndex(value) {
-    this.style.zIndex = "" + value;
+    this.style.zIndex = value + "";
+    this._zIndex = value + "";
   }
   get lineHeight() {
     return this._lineHeight;
@@ -19380,10 +19395,16 @@ var Control = class extends Component {
     this._anchor = data;
   }
   get opacity() {
-    return this.style.opacity;
+    return this._opacity;
   }
   set opacity(value) {
-    this.style.opacity = typeof value === "string" ? value : `${value}`;
+    this._opacity = typeof value === "string" ? value : `${value}`;
+    if (this._opacity) {
+      const style2 = getOpacityStyleClass(value);
+      this.setStyle("opacity", style2);
+    } else {
+      this.removeStyle("opacity");
+    }
   }
   get cursor() {
     return this.style.cursor;
@@ -19416,6 +19437,18 @@ var Control = class extends Component {
     this._mediaStyle && this.classList.remove(this._mediaStyle);
     this._mediaStyle = style2;
     this.classList.add(style2);
+  }
+  removeStyle(propertyName) {
+    let style2 = this.propertyClassMap[propertyName];
+    if (style2)
+      this.classList.remove(style2);
+  }
+  setStyle(propertyName, value) {
+    this.removeStyle(propertyName);
+    if (value) {
+      this.propertyClassMap[propertyName] = value;
+      this.classList.add(value);
+    }
   }
 };
 var ContainerResizer = class {
@@ -19589,6 +19622,11 @@ function customElements2(tagName, properties) {
 }
 function customModule(target) {
   _currentDefineModule = target;
+}
+function setAttributeToProperty(element, propertyName) {
+  const prop = element.getAttribute(propertyName, true);
+  if (prop)
+    element[propertyName] = prop;
 }
 
 // packages/application/src/event-bus.ts
@@ -20767,6 +20805,17 @@ var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
   }
   return style(styleObj);
 };
+var getHoverStyleClass = (hover) => {
+  return style({
+    $nest: {
+      "&:hover": {
+        backgroundColor: hover.backgroundColor,
+        color: hover.fontColor,
+        opacity: hover.opacity
+      }
+    }
+  });
+};
 
 // packages/layout/src/stack.ts
 var StackLayout = class extends Container {
@@ -20785,7 +20834,7 @@ var StackLayout = class extends Container {
     this._direction = value;
     if (value) {
       let style2 = getStackDirectionStyleClass(value);
-      this.classList.add(style2);
+      this.setStyle("direction", style2);
     }
   }
   get justifyContent() {
@@ -20795,16 +20844,16 @@ var StackLayout = class extends Container {
     this._justifyContent = value || "start";
     switch (this._justifyContent) {
       case "start":
-        this.classList.add(justifyContentStartStyle);
+        this.setStyle("justifyContent", justifyContentStartStyle);
         break;
       case "center":
-        this.classList.add(justifyContentCenterStyle);
+        this.setStyle("justifyContent", justifyContentCenterStyle);
         break;
       case "end":
-        this.classList.add(justifyContentEndStyle);
+        this.setStyle("justifyContent", justifyContentEndStyle);
         break;
       case "space-between":
-        this.classList.add(justifyContentSpaceBetweenStyle);
+        this.setStyle("justifyContent", justifyContentSpaceBetweenStyle);
         break;
     }
   }
@@ -20815,16 +20864,16 @@ var StackLayout = class extends Container {
     this._alignItems = value || "stretch";
     switch (this._alignItems) {
       case "stretch":
-        this.classList.add(alignItemsStretchStyle);
+        this.setStyle("alignItems", alignItemsStretchStyle);
         break;
       case "start":
-        this.classList.add(alignItemsStartStyle);
+        this.setStyle("alignItems", alignItemsStartStyle);
         break;
       case "center":
-        this.classList.add(alignItemsCenterStyle);
+        this.setStyle("alignItems", alignItemsCenterStyle);
         break;
       case "end":
-        this.classList.add(alignItemsEndStyle);
+        this.setStyle("alignItems", alignItemsEndStyle);
         break;
     }
   }
@@ -20835,19 +20884,19 @@ var StackLayout = class extends Container {
     this._alignSelf = value || "auto";
     switch (this._alignSelf) {
       case "auto":
-        this.classList.add(alignSelfAutoStyle);
+        this.setStyle("alignSelf", alignSelfAutoStyle);
         break;
       case "stretch":
-        this.classList.add(alignSelfStretchStyle);
+        this.setStyle("alignSelf", alignSelfStretchStyle);
         break;
       case "start":
-        this.classList.add(alignSelfStartStyle);
+        this.setStyle("alignSelf", alignSelfStartStyle);
         break;
       case "center":
-        this.classList.add(alignSelfCenterStyle);
+        this.setStyle("alignSelf", alignSelfCenterStyle);
         break;
       case "end":
-        this.classList.add(alignSelfEndStyle);
+        this.setStyle("alignSelf", alignSelfEndStyle);
         break;
     }
   }
@@ -20881,20 +20930,40 @@ var StackLayout = class extends Container {
     this._mediaStyle = style2;
     this.classList.add(style2);
   }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
+  get hover() {
+    return this._hover;
+  }
+  set hover(value) {
+    this._hover = value;
+    if (this._hover) {
+      const hoverStyle = getHoverStyleClass(this._hover);
+      this.setStyle("hover", hoverStyle);
+    } else {
+      this.removeStyle("hover");
+    }
+  }
+  removeStyle(propertyName) {
+    let style2 = this.propertyClassMap[propertyName];
+    if (style2)
+      this.classList.remove(style2);
+  }
+  setStyle(propertyName, value) {
+    this.removeStyle(propertyName);
+    if (value) {
+      this.propertyClassMap[propertyName] = value;
+      this.classList.add(value);
+    }
   }
   init() {
     super.init();
-    this.setAttributeToProperty("direction");
-    this.setAttributeToProperty("justifyContent");
-    this.setAttributeToProperty("alignItems");
-    this.setAttributeToProperty("alignSelf");
-    this.setAttributeToProperty("gap");
-    this.setAttributeToProperty("wrap");
-    this.setAttributeToProperty("mediaQueries");
+    setAttributeToProperty(this, "direction");
+    setAttributeToProperty(this, "justifyContent");
+    setAttributeToProperty(this, "alignItems");
+    setAttributeToProperty(this, "alignSelf");
+    setAttributeToProperty(this, "gap");
+    setAttributeToProperty(this, "wrap");
+    setAttributeToProperty(this, "mediaQueries");
+    setAttributeToProperty(this, "hover");
   }
 };
 StackLayout = __decorateClass([
@@ -20918,16 +20987,11 @@ var HStack = class extends StackLayout {
     this._verticalAlignment = value || "stretch";
     this.alignItems = value;
   }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
   init() {
     super.init();
     this.direction = "horizontal";
-    this.setAttributeToProperty("horizontalAlignment");
-    this.setAttributeToProperty("verticalAlignment");
+    setAttributeToProperty(this, "horizontalAlignment");
+    setAttributeToProperty(this, "verticalAlignment");
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -20956,16 +21020,11 @@ var VStack = class extends StackLayout {
     this._verticalAlignment = value || "start";
     this.justifyContent = value;
   }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
   init() {
     super.init();
     this.direction = "vertical";
-    this.setAttributeToProperty("horizontalAlignment");
-    this.setAttributeToProperty("verticalAlignment");
+    setAttributeToProperty(this, "horizontalAlignment");
+    setAttributeToProperty(this, "verticalAlignment");
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -20982,8 +21041,33 @@ var Panel = class extends Container {
   constructor(parent, options) {
     super(parent, options);
   }
+  get hover() {
+    return this._hover;
+  }
+  set hover(value) {
+    this._hover = value;
+    if (this._hover) {
+      const hoverStyle = getHoverStyleClass(this._hover);
+      this.setStyle("hover", hoverStyle);
+    } else {
+      this.removeStyle("hover");
+    }
+  }
+  removeStyle(propertyName) {
+    let style2 = this.propertyClassMap[propertyName];
+    if (style2)
+      this.classList.remove(style2);
+  }
+  setStyle(propertyName, value) {
+    this.removeStyle(propertyName);
+    if (value) {
+      this.propertyClassMap[propertyName] = value;
+      this.classList.add(value);
+    }
+  }
   init() {
     super.init();
+    setAttributeToProperty(this, "hover");
     this.classList.add(panelStyle);
     if (this.dock) {
       this.classList.add(overflowStyle);
@@ -22043,62 +22127,76 @@ Button = __decorateClass([
 
 // packages/modal/src/style/modal.css.ts
 var Theme10 = theme_exports.ThemeVars;
-var overlayStyle = style({
-  backgroundColor: "rgba(12, 18, 52, 0.7)",
-  position: "fixed",
-  left: 0,
-  top: 0,
-  width: "100%",
-  height: "100%",
-  opacity: 0,
-  visibility: "hidden",
-  zIndex: 1e3,
-  transition: "visibility 0s linear .25s, opacity .25s",
-  $nest: {
-    "&.show": {
-      opacity: "1",
-      visibility: "visible",
-      transition: "visibility 0s linear, opacity .25s"
+var getOverlayStyle = () => {
+  return style({
+    backgroundColor: "rgba(12, 18, 52, 0.7)",
+    position: "fixed",
+    left: 0,
+    top: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    visibility: "hidden",
+    zIndex: 1e3,
+    transition: "visibility 0s linear .25s, opacity .25s",
+    $nest: {
+      "&.show": {
+        opacity: "1",
+        visibility: "visible",
+        transition: "visibility 0s linear, opacity .25s"
+      }
     }
-  }
-});
-var wrapperStyle = style({
-  position: "fixed",
-  left: 0,
-  top: 0,
-  width: "100%",
-  height: "100%",
-  opacity: 0,
-  visibility: "hidden",
-  transform: "scale(0.8)",
-  transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-  zIndex: 1e3,
-  overflow: "auto"
-});
-var noBackdropStyle = style({
-  position: "inherit",
-  top: 0,
-  left: 0,
-  opacity: 0,
-  visibility: "hidden",
-  transform: "scale(0.8)",
-  transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-  zIndex: 1e3,
-  overflow: "auto",
-  width: "100%",
-  maxWidth: "inherit",
-  $nest: {
-    ".modal": {
-      margin: "0"
+  });
+};
+var getWrapperStyle = () => {
+  return style({
+    position: "fixed",
+    left: 0,
+    top: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    visibility: "hidden",
+    transform: "scale(0.8)",
+    transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
+    zIndex: 1e3,
+    overflow: "auto",
+    $nest: {
+      "&.show": {
+        opacity: "1",
+        visibility: "visible",
+        transform: "scale(1)",
+        transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
+      }
     }
-  }
-});
-var visibleStyle = style({
-  opacity: "1",
-  visibility: "visible",
-  transform: "scale(1)",
-  transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
-});
+  });
+};
+var getNoBackdropStyle = () => {
+  return style({
+    position: "inherit",
+    top: 0,
+    left: 0,
+    opacity: 0,
+    visibility: "hidden",
+    transform: "scale(0.8)",
+    transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
+    zIndex: 1e3,
+    overflow: "auto",
+    width: "100%",
+    maxWidth: "inherit",
+    $nest: {
+      ".modal": {
+        margin: "0"
+      },
+      "&.show": {
+        opacity: "1",
+        visibility: "visible",
+        transform: "scale(1)",
+        transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
+      }
+    }
+  });
+};
 var modalStyle = style({
   fontFamily: "Helvetica",
   fontSize: "14px",
@@ -22270,14 +22368,15 @@ var Modal = class extends Container {
     this.boundHandleModalMouseUp = this.handleModalMouseUp.bind(this);
   }
   get visible() {
-    var _a;
-    return ((_a = this.wrapperDiv) == null ? void 0 : _a.classList.contains(visibleStyle)) || false;
+    return this._visible;
   }
   set visible(value) {
     var _a, _b;
     this.positionAtChildFixed(value);
     if (value) {
-      this.wrapperDiv.classList.add(visibleStyle);
+      this._visible = true;
+      this.style.display = "block";
+      this.wrapperDiv.classList.add("show");
       this.dispatchEvent(showEvent);
       if (this.showBackdrop) {
         this.overlayDiv.classList.add("show");
@@ -22292,7 +22391,9 @@ var Modal = class extends Container {
       document.addEventListener("mousedown", this.boundHandleModalMouseDown);
       document.addEventListener("mouseup", this.boundHandleModalMouseUp);
     } else {
-      this.wrapperDiv.classList.remove(visibleStyle);
+      this._visible = false;
+      this.style.display = "none";
+      this.wrapperDiv.classList.remove("show");
       this.overlayDiv.classList.remove("show");
       if (this.showBackdrop) {
         const parentModal = (_b = this.parentElement) == null ? void 0 : _b.closest("i-modal");
@@ -22356,13 +22457,15 @@ var Modal = class extends Container {
   set showBackdrop(value) {
     this._showBackdrop = typeof value === "boolean" ? value : true;
     if (this._showBackdrop) {
-      this.wrapperDiv.classList.add(wrapperStyle);
+      const wrapperStyle = getWrapperStyle();
+      this.setTargetStyle(this.wrapperDiv, "showBackdrop", wrapperStyle);
       this.style.position = "unset";
     } else {
       this.style.position = "absolute";
       this.style.left = "0px";
       this.style.top = "0px";
-      this.wrapperDiv.classList.add(noBackdropStyle);
+      const noBackdropStyle = getNoBackdropStyle();
+      this.setTargetStyle(this.wrapperDiv, "showBackdrop", noBackdropStyle);
     }
   }
   get item() {
@@ -22372,6 +22475,15 @@ var Modal = class extends Container {
     if (value instanceof Control) {
       this.modalDiv.innerHTML = "";
       value && this.modalDiv.appendChild(value);
+    }
+  }
+  get body() {
+    return this.modalDiv.children[0];
+  }
+  set body(value) {
+    if (value instanceof Control) {
+      this.bodyDiv.innerHTML = "";
+      value && this.bodyDiv.appendChild(value);
     }
   }
   get position() {
@@ -22563,7 +22675,7 @@ var Modal = class extends Container {
     let max;
     switch (placement) {
       case "center":
-        left = (parentCoords.width - this.modalDiv.offsetWidth) / 2;
+        left = (parentCoords.width - this.wrapperDiv.offsetWidth) / 2;
         top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
         break;
       case "top":
@@ -22576,7 +22688,7 @@ var Modal = class extends Container {
       case "topRight":
         if (this.isChildFixed) {
           top = this.getParentOccupiedTop();
-          left = parentCoords.width - this.getParentOccupiedRight() - this.modalDiv.offsetWidth;
+          left = parentCoords.width - this.getParentOccupiedRight() - this.wrapperDiv.offsetWidth;
           break;
         }
         if (parentCoords.top - this.modalDiv.offsetHeight >= 0) {
@@ -22601,7 +22713,7 @@ var Modal = class extends Container {
       case "bottomRight":
         if (this.isChildFixed) {
           top = parentCoords.height;
-          left = parentCoords.width - this.modalDiv.offsetWidth;
+          left = parentCoords.width - this.wrapperDiv.offsetWidth;
           break;
         }
         if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
@@ -22624,7 +22736,7 @@ var Modal = class extends Container {
         max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
         top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
         top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-        left = -this.modalDiv.offsetWidth - 8;
+        left = -this.wrapperDiv.offsetWidth - 8;
         break;
     }
     if (this.isChildFixed) {
@@ -22635,16 +22747,16 @@ var Modal = class extends Container {
       return { top, left };
     }
     if (placement === "topRight" || placement === "bottomRight") {
-      if (parentCoords.right - this.modalDiv.offsetWidth >= 0) {
-        left = parentCoords.width - this.modalDiv.offsetWidth;
+      if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
+        left = parentCoords.width - this.wrapperDiv.offsetWidth;
       } else {
         left = -parentCoords.left;
       }
     } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
-      if (window.innerWidth >= parentCoords.left + this.modalDiv.offsetWidth) {
+      if (window.innerWidth >= parentCoords.left + this.wrapperDiv.offsetWidth) {
         left = 0;
       } else {
-        left = Math.min(parentCoords.width - this.modalDiv.offsetWidth, window.innerWidth - parentCoords.left - this.modalDiv.offsetWidth);
+        left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
       }
     }
     return { top, left };
@@ -22676,6 +22788,7 @@ var Modal = class extends Container {
       this.modalDiv.style[name] = value + "px";
     else
       this.modalDiv.style[name] = value;
+    this.style[name] = "";
   }
   refresh() {
     super.refresh(true);
@@ -22700,6 +22813,13 @@ var Modal = class extends Container {
     this._width = value;
     this.updateModal("width", value);
   }
+  get height() {
+    return !isNaN(this._height) ? this._height : this.offsetHeight;
+  }
+  set height(value) {
+    this._height = value;
+    this.updateModal("height", value);
+  }
   get border() {
     return this._border;
   }
@@ -22720,6 +22840,31 @@ var Modal = class extends Container {
   }
   set boxShadow(value) {
     (this.showBackdrop ? this.modalDiv : this.wrapperDiv).style.boxShadow = value;
+  }
+  get overflow() {
+    if (!this._overflow) {
+      this._overflow = new Overflow(this.modalDiv);
+    }
+    return this._overflow;
+  }
+  set overflow(value) {
+    if (!this._overflow) {
+      this._overflow = new Overflow(this.modalDiv, value);
+    } else {
+      this._overflow.setOverflowStyle(value);
+    }
+  }
+  removeTargetStyle(target, propertyName) {
+    let style2 = this.propertyClassMap[propertyName];
+    if (style2)
+      target.classList.remove(style2);
+  }
+  setTargetStyle(target, propertyName, value) {
+    this.removeTargetStyle(target, propertyName);
+    if (value) {
+      this.propertyClassMap[propertyName] = value;
+      target.classList.add(value);
+    }
   }
   init() {
     var _a;
@@ -22743,11 +22888,13 @@ var Modal = class extends Container {
         closeIconAttr.fill = closeIconAttr.fill || Theme11.colors.primary.main;
         this.closeIcon = new Icon(void 0, closeIconAttr);
       }
+      this.bodyDiv = this.createElement("div", this.modalDiv);
       while (this.childNodes.length > 1) {
-        this.modalDiv.appendChild(this.childNodes[0]);
+        this.bodyDiv.appendChild(this.childNodes[0]);
       }
       this.overlayDiv = this.createElement("div", this);
       this.prepend(this.overlayDiv);
+      const overlayStyle = getOverlayStyle();
       this.overlayDiv.classList.add(overlayStyle);
       this.overlayDiv.classList.add("modal-overlay");
       this.modalDiv.classList.add(modalStyle);
@@ -22769,13 +22916,21 @@ var Modal = class extends Container {
       if (itemAttr)
         this.item = itemAttr;
       super.init();
-      this.maxWidth && this.updateModal("maxWidth", this.maxWidth);
-      this.minWidth && this.updateModal("minWidth", this.minWidth);
-      this.minHeight && this.updateModal("minHeight", this.minHeight);
-      if (this.maxHeight) {
+      const maxWidth = this.getAttribute("maxWidth", true);
+      if (maxWidth !== void 0)
+        this.updateModal("maxWidth", this.maxWidth);
+      const minHeight = this.getAttribute("minHeight", true);
+      if (minHeight !== void 0)
+        this.updateModal("minHeight", this.minHeight);
+      const minWidth = this.getAttribute("minWidth", true);
+      if (minWidth !== void 0)
+        this.updateModal("minWidth", this.minWidth);
+      const height = this.getAttribute("height", true);
+      if (height !== void 0)
+        this.updateModal("height", this.height);
+      const maxHeight = this.getAttribute("maxHeight", true);
+      if (maxHeight !== void 0)
         this.updateModal("maxHeight", this.maxHeight);
-        this.modalDiv.style.overflowY = "auto";
-      }
       let border = this.getAttribute("border", true);
       if (border) {
         this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, border);
@@ -22788,6 +22943,10 @@ var Modal = class extends Container {
       let boxShadow = this.getAttribute("boxShadow", true);
       if (boxShadow)
         this.boxShadow = boxShadow;
+      let overflow = this.getAttribute("overflow", true);
+      if (overflow) {
+        this._overflow = new Overflow(this.modalDiv, overflow);
+      }
       this.mediaQueries = this.getAttribute("mediaQueries", true, []);
     }
   }
@@ -26434,6 +26593,7 @@ cssRule("i-input", {
   display: "inline-block",
   fontFamily: Theme21.typography.fontFamily,
   fontSize: Theme21.typography.fontSize,
+  background: Theme21.input.background,
   "$nest": {
     "> span": {
       overflow: "hidden"
@@ -26565,11 +26725,15 @@ var Input = class extends Control {
   }
   set width(value) {
     this._width = value;
-    const clearBtnWidth = this._showClearButton ? this._clearBtnWidth : CLEAR_BTN_WIDTH;
+    const clearBtnWidth = this._showClearButton ? this._clearBtnWidth : 0;
     const captionWidth = typeof this._captionWidth === "string" ? this._captionWidth : `${this._captionWidth}px`;
     this.setPosition("width", value);
     if (this.inputElm) {
-      this.inputElm.style.width = `calc(100% - ${captionWidth} - ${clearBtnWidth}px)`;
+      if (captionWidth === "auto") {
+        this.inputElm.style.width = `calc(100% - ${clearBtnWidth}px)`;
+      } else {
+        this.inputElm.style.width = `calc(100% - ${captionWidth} - ${clearBtnWidth}px)`;
+      }
     }
   }
   get readOnly() {
@@ -26652,6 +26816,18 @@ var Input = class extends Control {
   }
   get border() {
     return super.border;
+  }
+  set maxLength(value) {
+    this._maxLength = value;
+    if (this.inputElm) {
+      if (value)
+        this.inputElm.maxLength = value;
+      else
+        this.inputElm.removeAttribute("maxLength");
+    }
+  }
+  get maxLength() {
+    return this._maxLength;
   }
   set onClosed(callback) {
     this._onClosed = callback;
@@ -26872,6 +27048,9 @@ var Input = class extends Control {
     if (this.onClearClick)
       this.onClearClick(this);
   }
+  focus() {
+    this.inputElm.focus();
+  }
   init() {
     if (!this.inputType) {
       this._placeholder = this.getAttribute("placeholder", true);
@@ -26879,10 +27058,11 @@ var Input = class extends Control {
       this._createInputElement(this.inputType);
       this.multiline = this.getAttribute("multiline", true);
       this.caption = this.getAttribute("caption", true);
-      this.captionWidth = parseInt(this.getAttribute("captionWidth", true));
+      this.captionWidth = this.getAttribute("captionWidth", true);
       this.value = this.getAttribute("value", true);
       this.readOnly = this.getAttribute("readOnly", true, false);
       this.resize = this.getAttribute("resize", true, "none");
+      this.maxLength = this.getAttribute("maxLength", true);
       if (this.value && this.clearIconElm)
         this.clearIconElm.classList.add("active");
       super.init();
@@ -28839,8 +29019,9 @@ var Application = class {
         }
         ;
         let loaded = await this.loadPackage(packageName, modulePath || "*");
-        if (loaded)
+        if (loaded) {
           result = document.createElement(elementName);
+        }
       }
       ;
       if (result) {
@@ -29197,7 +29378,8 @@ var Application = class {
     ;
     let script = await this.getScript(packageModulePath);
     if (script) {
-      return this.dynamicImportPackage(script, packageName, packageModulePath);
+      const importedPackage = await this.dynamicImportPackage(script, packageName, packageModulePath);
+      return importedPackage;
     }
     ;
     return null;
@@ -33514,7 +33696,9 @@ var Markdown = class extends Control {
     let renderer = this.getRenderer();
     this.marked.use({ renderer });
     if (text) {
-      text = await this.marked.parse(text);
+      text = await this.marked.parse(text, {
+        breaks: true
+      });
       text = await this.processText(text);
     } else {
       text = "";
@@ -34003,14 +34187,15 @@ var meunItemStyle = style({
       textOverflow: "ellipsis",
       lineHeight: "36px",
       width: "100%",
+      justifyContent: "var(--custom-text-align, left)",
       alignItems: "center"
     },
     "&:not(.hide-arrow-icon) .menu-item.has-children": {
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme27.action.hover,
-      color: Theme27.text.primary
+      background: Theme27.action.hoverBackground,
+      color: Theme27.action.hover
     },
     ".menu-item.menu-active > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -34296,6 +34481,7 @@ ContextMenu = __decorateClass([
 var MenuItem = class extends Control {
   constructor(parent, options) {
     super(parent, options);
+    this._textAlign = "left";
   }
   add(options) {
     const newItem = new MenuItem(this, options);
@@ -34370,8 +34556,24 @@ var MenuItem = class extends Control {
     this.renderArrowIcon();
     this.renderSubMenuItem();
   }
+  get textAlign() {
+    return this._textAlign;
+  }
+  set textAlign(value) {
+    this._textAlign = value;
+    this.style.setProperty("--custom-text-align", value);
+  }
   set level(value) {
     this.updateLevel(value);
+  }
+  get padding() {
+    return this._padding;
+  }
+  set padding(value) {
+    if (!this._padding)
+      this._padding = new SpaceValue(this.itemWrapperElm, value, "padding");
+    else
+      this._padding.update(value);
   }
   get selected() {
     return this.itemWrapperElm.classList.contains("menu-selected");
@@ -34586,9 +34788,17 @@ var MenuItem = class extends Control {
       this.itemElm = this.createElement("li", this);
       this.itemWrapperElm = this.createElement("div", this.itemElm);
       this.itemWrapperElm.classList.add("menu-item");
+      if (this._linkTo.padding) {
+        const padding = this._linkTo.padding;
+        this._padding = new SpaceValue(this.itemWrapperElm, padding, "padding");
+        this._linkTo.style.padding = "";
+      }
       this.captionElm = this.createElement("span", this.itemWrapperElm);
       this.level = this.getAttribute("level", true, 0);
       this.title = this.getAttribute("title", true);
+      const textAlign = this.getAttribute("textAlign", true);
+      if (textAlign)
+        this.textAlign = textAlign;
       const link = this.getAttribute("link", true);
       if (link) {
         link.target = link.target || "_self";
@@ -34769,7 +34979,39 @@ var Module = class extends Container {
   }
   onHide() {
   }
+  disconnectedCallback() {
+    delete Module._modalMap[this.uuid];
+    super.disconnectedCallback();
+  }
+  openModal(options) {
+    let modal = Module._modalMap[this.uuid];
+    if (modal) {
+      modal.zIndex = (options == null ? void 0 : options.zIndex) || 10;
+      modal.visible = true;
+      return modal;
+    }
+    modal = new Modal(void 0, {
+      closeIcon: {
+        name: "times"
+      },
+      border: { radius: 10 },
+      ...options
+    });
+    document.body.appendChild(modal);
+    Module._modalMap[this.uuid] = modal;
+    modal.body = this;
+    modal.zIndex = (options == null ? void 0 : options.zIndex) || 10;
+    modal.visible = true;
+    return modal;
+  }
+  closeModal() {
+    let modal = Module._modalMap[this.uuid];
+    if (modal) {
+      modal.visible = false;
+    }
+  }
 };
+Module._modalMap = {};
 Module = __decorateClass([
   customElements2("i-module")
 ], Module);
@@ -34858,11 +35100,17 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme28.action.selected,
-          color: Theme28.text.primary
+          backgroundColor: Theme28.action.selectedBackground,
+          color: Theme28.action.selected,
+          $nest: {
+            "> .i-tree-node_label": {
+              color: Theme28.action.selected
+            }
+          }
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme28.action.hover,
+          backgroundColor: Theme28.action.hoverBackground,
+          color: Theme28.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -35309,6 +35557,13 @@ var TreeNode = class extends Control {
       this._iconRightElm = Icon.create(defaultIcon3);
     return this._iconRightElm;
   }
+  get height() {
+    return !isNaN(this._height) ? this._height : this.offsetHeight;
+  }
+  set height(value) {
+    this._height = value;
+    this._wrapperElm.style.height = typeof value === "string" ? value : `${value}px`;
+  }
   handleChange(target, oldValue, newValue) {
     debugger;
     const fn = this.rootParent.onChange;
@@ -35316,7 +35571,6 @@ var TreeNode = class extends Control {
       fn(this.rootParent, target, oldValue, newValue);
   }
   renderEditMode() {
-    console.log("renderEditMode");
     const captionInput = this.createElement("input");
     captionInput.value = this.caption;
     captionInput.classList.add("text-input");
@@ -36772,7 +37026,8 @@ var tableStyle = style({
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme34.action.hover
+      background: Theme34.action.hoverBackground,
+      color: Theme34.action.hover
     },
     "&.i-table--bordered": {
       $nest: {
@@ -37407,7 +37662,7 @@ var Table = class extends Control {
       const rowElm = this.createElement("tr", this.tBodyElm);
       const tdElm = this.createElement("td", rowElm);
       tdElm.setAttribute("colspan", `${this.columnLength + (this.hasExpandColumn ? 1 : 0)}`);
-      tdElm.classList.add("text-center");
+      tdElm.classList.add("i-table-cell", "text-center", this._bodyStyle);
       if (this.onRenderEmptyTable) {
         this.onRenderEmptyTable(this);
       } else {
