@@ -1142,7 +1142,7 @@ table.ProseMirror-selectednode {
 .toastui-editor-contents table {
   border: 1px solid rgba(0, 0, 0, 0.1);
   margin: 12px 0 14px;
-  color: #222;
+  /* color: #222; */
   width: auto;
   border-collapse: collapse;
   box-sizing: border-box;
@@ -1188,7 +1188,7 @@ table.ProseMirror-selectednode {
   list-style-type: none;
   padding-left: 24px;
   margin: 6px 0 10px;
-  color: #222;
+  /* color: #222; */
 }
 
 .toastui-editor-contents ol {
@@ -1461,7 +1461,7 @@ table.ProseMirror-selectednode {
 }
 
 .toastui-editor-contents th.toastui-editor-md-preview-highlight {
-  color: #222;
+  /* color: #222; */
 }
 
 .toastui-editor-md-heading1 {
@@ -1535,7 +1535,7 @@ table.ProseMirror-selectednode {
 }
 
 .toastui-editor-md-table .toastui-editor-md-table-cell {
-  color: #222;
+  /* color: #222; */
 }
 
 .toastui-editor-md-link.toastui-editor-md-link-desc.toastui-editor-md-marked-text,

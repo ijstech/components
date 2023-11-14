@@ -4021,6 +4021,7 @@ declare module "packages/base/src/control" {
         bottom?: number | string;
         zIndex?: string | number;
         maxHeight?: string | number;
+        maxWidth?: string | number;
         overflow?: IOverflow | OverflowType;
     }
     export type IControlMediaQuery = IMediaQuery<IControlMediaQueryProps>;
@@ -4767,17 +4768,14 @@ declare module "packages/link/src/link" {
 declare module "packages/link/src/index" {
     export { Link, LinkElement } from "packages/link/src/link";
 }
-declare module "packages/label/src/style/label.css" { }
-declare module "packages/label/src/label" {
+declare module "packages/text/src/style/text.css" { }
+declare module "packages/text/src/text" {
     import { Control, ControlElement, DisplayType } from "@ijstech/components/base";
-    import { Link, LinkElement } from "packages/link/src/index";
-    import "packages/label/src/style/label.css";
+    import "packages/text/src/style/text.css";
     type WordBreakType = 'normal' | 'break-all' | 'keep-all' | 'break-word' | 'inherit' | 'initial' | 'revert' | 'unset';
     type OverflowWrapType = 'normal' | 'break-word' | 'anywhere' | 'inherit' | 'initial' | 'revert' | 'unset';
-    type TextOverflowType = 'clip' | 'ellipsis' | 'initial' | 'inherit';
-    export interface LabelElement extends ControlElement {
-        caption?: string;
-        link?: LinkElement;
+    export type TextOverflowType = 'clip' | 'ellipsis' | 'initial' | 'inherit';
+    export interface TextElement extends ControlElement {
         wordBreak?: WordBreakType;
         overflowWrap?: OverflowWrapType;
         textOverflow?: TextOverflowType;
@@ -4786,20 +4784,12 @@ declare module "packages/label/src/label" {
     global {
         namespace JSX {
             interface IntrinsicElements {
-                ['i-label']: LabelElement;
+                ['i-text']: TextElement;
             }
         }
     }
-    export class Label extends Control {
-        private captionSpan;
-        private _link;
+    export class Text extends Control {
         constructor(parent?: Control, options?: any);
-        get caption(): string;
-        set caption(value: string);
-        get link(): Link;
-        set link(value: Link);
-        set height(value: number);
-        set width(value: number);
         get wordBreak(): WordBreakType;
         set wordBreak(value: WordBreakType);
         get overflowWrap(): OverflowWrapType;
@@ -4810,6 +4800,43 @@ declare module "packages/label/src/label" {
         set lineClamp(value: number);
         get display(): DisplayType;
         set display(value: DisplayType);
+        protected init(): void;
+        static create(options?: TextElement, parent?: Control): Promise<Text>;
+    }
+}
+declare module "packages/text/src/index" {
+    export { Text, TextElement, TextOverflowType } from "packages/text/src/text";
+}
+declare module "packages/label/src/style/label.css" { }
+declare module "packages/label/src/label" {
+    import { Control } from "@ijstech/components/base";
+    import { Link, LinkElement } from "packages/link/src/index";
+    import { Text, TextElement } from "packages/text/src/index";
+    import "packages/label/src/style/label.css";
+    export interface LabelElement extends TextElement {
+        caption?: string;
+        link?: LinkElement;
+        textDecoration?: string;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-label']: LabelElement;
+            }
+        }
+    }
+    export class Label extends Text {
+        private captionSpan;
+        private _link;
+        constructor(parent?: Control, options?: any);
+        get caption(): string;
+        set caption(value: string);
+        get link(): Link;
+        set link(value: Link);
+        set height(value: number);
+        set width(value: number);
+        get textDecoration(): string;
+        set textDecoration(value: string);
         protected init(): void;
         static create(options?: LabelElement, parent?: Control): Promise<Label>;
     }
@@ -10011,10 +10038,11 @@ declare module "packages/markdown/src/index" {
 }
 declare module "packages/markdown-editor/src/styles/index.css" { }
 declare module "packages/markdown-editor/src/markdown-editor" {
-    import { Border, Container, Control, ControlElement, IBorder, ISpace, notifyEventCallback } from "@ijstech/components/base";
+    import { Border, Container, Control, IBorder, ISpace, notifyEventCallback } from "@ijstech/components/base";
     import { Markdown } from "packages/markdown/src/index";
+    import { Text, TextElement } from "packages/text/src/index";
     import "packages/markdown-editor/src/styles/index.css";
-    export interface MarkdownEditorElement extends ControlElement {
+    export interface MarkdownEditorElement extends TextElement {
         mode?: 'wysiwyg' | 'markdown';
         theme?: 'light' | 'dark';
         previewStyle?: 'tab' | 'vertical';
@@ -10039,7 +10067,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
             }
         }
     }
-    export class MarkdownEditor extends Control {
+    export class MarkdownEditor extends Text {
         private editor;
         private editorPlugins;
         private editorObj;
@@ -11061,6 +11089,7 @@ declare module "packages/video/src/video" {
     import "packages/video/src/style/video.css";
     export interface VideoElement extends ControlElement {
         url?: string;
+        isStreaming?: boolean;
     }
     global {
         namespace JSX {
@@ -11078,6 +11107,7 @@ declare module "packages/video/src/video" {
         set url(value: string);
         get border(): Border;
         set border(value: IBorder);
+        private getVideoTypeFromExtension;
         protected init(): void;
         static create(options?: VideoElement, parent?: Control): Promise<Video>;
     }

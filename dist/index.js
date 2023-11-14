@@ -17825,6 +17825,9 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
         if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
           styleObj["$nest"][mediaQueryRule]["maxHeight"] = `${getSpacingValue(mediaQuery.properties.maxHeight)} !important`;
         }
+        if (mediaQuery.properties.maxWidth !== void 0 && mediaQuery.properties.maxWidth !== null) {
+          styleObj["$nest"][mediaQueryRule]["maxWidth"] = `${getSpacingValue(mediaQuery.properties.maxWidth)} !important`;
+        }
         if (mediaQuery.properties.overflow) {
           const overflow = mediaQuery.properties.overflow;
           if (typeof overflow === "string") {
@@ -20217,17 +20220,24 @@ var Image2 = class extends Control {
   }
   set url(value) {
     this._url = value;
-    if (value && !this.imageElm)
+    if (!this.imageElm)
       this.imageElm = this.createElement("img", this);
-    if (this.imageElm) {
+    if (value) {
       this.imageElm.src = value;
+      this.imageElm.style.display = "none";
       const self = this;
       this.imageElm.onerror = function() {
-        self._fallbackUrl && (this.src = self._fallbackUrl);
+        if (self._fallbackUrl)
+          this.src = self._fallbackUrl;
+      };
+      this.imageElm.onload = function() {
+        self.imageElm.style.display = "";
       };
       if (this._borderValue) {
         this._border = new Border(this.imageElm, this._borderValue);
       }
+      if (this._objectFit)
+        this.imageElm.style.objectFit = this._objectFit;
     }
   }
   get objectFit() {
@@ -20487,17 +20497,97 @@ Link = __decorateClass([
   customElements2("i-link")
 ], Link);
 
-// packages/label/src/style/label.css.ts
+// packages/text/src/style/text.css.ts
 var Theme6 = theme_exports.ThemeVars;
-cssRule("i-label", {
+cssRule("i-text", {
   display: "inline-block",
   color: Theme6.text.primary,
   fontFamily: Theme6.typography.fontFamily,
   fontSize: Theme6.typography.fontSize
 });
 
+// packages/text/src/text.ts
+var Text = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get wordBreak() {
+    return this.style.wordBreak;
+  }
+  set wordBreak(value) {
+    this.style.wordBreak = value;
+  }
+  get overflowWrap() {
+    return this.style.overflowWrap;
+  }
+  set overflowWrap(value) {
+    this.style.overflowWrap = value;
+  }
+  get textOverflow() {
+    return this.style.textOverflow;
+  }
+  set textOverflow(value) {
+    if (!value)
+      return;
+    this.style.textOverflow = value;
+    this.style.whiteSpace = "nowrap";
+    this.overflow = "hidden";
+  }
+  get lineClamp() {
+    return Number(this.style.webkitLineClamp);
+  }
+  set lineClamp(value) {
+    this.style.webkitLineClamp = `${value}`;
+    this.style.overflow = "hidden";
+    this.style.webkitBoxOrient = "vertical";
+    this.display = "-webkit-box";
+    this.overflow = "hidden";
+    this.style.whiteSpace = "";
+  }
+  get display() {
+    return this._display;
+  }
+  set display(value) {
+    const isNotNone = value !== "none";
+    this._display = this.lineClamp && isNotNone ? "-webkit-box" : value;
+    this.style.display = this._display;
+  }
+  init() {
+    super.init();
+    const wordBreak = this.getAttribute("wordBreak", true);
+    if (wordBreak)
+      this.wordBreak = wordBreak;
+    const overflowWrap = this.getAttribute("overflowWrap", true);
+    if (overflowWrap)
+      this.overflowWrap = overflowWrap;
+    const textOverflow = this.getAttribute("textOverflow", true);
+    if (textOverflow)
+      this.textOverflow = textOverflow;
+    const lineClamp = this.getAttribute("lineClamp", true);
+    if (lineClamp)
+      this.lineClamp = lineClamp;
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Text = __decorateClass([
+  customElements2("i-text")
+], Text);
+
+// packages/label/src/style/label.css.ts
+var Theme7 = theme_exports.ThemeVars;
+cssRule("i-label", {
+  display: "inline-block",
+  color: Theme7.text.primary,
+  fontFamily: Theme7.typography.fontFamily,
+  fontSize: Theme7.typography.fontSize
+});
+
 // packages/label/src/label.ts
-var Label = class extends Control {
+var Label = class extends Text {
   constructor(parent, options) {
     super(parent, options);
   }
@@ -20540,45 +20630,11 @@ var Label = class extends Control {
     if (this.captionSpan)
       this.captionSpan.style.width = value + "px";
   }
-  get wordBreak() {
-    return this.style.wordBreak;
+  get textDecoration() {
+    return this.style.textDecoration;
   }
-  set wordBreak(value) {
-    this.style.wordBreak = value;
-  }
-  get overflowWrap() {
-    return this.style.overflowWrap;
-  }
-  set overflowWrap(value) {
-    this.style.overflowWrap = value;
-  }
-  get textOverflow() {
-    return this.style.textOverflow;
-  }
-  set textOverflow(value) {
-    if (!value)
-      return;
-    this.style.textOverflow = value;
-    this.style.whiteSpace = "nowrap";
-    this.overflow = "hidden";
-  }
-  get lineClamp() {
-    return Number(this.style.webkitLineClamp);
-  }
-  set lineClamp(value) {
-    this.style.webkitLineClamp = `${value}`;
-    this.style.overflow = "hidden";
-    this.style.webkitBoxOrient = "vertical";
-    this.display = "-webkit-box";
-    this.overflow = "hidden";
-  }
-  get display() {
-    return this._display;
-  }
-  set display(value) {
-    const isNotNone = value !== "none";
-    this._display = this.lineClamp && isNotNone ? "-webkit-box" : value;
-    this.style.display = this._display;
+  set textDecoration(value) {
+    this.style.textDecoration = value;
   }
   init() {
     if (!this.captionSpan) {
@@ -20601,18 +20657,9 @@ var Label = class extends Control {
         });
         this.link = link;
       }
-      const wordBreak = this.getAttribute("wordBreak", true);
-      if (wordBreak)
-        this.wordBreak = wordBreak;
-      const overflowWrap = this.getAttribute("overflowWrap", true);
-      if (overflowWrap)
-        this.overflowWrap = overflowWrap;
-      const textOverflow = this.getAttribute("textOverflow", true);
-      if (textOverflow)
-        this.textOverflow = textOverflow;
-      const lineClamp = this.getAttribute("lineClamp", true);
-      if (lineClamp)
-        this.lineClamp = lineClamp;
+      const textDecoration = this.getAttribute("textDecoration", true);
+      if (textDecoration)
+        this.textDecoration = textDecoration;
       super.init();
     }
   }
@@ -21313,7 +21360,7 @@ CardLayout = __decorateClass([
 ], CardLayout);
 
 // packages/upload/src/style/upload.css.ts
-var Theme7 = theme_exports.ThemeVars;
+var Theme8 = theme_exports.ThemeVars;
 cssRule("i-upload", {
   margin: "1rem 0",
   listStyle: "none",
@@ -21326,7 +21373,7 @@ cssRule("i-upload", {
   $nest: {
     ".i-upload-wrapper": {
       position: "relative",
-      border: `2px dashed ${Theme7.divider}`,
+      border: `2px dashed ${Theme8.divider}`,
       width: "100%",
       display: "flex",
       flexDirection: "column",
@@ -21346,8 +21393,8 @@ cssRule("i-upload", {
       marginTop: "4rem"
     },
     ".i-upload-dragger_active": {
-      border: `2px dashed ${Theme7.colors.primary.main}`,
-      backgroundColor: Theme7.colors.info.light,
+      border: `2px dashed ${Theme8.colors.primary.main}`,
+      backgroundColor: Theme8.colors.info.light,
       opacity: "0.8"
     },
     'input[type="file"]': {
@@ -21376,7 +21423,7 @@ cssRule("i-upload", {
     },
     ".i-upload_preview-crop": {
       position: "absolute",
-      border: `1px dashed ${Theme7.background.paper}`,
+      border: `1px dashed ${Theme8.background.paper}`,
       width: 150,
       height: 150,
       left: "50%",
@@ -21440,7 +21487,7 @@ cssRule("i-upload", {
       display: "block"
     },
     ".i-upload_list.i-upload_list-text .i-upload_list-item:hover": {
-      backgroundColor: Theme7.background.default
+      backgroundColor: Theme8.background.default
     },
     ".i-upload_list.i-upload_list-text .i-upload_list-item": {
       width: "100%",
@@ -21462,7 +21509,7 @@ cssRule("i-upload", {
 });
 
 // packages/upload/src/upload.ts
-var Theme8 = theme_exports.ThemeVars;
+var Theme9 = theme_exports.ThemeVars;
 var fileId = 1;
 var genFileId = () => Date.now() + fileId++;
 var UploadDrag = class extends Control {
@@ -21606,7 +21653,7 @@ var UploadDrag = class extends Control {
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-drag_area");
       this._labelElm = this.createElement("span", this._wrapperElm);
-      this._labelElm.style.color = Theme8.text.primary;
+      this._labelElm.style.color = Theme9.text.primary;
       this.caption = this.getAttribute("caption", true);
       this.disabled = this.getAttribute("disabled", true);
       this.addEventListener("dragenter", this.handleOnDragEnter.bind(this));
@@ -21774,7 +21821,7 @@ var Upload = class extends Control {
         const removeIcon = new Icon(void 0, {
           width: 12,
           height: 12,
-          fill: Theme8.action.active,
+          fill: Theme9.action.active,
           name: "trash"
         });
         itemElm.appendChild(removeIcon);
@@ -21797,7 +21844,7 @@ var Upload = class extends Control {
     this._previewRemoveElm.classList.add("i-upload_preview-remove");
     this._previewRemoveElm.onclick = this.handleRemoveImagePreview.bind(this);
     const span = this.createElement("span", this._previewRemoveElm);
-    span.style.fontFamily = Theme8.typography.fontFamily;
+    span.style.fontFamily = Theme9.typography.fontFamily;
     span.innerHTML = "Click to remove";
   }
   handleRemoveImagePreview(event) {
@@ -21914,7 +21961,7 @@ var Upload = class extends Control {
         margin: {
           bottom: 20
         },
-        fill: Theme8.divider
+        fill: Theme9.divider
       });
       new Label(panel, {
         caption: this.caption || (this.draggable ? "Drag a file or click to upload" : "Click to upload"),
@@ -21953,39 +22000,39 @@ Upload = __decorateClass([
 ], Upload);
 
 // packages/button/src/style/button.css.ts
-var Theme9 = theme_exports.ThemeVars;
+var Theme10 = theme_exports.ThemeVars;
 cssRule("i-button", {
-  background: Theme9.colors.primary.main,
-  boxShadow: Theme9.shadows[2],
-  color: Theme9.text.primary,
+  background: Theme10.colors.primary.main,
+  boxShadow: Theme10.shadows[2],
+  color: Theme10.text.primary,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   borderRadius: 4,
-  fontFamily: Theme9.typography.fontFamily,
-  fontSize: Theme9.typography.fontSize,
+  fontFamily: Theme10.typography.fontFamily,
+  fontSize: Theme10.typography.fontSize,
   gap: 5,
   cursor: "pointer",
   $nest: {
     "&:not(.disabled):hover": {},
     "&.disabled": {
-      color: Theme9.text.disabled,
-      boxShadow: Theme9.shadows[0],
-      background: Theme9.action.disabledBackground,
+      color: Theme10.text.disabled,
+      boxShadow: Theme10.shadows[0],
+      background: Theme10.action.disabledBackground,
       cursor: "not-allowed"
     },
     "i-icon": {
       display: "inline-block",
-      fill: Theme9.text.primary,
+      fill: Theme10.text.primary,
       verticalAlign: "middle"
     },
     ".caption": {
       paddingRight: ".5rem"
     },
     "&.is-spinning, &.is-spinning:not(.disabled):hover, &.is-spinning:not(.disabled):focus": {
-      color: Theme9.text.disabled,
-      boxShadow: Theme9.shadows[0],
-      background: Theme9.action.disabledBackground,
+      color: Theme10.text.disabled,
+      boxShadow: Theme10.shadows[0],
+      background: Theme10.action.disabledBackground,
       cursor: "default"
     }
   }
@@ -22126,7 +22173,7 @@ Button = __decorateClass([
 ], Button);
 
 // packages/modal/src/style/modal.css.ts
-var Theme10 = theme_exports.ThemeVars;
+var Theme11 = theme_exports.ThemeVars;
 var getOverlayStyle = () => {
   return style({
     backgroundColor: "rgba(12, 18, 52, 0.7)",
@@ -22201,7 +22248,7 @@ var modalStyle = style({
   fontFamily: "Helvetica",
   fontSize: "14px",
   padding: "10px 10px 5px 10px",
-  backgroundColor: Theme10.background.modal,
+  backgroundColor: Theme11.background.modal,
   position: "relative",
   borderRadius: "2px",
   minWidth: "300px",
@@ -22215,7 +22262,7 @@ var titleStyle = style({
   alignItems: "center",
   $nest: {
     "span": {
-      color: Theme10.colors.primary.main
+      color: Theme11.colors.primary.main
     },
     "i-icon": {
       display: "inline-block",
@@ -22352,7 +22399,7 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
 };
 
 // packages/modal/src/modal.ts
-var Theme11 = theme_exports.ThemeVars;
+var Theme12 = theme_exports.ThemeVars;
 var showEvent = new Event("show");
 var Modal = class extends Container {
   constructor(parent, options) {
@@ -22885,7 +22932,7 @@ var Modal = class extends Container {
       if (closeIconAttr) {
         closeIconAttr.height = closeIconAttr.height || "16px";
         closeIconAttr.width = closeIconAttr.width || "16px";
-        closeIconAttr.fill = closeIconAttr.fill || Theme11.colors.primary.main;
+        closeIconAttr.fill = closeIconAttr.fill || Theme12.colors.primary.main;
         this.closeIcon = new Icon(void 0, closeIconAttr);
       }
       this.bodyDiv = this.createElement("div", this.modalDiv);
@@ -22961,7 +23008,7 @@ Modal = __decorateClass([
 ], Modal);
 
 // packages/upload/src/style/upload-modal.css.ts
-var Theme12 = theme_exports.ThemeVars;
+var Theme13 = theme_exports.ThemeVars;
 cssRule("i-upload-modal", {
   $nest: {
     "i-modal": {
@@ -22976,7 +23023,7 @@ cssRule("i-upload-modal", {
         ".modal": {
           padding: 0,
           height: "auto",
-          backgroundColor: Theme12.background.modal,
+          backgroundColor: Theme13.background.modal,
           borderRadius: "10px",
           boxShadow: "0 1px 5px 0 rgb(0 0 0 / 12%), 0 2px 10px 0 rgb(0 0 0 / 8%), 0 1px 20px 0 rgb(0 0 0 / 8%)",
           overflow: "auto",
@@ -23004,7 +23051,7 @@ cssRule("i-upload-modal", {
     ".heading": {
       display: "block",
       fontSize: "1.625rem",
-      color: Theme12.colors.primary.dark,
+      color: Theme13.colors.primary.dark,
       marginBottom: "0.5rem",
       fontWeight: 700,
       lineHeight: 1.2,
@@ -23013,7 +23060,7 @@ cssRule("i-upload-modal", {
     ".label": {
       display: "block",
       marginBottom: "0.5rem",
-      color: Theme12.text.primary,
+      color: Theme13.text.primary,
       textAlign: "center"
     },
     ".file-uploader-dropzone": {
@@ -23033,7 +23080,7 @@ cssRule("i-upload-modal", {
           rowGap: "1rem",
           padding: "1.875rem 0",
           background: "rgba(255,255,255,.1)",
-          border: `1px dashed ${Theme12.colors.primary.light}`,
+          border: `1px dashed ${Theme13.colors.primary.light}`,
           borderRadius: "0.625rem",
           cursor: "pointer"
         },
@@ -23075,7 +23122,7 @@ cssRule("i-upload-modal", {
             },
             "i-label": {
               fontSize: "14px",
-              color: Theme12.colors.primary.dark,
+              color: Theme13.colors.primary.dark,
               maxWidth: "80%",
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -23099,7 +23146,7 @@ cssRule("i-upload-modal", {
                   marginLeft: "5px",
                   $nest: {
                     "i-icon": {
-                      fill: `${Theme12.colors.primary.dark}!important`
+                      fill: `${Theme13.colors.primary.dark}!important`
                     }
                   }
                 }
@@ -23119,16 +23166,16 @@ cssRule("i-upload-modal", {
               borderRadius: "50%",
               fontSize: "11px",
               fontWeight: 700,
-              color: Theme12.colors.primary.dark,
+              color: Theme13.colors.primary.dark,
               backgroundColor: "transparent",
-              border: `1px solid ${Theme12.colors.primary.dark}`,
+              border: `1px solid ${Theme13.colors.primary.dark}`,
               boxShadow: "none",
               gap: "unset",
               userSelect: "none",
               $nest: {
                 "&.active": {
-                  color: Theme12.colors.primary.contrastText,
-                  backgroundColor: Theme12.colors.primary.dark
+                  color: Theme13.colors.primary.contrastText,
+                  backgroundColor: Theme13.colors.primary.dark
                 },
                 "&.dots": {
                   borderColor: "transparent"
@@ -23136,15 +23183,15 @@ cssRule("i-upload-modal", {
                 "i-icon": {
                   height: "10px!important",
                   width: "12px!important",
-                  fill: `${Theme12.colors.primary.dark}!important`
+                  fill: `${Theme13.colors.primary.dark}!important`
                 }
               }
             }
           }
         },
         ".upload-btn": {
-          background: Theme12.colors.primary.light,
-          color: Theme12.colors.primary.contrastText,
+          background: Theme13.colors.primary.light,
+          color: Theme13.colors.primary.contrastText,
           padding: "8px",
           boxShadow: "none"
         }
@@ -23161,20 +23208,20 @@ cssRule("i-upload-modal", {
             ".filter-btn": {
               fontSize: "14px",
               background: "transparent",
-              color: Theme12.text.secondary,
+              color: Theme13.text.secondary,
               boxShadow: "none"
             },
             ".filter-btn.filter-btn-active": {
               fontWeight: "bold",
-              color: Theme12.colors.primary.dark
+              color: Theme13.colors.primary.dark
             }
           }
         },
         ".filter-actions": {
           $nest: {
             "i-button": {
-              background: Theme12.colors.primary.light,
-              color: Theme12.colors.primary.contrastText,
+              background: Theme13.colors.primary.light,
+              color: Theme13.colors.primary.contrastText,
               padding: "5px 10px",
               fontSize: "14px",
               boxShadow: "none"
@@ -23196,13 +23243,13 @@ cssRule("i-upload-modal", {
         ".head": {
           fontSize: "14px",
           fontWeight: 700,
-          color: Theme12.text.primary
+          color: Theme13.text.primary
         },
         ".desc": {
           fontSize: "12px",
           fontWeight: 400,
           letterSpacing: 0,
-          color: Theme12.text.secondary
+          color: Theme13.text.secondary
         }
       }
     }
@@ -23210,7 +23257,7 @@ cssRule("i-upload-modal", {
 });
 
 // packages/upload/src/upload-modal.ts
-var Theme13 = theme_exports.ThemeVars;
+var Theme14 = theme_exports.ThemeVars;
 var FILE_STATUS;
 (function(FILE_STATUS2) {
   FILE_STATUS2[FILE_STATUS2["LISTED"] = 0] = "LISTED";
@@ -23701,7 +23748,7 @@ UploadModal = __decorateClass([
 ], UploadModal);
 
 // packages/tab/src/style/tab.css.ts
-var Theme14 = theme_exports.ThemeVars;
+var Theme15 = theme_exports.ThemeVars;
 cssRule("i-tabs", {
   display: "block",
   $nest: {
@@ -23748,7 +23795,7 @@ cssRule("i-tabs", {
               color: "#fff"
             },
             "&:not(.disabled).active.border": {
-              borderColor: `${Theme14.divider} ${Theme14.divider} #fff`,
+              borderColor: `${Theme15.divider} ${Theme15.divider} #fff`,
               borderBottomWidth: "1.5px"
             },
             ".tab-item": {
@@ -24257,7 +24304,7 @@ Tab = __decorateClass([
 ], Tab);
 
 // packages/combo-box/src/style/combo-box.css.ts
-var Theme15 = theme_exports.ThemeVars;
+var Theme16 = theme_exports.ThemeVars;
 var ItemListStyle = style({
   display: "none",
   position: "absolute",
@@ -24286,20 +24333,20 @@ var ItemListStyle = style({
       borderRadius: "inherit"
     },
     "> ul > li .highlight": {
-      backgroundColor: Theme15.colors.warning.light
+      backgroundColor: Theme16.colors.warning.light
     },
     "> ul > li.matched": {
-      backgroundColor: Theme15.colors.primary.light
+      backgroundColor: Theme16.colors.primary.light
     },
     "> ul > li:hover": {
-      backgroundColor: Theme15.colors.primary.light
+      backgroundColor: Theme16.colors.primary.light
     },
     ".selection-item": {
       display: "grid",
       gridTemplateColumns: "25px 1fr",
       gap: 5,
       alignItems: "center",
-      fontFamily: Theme15.typography.fontFamily
+      fontFamily: Theme16.typography.fontFamily
     },
     ".selection-icon": {
       height: 20,
@@ -24307,22 +24354,22 @@ var ItemListStyle = style({
     },
     ".selection-title": {
       display: "block",
-      color: Theme15.combobox.fontColor,
+      color: Theme16.combobox.fontColor,
       fontWeight: "bold"
     },
     ".selection-description": {
       display: "block",
-      color: Theme15.combobox.fontColor,
-      fontSize: Theme15.typography.fontSize
+      color: Theme16.combobox.fontColor,
+      fontSize: Theme16.typography.fontSize
     }
   }
 });
 cssRule("i-combo-box", {
   position: "relative",
   display: "flex",
-  fontFamily: Theme15.typography.fontFamily,
-  fontSize: Theme15.typography.fontSize,
-  color: Theme15.text.primary,
+  fontFamily: Theme16.typography.fontFamily,
+  fontSize: Theme16.typography.fontSize,
+  color: Theme16.text.primary,
   alignItems: "center",
   $nest: {
     "&.i-combo-box-multi": {
@@ -24340,14 +24387,14 @@ cssRule("i-combo-box", {
       alignItems: "center",
       position: "absolute",
       right: 0,
-      border: `0.5px solid ${Theme15.divider}`,
+      border: `0.5px solid ${Theme16.divider}`,
       borderLeft: "none",
       borderRadius: "inherit",
       borderTopLeftRadius: "0px !important",
       borderBottomLeftRadius: "0px !important"
     },
     "> .icon-btn:hover": {
-      backgroundColor: Theme15.action.hover
+      backgroundColor: Theme16.action.hover
     },
     "> .icon-btn i-icon": {
       display: "inline-block",
@@ -24360,9 +24407,9 @@ cssRule("i-combo-box", {
       flexWrap: "wrap",
       maxWidth: "calc(100% - 32px)",
       height: "100%",
-      border: `0.5px solid ${Theme15.divider}`,
+      border: `0.5px solid ${Theme16.divider}`,
       borderRight: "none !important",
-      background: Theme15.combobox.background,
+      background: Theme16.combobox.background,
       borderRadius: "inherit",
       borderTopRightRadius: "0px !important",
       borderBottomRightRadius: "0px !important",
@@ -24373,7 +24420,7 @@ cssRule("i-combo-box", {
       maxHeight: "100%",
       $nest: {
         ".selection-item": {
-          border: `1px solid ${Theme15.divider}`,
+          border: `1px solid ${Theme16.divider}`,
           backgroundColor: "rgba(0, 0, 0, 0.12)",
           color: "#000",
           borderRadius: 3,
@@ -24407,8 +24454,8 @@ cssRule("i-combo-box", {
           width: "auto !important",
           maxWidth: "100%",
           flex: 1,
-          background: Theme15.combobox.background,
-          color: Theme15.combobox.fontColor,
+          background: Theme16.combobox.background,
+          color: Theme16.combobox.fontColor,
           fontSize: "inherit"
         }
       }
@@ -24835,11 +24882,11 @@ ComboBox = __decorateClass([
 ], ComboBox);
 
 // packages/datepicker/src/style/datepicker.css.ts
-var Theme16 = theme_exports.ThemeVars;
+var Theme17 = theme_exports.ThemeVars;
 cssRule("i-datepicker", {
   display: "inline-block",
-  fontFamily: Theme16.typography.fontFamily,
-  fontSize: Theme16.typography.fontSize,
+  fontFamily: Theme17.typography.fontFamily,
+  fontSize: Theme17.typography.fontSize,
   "$nest": {
     "*": {
       boxSizing: "border-box"
@@ -24849,7 +24896,7 @@ cssRule("i-datepicker", {
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme16.text.primary,
+      color: Theme17.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -24861,11 +24908,11 @@ cssRule("i-datepicker", {
     "> input": {
       borderRadius: "inherit",
       padding: "1px 0.5rem",
-      border: `0.5px solid ${Theme16.divider}`,
+      border: `0.5px solid ${Theme17.divider}`,
       boxSizing: "border-box",
       outline: "none",
       fontSize: "inherit",
-      color: Theme16.input.fontColor,
+      color: Theme17.input.fontColor,
       background: "transparent",
       verticalAlign: "top",
       borderTopRightRadius: "0px !important",
@@ -24873,16 +24920,16 @@ cssRule("i-datepicker", {
       borderRight: "none !important"
     },
     "> input[type=text]:focus": {
-      borderColor: Theme16.colors.info.main
+      borderColor: Theme17.colors.info.main
     },
     "i-icon": {
-      fill: Theme16.colors.primary.contrastText
+      fill: Theme17.colors.primary.contrastText
     },
     ".datepicker-toggle": {
       display: "inline-flex",
       position: "relative",
       backgroundColor: "transparent",
-      border: `0.5px solid ${Theme16.divider}`,
+      border: `0.5px solid ${Theme17.divider}`,
       padding: "7px",
       marginLeft: "-1px",
       cursor: "pointer",
@@ -25168,12 +25215,12 @@ Datepicker = __decorateClass([
 ], Datepicker);
 
 // packages/range/src/style/range.css.ts
-var Theme17 = theme_exports.ThemeVars;
+var Theme18 = theme_exports.ThemeVars;
 cssRule("i-range", {
   position: "relative",
   display: "inline-block",
-  fontFamily: Theme17.typography.fontFamily,
-  fontSize: Theme17.typography.fontSize,
+  fontFamily: Theme18.typography.fontFamily,
+  fontSize: Theme18.typography.fontSize,
   "$nest": {
     "*": {
       boxSizing: "border-box"
@@ -25183,7 +25230,7 @@ cssRule("i-range", {
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme17.text.primary,
+      color: Theme18.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -25200,7 +25247,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       background: "#d3d3d3",
-      backgroundImage: `linear-gradient(var(--track-color, ${Theme17.colors.info.main}), var(--track-color, ${Theme17.colors.info.main}))`,
+      backgroundImage: `linear-gradient(var(--track-color, ${Theme18.colors.info.main}), var(--track-color, ${Theme18.colors.info.main}))`,
       backgroundSize: "0% 100%",
       backgroundRepeat: "no-repeat !important",
       borderRadius: "0.5rem",
@@ -25235,7 +25282,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       marginTop: "-5px",
-      backgroundColor: `var(--track-color, ${Theme17.colors.info.main})`,
+      backgroundColor: `var(--track-color, ${Theme18.colors.info.main})`,
       borderRadius: "0.5rem",
       height: "1rem",
       width: "1rem"
@@ -25495,13 +25542,13 @@ Range = __decorateClass([
 ], Range);
 
 // packages/radio/src/radio.css.ts
-var Theme18 = theme_exports.ThemeVars;
+var Theme19 = theme_exports.ThemeVars;
 var captionStyle = style({
-  fontFamily: Theme18.typography.fontFamily,
-  fontSize: Theme18.typography.fontSize,
+  fontFamily: Theme19.typography.fontFamily,
+  fontSize: Theme19.typography.fontSize,
   "$nest": {
     "span": {
-      color: Theme18.text.primary
+      color: Theme19.text.primary
     }
   }
 });
@@ -25935,7 +25982,7 @@ function hslToHsv(h, s, l) {
 }
 
 // packages/color/src/style/color.css.ts
-var Theme19 = theme_exports.ThemeVars;
+var Theme20 = theme_exports.ThemeVars;
 var gradient = "linear-gradient(to right, rgb(255, 0, 0) 0%, rgb(255, 255, 0) 17%, rgb(0, 255, 0) 33%, rgb(0, 255, 255) 50%, rgb(0, 0, 255) 67%, rgb(255, 0, 255) 83%, rgb(255, 0, 0) 100%)";
 var opacity = `var(--opacity-color, linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 100%))`;
 cssRule("i-color", {
@@ -25952,7 +25999,7 @@ cssRule("i-color", {
       minWidth: 100,
       display: "inline-flex",
       alignItems: "center",
-      border: `1px solid ${Theme19.divider}`,
+      border: `1px solid ${Theme20.divider}`,
       padding: 4,
       $nest: {
         "span": {
@@ -26115,7 +26162,7 @@ cssRule("i-color", {
 });
 
 // packages/color/src/color.ts
-var Theme20 = theme_exports.ThemeVars;
+var Theme21 = theme_exports.ThemeVars;
 var rgb = ["r", "g", "b", "a"];
 var hsl = ["h", "s", "l", "a"];
 var hex = ["hex"];
@@ -26386,7 +26433,7 @@ var ColorPicker = class extends Control {
     this.pnlWrap.append(picker, this.pnlInput);
   }
   activeEyeDropper(pickerIcon) {
-    pickerIcon.fill = Theme20.colors.primary.main;
+    pickerIcon.fill = Theme21.colors.primary.main;
     const hasSupport = () => Boolean("EyeDropper" in window);
     if (hasSupport()) {
       const eyeDropper = new window.EyeDropper();
@@ -26588,19 +26635,19 @@ ColorPicker = __decorateClass([
 ], ColorPicker);
 
 // packages/input/src/style/input.css.ts
-var Theme21 = theme_exports.ThemeVars;
+var Theme22 = theme_exports.ThemeVars;
 cssRule("i-input", {
   display: "inline-block",
-  fontFamily: Theme21.typography.fontFamily,
-  fontSize: Theme21.typography.fontSize,
-  background: Theme21.input.background,
+  fontFamily: Theme22.typography.fontFamily,
+  fontSize: Theme22.typography.fontSize,
+  background: Theme22.input.background,
   "$nest": {
     "> span": {
       overflow: "hidden"
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme21.text.primary,
+      color: Theme22.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -26610,11 +26657,11 @@ cssRule("i-input", {
       height: "100%"
     },
     "> input": {
-      border: `0.5px solid ${Theme21.divider}`,
+      border: `0.5px solid ${Theme22.divider}`,
       boxSizing: "border-box",
       outline: "none",
-      color: Theme21.input.fontColor,
-      background: Theme21.input.background,
+      color: Theme22.input.fontColor,
+      background: Theme22.input.background,
       borderRadius: "inherit",
       fontSize: "inherit",
       maxHeight: "100%",
@@ -26624,7 +26671,7 @@ cssRule("i-input", {
       display: "none",
       verticalAlign: "middle",
       padding: "6px",
-      backgroundColor: Theme21.action.focus,
+      backgroundColor: Theme22.action.focus,
       $nest: {
         "&.active": {
           display: "inline-flex",
@@ -26637,8 +26684,8 @@ cssRule("i-input", {
     "textarea": {
       width: "100%",
       lineHeight: 1.5,
-      color: Theme21.input.fontColor,
-      background: Theme21.input.background
+      color: Theme22.input.fontColor,
+      background: Theme22.input.background
     }
   }
 });
@@ -27089,7 +27136,7 @@ Input = __decorateClass([
 ], Input);
 
 // packages/application/src/styles/jsonUI.css.ts
-var Theme22 = theme_exports.ThemeVars;
+var Theme23 = theme_exports.ThemeVars;
 var jsonUICheckboxStyle = style({
   display: "flex",
   alignItems: "center",
@@ -27104,7 +27151,7 @@ var jsonUICheckboxStyle = style({
 var jsonUIComboboxStyle = style({
   $nest: {
     ".selection": {
-      border: `1px solid ${Theme22.divider}`
+      border: `1px solid ${Theme23.divider}`
     },
     ".selection input": {
       paddingInline: 0
@@ -30439,7 +30486,7 @@ CodeDiffEditor = __decorateClass([
 var import_moment3 = __toModule(require_moment());
 
 // packages/data-grid/src/style/dataGrid.css.ts
-var Theme23 = theme_exports.ThemeVars;
+var Theme24 = theme_exports.ThemeVars;
 cssRule("i-data-grid", {
   border: "0.5px solid #dadada",
   $nest: {
@@ -33649,11 +33696,11 @@ DataGrid = __decorateClass([
 ], DataGrid);
 
 // packages/markdown/src/styles/index.css.ts
-var Theme24 = theme_exports.ThemeVars;
+var Theme25 = theme_exports.ThemeVars;
 cssRule("i-markdown", {
-  fontFamily: Theme24.typography.fontFamily,
-  fontSize: Theme24.typography.fontSize,
-  color: `var(--custom-text-color, ${Theme24.text.primary})`
+  fontFamily: Theme25.typography.fontFamily,
+  fontSize: Theme25.typography.fontSize,
+  color: `var(--custom-text-color, ${Theme25.text.primary})`
 });
 
 // packages/markdown/src/markdown.ts
@@ -33741,10 +33788,9 @@ Markdown = __decorateClass([
 ], Markdown);
 
 // packages/markdown-editor/src/styles/index.css.ts
-var Theme25 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 
 // packages/markdown-editor/src/markdown-editor.ts
-var Theme26 = theme_exports.ThemeVars;
 var TOOLBAR_ITEMS_DEFAULT = [
   ["heading", "bold", "italic", "strike"],
   ["hr", "quote"],
@@ -33768,7 +33814,7 @@ var editorCSS = [
   { name: "toastui-editor", href: `${LibPath}lib/tui-editor/toastui-editor.css` },
   { name: "toastui-plugins", href: `${LibPath}lib/tui-editor/toastui-plugins.min.css` }
 ];
-var MarkdownEditor = class extends Control {
+var MarkdownEditor = class extends Text {
   constructor(parent, options) {
     super(parent, options);
     this.editorPlugins = [];
@@ -34007,6 +34053,7 @@ var MarkdownEditor = class extends Control {
         hideModeSwitch: this.hideModeSwitch,
         minHeight: (_a = this.minHeight) != null ? _a : "300px",
         placeholder: this.placeholder,
+        autofocus: false,
         events: {
           change: (event) => {
             if (this.onChanged)
@@ -34173,7 +34220,6 @@ var menuStyle = style({
 var meunItemStyle = style({
   position: "relative",
   display: "block",
-  color: Theme27.text.secondary,
   $nest: {
     ".menu-item": {
       position: "relative",
@@ -34570,6 +34616,8 @@ var MenuItem = class extends Control {
     return this._padding;
   }
   set padding(value) {
+    if (!this.itemWrapperElm)
+      return;
     if (!this._padding)
       this._padding = new SpaceValue(this.itemWrapperElm, value, "padding");
     else
@@ -38283,39 +38331,73 @@ var Video = class extends Container {
       return;
     this._border = new Border(video, value);
   }
+  getVideoTypeFromExtension(url) {
+    if (!url)
+      return null;
+    let videoType;
+    let ext = url.split(".").pop();
+    switch (ext) {
+      case "mp4":
+        videoType = "video/mp4";
+        break;
+      case "webm":
+        videoType = "video/webm";
+        break;
+      case "ogg":
+        videoType = "video/ogg";
+        break;
+      default:
+        videoType = "video/mp4";
+        break;
+    }
+    return videoType;
+  }
   init() {
     if (!this.initialized) {
       super.init();
       loadCss();
       const self = this;
-      let id = `video-${new Date().getTime()}`;
-      this.videoElm = this.createElement("video-js", this);
-      this.videoElm.id = id;
-      this.videoElm.setAttribute("controls", "true");
-      this.videoElm.setAttribute("preload", "auto");
-      this.videoElm.classList.add("vjs-default-skin");
-      this.sourceElm = this.createElement("source", this.videoElm);
-      this.sourceElm.type = "application/x-mpegURL";
-      this.url = this.getAttribute("url", true);
-      const border = this.getAttribute("border", true);
-      RequireJS.require(reqs, function(videojs) {
-        self.player = videojs(id, {
-          playsinline: true,
-          autoplay: false,
-          controls: true,
-          fluid: true,
-          responsive: true,
-          inactivityTimeout: 500,
-          preload: "auto",
-          techOrder: ["html5"],
-          plugins: {},
-          height: "100%",
-          width: "100%"
+      const isStreaming = this.getAttribute("isStreaming", true);
+      if (isStreaming) {
+        let id = `video-${new Date().getTime()}`;
+        this.videoElm = this.createElement("video-js", this);
+        this.videoElm.id = id;
+        this.videoElm.setAttribute("controls", "true");
+        this.videoElm.setAttribute("preload", "auto");
+        this.videoElm.classList.add("vjs-default-skin");
+        this.sourceElm = this.createElement("source", this.videoElm);
+        this.sourceElm.type = "application/x-mpegURL";
+        this.url = this.getAttribute("url", true);
+        const border = this.getAttribute("border", true);
+        RequireJS.require(reqs, function(videojs) {
+          self.player = videojs(id, {
+            playsinline: true,
+            autoplay: false,
+            controls: true,
+            fluid: true,
+            responsive: true,
+            inactivityTimeout: 500,
+            preload: "auto",
+            techOrder: ["html5"],
+            plugins: {},
+            height: "100%",
+            width: "100%"
+          });
+          const video = self.videoElm.querySelector("video");
+          if (video && border)
+            self._border = new Border(video, border);
         });
-        const video = self.videoElm.querySelector("video");
-        if (video && border)
-          self._border = new Border(video, border);
-      });
+      } else {
+        this.videoElm = this.createElement("video", this);
+        this.videoElm.setAttribute("controls", "true");
+        this.videoElm.setAttribute("width", "100%");
+        this.sourceElm = this.createElement("source", this.videoElm);
+        this.url = this.getAttribute("url", true);
+        let videoType = this.getVideoTypeFromExtension(this.url);
+        if (videoType) {
+          this.sourceElm.type = videoType;
+        }
+      }
     }
   }
   static async create(options, parent) {
