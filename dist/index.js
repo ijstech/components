@@ -22674,15 +22674,15 @@ var Modal = class extends Container {
         left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2 - 1;
         break;
       case "top":
-        top = this.showBackdrop ? 0 : parentCoords.top;
+        top = this.showBackdrop ? 0 : parentCoords.top - parentHeight;
         left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "topLeft":
-        top = this.showBackdrop ? 0 : parentCoords.top;
+        top = this.showBackdrop ? 0 : parentCoords.top - parentHeight;
         left = parentCoords.left;
         break;
       case "topRight":
-        top = this.showBackdrop ? 0 : parentCoords.top;
+        top = this.showBackdrop ? 0 : parentCoords.top - parentHeight;
         left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "bottom":
@@ -22861,7 +22861,7 @@ var Modal = class extends Container {
     this.updateModal("width", value);
   }
   get height() {
-    return !isNaN(this._height) ? this._height : this.offsetHeight;
+    return this._height;
   }
   set height(value) {
     this._height = value;
