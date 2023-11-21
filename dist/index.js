@@ -20222,23 +20222,21 @@ var Image2 = class extends Control {
     this._url = value;
     if (!this.imageElm)
       this.imageElm = this.createElement("img", this);
-    if (value) {
-      this.imageElm.src = value;
-      this.imageElm.style.display = "none";
-      const self = this;
-      this.imageElm.onerror = function() {
-        if (self._fallbackUrl)
-          this.src = self._fallbackUrl;
-      };
-      this.imageElm.onload = function() {
-        self.imageElm.style.display = "";
-      };
-      if (this._borderValue) {
-        this._border = new Border(this.imageElm, this._borderValue);
-      }
-      if (this._objectFit)
-        this.imageElm.style.objectFit = this._objectFit;
+    this.imageElm.src = value != null ? value : "";
+    this.imageElm.style.display = "none";
+    const self = this;
+    this.imageElm.onerror = function() {
+      if (self._fallbackUrl)
+        this.src = self._fallbackUrl;
+    };
+    this.imageElm.onload = function() {
+      self.imageElm.style.display = "";
+    };
+    if (this._borderValue) {
+      this._border = new Border(this.imageElm, this._borderValue);
     }
+    if (this._objectFit)
+      this.imageElm.style.objectFit = this._objectFit;
   }
   get objectFit() {
     return this._objectFit;
@@ -28848,30 +28846,30 @@ var FormatUtils = class {
     }
   }
   static processDecimalPart(decimalPart, integerPart, options) {
-    const { decimalFigures = 0, roundingMethod = "round" } = options || {};
+    const { decimalFigures = 0, roundingMethod = "round", hasTrailingZero = true } = options || {};
     let roundingValue = { newDecimal: decimalPart, newInteger: integerPart };
     if (decimalPart) {
       const initialDecimalPart = decimalPart.slice(0, decimalFigures).replace(/0+$/g, "");
       switch (roundingMethod) {
         case "round":
-          roundingValue = this.customRound(decimalPart, integerPart, decimalFigures, 5);
+          roundingValue = this.customRound(decimalPart, integerPart, decimalFigures, 5, hasTrailingZero);
           break;
         case "ceil":
           if (integerPart.startsWith("-")) {
             roundingValue.newDecimal = initialDecimalPart;
           } else {
-            roundingValue = this.customRound(decimalPart, integerPart, decimalFigures, 1);
+            roundingValue = this.customRound(decimalPart, integerPart, decimalFigures, 1, hasTrailingZero);
           }
           break;
         default:
           roundingValue.newDecimal = initialDecimalPart;
       }
-    } else {
+    } else if (hasTrailingZero) {
       roundingValue.newDecimal = "0".repeat(decimalFigures);
     }
     return { ...roundingValue };
   }
-  static customRound(decimalPart, integerPart, decimalFigures, roundingNumber) {
+  static customRound(decimalPart, integerPart, decimalFigures, roundingNumber, hasTrailingZero) {
     const decimalArr = decimalPart.split("");
     let lastIndex2 = decimalArr.length - 1;
     let newInteger = integerPart;
@@ -28892,7 +28890,13 @@ var FormatUtils = class {
       }
     }
     const newDecimal = lastIndex2 >= 0 ? decimalArr.slice(0, lastIndex2).join("") : "";
-    return { newDecimal: newDecimal.replace(/0+$/g, ""), newInteger };
+    let roundingValue;
+    if (hasTrailingZero && newDecimal.length < decimalFigures) {
+      roundingValue = newDecimal + "0".repeat(decimalFigures - newDecimal.length);
+    } else {
+      roundingValue = newDecimal.replace(/0+$/g, "");
+    }
+    return { newDecimal: roundingValue, newInteger };
   }
   static roundIntegerPart(decimalPart, integerPart, roundingMethod) {
     const firstDecimal = decimalPart && decimalPart.charAt(0);

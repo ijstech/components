@@ -6307,6 +6307,7 @@ declare module "packages/application/src/formatUtils" {
         decimalFigures?: number;
         minValue?: number | string;
         shortScale?: boolean;
+        hasTrailingZero?: boolean;
     }
     export class FormatUtils {
         static unixToFormattedDate(unixTimestamp: number): string;
