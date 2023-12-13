@@ -3784,10 +3784,9 @@ declare module "packages/base/src/component" {
         protected _bottom: number | string;
         protected options: any;
         protected defaults: any;
-        protected _ready: boolean;
-        private _readyInit;
+        protected deferReadyCallback: boolean;
         protected _readyCallback: any[];
-        protected isReadyCallbackQueued: boolean;
+        initializing: boolean;
         initialized: boolean;
         protected attrs: any;
         protected _designProps: {
@@ -4386,6 +4385,8 @@ declare module "packages/modal/src/style/modal.css" {
     export const getOverlayStyle: () => string;
     export const getWrapperStyle: () => string;
     export const getNoBackdropStyle: () => string;
+    export const getFixedWrapperStyle: (paddingLeft: string, paddingTop: string) => string;
+    export const getAbsoluteWrapperStyle: (left: string, top: string) => string;
     export const modalStyle: string;
     export const titleStyle: string;
     export const getModalMediaQueriesStyleClass: (mediaQueries: IModalMediaQuery[]) => string;
@@ -4428,6 +4429,7 @@ declare module "packages/modal/src/modal" {
         }
     }
     export class Modal extends Container {
+        protected _visible: boolean;
         private wrapperDiv;
         private titleSpan;
         private modalDiv;
@@ -4477,6 +4479,7 @@ declare module "packages/modal/src/modal" {
         set mediaQueries(value: IModalMediaQuery[]);
         private setChildFixed;
         private positionAtChildFixed;
+        private getWrapperParent;
         private positionAt;
         private positionAtFix;
         private positionAtAbsolute;
@@ -4501,8 +4504,8 @@ declare module "packages/modal/src/modal" {
         set boxShadow(value: string);
         get overflow(): Overflow;
         set overflow(value: OverflowType | IOverflow);
-        protected removeTargetStyle<P extends keyof Modal>(target: HTMLElement, propertyName: P): void;
-        protected setTargetStyle<P extends keyof Modal>(target: HTMLElement, propertyName: P, value: string): void;
+        protected removeTargetStyle(target: HTMLElement, propertyName: string): void;
+        protected setTargetStyle(target: HTMLElement, propertyName: string, value: string): void;
         protected init(): void;
         static create(options?: ModalElement, parent?: Container): Promise<Modal>;
     }
@@ -4513,7 +4516,7 @@ declare module "packages/modal/src/index" {
 declare module "packages/module/src/module" {
     import { Container, ContainerElement } from "@ijstech/components/base";
     import { IconElement } from "packages/icon/src/index";
-    import { Modal } from "packages/modal/src/index";
+    import { Modal, ModalElement } from "packages/modal/src/index";
     export interface ModuleElement extends ContainerElement {
         caption?: string;
     }
@@ -4547,7 +4550,7 @@ declare module "packages/module/src/module" {
         onShow(options?: any): void;
         onHide(): void;
         disconnectedCallback(): void;
-        openModal(options?: IOpenModalOptions): Modal;
+        openModal(options?: ModalElement): Modal;
         closeModal(): void;
     }
 }

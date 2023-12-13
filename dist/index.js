@@ -11778,9 +11778,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// node_modules/moment/moment.js
+// ../../node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "node_modules/moment/moment.js"(exports, module2) {
+  "../../node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -17334,7 +17334,10 @@ var ComponentProperty = {
 var Component = class extends HTMLElement {
   constructor(parent, options, defaults) {
     super();
+    this.deferReadyCallback = false;
     this._readyCallback = [];
+    this.initializing = false;
+    this.initialized = false;
     this.attrs = {};
     this._uuid = IdUtils.generateUUID();
     this.options = options || {};
@@ -17345,8 +17348,7 @@ var Component = class extends HTMLElement {
     if (this.connected)
       return;
     this.connected = true;
-    if (!this._readyInit) {
-      this._readyInit = true;
+    if (!this.initializing && !this.initialized) {
       this.init();
     }
   }
@@ -17460,35 +17462,36 @@ var Component = class extends HTMLElement {
     this.setAttribute("id", value);
   }
   async ready() {
-    if (this._ready)
+    if (this.initialized)
       return;
     return new Promise((resolve) => {
-      if (this._ready)
+      if (this.initialized)
         return resolve();
       this._readyCallback.push(resolve);
-      if (!this._readyInit) {
-        this._readyInit = true;
+      if (!this.initializing && !this.initialized) {
         this.init();
       }
-      ;
     });
   }
   executeReadyCallback() {
-    this._ready = true;
+    if (this.initialized)
+      return;
+    this.initialized = true;
+    this.initializing = false;
     let callbacks = this._readyCallback;
-    this._readyCallback = [];
     for (let i = 0; i < callbacks.length; i++) {
       callbacks[i]();
     }
     ;
+    this._readyCallback = [];
   }
   init() {
-    if (!this.initialized) {
-      this.initialized = true;
+    if (!this.initializing && !this.initialized) {
+      this.initializing = true;
       if (this.options["class"]) {
         this.setAttribute("class", this.options["class"]);
       }
-      if (!this.isReadyCallbackQueued) {
+      if (!this.deferReadyCallback) {
         this.executeReadyCallback();
       }
       ;
@@ -19976,7 +19979,6 @@ var GlobalEvents = class {
   _handleContextMenu(event) {
     let control = getControl(event.target);
     if (control) {
-      event.preventDefault();
       event.stopPropagation();
       if (control.enabled)
         control._handleContextMenu(event);
@@ -22226,8 +22228,6 @@ var getNoBackdropStyle = () => {
     transform: "scale(0.8)",
     transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
     zIndex: 1e3,
-    overflow: "auto",
-    width: "100%",
     maxWidth: "inherit",
     $nest: {
       ".modal": {
@@ -22240,6 +22240,22 @@ var getNoBackdropStyle = () => {
         transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
       }
     }
+  });
+};
+var getFixedWrapperStyle = (paddingLeft, paddingTop) => {
+  return style({
+    paddingLeft,
+    paddingTop,
+    width: "100%",
+    height: "100%"
+  });
+};
+var getAbsoluteWrapperStyle = (left, top) => {
+  return style({
+    left,
+    top,
+    width: "inherit",
+    height: "inherit"
   });
 };
 var modalStyle = style({
@@ -22407,6 +22423,7 @@ var Modal = class extends Container {
       closeOnBackdropClick: true,
       popupPlacement: "center"
     });
+    this._visible = false;
     this.hasInitializedChildFixed = false;
     this.mapScrollTop = {};
     this.boundHandleModalMouseDown = this.handleModalMouseDown.bind(this);
@@ -22417,11 +22434,11 @@ var Modal = class extends Container {
   }
   set visible(value) {
     var _a, _b;
-    this.positionAtChildFixed(value);
     if (value) {
       this._visible = true;
       this.style.display = "block";
       this.wrapperDiv.classList.add("show");
+      this.positionAtChildFixed(true);
       this.dispatchEvent(showEvent);
       if (this.showBackdrop) {
         this.overlayDiv.classList.add("show");
@@ -22436,6 +22453,7 @@ var Modal = class extends Container {
       document.addEventListener("mousedown", this.boundHandleModalMouseDown);
       document.addEventListener("mouseup", this.boundHandleModalMouseUp);
     } else {
+      this.positionAtChildFixed(false);
       this._visible = false;
       this.style.display = "none";
       this.wrapperDiv.classList.remove("show");
@@ -22619,11 +22637,13 @@ var Modal = class extends Container {
         for (const key2 in this.mapScrollTop) {
           totalScrollY += this.mapScrollTop[key2];
         }
+        const parent = this.getWrapperParent(this.parentElement);
+        const newY = parent ? 0 : y;
         if (y + elmHeight > innerHeight) {
-          const elmTop = y - elmHeight + totalScrollY;
-          this.style.top = `${elmTop < 0 ? 0 : y - elmHeight + totalScrollY}px`;
+          const elmTop = newY - elmHeight + totalScrollY;
+          this.style.top = `${elmTop < 0 ? 0 : elmTop}px`;
         } else {
-          this.style.top = `${y + totalScrollY}px`;
+          this.style.top = `${newY + totalScrollY}px`;
         }
         if (x + elmWidth > innerWidth) {
           this.style.left = `${innerWidth - elmWidth}px`;
@@ -22632,6 +22652,18 @@ var Modal = class extends Container {
         }
       }
     }
+  }
+  getWrapperParent(rootParent) {
+    if (!this.linkTo)
+      return null;
+    let parent = null;
+    for (let child2 of rootParent.children) {
+      if (child2.contains(this.linkTo)) {
+        parent = child2;
+        break;
+      }
+    }
+    return parent;
   }
   positionAt(placement) {
     if (this.showBackdrop) {
@@ -22643,10 +22675,8 @@ var Modal = class extends Container {
   positionAtFix(placement) {
     let parent = document.body;
     let coords = this.getWrapperFixCoords(parent, placement);
-    this.wrapperDiv.style.width = "100%";
-    this.wrapperDiv.style.height = "100%";
-    this.wrapperDiv.style.paddingLeft = coords.left + "px";
-    this.wrapperDiv.style.paddingTop = coords.top + "px";
+    const wrapperPositionStyle = getFixedWrapperStyle(coords.left + "px", coords.top + "px");
+    this.setTargetStyle(this.wrapperDiv, "wrapperPosition", wrapperPositionStyle);
   }
   positionAtAbsolute(placement) {
     let parent = this._parent || this.linkTo || this.parentElement || document.body;
@@ -22656,61 +22686,67 @@ var Modal = class extends Container {
     } else {
       coords = this.getWrapperAbsoluteCoords(parent, placement);
     }
-    this.wrapperDiv.style.height = "inherit";
-    this.wrapperDiv.style.width = "inherit";
-    this.wrapperDiv.style.left = coords.left + "px";
-    this.wrapperDiv.style.top = coords.top + "px";
+    const wrapperPositionStyle = getAbsoluteWrapperStyle(coords.left + "px", coords.top + "px");
+    this.setTargetStyle(this.wrapperDiv, "wrapperPosition", wrapperPositionStyle);
   }
   getWrapperFixCoords(parent, placement) {
     const parentCoords = parent.getBoundingClientRect();
     let left = 0;
     let top = 0;
-    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parentCoords.height;
+    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parent.offsetHeight;
+    const parentTop = Math.max(parent.offsetTop, parentCoords.top);
     switch (placement) {
       case "center":
         top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
         left = parentCoords.width / 2 - this.modalDiv.offsetWidth / 2 - 1;
         break;
       case "top":
-        top = this.showBackdrop ? 0 : parentCoords.top - parentHeight;
+        top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
         left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "topLeft":
-        top = this.showBackdrop ? 0 : parentCoords.top - parentHeight;
+        top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
         left = parentCoords.left;
         break;
       case "topRight":
-        top = this.showBackdrop ? 0 : parentCoords.top - parentHeight;
+        top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
         left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "bottom":
-        top = parentCoords.top + parentHeight;
+        top = parentTop + parentHeight;
         if (this.showBackdrop)
           top = top - this.modalDiv.offsetHeight - 1;
         left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "bottomLeft":
-        top = parentCoords.top + parentHeight;
+        top = parentTop + parentHeight;
         if (this.showBackdrop)
           top = top - this.modalDiv.offsetHeight;
         left = parentCoords.left;
         break;
       case "bottomRight":
-        top = parentCoords.top + parentHeight;
+        top = parentTop + parentHeight;
         if (this.showBackdrop)
           top = top - this.modalDiv.offsetHeight;
         left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "rightTop":
-        top = parentCoords.top;
+        top = parentTop;
         left = parentCoords.right;
         if (parentCoords.right + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
           left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
         }
+        if (parentTop + this.modalDiv.offsetHeight > document.documentElement.clientHeight) {
+          top = document.documentElement.clientHeight - this.modalDiv.offsetHeight;
+        }
+        break;
+      case "left":
+        left = this.showBackdrop ? 0 : parentCoords.left;
+        top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
         break;
     }
     left = left < 0 ? parentCoords.left : left;
-    top = top < 0 ? parentCoords.top : top;
+    top = top < 0 ? parentTop : top;
     return { top, left };
   }
   getWrapperAbsoluteCoords(parent, placement) {
@@ -22888,13 +22924,13 @@ var Modal = class extends Container {
   }
   get overflow() {
     if (!this._overflow) {
-      this._overflow = new Overflow(this.modalDiv);
+      this._overflow = new Overflow(this.showBackdrop ? this.modalDiv : this.wrapperDiv);
     }
     return this._overflow;
   }
   set overflow(value) {
     if (!this._overflow) {
-      this._overflow = new Overflow(this.modalDiv, value);
+      this._overflow = new Overflow(this.showBackdrop ? this.modalDiv : this.wrapperDiv, value);
     } else {
       this._overflow.setOverflowStyle(value);
     }
@@ -22990,7 +23026,7 @@ var Modal = class extends Container {
         this.boxShadow = boxShadow;
       let overflow = this.getAttribute("overflow", true);
       if (overflow) {
-        this._overflow = new Overflow(this.modalDiv, overflow);
+        this._overflow = new Overflow(this.showBackdrop ? this.modalDiv : this.wrapperDiv, overflow);
       }
       this.mediaQueries = this.getAttribute("mediaQueries", true, []);
     }
@@ -26683,7 +26719,10 @@ cssRule("i-input", {
       width: "100%",
       lineHeight: 1.5,
       color: Theme22.input.fontColor,
-      background: Theme22.input.background
+      background: Theme22.input.background,
+      fontSize: Theme22.typography.fontSize,
+      fontFamily: Theme22.typography.fontFamily,
+      outline: "none"
     }
   }
 });
@@ -27111,6 +27150,13 @@ var Input = class extends Control {
       if (this.value && this.clearIconElm)
         this.clearIconElm.classList.add("active");
       super.init();
+      if (this.inputType === "textarea" && this.maxHeight != null) {
+        if (!isNaN(Number(this.maxHeight))) {
+          this.inputElm.style.maxHeight = this.maxHeight + "px";
+        } else {
+          this.inputElm.style.maxHeight = this.maxHeight + "";
+        }
+      }
     }
   }
   static async create(options, parent) {
@@ -33738,7 +33784,11 @@ var Markdown = class extends Control {
       this._padding.update(value);
   }
   getRenderer() {
-    const renderer = {};
+    const renderer = {
+      link(href, title, text) {
+        return `<a target="_blank" href="${href}" ${title ? 'title="' + title + '"' : ""}>${text}</a>`;
+      }
+    };
     return renderer;
   }
   async load(text) {
@@ -33793,6 +33843,14 @@ Markdown = __decorateClass([
 
 // packages/markdown-editor/src/styles/index.css.ts
 var Theme26 = theme_exports.ThemeVars;
+cssRule("i-markdown-editor", {
+  $nest: {
+    ".ProseMirror .placeholder": {
+      userSelect: "none",
+      pointerEvents: "none"
+    }
+  }
+});
 
 // packages/markdown-editor/src/markdown-editor.ts
 var TOOLBAR_ITEMS_DEFAULT = [
@@ -35036,23 +35094,35 @@ var Module = class extends Container {
     super.disconnectedCallback();
   }
   openModal(options) {
+    var _a;
     let modal = Module._modalMap[this.uuid];
     if (modal) {
+      modal.title = (options == null ? void 0 : options.title) || "";
       modal.zIndex = (options == null ? void 0 : options.zIndex) || 10;
+      if (options == null ? void 0 : options.linkTo)
+        modal.linkTo = options.linkTo;
+      modal.refresh();
       modal.visible = true;
       return modal;
     }
-    modal = new Modal(void 0, {
-      closeIcon: {
-        name: "times"
-      },
+    const showBackdrop = (_a = options == null ? void 0 : options.showBackdrop) != null ? _a : true;
+    const modalOptions = {
       border: { radius: 10 },
       ...options
+    };
+    if (showBackdrop) {
+      modalOptions.closeIcon = { name: "times" };
+    }
+    modal = new Modal(void 0, {
+      ...modalOptions
     });
     document.body.appendChild(modal);
     Module._modalMap[this.uuid] = modal;
     modal.body = this;
     modal.zIndex = (options == null ? void 0 : options.zIndex) || 10;
+    if (options == null ? void 0 : options.linkTo)
+      modal.linkTo = options.linkTo;
+    modal.refresh();
     modal.visible = true;
     return modal;
   }
