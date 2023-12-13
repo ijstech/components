@@ -26802,6 +26802,10 @@ var Input = class extends Control {
           this.clearIconElm.classList.remove("active");
         }
       }
+      if (this.inputType === "textarea" && (this.resize === "auto" || this.resize === "auto-grow")) {
+        this.inputElm.style.height = "auto";
+        this.inputElm.style.height = this.inputElm.scrollHeight + 2 + "px";
+      }
     }
   }
   get width() {
