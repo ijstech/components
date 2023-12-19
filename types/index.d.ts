@@ -4484,10 +4484,12 @@ declare module "packages/modal/src/modal" {
         private positionAtFix;
         private positionAtAbsolute;
         private getWrapperFixCoords;
+        private getWrapperOffsets;
         private getWrapperAbsoluteCoords;
         protected _handleOnShow(event: Event): void;
         private handleModalMouseDown;
         private handleModalMouseUp;
+        private setInsideClick;
         private updateModal;
         refresh(): void;
         get background(): Background;
@@ -10030,6 +10032,7 @@ declare module "packages/markdown/src/markdown" {
         get padding(): ISpace;
         set padding(value: ISpace);
         private getRenderer;
+        private walkTokens;
         load(text: string): Promise<any>;
         beforeRender(text: string): Promise<void>;
         processText(text: string): Promise<string>;
@@ -10063,6 +10066,8 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         }[];
         placeholder?: string;
         onChanged?: notifyEventCallback;
+        onFocus?: notifyEventCallback;
+        onBlur?: notifyEventCallback;
     }
     global {
         namespace JSX {
@@ -10089,6 +10094,8 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private _hideModeSwitch;
         private _placeholder;
         onChanged: notifyEventCallback;
+        onFocus: notifyEventCallback;
+        onBlur: notifyEventCallback;
         get mode(): 'wysiwyg' | 'markdown';
         set mode(value: 'wysiwyg' | 'markdown');
         get theme(): 'light' | 'dark';
@@ -11013,6 +11020,7 @@ declare module "packages/carousel/src/carousel" {
         items?: CarouselItemElement[];
         activeSlide?: number;
         type?: 'dot' | 'arrow';
+        indicators?: boolean;
         swipe?: boolean;
         onSwipeStart?: SwipeStartEventCallback;
         onSwipeEnd?: SwipeEndEventCallback;
@@ -11044,6 +11052,7 @@ declare module "packages/carousel/src/carousel" {
         private posX2;
         private threshold;
         private _swipe;
+        private _indicators;
         onSwipeStart: SwipeStartEventCallback;
         onSwipeEnd: SwipeEndEventCallback;
         private isSwiping;
@@ -11064,6 +11073,8 @@ declare module "packages/carousel/src/carousel" {
         set type(value: 'dot' | 'arrow');
         get swipe(): boolean;
         set swipe(value: boolean);
+        get indicators(): boolean;
+        set indicators(value: boolean);
         get isArrow(): boolean;
         disconnectedCallback(): void;
         private updateArrows;

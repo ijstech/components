@@ -11778,9 +11778,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// ../../node_modules/moment/moment.js
+// node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "../../node_modules/moment/moment.js"(exports, module2) {
+  "node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -15527,7 +15527,7 @@ __export(exports, {
   Progress: () => Progress,
   Radio: () => Radio,
   RadioGroup: () => RadioGroup,
-  Range: () => Range,
+  Range: () => Range2,
   RequireJS: () => RequireJS,
   ScatterChart: () => ScatterChart,
   ScatterLineChart: () => ScatterLineChart,
@@ -18242,7 +18242,7 @@ function refresh() {
       _refreshTimeout = void 0;
       for (let i = 0; i < document.body.childNodes.length; i++) {
         let node = document.body.childNodes[i];
-        if (node instanceof Container) {
+        if (node instanceof Container && node.nodeName !== "I-MODAL") {
           node.style.position = "absolute";
           node.style.width = "100%";
           node.style.height = "100%";
@@ -22526,7 +22526,7 @@ var Modal = class extends Container {
     } else {
       this.style.position = "absolute";
       this.style.left = "0px";
-      this.style.top = "0px";
+      this.style.top = `${window.scrollY}px`;
       const noBackdropStyle = getNoBackdropStyle();
       this.setTargetStyle(this.wrapperDiv, "showBackdrop", noBackdropStyle);
     }
@@ -22693,8 +22693,12 @@ var Modal = class extends Container {
     const parentCoords = parent.getBoundingClientRect();
     let left = 0;
     let top = 0;
-    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parent.offsetHeight;
-    const parentTop = Math.max(parent.offsetTop, parentCoords.top);
+    const parentHeight = this.showBackdrop ? (parentCoords.height || window.innerHeight) - 1 : parent.offsetHeight || parentCoords.height;
+    const { wrapperLeft, wrapperTop } = this.getWrapperOffsets(parent);
+    let parentTop = Math.max(parent.offsetTop || 0, parentCoords.top) + wrapperTop;
+    let parentLeft = parentCoords.left + wrapperLeft;
+    let parentWidth = parent.offsetWidth || parentCoords.width;
+    let parentRight = parentLeft + parentWidth;
     switch (placement) {
       case "center":
         top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
@@ -22702,52 +22706,66 @@ var Modal = class extends Container {
         break;
       case "top":
         top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
-        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
+        left = parentLeft + (parentWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "topLeft":
         top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
-        left = parentCoords.left;
+        left = parentLeft;
         break;
       case "topRight":
         top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
-        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
+        left = parentLeft + parentWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "bottom":
         top = parentTop + parentHeight;
         if (this.showBackdrop)
           top = top - this.modalDiv.offsetHeight - 1;
-        left = parentCoords.left + (parent.offsetWidth - this.modalDiv.offsetWidth) / 2 - 1;
+        left = parentLeft + (parentWidth - this.modalDiv.offsetWidth) / 2 - 1;
         break;
       case "bottomLeft":
         top = parentTop + parentHeight;
         if (this.showBackdrop)
           top = top - this.modalDiv.offsetHeight;
-        left = parentCoords.left;
+        left = parentLeft;
         break;
       case "bottomRight":
         top = parentTop + parentHeight;
         if (this.showBackdrop)
           top = top - this.modalDiv.offsetHeight;
-        left = parentCoords.left + parent.offsetWidth - this.modalDiv.offsetWidth - 1;
+        left = parentLeft + parentWidth - this.modalDiv.offsetWidth - 1;
         break;
       case "rightTop":
         top = parentTop;
-        left = parentCoords.right;
-        if (parentCoords.right + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
+        left = this.showBackdrop ? parentCoords.right : parentRight;
+        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
           left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
         }
-        if (parentTop + this.modalDiv.offsetHeight > document.documentElement.clientHeight) {
+        if (top + this.modalDiv.offsetHeight > document.documentElement.clientHeight) {
           top = document.documentElement.clientHeight - this.modalDiv.offsetHeight;
         }
         break;
       case "left":
-        left = this.showBackdrop ? 0 : parentCoords.left;
+        left = this.showBackdrop ? 0 : parentLeft - this.modalDiv.offsetWidth;
         top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
         break;
     }
-    left = left < 0 ? parentCoords.left : left;
+    left = left < 0 ? parentLeft : left;
     top = top < 0 ? parentTop : top;
     return { top, left };
+  }
+  getWrapperOffsets(parent) {
+    let wrapperTop = 0;
+    let wrapperLeft = 0;
+    if (this.isChildFixed) {
+      if (parent.nodeName === "I-MODAL") {
+        const wrapper = parent.querySelector(".modal-wrapper");
+        if (wrapper) {
+          wrapperTop = wrapper.offsetTop;
+          wrapperLeft = wrapper.offsetLeft;
+        }
+      }
+    }
+    return { wrapperTop, wrapperLeft };
   }
   getWrapperAbsoluteCoords(parent, placement) {
     const parentCoords = parent.getBoundingClientRect();
@@ -22837,7 +22855,11 @@ var Modal = class extends Container {
       if (window.innerWidth >= parentCoords.left + this.wrapperDiv.offsetWidth) {
         left = 0;
       } else {
-        left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+        if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
+          left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+        } else {
+          left = Math.max(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+        }
       }
     }
     return { top, left };
@@ -22851,18 +22873,30 @@ var Modal = class extends Container {
     }
   }
   handleModalMouseDown(event) {
-    const target = event.target;
     this.insideClick = true;
+    this.setInsideClick(event);
+  }
+  handleModalMouseUp(event) {
+    if (!this.closeOnBackdropClick && !this.showBackdrop) {
+      this.setInsideClick(event);
+    }
+    if (!this.insideClick)
+      this.visible = false;
+  }
+  setInsideClick(event) {
+    const target = event.target;
     if (this.closeOnBackdropClick) {
       this.insideClick = this.showBackdrop ? target !== this.wrapperDiv : this.modalDiv.contains(target);
     } else if (!this.showBackdrop) {
       let parent = this._parent || this.linkTo || this.parentElement;
+      if (parent instanceof Range) {
+        const commonAncestor = parent.commonAncestorContainer;
+        const wrapNode = (commonAncestor == null ? void 0 : commonAncestor.nodeType) === 3 ? commonAncestor.parentElement : commonAncestor;
+        if (wrapNode)
+          parent = wrapNode;
+      }
       this.insideClick = this.modalDiv.contains(target) || (parent == null ? void 0 : parent.contains(target));
     }
-  }
-  handleModalMouseUp(event) {
-    if (!this.insideClick)
-      this.visible = false;
   }
   updateModal(name, value) {
     if (!isNaN(Number(value)))
@@ -25401,7 +25435,7 @@ cssRule("i-range", {
 });
 
 // packages/range/src/range.ts
-var Range = class extends Control {
+var Range2 = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
       height: 25,
@@ -25570,10 +25604,10 @@ var Range = class extends Control {
 };
 __decorateClass([
   observable("value")
-], Range.prototype, "_value", 2);
-Range = __decorateClass([
+], Range2.prototype, "_value", 2);
+Range2 = __decorateClass([
   customElements2("i-range")
-], Range);
+], Range2);
 
 // packages/radio/src/radio.css.ts
 var Theme19 = theme_exports.ThemeVars;
@@ -26409,7 +26443,7 @@ var ColorPicker = class extends Control {
     let paletteValue = h || 0;
     paletteValue = paletteValue > 360 ? 360 : paletteValue;
     colorSelectedWrapper.appendChild(this.colorSelected);
-    this.colorPalette = await Range.create({
+    this.colorPalette = await Range2.create({
       width: "100%",
       height: 10,
       min: 0,
@@ -26424,7 +26458,7 @@ var ColorPicker = class extends Control {
     if (h !== void 0) {
       this.mdColorPicker.style.setProperty("--selected-color", `hsla(${h}, ${s}%, ${l}%, ${a})`);
     }
-    this.colorSlider = await Range.create({
+    this.colorSlider = await Range2.create({
       width: "100%",
       height: 10,
       min: 0,
@@ -26986,7 +27020,7 @@ var Input = class extends Control {
         this.inputElm = this._inputControl.querySelector('input[type="text"]');
         break;
       case "range":
-        this._inputControl = new Range(this, {
+        this._inputControl = new Range2(this, {
           value,
           caption,
           width,
@@ -33759,6 +33793,9 @@ cssRule("i-markdown", {
 
 // packages/markdown/src/markdown.ts
 var libs = [`${LibPath}lib/marked/marked.umd.js`];
+var headingRegex = /(#{1,6})\s(.*?)(?=\||(#{1,6})|$)/gm;
+var numberedListRegex = /(\d+)\.(\s{1,2})(.*?)(?=\||(\d+\.)|$)/gm;
+var bulletListRegex = /([-+*])\s{1,2}(.*?)(?=\||\\n|([-+*])|$)/gm;
 var Markdown = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -33795,11 +33832,46 @@ var Markdown = class extends Control {
     };
     return renderer;
   }
+  walkTokens(token) {
+    if (token.type === "text") {
+      let match;
+      match = headingRegex.exec(token.text);
+      if (match) {
+        token.text = token.text.replace(headingRegex, (m, level, heading) => {
+          const lv = (level == null ? void 0 : level.length) || 1;
+          return `<h${lv}>${heading || ""}</h${lv}>`;
+        });
+      }
+      match = numberedListRegex.exec(token.text);
+      if (match) {
+        token.text = "<ol>" + token.text.replace(numberedListRegex, `<li>$3</li>`) + "</ol>";
+      }
+      match = bulletListRegex.exec(token.text);
+      if (match) {
+        token.text = "<ul>" + token.text.replace(bulletListRegex, "<li>$2</li>") + "</ul>";
+      }
+    }
+  }
   async load(text) {
+    if (text) {
+      const regex = /\|([^|]*?)\|/g;
+      text = text.replace(regex, (match, cellContent) => {
+        if (cellContent !== void 0) {
+          const modifiedContent = cellContent.replace(/\n/g, " ");
+          return `|${modifiedContent}|`;
+        } else {
+          return match;
+        }
+      });
+    }
     if (!this.marked)
       this.marked = await this.loadLib();
     let renderer = this.getRenderer();
-    this.marked.use({ renderer });
+    const self = this;
+    this.marked.use({
+      renderer,
+      walkTokens: self.walkTokens
+    });
     if (text) {
       text = await this.marked.parse(text, {
         breaks: true
@@ -33808,6 +33880,7 @@ var Markdown = class extends Control {
     } else {
       text = "";
     }
+    ;
     if (!this.elm)
       this.elm = this.createElement("div", this);
     this.elm.innerHTML = text;
@@ -34124,6 +34197,14 @@ var MarkdownEditor = class extends Text {
           change: (event) => {
             if (this.onChanged)
               this.onChanged(this, event);
+          },
+          focus: (event) => {
+            if (this.onFocus)
+              this.onFocus(this, event);
+          },
+          blur: (event) => {
+            if (this.onBlur)
+              this.onBlur(this, event);
           }
         }
       });
@@ -34163,6 +34244,8 @@ var MarkdownEditor = class extends Text {
   async init() {
     super.init();
     this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
+    this.onFocus = this.getAttribute("onFocus", true) || this.onFocus;
+    this.onBlur = this.getAttribute("onBlur", true) || this.onBlur;
     const mode = this.getAttribute("mode", true, "");
     if (mode) {
       this._mode = mode;
@@ -35112,11 +35195,9 @@ var Module = class extends Container {
     const showBackdrop = (_a = options == null ? void 0 : options.showBackdrop) != null ? _a : true;
     const modalOptions = {
       border: { radius: 10 },
+      closeIcon: showBackdrop ? { name: "times" } : null,
       ...options
     };
-    if (showBackdrop) {
-      modalOptions.closeIcon = { name: "times" };
-    }
     modal = new Modal(void 0, {
       ...modalOptions
     });
@@ -37869,13 +37950,23 @@ Table = __decorateClass([
 // packages/carousel/src/style/carousel.css.ts
 var Theme36 = theme_exports.ThemeVars;
 cssRule("i-carousel-slider", {
-  display: "block",
+  display: "flex",
+  flexDirection: "column",
   position: "relative",
   width: "100%",
   overflow: "hidden",
   margin: 0,
   padding: 0,
   $nest: {
+    ".hidden": {
+      display: "none !important"
+    },
+    "> div": {
+      flexGrow: 1
+    },
+    "i-carousel-item": {
+      height: "100%"
+    },
     ".wrapper-slider": {
       display: "flex",
       alignItems: "center"
@@ -37883,6 +37974,7 @@ cssRule("i-carousel-slider", {
     ".wrapper-slider-list": {
       display: "block",
       width: "100%",
+      height: "100%",
       overflow: "hidden"
     },
     ".slider-arrow": {
@@ -37897,7 +37989,8 @@ cssRule("i-carousel-slider", {
     ".slider-list": {
       display: "flex",
       position: "relative",
-      transition: "transform 500ms ease"
+      transition: "transform 500ms ease",
+      height: "100%"
     },
     ".slider-list > *": {
       flexShrink: "0"
@@ -37906,9 +37999,8 @@ cssRule("i-carousel-slider", {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      margin: 0,
       padding: 0,
-      marginTop: "1rem",
+      marginBlock: "1rem",
       listStyle: "none",
       gap: "0.4rem",
       $nest: {
@@ -37986,7 +38078,7 @@ var CarouselSlider = class extends Control {
   }
   set activeSlide(value) {
     var _a;
-    if (this.isArrow) {
+    if (this.isArrow || this.type === "dot" && !this.indicators) {
       this.updateSliderByArrows(value);
       return;
     }
@@ -38053,6 +38145,15 @@ var CarouselSlider = class extends Control {
       this.sliderListElm.removeEventListener("touchstart", this.dragStartHandler);
       this.sliderListElm.removeEventListener("touchend", this.dragEndHandler);
       this.sliderListElm.removeEventListener("touchmove", this.dragHandler);
+    }
+  }
+  get indicators() {
+    return this._indicators;
+  }
+  set indicators(value) {
+    this._indicators = value;
+    if (this.dotPagination) {
+      value ? this.dotPagination.classList.remove("hidden") : this.dotPagination.classList.add("hidden");
     }
   }
   get isArrow() {
@@ -38136,7 +38237,7 @@ var CarouselSlider = class extends Control {
       return;
     this.dotPagination.innerHTML = "";
     this.dotsElm = [];
-    if (this.isArrow) {
+    if (this.isArrow || !this.indicators) {
       this.dotPagination.classList.add("hidden");
       return;
     }
@@ -38284,6 +38385,7 @@ var CarouselSlider = class extends Control {
     this.dragHandler = this.dragHandler.bind(this);
     this.dragEndHandler = this.dragEndHandler.bind(this);
     this.type = this.getAttribute("type", true, "dot");
+    this.indicators = this.getAttribute("indicators", true, true);
     this.wrapperSliderElm = this.createElement("div", this);
     this.updateWrapperClass();
     const wrapper = this.createElement("div", this.wrapperSliderElm);
