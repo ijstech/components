@@ -3888,7 +3888,7 @@ declare module "packages/tooltip/src/index" {
 }
 declare module "packages/base/src/control" {
     import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground, ICustomProperties, CursorType } from "packages/base/src/component";
-    import { notifyEventCallback, notifyMouseEventCallback, notifyKeyboardEventCallback } from "@ijstech/components/base";
+    import { notifyEventCallback, notifyMouseEventCallback, notifyKeyboardEventCallback, notifyGestureEventCallback } from "@ijstech/components/base";
     export type DockStyle = 'none' | 'bottom' | 'center' | 'fill' | 'left' | 'right' | 'top';
     export type LineHeightType = string | number | 'normal' | 'initial' | 'inherit';
     export type DisplayType = 'inline-block' | 'block' | 'inline-flex' | 'flex' | 'inline' | 'initial' | 'inherit' | 'none' | '-webkit-box';
@@ -4040,9 +4040,9 @@ declare module "packages/base/src/control" {
         protected _onFocus: notifyEventCallback;
         protected _onKeyDown: notifyKeyboardEventCallback;
         protected _onKeyUp: notifyKeyboardEventCallback;
-        protected _onMouseDown: notifyMouseEventCallback;
-        protected _onMouseMove: notifyMouseEventCallback;
-        protected _onMouseUp: notifyMouseEventCallback;
+        protected _onMouseDown: notifyGestureEventCallback;
+        protected _onMouseMove: notifyGestureEventCallback;
+        protected _onMouseUp: notifyGestureEventCallback;
         protected _visible: boolean;
         protected _margin: SpaceValue;
         protected _padding: SpaceValue;
@@ -4109,9 +4109,9 @@ declare module "packages/base/src/control" {
         protected _handleFocus(event: Event, stopPropagation?: boolean): boolean;
         protected _handleKeyDown(event: KeyboardEvent, stopPropagation?: boolean): boolean | undefined;
         protected _handleKeyUp(event: KeyboardEvent, stopPropagation?: boolean): boolean | undefined;
-        protected _handleMouseDown(event: MouseEvent, stopPropagation?: boolean): boolean;
-        protected _handleMouseMove(event: MouseEvent, stopPropagation?: boolean): boolean;
-        protected _handleMouseUp(event: MouseEvent, stopPropagation?: boolean): boolean | undefined;
+        protected _handleMouseDown(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean;
+        protected _handleMouseMove(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean;
+        protected _handleMouseUp(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean | undefined;
         get maxWidth(): number | string;
         set maxWidth(value: number | string);
         get minWidth(): string | number;
@@ -4123,10 +4123,10 @@ declare module "packages/base/src/control" {
         set onContextMenu(callback: notifyMouseEventCallback);
         get onDblClick(): notifyMouseEventCallback;
         set onDblClick(callback: notifyMouseEventCallback);
-        get onMouseDown(): notifyMouseEventCallback;
-        set onMouseDown(callback: notifyMouseEventCallback);
-        get onMouseUp(): notifyMouseEventCallback;
-        set onMouseUp(callback: notifyMouseEventCallback);
+        get onMouseDown(): notifyGestureEventCallback;
+        set onMouseDown(callback: notifyGestureEventCallback);
+        get onMouseUp(): notifyGestureEventCallback;
+        set onMouseUp(callback: notifyGestureEventCallback);
         clearInnerHTML(): void;
         refresh(): void;
         get resizable(): boolean;
@@ -4243,6 +4243,7 @@ declare module "@ijstech/components/base" {
     export type notifyEventCallback = (target: Control, event: Event) => void;
     export type notifyMouseEventCallback = (target: Control, event: MouseEvent) => void;
     export type notifyKeyboardEventCallback = (target: Control, event: KeyboardEvent) => void;
+    export type notifyGestureEventCallback = (target: Control, event: PointerEvent | MouseEvent | TouchEvent) => void;
     export interface ControlElement {
         class?: string;
         contextMenu?: string;
@@ -4294,7 +4295,7 @@ declare module "@ijstech/components/base" {
     };
     export function customElements(tagName: string, properties?: ICustomProperties): (constructor: CustomElementConstructor) => void;
     export function customModule(target: any): void;
-    export function setAttributeToProperty<T extends Control>(element: T, propertyName: keyof T): void;
+    export function setAttributeToProperty<T extends Control>(element: T, propertyName: keyof T, defaultValue?: any): void;
 }
 declare module "packages/image/src/style/image.css" { }
 declare module "packages/image/src/image" {
@@ -4394,7 +4395,7 @@ declare module "packages/modal/src/style/modal.css" {
 declare module "packages/modal/src/modal" {
     import { Control, ControlElement, Container, IBackground, IBorder, Background, Border, IMediaQuery, IControlMediaQueryProps, ISpace, Overflow, IOverflow, OverflowType } from "@ijstech/components/base";
     import { Icon, IconElement } from "packages/icon/src/index";
-    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left';
+    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
     type eventCallback = (target: Control) => void;
     type ModalPositionType = "fixed" | "absolute";
     export interface IModalMediaQueryProps extends IControlMediaQueryProps {
@@ -4642,6 +4643,7 @@ declare module "packages/checkbox/src/index" {
 declare module "packages/application/src/globalEvent" {
     export class GlobalEvents {
         _leftMouseButtonDown: boolean;
+        private _initialTouchPos;
         constructor();
         abortEvent(event: Event): void;
         private _handleClick;
@@ -4652,9 +4654,6 @@ declare module "packages/application/src/globalEvent" {
         private _handleKeyDown;
         private _handleKeyUp;
         private _handleContextMenu;
-        private _handleTouchStart;
-        private _handleTouchEnd;
-        private _handleTouchMove;
         private _handleChange;
         private _handleMouseWheel;
         private _handleFocus;
@@ -5692,7 +5691,9 @@ declare module "packages/radio/src/radio" {
         captionWidth?: number | string;
         value?: string;
     }
+    export type RadioGroupLayout = 'vertical' | 'horizontal';
     export interface RadioGroupElement extends ControlElement {
+        layout?: RadioGroupLayout;
         selectedValue?: string;
         radioItems?: RadioElement[];
         onChanged?: notifyEventCallback;
@@ -5725,6 +5726,7 @@ declare module "packages/radio/src/radio" {
     export class RadioGroup extends Control {
         private _selectedValue;
         private _radioItems;
+        private _layout;
         private _group;
         private name;
         onChanged: notifyEventCallback;
@@ -5733,6 +5735,8 @@ declare module "packages/radio/src/radio" {
         set selectedValue(value: string);
         get radioItems(): RadioElement[];
         set radioItems(value: RadioElement[]);
+        get layout(): RadioGroupLayout;
+        set layout(value: RadioGroupLayout);
         private renderUI;
         private appendItem;
         private _handleChange;
@@ -5743,7 +5747,7 @@ declare module "packages/radio/src/radio" {
     }
 }
 declare module "packages/radio/src/index" {
-    export { Radio, RadioElement, RadioGroup, RadioGroupElement } from "packages/radio/src/radio";
+    export { Radio, RadioElement, RadioGroup, RadioGroupElement, RadioGroupLayout } from "packages/radio/src/radio";
 }
 declare module "packages/color/src/utils" {
     export function stringToArr(color: string, isRgb: boolean): string[];
@@ -11003,12 +11007,19 @@ declare module "packages/table/src/index" {
     export { TableRow } from "packages/table/src/tableRow";
     export { TableCell } from "packages/table/src/tableCell";
 }
-declare module "packages/carousel/src/style/carousel.css" { }
+declare module "packages/carousel/src/style/carousel.css" {
+    import { ICarouselMediaQuery } from "packages/carousel/src/carousel";
+    export const sliderStyle: string;
+    export const getCarouselMediaQueriesStyleClass: (mediaQueries: ICarouselMediaQuery[]) => string;
+}
 declare module "packages/carousel/src/carousel" {
-    import { Control, ControlElement, ContainerElement } from "@ijstech/components/base";
-    import "packages/carousel/src/style/carousel.css";
+    import { Control, ControlElement, ContainerElement, IMediaQuery, IControlMediaQueryProps } from "@ijstech/components/base";
     type SwipeStartEventCallback = () => void;
     type SwipeEndEventCallback = (isSwiping: boolean) => void;
+    export interface ICarouselMediaQueryProps extends IControlMediaQueryProps {
+        indicators?: boolean;
+    }
+    export type ICarouselMediaQuery = IMediaQuery<ICarouselMediaQueryProps>;
     export interface CarouselItemElement extends ContainerElement {
         name?: string;
     }
@@ -11022,6 +11033,7 @@ declare module "packages/carousel/src/carousel" {
         type?: 'dot' | 'arrow';
         indicators?: boolean;
         swipe?: boolean;
+        mediaQueries?: ICarouselMediaQuery[];
         onSwipeStart?: SwipeStartEventCallback;
         onSwipeEnd?: SwipeEndEventCallback;
     }
@@ -11053,6 +11065,7 @@ declare module "packages/carousel/src/carousel" {
         private threshold;
         private _swipe;
         private _indicators;
+        private _mediaQueries;
         onSwipeStart: SwipeStartEventCallback;
         onSwipeEnd: SwipeEndEventCallback;
         private isSwiping;
@@ -11073,10 +11086,14 @@ declare module "packages/carousel/src/carousel" {
         set type(value: 'dot' | 'arrow');
         get swipe(): boolean;
         set swipe(value: boolean);
+        get mediaQueries(): ICarouselMediaQuery[];
+        set mediaQueries(value: ICarouselMediaQuery[]);
+        _handleMouseDown(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean;
+        _handleMouseMove(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean;
+        _handleMouseUp(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean;
         get indicators(): boolean;
         set indicators(value: boolean);
         get isArrow(): boolean;
-        disconnectedCallback(): void;
         private updateArrows;
         private updateSliderByArrows;
         private updateWrapperClass;

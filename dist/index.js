@@ -19629,8 +19629,8 @@ function customElements2(tagName, properties) {
 function customModule(target) {
   _currentDefineModule = target;
 }
-function setAttributeToProperty(element, propertyName) {
-  const prop = element.getAttribute(propertyName, true);
+function setAttributeToProperty(element, propertyName, defaultValue) {
+  const prop = element.getAttribute(propertyName, true, defaultValue);
   if (prop)
     element[propertyName] = prop;
 }
@@ -19898,6 +19898,10 @@ function getControl(target) {
 }
 var GlobalEvents = class {
   constructor() {
+    this._initialTouchPos = false;
+    this._handleMouseDown = this._handleMouseDown.bind(this);
+    this._handleMouseMove = this._handleMouseMove.bind(this);
+    this._handleMouseUp = this._handleMouseUp.bind(this);
     this.bindEvents();
   }
   abortEvent(event) {
@@ -19917,8 +19921,22 @@ var GlobalEvents = class {
     ;
   }
   _handleMouseDown(event) {
-    let control = getControl(event.target);
+    var _a;
+    const target = event.target;
+    let control = getControl(target);
     if (control == null ? void 0 : control.enabled) {
+      if (((_a = event.touches) == null ? void 0 : _a.length) > 1) {
+        return;
+      }
+      if (window.PointerEvent) {
+        target.setPointerCapture(event.pointerId);
+        document.addEventListener("pointermove", this._handleMouseMove, true);
+        document.addEventListener("pointerup", this._handleMouseUp, true);
+      } else {
+        document.addEventListener("mousemove", control._handleMouseMove, true);
+        document.addEventListener("mouseup", control._handleMouseUp, true);
+      }
+      this._initialTouchPos = true;
       if (control._handleMouseDown(event)) {
         event.preventDefault();
         event.stopPropagation();
@@ -19928,6 +19946,9 @@ var GlobalEvents = class {
   _handleMouseMove(event) {
     let control = getControl(event.target);
     if (control == null ? void 0 : control.enabled) {
+      if (!this._initialTouchPos) {
+        return;
+      }
       if (control._handleMouseMove(event)) {
         event.preventDefault();
         event.stopPropagation();
@@ -19935,8 +19956,22 @@ var GlobalEvents = class {
     }
   }
   _handleMouseUp(event) {
-    let control = getControl(event.target);
+    var _a;
+    const target = event.target;
+    let control = getControl(target);
     if (control == null ? void 0 : control.enabled) {
+      if (((_a = event.touches) == null ? void 0 : _a.length) > 0) {
+        return;
+      }
+      if (window.PointerEvent) {
+        target.releasePointerCapture(event.pointerId);
+        document.removeEventListener("pointermove", this._handleMouseMove, true);
+        document.removeEventListener("pointerup", this._handleMouseUp, true);
+      } else {
+        document.removeEventListener("mousemove", control._handleMouseMove, true);
+        document.removeEventListener("mouseup", control._handleMouseUp, true);
+      }
+      this._initialTouchPos = false;
       if (control._handleMouseUp(event)) {
         event.preventDefault();
         event.stopPropagation();
@@ -19984,12 +20019,6 @@ var GlobalEvents = class {
         control._handleContextMenu(event);
     }
   }
-  _handleTouchStart(event) {
-  }
-  _handleTouchEnd(event) {
-  }
-  _handleTouchMove(event) {
-  }
   _handleChange(event) {
   }
   _handleMouseWheel(event) {
@@ -20015,21 +20044,22 @@ var GlobalEvents = class {
     }
   }
   bindEvents() {
-    window.addEventListener("mousedown", this._handleMouseDown.bind(this));
-    window.addEventListener("mousemove", this._handleMouseMove.bind(this));
-    window.addEventListener("mouseup", this._handleMouseUp.bind(this));
     document.addEventListener("click", this._handleClick.bind(this));
     window.addEventListener("dblclick", this._handleDblClick.bind(this));
     window.oncontextmenu = this._handleContextMenu.bind(this);
     window.addEventListener("keydown", this._handleKeyDown);
     window.addEventListener("keyup", this._handleKeyUp);
-    window.addEventListener("touchstart", this._handleTouchStart);
-    window.addEventListener("touchend", this._handleTouchEnd);
-    window.addEventListener("touchmove", this._handleTouchMove);
     window.addEventListener("change", this._handleChange);
     window.addEventListener("wheel", this._handleMouseWheel, { passive: false });
     window.addEventListener("focus", this._handleFocus, true);
     window.addEventListener("blur", this._handleBlur, true);
+    document.addEventListener("touchstart", this._handleMouseDown, { passive: false });
+    document.addEventListener("touchmove", this._handleMouseMove, { passive: false });
+    if (window.PointerEvent) {
+      document.addEventListener("pointerdown", this._handleMouseDown, true);
+    } else {
+      document.addEventListener("mousedown", this._handleMouseDown, true);
+    }
   }
 };
 
@@ -22747,6 +22777,10 @@ var Modal = class extends Container {
       case "left":
         left = this.showBackdrop ? 0 : parentLeft - this.modalDiv.offsetWidth;
         top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
+        break;
+      case "right":
+        top = this.showBackdrop ? parentHeight / 2 - this.modalDiv.offsetHeight / 2 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
+        left = parentLeft + parentWidth - this.modalDiv.offsetWidth - 1;
         break;
     }
     left = left < 0 ? parentLeft : left;
@@ -25611,6 +25645,20 @@ Range2 = __decorateClass([
 
 // packages/radio/src/radio.css.ts
 var Theme19 = theme_exports.ThemeVars;
+cssRule("i-radio-group", {
+  display: "inline-flex",
+  alignItems: "start",
+  "$nest": {
+    ".radio-wrapper": {
+      display: "inline-flex",
+      alignItems: "baseline",
+      cursor: "pointer"
+    },
+    'input[type="radio"]': {
+      cursor: "pointer"
+    }
+  }
+});
 var captionStyle = style({
   fontFamily: Theme19.typography.fontFamily,
   fontSize: Theme19.typography.fontSize,
@@ -25622,14 +25670,9 @@ var captionStyle = style({
 });
 
 // packages/radio/src/radio.ts
-var defaultCaptionWidth2 = 40;
 var Radio = class extends Control {
   constructor(parent, options) {
-    super(parent, options, {
-      captionWidth: defaultCaptionWidth2,
-      height: 25,
-      width: 100
-    });
+    super(parent, options);
   }
   get value() {
     return this._value;
@@ -25657,6 +25700,8 @@ var Radio = class extends Control {
     this.setElementPosition(this.captionSpanElm, "width", value);
   }
   _handleClick(event) {
+    if (event.target !== this.inputElm)
+      return true;
     const checked = this.inputElm.checked || false;
     if (checked)
       this.classList.add("is-checked");
@@ -25669,7 +25714,7 @@ var Radio = class extends Control {
       super.init();
       this.classList.add(captionStyle);
       this.labelElm = this.createElement("label", this);
-      this.labelElm.classList.add("i-radio");
+      this.labelElm.classList.add("radio-wrapper");
       this.inputElm = this.createElement("input", this.labelElm);
       this.inputElm.type = "radio";
       const disabled = this.getAttribute("enabled") === false;
@@ -25678,7 +25723,7 @@ var Radio = class extends Control {
       this.captionSpanElm = this.createElement("span", this.labelElm);
       this.captionSpanElm.classList.add("i-radio_label");
       this.caption = this.getAttribute("caption", true, "");
-      this.captionWidth = this.getAttribute("captionWidth", true, defaultCaptionWidth2);
+      this.captionWidth = this.getAttribute("captionWidth", true);
       this.labelElm.style.color = theme_exports.ThemeVars.text.primary;
     }
   }
@@ -25721,6 +25766,17 @@ var RadioGroup = class extends Control {
   set radioItems(value) {
     this._radioItems = value;
     this.renderUI();
+  }
+  get layout() {
+    return this._layout;
+  }
+  set layout(value) {
+    this._layout = value || "vertical";
+    if (value === "horizontal") {
+      this.style.flexDirection = "row";
+    } else {
+      this.style.flexDirection = "column";
+    }
   }
   renderUI() {
     this.clearInnerHTML();
@@ -25769,13 +25825,12 @@ var RadioGroup = class extends Control {
   init() {
     var _a;
     if (!this.initialized) {
-      this.classList.add("i-radio-group");
       this.setAttribute("role", "radiogroup");
       if ((_a = this.options) == null ? void 0 : _a.onChanged)
         this.onChanged = this.options.onChanged;
-      const radioItems = this.getAttribute("radioItems", true);
-      radioItems && (this.radioItems = radioItems);
-      this.selectedValue = this.getAttribute("selectedValue", true);
+      setAttributeToProperty(this, "radioItems");
+      setAttributeToProperty(this, "selectedValue");
+      setAttributeToProperty(this, "layout", "vertical");
       super.init();
     }
   }
@@ -37949,7 +38004,7 @@ Table = __decorateClass([
 
 // packages/carousel/src/style/carousel.css.ts
 var Theme36 = theme_exports.ThemeVars;
-cssRule("i-carousel-slider", {
+var sliderStyle = style({
   display: "flex",
   flexDirection: "column",
   position: "relative",
@@ -37990,7 +38045,8 @@ cssRule("i-carousel-slider", {
       display: "flex",
       position: "relative",
       transition: "transform 500ms ease",
-      height: "100%"
+      height: "100%",
+      touchAction: "none"
     },
     ".slider-list > *": {
       flexShrink: "0"
@@ -38003,6 +38059,10 @@ cssRule("i-carousel-slider", {
       marginBlock: "1rem",
       listStyle: "none",
       gap: "0.4rem",
+      position: "absolute",
+      bottom: "1rem",
+      left: "50%",
+      transform: "translateX(-50%)",
       $nest: {
         ".--dot": {
           display: "flex",
@@ -38030,6 +38090,36 @@ cssRule("i-carousel-slider", {
     }
   }
 });
+var getCarouselMediaQueriesStyleClass = (mediaQueries) => {
+  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  for (let mediaQuery of mediaQueries) {
+    let mediaQueryRule;
+    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
+    } else if (mediaQuery.minWidth) {
+      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
+    } else if (mediaQuery.maxWidth) {
+      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
+    }
+    if (mediaQueryRule) {
+      styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
+      const ruleObj = styleObj["$nest"][mediaQueryRule];
+      const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
+      styleObj["$nest"][mediaQueryRule] = {
+        ...ruleObj,
+        $nest: {
+          ...nestObj,
+          ".dots-pagination": {}
+        }
+      };
+      if (mediaQuery.properties.indicators !== void 0) {
+        const visible = mediaQuery.properties.indicators;
+        styleObj["$nest"][mediaQueryRule]["$nest"][".dots-pagination"]["display"] = visible ? `flex !important` : "none !important";
+      }
+    }
+  }
+  return style(styleObj);
+};
 
 // packages/carousel/src/carousel.ts
 var CarouselSlider = class extends Control {
@@ -38039,6 +38129,9 @@ var CarouselSlider = class extends Control {
     this.posX1 = 0;
     this.posX2 = 0;
     this.threshold = 30;
+    this.dragStartHandler = this.dragStartHandler.bind(this);
+    this.dragHandler = this.dragHandler.bind(this);
+    this.dragEndHandler = this.dragEndHandler.bind(this);
   }
   get slidesToShow() {
     return this._slidesToShow;
@@ -38078,7 +38171,7 @@ var CarouselSlider = class extends Control {
   }
   set activeSlide(value) {
     var _a;
-    if (this.isArrow || this.type === "dot" && !this.indicators) {
+    if (this.isArrow) {
       this.updateSliderByArrows(value);
       return;
     }
@@ -38135,17 +38228,52 @@ var CarouselSlider = class extends Control {
   }
   set swipe(value) {
     this._swipe = value;
-    if (this._swipe) {
-      this.sliderListElm.onmousedown = this.dragStartHandler;
-      this.sliderListElm.addEventListener("touchstart", this.dragStartHandler);
-      this.sliderListElm.addEventListener("touchend", this.dragEndHandler);
-      this.sliderListElm.addEventListener("touchmove", this.dragHandler);
-    } else {
-      this.sliderListElm.onmousedown = null;
-      this.sliderListElm.removeEventListener("touchstart", this.dragStartHandler);
-      this.sliderListElm.removeEventListener("touchend", this.dragEndHandler);
-      this.sliderListElm.removeEventListener("touchmove", this.dragHandler);
+  }
+  get mediaQueries() {
+    return this._mediaQueries;
+  }
+  set mediaQueries(value) {
+    this._mediaQueries = value;
+    let style2 = getCarouselMediaQueriesStyleClass(this._mediaQueries);
+    this._mediaStyle && this.classList.remove(this._mediaStyle);
+    this._mediaStyle = style2;
+    this.classList.add(style2);
+  }
+  _handleMouseDown(event, stopPropagation) {
+    const result = super._handleMouseDown(event, stopPropagation);
+    if (result !== void 0) {
+      const target = event.target;
+      const sliderList = target.closest(".slider-list");
+      if (sliderList && this.swipe) {
+        this.dragStartHandler(event);
+        return true;
+      }
     }
+    return false;
+  }
+  _handleMouseMove(event, stopPropagation) {
+    const result = super._handleMouseMove(event, stopPropagation);
+    if (result !== void 0) {
+      const target = event.target;
+      const sliderList = target.closest(".slider-list");
+      if (sliderList && this.swipe) {
+        this.dragHandler(event);
+        return true;
+      }
+    }
+    return false;
+  }
+  _handleMouseUp(event, stopPropagation) {
+    const result = super._handleMouseUp(event, stopPropagation);
+    if (result !== void 0) {
+      const target = event.target;
+      const sliderList = target.closest(".slider-list");
+      if (sliderList && this.swipe) {
+        this.dragEndHandler(event);
+        return true;
+      }
+    }
+    return false;
   }
   get indicators() {
     return this._indicators;
@@ -38158,13 +38286,6 @@ var CarouselSlider = class extends Control {
   }
   get isArrow() {
     return this.type === "arrow";
-  }
-  disconnectedCallback() {
-    this.sliderListElm.onmousedown = null;
-    this.sliderListElm.removeEventListener("touchstart", this.dragStartHandler);
-    this.sliderListElm.removeEventListener("touchend", this.dragEndHandler);
-    this.sliderListElm.removeEventListener("touchmove", this.dragHandler);
-    super.disconnectedCallback();
   }
   updateArrows(prev, next) {
     if (this.arrowPrev && this.arrowNext) {
@@ -38237,11 +38358,11 @@ var CarouselSlider = class extends Control {
       return;
     this.dotPagination.innerHTML = "";
     this.dotsElm = [];
-    if (this.isArrow || !this.indicators) {
+    if (this.isArrow) {
       this.dotPagination.classList.add("hidden");
       return;
     }
-    this.dotPagination.classList.remove("hidden");
+    this.indicators ? this.dotPagination.classList.remove("hidden") : this.dotPagination.classList.add("hidden");
     if (this.hasChildNodes() && this.sliderListElm.childNodes.length) {
       const childLength = this.sliderListElm.childNodes.length;
       const totalDots = this.slidesToShow > 0 ? Math.ceil(childLength / this.slidesToShow) : childLength;
@@ -38337,31 +38458,16 @@ var CarouselSlider = class extends Control {
       event.preventDefault();
       this.posX1 = event.clientX;
       this.posX2 = 0;
-      this.sliderListElm.onmouseup = this.dragEndHandler;
-      this.sliderListElm.onmouseleave = this.dragEndHandler;
-      this.sliderListElm.onmousemove = this.dragHandler;
     }
     this.isSwiping = false;
     if (this.onSwipeStart)
       this.onSwipeStart();
   }
   dragHandler(event) {
-    var _a, _b;
     if (event instanceof TouchEvent) {
       this.posX2 = this.posX1 - event.touches[0].clientX;
     } else {
       this.posX2 = this.posX1 - event.clientX;
-    }
-    if (this.isArrow) {
-      const fixedWidth = this.slidesToShow === 1 && this._slider && ((_a = this._slider[0]) == null ? void 0 : _a.offsetWidth) && this._slider[0].offsetWidth !== this.offsetWidth - 50;
-      const itemWidth = this._slider && this._slider[0] ? this._slider[0].offsetWidth : (this.offsetWidth - 50) / this.slidesToShow;
-      const tx = fixedWidth ? -this._slider[0].offsetWidth * this._activeSlide : -itemWidth * this._activeSlide;
-      const tx2 = Math.min(Math.abs(this.posX2), itemWidth);
-      this.sliderListElm.style.transform = `translateX(${tx - (this.posX2 > 0 ? tx2 : -tx2)}px)`;
-    } else {
-      const fixedWidth = this.slidesToShow === 1 && this._slider && ((_b = this._slider[0]) == null ? void 0 : _b.offsetWidth) && this._slider[0].offsetWidth !== this.offsetWidth;
-      const tx = fixedWidth ? -this._slider[0].offsetWidth * this._activeSlide : -this.offsetWidth * this._activeSlide;
-      this.sliderListElm.style.transform = `translateX(${tx - this.posX2}px)`;
     }
     this.isSwiping = Math.abs(this.posX2) > this.threshold;
   }
@@ -38373,17 +38479,12 @@ var CarouselSlider = class extends Control {
     } else {
       this.refresh();
     }
-    this.sliderListElm.onmouseup = null;
-    this.sliderListElm.onmouseleave = null;
-    this.sliderListElm.onmousemove = null;
     if (this.onSwipeEnd)
       this.onSwipeEnd(this.isSwiping);
   }
   init() {
     super.init();
-    this.dragStartHandler = this.dragStartHandler.bind(this);
-    this.dragHandler = this.dragHandler.bind(this);
-    this.dragEndHandler = this.dragEndHandler.bind(this);
+    this.classList.add(sliderStyle);
     this.type = this.getAttribute("type", true, "dot");
     this.indicators = this.getAttribute("indicators", true, true);
     this.wrapperSliderElm = this.createElement("div", this);
