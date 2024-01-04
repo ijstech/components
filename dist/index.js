@@ -11778,9 +11778,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// node_modules/moment/moment.js
+// ../../node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "node_modules/moment/moment.js"(exports, module2) {
+  "../../node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -19921,12 +19921,12 @@ var GlobalEvents = class {
     ;
   }
   _handleMouseDown(event) {
-    var _a;
     const target = event.target;
     let control = getControl(target);
     if (control == null ? void 0 : control.enabled) {
-      if (((_a = event.touches) == null ? void 0 : _a.length) > 1) {
-        return;
+      this._initialTouchPos = true;
+      if (control._handleMouseDown(event)) {
+        event.stopPropagation();
       }
       if (window.PointerEvent) {
         target.setPointerCapture(event.pointerId);
@@ -19935,11 +19935,6 @@ var GlobalEvents = class {
       } else {
         document.addEventListener("mousemove", control._handleMouseMove, true);
         document.addEventListener("mouseup", control._handleMouseUp, true);
-      }
-      this._initialTouchPos = true;
-      if (control._handleMouseDown(event)) {
-        event.preventDefault();
-        event.stopPropagation();
       }
     }
   }
@@ -19956,13 +19951,9 @@ var GlobalEvents = class {
     }
   }
   _handleMouseUp(event) {
-    var _a;
     const target = event.target;
     let control = getControl(target);
     if (control == null ? void 0 : control.enabled) {
-      if (((_a = event.touches) == null ? void 0 : _a.length) > 0) {
-        return;
-      }
       if (window.PointerEvent) {
         target.releasePointerCapture(event.pointerId);
         document.removeEventListener("pointermove", this._handleMouseMove, true);
@@ -34081,6 +34072,14 @@ var MarkdownEditor = class extends Text {
       this.editorObj.setMarkdown(value);
     }
   }
+  async setValue(value) {
+    this._value = value;
+    if (this.viewer) {
+      await this.mdViewer.load(value);
+    } else if (!this.viewer && this.editorObj) {
+      this.editorObj.setMarkdown(value);
+    }
+  }
   get height() {
     return this._heightValue;
   }
@@ -38398,6 +38397,8 @@ var CarouselSlider = class extends Control {
   }
   onDotClick(index) {
     this.activeSlide = index;
+    if (this.onSlideChange)
+      this.onSlideChange(index);
   }
   setAutoplay() {
     if (this.timer) {
@@ -38426,6 +38427,8 @@ var CarouselSlider = class extends Control {
     const index = this.activeSlide - 1 < 0 ? this.activeSlide : this.activeSlide - 1;
     this.activeSlide = index;
     this.setAutoplay();
+    if (this.onSlideChange)
+      this.onSlideChange(index);
   }
   next() {
     let index;
@@ -38437,6 +38440,8 @@ var CarouselSlider = class extends Control {
     }
     this.activeSlide = index;
     this.setAutoplay();
+    if (this.onSlideChange)
+      this.onSlideChange(index);
   }
   refresh() {
     super.refresh();

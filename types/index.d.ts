@@ -10110,6 +10110,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         set viewer(value: boolean);
         get value(): string;
         set value(value: string);
+        setValue(value: string): Promise<void>;
         get height(): string;
         set height(value: string);
         get toolbarItems(): any[];
@@ -11036,6 +11037,7 @@ declare module "packages/carousel/src/carousel" {
         mediaQueries?: ICarouselMediaQuery[];
         onSwipeStart?: SwipeStartEventCallback;
         onSwipeEnd?: SwipeEndEventCallback;
+        onSlideChange?: (index: number) => void;
     }
     global {
         namespace JSX {
@@ -11068,6 +11070,7 @@ declare module "packages/carousel/src/carousel" {
         private _mediaQueries;
         onSwipeStart: SwipeStartEventCallback;
         onSwipeEnd: SwipeEndEventCallback;
+        onSlideChange: (index: number) => void;
         private isSwiping;
         constructor(parent?: Control, options?: any);
         get slidesToShow(): number;
