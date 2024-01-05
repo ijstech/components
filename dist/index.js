@@ -11778,9 +11778,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// ../../node_modules/moment/moment.js
+// node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "../../node_modules/moment/moment.js"(exports, module2) {
+  "node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -29100,6 +29100,42 @@ var IpfsDataType;
   IpfsDataType2[IpfsDataType2["Symlink"] = 4] = "Symlink";
   IpfsDataType2[IpfsDataType2["HAMTShard"] = 5] = "HAMTShard";
 })(IpfsDataType || (IpfsDataType = {}));
+function topologicalSort(edges) {
+  let nodes = {}, sorted = [], visited = {};
+  class TSortNode {
+    constructor(id) {
+      this.id = id;
+      this.afters = [];
+    }
+  }
+  ;
+  edges.forEach((v) => {
+    let from = v[0], to = v[1];
+    if (!nodes[from])
+      nodes[from] = new TSortNode(from);
+    if (!nodes[to])
+      nodes[to] = new TSortNode(to);
+    nodes[from].afters.push(to);
+  });
+  Object.keys(nodes).forEach(function visit(idstr, ancestors) {
+    let node = nodes[idstr], id = node.id;
+    if (visited[idstr])
+      return;
+    if (!Array.isArray(ancestors))
+      ancestors = [];
+    ancestors.push(id);
+    visited[idstr] = true;
+    node.afters.forEach(function(afterID) {
+      if (ancestors.indexOf(afterID) >= 0)
+        throw new Error("closed chain : " + afterID + " is in " + id);
+      visit(afterID.toString(), ancestors.map(function(v) {
+        return v;
+      }));
+    });
+    sorted.unshift(id);
+  });
+  return sorted;
+}
 var Application = class {
   constructor() {
     this.modules = {};
@@ -29568,6 +29604,7 @@ var Application = class {
   async loadPackages(packages) {
     let paths = [];
     let packs = [];
+    let pathIdx = {};
     let script = "";
     for (let i = 0; i < packages.length; i++) {
       let pack = packages[i];
@@ -29583,26 +29620,25 @@ var Application = class {
       } else {
         if (!this.packages[path]) {
           packs.push(pack);
+          pathIdx[pack] = path;
           paths.push(path);
         }
         ;
       }
     }
     ;
-    if (paths.length > 0) {
+    if (packs.length > 0) {
+      let edges = [];
       if (this._initOptions && this._initOptions.modules) {
-        for (let idx = paths.length - 1; idx >= 0; idx--) {
+        for (let idx = packs.length - 1; idx >= 0; idx--) {
           let pack = packs[idx];
           let module2 = this._initOptions.modules[pack];
           if (module2 && module2.dependencies) {
             for (let i = 0; i < module2.dependencies.length; i++) {
               let dependency = module2.dependencies[i];
               let depIdx = packs.indexOf(dependency);
-              if (depIdx > idx) {
-                paths.splice(idx, 0, paths[depIdx]);
-                packs.splice(idx, 0, packs[depIdx]);
-                paths.splice(depIdx + 1, 1);
-                packs.splice(depIdx + 1, 1);
+              if (depIdx > -1) {
+                edges.push([dependency, pack]);
               }
               ;
             }
@@ -29611,6 +29647,8 @@ var Application = class {
           ;
         }
         ;
+        packs = topologicalSort(edges);
+        paths = packs.map((p) => pathIdx[p]);
       }
       ;
       let result = await Promise.all(paths.map((u) => fetch(u)));
