@@ -29647,7 +29647,13 @@ var Application = class {
           ;
         }
         ;
-        packs = topologicalSort(edges);
+        let sorted = topologicalSort(edges);
+        for (let i = 0; i < packs.length; i++) {
+          if (sorted.indexOf(packs[i]) < 0)
+            sorted.push(packs[i]);
+        }
+        ;
+        packs = sorted;
         paths = packs.map((p) => pathIdx[p]);
       }
       ;
