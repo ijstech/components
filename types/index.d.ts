@@ -10036,8 +10036,8 @@ declare module "packages/markdown/src/markdown" {
         get padding(): ISpace;
         set padding(value: ISpace);
         private getRenderer;
-        private walkTokens;
         load(text: string): Promise<any>;
+        private preParse;
         beforeRender(text: string): Promise<void>;
         processText(text: string): Promise<string>;
         loadLib(): Promise<unknown>;
@@ -10097,9 +10097,11 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private _widgetRules;
         private _hideModeSwitch;
         private _placeholder;
+        private autoFocus;
         onChanged: notifyEventCallback;
         onFocus: notifyEventCallback;
         onBlur: notifyEventCallback;
+        setFocus(): void;
         get mode(): 'wysiwyg' | 'markdown';
         set mode(value: 'wysiwyg' | 'markdown');
         get theme(): 'light' | 'dark';
@@ -10136,6 +10138,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         static create(options?: MarkdownEditorElement, parent?: Container): Promise<MarkdownEditor>;
         constructor(parent?: Control, options?: MarkdownEditorElement);
         private loadPlugin;
+        private loadSyntaxHighlightPlugin;
         private loadPlugins;
         private addCSS;
         private initEditor;
@@ -10433,6 +10436,83 @@ declare module "packages/tree-view/src/treeView" {
 declare module "packages/tree-view/src/index" {
     export { TreeView, TreeViewElement, TreeNode, TreeNodeElement } from "packages/tree-view/src/treeView";
 }
+declare module "packages/popover/src/style/popover.css" {
+    export const getOverlayStyle: () => string;
+    export const getNoBackdropStyle: () => string;
+    export const getAbsoluteWrapperStyle: (left: string, top: string) => string;
+    export const popoverMainContentStyle: string;
+}
+declare module "packages/popover/src/popover" {
+    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border, ISpace } from "@ijstech/components/base";
+    export type popoverPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
+    type eventCallback = (target: Control) => void;
+    type PopoverPositionType = "fixed" | "absolute";
+    export interface PopoverElement extends ControlElement {
+        placement?: popoverPlacementType;
+        closeOnScrollChildFixed?: boolean;
+        item?: Control;
+        onOpen?: eventCallback;
+        onClose?: eventCallback;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-popover']: PopoverElement;
+            }
+        }
+    }
+    export class Popover extends Container {
+        protected _visible: boolean;
+        private wrapperDiv;
+        private popoverDiv;
+        private bodyDiv;
+        private overlayDiv;
+        private _placement;
+        private _wrapperPositionAt;
+        private insideClick;
+        private boundHandlePopoverMouseDown;
+        private boundHandlePopoverMouseUp;
+        protected _onOpen: eventCallback;
+        onClose: eventCallback;
+        constructor(parent?: Control, options?: any);
+        get visible(): boolean;
+        set visible(value: boolean);
+        get onOpen(): any;
+        set onOpen(callback: any);
+        get placement(): popoverPlacementType;
+        set placement(value: popoverPlacementType);
+        get item(): Control;
+        set item(value: Control);
+        get position(): PopoverPositionType;
+        set position(value: PopoverPositionType);
+        _handleClick(event: MouseEvent): boolean;
+        private positionPopoverRelativeToParent;
+        private calculatePopoverWrapperCoordinates;
+        protected _handleOnShow(event: Event): void;
+        private handlePopoverMouseDown;
+        private handlePopoverMouseUp;
+        private setInsideClick;
+        private setPropertyValue;
+        refresh(): void;
+        get background(): Background;
+        set background(value: IBackground);
+        get width(): number | string;
+        set width(value: number | string);
+        get height(): number | string;
+        set height(value: number | string);
+        get border(): Border;
+        set border(value: IBorder);
+        get padding(): ISpace;
+        set padding(value: ISpace);
+        protected removeTargetStyle(target: HTMLElement, propertyName: string): void;
+        protected setTargetStyle(target: HTMLElement, propertyName: string, value: string): void;
+        protected init(): void;
+        static create(options?: PopoverElement, parent?: Container): Promise<Popover>;
+    }
+}
+declare module "packages/popover/src/index" {
+    export { Popover, PopoverElement, popoverPlacementType } from "packages/popover/src/popover";
+}
 declare module "packages/chart/src/chart" {
     import { Control, ControlElement } from "@ijstech/components/base";
     export interface EchartElement extends ControlElement {
@@ -10647,6 +10727,7 @@ declare module "packages/iframe/src/iframe" {
     import { Control, ControlElement } from "@ijstech/components/base";
     export interface IframeElement extends ControlElement {
         url?: string;
+        allowFullscreen?: boolean;
     }
     global {
         namespace JSX {
@@ -10657,6 +10738,7 @@ declare module "packages/iframe/src/iframe" {
     }
     export class Iframe extends Control {
         private _url;
+        private allowFullscreen;
         private iframeElm;
         constructor(parent?: Control, options?: any);
         reload(): Promise<void>;
@@ -11062,8 +11144,8 @@ declare module "packages/carousel/src/carousel" {
         private wrapperSliderElm;
         private arrowPrev;
         private arrowNext;
-        private posX1;
-        private posX2;
+        private pos1;
+        private pos2;
         private threshold;
         private _swipe;
         private _indicators;
@@ -11072,6 +11154,7 @@ declare module "packages/carousel/src/carousel" {
         onSwipeEnd: SwipeEndEventCallback;
         onSlideChange: (index: number) => void;
         private isSwiping;
+        private isHorizontalSwiping;
         constructor(parent?: Control, options?: any);
         get slidesToShow(): number;
         set slidesToShow(value: number);
@@ -11142,6 +11225,8 @@ declare module "packages/video/src/video" {
         set url(value: string);
         get border(): Border;
         set border(value: IBorder);
+        getPlayer(): any;
+        private loadLib;
         private getVideoTypeFromExtension;
         protected init(): void;
         static create(options?: VideoElement, parent?: Control): Promise<Video>;
@@ -11788,6 +11873,7 @@ declare module "@ijstech/components" {
     export { TreeView, TreeNode } from "packages/tree-view/src/index";
     export { Switch } from "packages/switch/src/index";
     export { Modal } from "packages/modal/src/index";
+    export { Popover } from "packages/popover/src/index";
     export { Checkbox } from "packages/checkbox/src/index";
     export { Datepicker } from "packages/datepicker/src/index";
     export { LineChart, BarChart, PieChart, ScatterChart, ScatterLineChart } from "packages/chart/src/index";

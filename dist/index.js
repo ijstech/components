@@ -15524,6 +15524,7 @@ __export(exports, {
   Pagination: () => Pagination,
   Panel: () => Panel,
   PieChart: () => PieChart,
+  Popover: () => Popover,
   Progress: () => Progress,
   Radio: () => Radio,
   RadioGroup: () => RadioGroup,
@@ -17509,6 +17510,9 @@ var spinnerAnim = keyframes({
     transform: "rotate(360deg)"
   }
 });
+cssRule("html", {
+  overscrollBehavior: "none"
+});
 cssRule("body", {
   background: theme_exports.ThemeVars.background.default,
   backgroundAttachment: "fixed !important",
@@ -17516,6 +17520,7 @@ cssRule("body", {
   padding: 0,
   overflowX: "hidden",
   overflowY: "auto",
+  overscrollBehavior: "none",
   $nest: {
     "*, *:before, *:after": {
       boxSizing: "border-box"
@@ -19929,7 +19934,6 @@ var GlobalEvents = class {
         event.stopPropagation();
       }
       if (window.PointerEvent) {
-        target.setPointerCapture(event.pointerId);
         document.addEventListener("pointermove", this._handleMouseMove, true);
         document.addEventListener("pointerup", this._handleMouseUp, true);
       } else {
@@ -19955,7 +19959,6 @@ var GlobalEvents = class {
     let control = getControl(target);
     if (control == null ? void 0 : control.enabled) {
       if (window.PointerEvent) {
-        target.releasePointerCapture(event.pointerId);
         document.removeEventListener("pointermove", this._handleMouseMove, true);
         document.removeEventListener("pointerup", this._handleMouseUp, true);
       } else {
@@ -22034,6 +22037,7 @@ cssRule("i-button", {
   fontSize: Theme10.typography.fontSize,
   gap: 5,
   cursor: "pointer",
+  userSelect: "none",
   $nest: {
     "&:not(.disabled):hover": {},
     "&.disabled": {
@@ -22286,7 +22290,6 @@ var modalStyle = style({
   backgroundColor: Theme11.background.modal,
   position: "relative",
   borderRadius: "2px",
-  minWidth: "300px",
   width: "inherit",
   maxWidth: "100%"
 });
@@ -22797,6 +22800,7 @@ var Modal = class extends Container {
     let left = 0;
     let top = 0;
     let max;
+    const isOutside = !(parent == null ? void 0 : parent.contains(this));
     switch (placement) {
       case "center":
         left = (parentCoords.width - this.wrapperDiv.offsetWidth) / 2;
@@ -22849,18 +22853,29 @@ var Modal = class extends Container {
             top = -this.modalDiv.offsetHeight;
           }
         } else {
-          top = parentCoords.height;
+          top = isOutside ? parentCoords.top - this.modalDiv.offsetHeight : parentCoords.height;
         }
         break;
       case "rightTop":
-        top = 0;
-        left = parentCoords.width;
+        top = isOutside ? parentCoords.top - this.modalDiv.offsetHeight : 0;
+        left = isOutside ? parentCoords.left + parentCoords.width : parentCoords.width;
+        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
+          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
+        }
+        if (top + this.modalDiv.offsetHeight > document.documentElement.clientHeight || top < 0) {
+          top = document.documentElement.clientHeight - this.modalDiv.offsetHeight;
+        }
         break;
       case "left":
         max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-        top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-        left = -this.wrapperDiv.offsetWidth - 8;
+        if (isOutside) {
+          top = parentCoords.top + parentCoords.height / 2 - this.modalDiv.offsetHeight / 2;
+          left = Math.max(parentCoords.left - this.modalDiv.offsetWidth, 0);
+        } else {
+          top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+          top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+          left = -this.wrapperDiv.offsetWidth - 8;
+        }
         break;
     }
     if (this.isChildFixed) {
@@ -22871,19 +22886,33 @@ var Modal = class extends Container {
       return { top, left };
     }
     if (placement === "topRight" || placement === "bottomRight") {
-      if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
-        left = parentCoords.width - this.wrapperDiv.offsetWidth;
-      } else {
-        left = -parentCoords.left;
-      }
-    } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
-      if (window.innerWidth >= parentCoords.left + this.wrapperDiv.offsetWidth) {
-        left = 0;
+      if (isOutside) {
+        left = parentCoords.left + parentCoords.width - this.wrapperDiv.offsetWidth;
+        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
+          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
+        }
       } else {
         if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
-          left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+          left = parentCoords.width - this.wrapperDiv.offsetWidth;
         } else {
-          left = Math.max(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+          left = -parentCoords.left;
+        }
+      }
+    } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
+      if (isOutside) {
+        left = parentCoords.left;
+        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
+          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
+        }
+      } else {
+        if (window.innerWidth >= parentCoords.left + this.wrapperDiv.offsetWidth) {
+          left = 0;
+        } else {
+          if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
+            left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+          } else {
+            left = Math.max(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+          }
         }
       }
     }
@@ -33883,9 +33912,6 @@ cssRule("i-markdown", {
 
 // packages/markdown/src/markdown.ts
 var libs = [`${LibPath}lib/marked/marked.umd.js`];
-var headingRegex = /(#{1,6})\s(.*?)(?=\||(#{1,6})|$)/gm;
-var numberedListRegex = /(\d+)\.(\s{1,2})(.*?)(?=\||(\d+\.)|$)/gm;
-var bulletListRegex = /([-+*])\s{1,2}(.*?)(?=\||\\n|([-+*])|$)/gm;
 var Markdown = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -33922,47 +33948,19 @@ var Markdown = class extends Control {
     };
     return renderer;
   }
-  walkTokens(token) {
-    if (token.type === "text") {
-      let match;
-      match = headingRegex.exec(token.text);
-      if (match) {
-        token.text = token.text.replace(headingRegex, (m, level, heading) => {
-          const lv = (level == null ? void 0 : level.length) || 1;
-          return `<h${lv}>${heading || ""}</h${lv}>`;
-        });
-      }
-      match = numberedListRegex.exec(token.text);
-      if (match) {
-        token.text = "<ol>" + token.text.replace(numberedListRegex, `<li>$3</li>`) + "</ol>";
-      }
-      match = bulletListRegex.exec(token.text);
-      if (match) {
-        token.text = "<ul>" + token.text.replace(bulletListRegex, "<li>$2</li>") + "</ul>";
-      }
-    }
-  }
   async load(text) {
-    if (text) {
-      const regex = /\|([^|]*?)\|/g;
-      text = text.replace(regex, (match, cellContent) => {
-        if (cellContent !== void 0) {
-          const modifiedContent = cellContent.replace(/\n/g, " ");
-          return `|${modifiedContent}|`;
-        } else {
-          return match;
-        }
-      });
-    }
     if (!this.marked)
       this.marked = await this.loadLib();
     let renderer = this.getRenderer();
-    const self = this;
     this.marked.use({
-      renderer,
-      walkTokens: self.walkTokens
+      renderer
     });
     if (text) {
+      const rows = text.split(/\n{2}/);
+      for (let i = 0; i < rows.length; i++) {
+        rows[i] = await this.preParse(rows[i]);
+      }
+      text = rows.join("\n\n");
       text = await this.marked.parse(text, {
         breaks: true
       });
@@ -33977,6 +33975,33 @@ var Markdown = class extends Control {
     if (!this._padding && this._space)
       this.padding = this._space;
     return this.elm.innerHTML;
+  }
+  async preParse(text) {
+    const firstIndex = text.indexOf("|");
+    const lastIndex2 = text.lastIndexOf("|");
+    const tableMd = text.slice(firstIndex, lastIndex2 + 1);
+    const tableMdRegex = /(?<=(\r\n){2}|^)([^\r\n]*\|[^\r\n]*(\r?\n)?)+(?=(\r?\n){2}|$)/gm;
+    if (!tableMdRegex.test(tableMd))
+      return text;
+    const breakRegex = /\|(\s)*:?(-+):?(\s)*\|/gm;
+    if (!breakRegex.test(tableMd))
+      return text;
+    const splittedArr = tableMd.split("|") || [];
+    for (let i = 0; i < splittedArr.length; i++) {
+      let child2 = splittedArr[i].trim() || "";
+      if (child2) {
+        if (/^(\s)*:?-*:?(\s)*$/g.test(child2))
+          continue;
+        child2 = await this.marked.parse(child2, {
+          breaks: true
+        });
+        if (child2 !== "\n") {
+          splittedArr[i] = child2.replace(/\n/g, "");
+        }
+      }
+    }
+    text = text.slice(0, firstIndex) + splittedArr.join("|");
+    return text;
   }
   async beforeRender(text) {
     this.elm.innerHTML = text;
@@ -34035,10 +34060,11 @@ RequireJS.config({
 var libPlugins = [
   `${LibPath}lib/tui-editor/toastui-editor-all.min.js`,
   `${LibPath}lib/tui-editor/toastui-editor-plugin-color-syntax.min.js`,
-  `${LibPath}lib/tui-editor/toastui-editor-plugin-code-syntax-highlight-all.min.js`,
   `${LibPath}lib/tui-editor/toastui-editor-plugin-table-merged-cell.min.js`,
   `${LibPath}lib/tui-editor/toastui-editor-plugin-uml.min.js`
 ];
+var libSyntaxHighlightPlugin = [`${LibPath}lib/tui-editor/toastui-editor-plugin-code-syntax-highlight-all.min.js`];
+var unSupportedLang = ["zh-TW", "zh-CN", "jp"];
 var editorCSS = [
   { name: "toastui-editor", href: `${LibPath}lib/tui-editor/toastui-editor.css` },
   { name: "toastui-plugins", href: `${LibPath}lib/tui-editor/toastui-plugins.min.css` }
@@ -34058,6 +34084,14 @@ var MarkdownEditor = class extends Text {
     this._widgetRules = [];
     this._hideModeSwitch = false;
     this._placeholder = "";
+  }
+  setFocus() {
+    var _a;
+    this.autoFocus = true;
+    if (this.editorObj) {
+      (_a = this.editorObj.getCurrentModeEditor().el.querySelector(".toastui-editor-contents")) == null ? void 0 : _a.click();
+      this.editorObj.getCurrentModeEditor().moveCursorToStart(true);
+    }
   }
   get mode() {
     return this._mode;
@@ -34215,14 +34249,29 @@ var MarkdownEditor = class extends Text {
   }
   async loadPlugin(plugin) {
     return new Promise((resolve, reject) => {
-      RequireJS.require(plugin, async (editor, colorSyntax, codeSyntaxHighlight, tableMergedCell, uml) => {
+      RequireJS.require(plugin, async (editor, colorSyntax, tableMergedCell, uml) => {
         this.editor = editor;
-        resolve([colorSyntax, codeSyntaxHighlight, tableMergedCell, uml]);
+        resolve([colorSyntax, tableMergedCell, uml]);
+      });
+    });
+  }
+  async loadSyntaxHighlightPlugin(plugin) {
+    return new Promise((resolve, reject) => {
+      RequireJS.require(plugin, async (codeSyntaxHighlight) => {
+        resolve([codeSyntaxHighlight]);
       });
     });
   }
   async loadPlugins() {
-    this.editorPlugins = await this.loadPlugin(libPlugins);
+    const plugins = await this.loadPlugin(libPlugins);
+    let codeSyntaxHighlight = [];
+    if (!unSupportedLang.some((v) => {
+      var _a;
+      return v.toLowerCase() === ((_a = navigator.language) == null ? void 0 : _a.toLowerCase());
+    })) {
+      codeSyntaxHighlight = await this.loadSyntaxHighlightPlugin(libSyntaxHighlightPlugin);
+    }
+    this.editorPlugins = plugins.concat(codeSyntaxHighlight);
   }
   addCSS(href, name) {
     const css = document.head.querySelector(`[name="${name}"]`);
@@ -34248,7 +34297,7 @@ var MarkdownEditor = class extends Text {
     }
   }
   renderEditor(valueChanged) {
-    var _a, _b;
+    var _a, _b, _c;
     const editorPlugins = [...this.editorPlugins].filter(Boolean);
     let padding = this.getAttribute("padding", true);
     let font = this.getAttribute("font", true);
@@ -34290,7 +34339,7 @@ var MarkdownEditor = class extends Text {
         hideModeSwitch: this.hideModeSwitch,
         minHeight: (_a = this.minHeight) != null ? _a : "300px",
         placeholder: this.placeholder,
-        autofocus: false,
+        autofocus: true,
         events: {
           change: (event) => {
             if (this.onChanged)
@@ -34306,10 +34355,14 @@ var MarkdownEditor = class extends Text {
           }
         }
       });
+      if (this.autoFocus) {
+        (_b = this.editorObj.getCurrentModeEditor().el.querySelector(".toastui-editor-contents")) == null ? void 0 : _b.click();
+        this.editorObj.getCurrentModeEditor().moveCursorToStart(true);
+      }
       if (this.theme === "light")
         this.elm.classList.remove("toastui-editor-dark");
       const toolbar = this.querySelector(".toastui-editor-toolbar");
-      if (toolbar && !((_b = this.toolbarItems) == null ? void 0 : _b.length))
+      if (toolbar && !((_c = this.toolbarItems) == null ? void 0 : _c.length))
         toolbar.style.display = "none";
       if (!this._padding)
         this.padding = padding;
@@ -36330,6 +36383,381 @@ Switch = __decorateClass([
   customElements2("i-switch")
 ], Switch);
 
+// packages/popover/src/style/popover.css.ts
+var Theme31 = theme_exports.ThemeVars;
+var getOverlayStyle2 = () => {
+  return style({
+    backgroundColor: "rgba(12, 18, 52, 0.7)",
+    position: "fixed",
+    left: 0,
+    top: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    visibility: "hidden",
+    zIndex: 1e3,
+    transition: "visibility 0s linear .25s, opacity .25s",
+    $nest: {
+      "&.show": {
+        opacity: "1",
+        visibility: "visible",
+        transition: "visibility 0s linear, opacity .25s"
+      }
+    }
+  });
+};
+var getNoBackdropStyle2 = () => {
+  return style({
+    position: "inherit",
+    top: 0,
+    left: 0,
+    opacity: 0,
+    visibility: "hidden",
+    transform: "scale(0.8)",
+    transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
+    zIndex: 1e3,
+    maxWidth: "inherit",
+    $nest: {
+      ".popover": {
+        margin: "0"
+      },
+      "&.show": {
+        opacity: "1",
+        visibility: "visible",
+        transform: "scale(1)",
+        transition: "visibility 0s linear 0s,opacity .25s 0s,transform .25s"
+      }
+    }
+  });
+};
+var getAbsoluteWrapperStyle2 = (left, top) => {
+  return style({
+    left,
+    top,
+    width: "inherit",
+    height: "inherit"
+  });
+};
+var popoverMainContentStyle = style({
+  fontFamily: "Helvetica",
+  fontSize: "14px",
+  padding: "10px 10px 5px 10px",
+  backgroundColor: Theme31.background.modal,
+  position: "relative",
+  borderRadius: "2px",
+  width: "inherit",
+  maxWidth: "100%"
+});
+cssRule("i-popover", {
+  position: "absolute",
+  left: "0",
+  top: "0"
+});
+
+// packages/popover/src/popover.ts
+var Theme32 = theme_exports.ThemeVars;
+var showEvent2 = new Event("show");
+var Popover = class extends Container {
+  constructor(parent, options) {
+    super(parent, options, {
+      placement: "center"
+    });
+    this._visible = false;
+    this.boundHandlePopoverMouseDown = this.handlePopoverMouseDown.bind(this);
+    this.boundHandlePopoverMouseUp = this.handlePopoverMouseUp.bind(this);
+  }
+  get visible() {
+    return this._visible;
+  }
+  set visible(value) {
+    if (value) {
+      this._visible = true;
+      this.style.display = "block";
+      this.wrapperDiv.classList.add("show");
+      this.dispatchEvent(showEvent2);
+      document.addEventListener("mousedown", this.boundHandlePopoverMouseDown);
+      document.addEventListener("mouseup", this.boundHandlePopoverMouseUp);
+    } else {
+      this._visible = false;
+      this.style.display = "none";
+      this.wrapperDiv.classList.remove("show");
+      this.overlayDiv.classList.remove("show");
+      this.onClose && this.onClose(this);
+      document.removeEventListener("mousedown", this.boundHandlePopoverMouseDown);
+      document.removeEventListener("mouseup", this.boundHandlePopoverMouseUp);
+    }
+  }
+  get onOpen() {
+    return this._onOpen;
+  }
+  set onOpen(callback) {
+    this._onOpen = callback;
+  }
+  get placement() {
+    return this._placement;
+  }
+  set placement(value) {
+    this._placement = value;
+  }
+  get item() {
+    return this.popoverDiv.children[0];
+  }
+  set item(value) {
+    if (value instanceof Control) {
+      this.popoverDiv.innerHTML = "";
+      value && this.popoverDiv.appendChild(value);
+    }
+  }
+  get position() {
+    return this._wrapperPositionAt;
+  }
+  set position(value) {
+    this._wrapperPositionAt = value;
+  }
+  _handleClick(event) {
+    return true;
+  }
+  positionPopoverRelativeToParent(placement) {
+    let parent = this._parent || this.linkTo || this.parentElement || document.body;
+    let coords = this.calculatePopoverWrapperCoordinates(parent, placement);
+    const wrapperPositionStyle = getAbsoluteWrapperStyle2(coords.left + "px", coords.top + "px");
+    this.setTargetStyle(this.wrapperDiv, "wrapperPosition", wrapperPositionStyle);
+  }
+  calculatePopoverWrapperCoordinates(parent, placement) {
+    var _a;
+    const parentCoords = parent.getBoundingClientRect();
+    let left = 0;
+    let top = 0;
+    let max;
+    const isOutside = parent.style.position === "absolute" && !((_a = this.parent) == null ? void 0 : _a.contains(this));
+    switch (placement) {
+      case "center":
+        left = (parentCoords.width - this.wrapperDiv.offsetWidth) / 2;
+        top = (parentCoords.height - this.popoverDiv.offsetHeight) / 2;
+        break;
+      case "top":
+      case "topLeft":
+      case "topRight":
+        if (parentCoords.top - this.popoverDiv.offsetHeight >= 0) {
+          top = -this.popoverDiv.offsetHeight;
+        } else {
+          if (window.innerHeight < this.popoverDiv.offsetHeight + parentCoords.bottom) {
+            max = window.innerHeight - this.popoverDiv.offsetHeight - parentCoords.y;
+            top = (parentCoords.height - this.popoverDiv.offsetHeight) / 2;
+            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+          } else {
+            top = parentCoords.height;
+          }
+        }
+        break;
+      case "bottom":
+      case "bottomLeft":
+      case "bottomRight":
+        if (window.innerHeight < this.popoverDiv.offsetHeight + parentCoords.bottom) {
+          if (parentCoords.y - this.popoverDiv.offsetHeight < 0) {
+            max = window.innerHeight - this.popoverDiv.offsetHeight - parentCoords.y;
+            top = (parentCoords.height - this.popoverDiv.offsetHeight) / 2;
+            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+          } else {
+            top = -this.popoverDiv.offsetHeight;
+          }
+        } else {
+          top = isOutside ? parentCoords.top - this.popoverDiv.offsetHeight : parentCoords.height;
+        }
+        break;
+      case "rightTop":
+        top = isOutside ? parentCoords.top - this.popoverDiv.offsetHeight : 0;
+        left = isOutside ? parentCoords.left + parentCoords.width : parentCoords.width;
+        if (left + this.popoverDiv.offsetWidth > document.documentElement.clientWidth) {
+          left = document.documentElement.clientWidth - this.popoverDiv.offsetWidth;
+        }
+        if (top + this.popoverDiv.offsetHeight > document.documentElement.clientHeight) {
+          top = document.documentElement.clientHeight - this.popoverDiv.offsetHeight;
+        }
+        break;
+      case "left":
+        max = window.innerHeight - this.popoverDiv.offsetHeight - parentCoords.y;
+        if (isOutside) {
+          top = parentCoords.top + parentCoords.height / 2 - this.popoverDiv.offsetHeight / 2;
+          left = Math.max(parentCoords.left - this.popoverDiv.offsetWidth, 0);
+        } else {
+          top = (parentCoords.height - this.popoverDiv.offsetHeight) / 2;
+          top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
+          left = -this.wrapperDiv.offsetWidth - 8;
+        }
+        break;
+    }
+    if (placement === "topRight" || placement === "bottomRight") {
+      if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
+        left = parentCoords.width - this.wrapperDiv.offsetWidth;
+      } else {
+        left = -parentCoords.left;
+      }
+    } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
+      if (window.innerWidth >= parentCoords.left + this.wrapperDiv.offsetWidth) {
+        left = 0;
+      } else {
+        if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
+          left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+        } else {
+          left = Math.max(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+        }
+      }
+    }
+    return { top, left };
+  }
+  _handleOnShow(event) {
+    if (this.placement && this.enabled)
+      this.positionPopoverRelativeToParent(this.placement);
+    if (this.enabled && this._onOpen) {
+      event.preventDefault();
+      this._onOpen(this);
+    }
+  }
+  handlePopoverMouseDown(event) {
+    this.insideClick = true;
+    this.setInsideClick(event);
+  }
+  handlePopoverMouseUp(event) {
+    if (!this.insideClick)
+      this.visible = false;
+  }
+  setInsideClick(event) {
+    const target = event.target;
+    this.insideClick = this.popoverDiv.contains(target);
+  }
+  setPropertyValue(name, value) {
+    if (!isNaN(Number(value)))
+      this.popoverDiv.style[name] = value + "px";
+    else
+      this.popoverDiv.style[name] = value;
+    this.style[name] = "";
+  }
+  refresh() {
+    super.refresh(true);
+    if (this.visible && this.placement) {
+      this.positionPopoverRelativeToParent(this.placement);
+    }
+  }
+  get background() {
+    return this._background;
+  }
+  set background(value) {
+    if (!this._background) {
+      this._background = new Background(this.popoverDiv, value);
+    } else {
+      this._background.setBackgroundStyle(value);
+    }
+  }
+  get width() {
+    return !isNaN(this._width) ? this._width : this.offsetWidth;
+  }
+  set width(value) {
+    this._width = value;
+    this.setPropertyValue("width", value);
+  }
+  get height() {
+    return this._height;
+  }
+  set height(value) {
+    this._height = value;
+    this.setPropertyValue("height", value);
+  }
+  get border() {
+    return this._border;
+  }
+  set border(value) {
+    this._border = new Border(this.wrapperDiv, value);
+  }
+  get padding() {
+    return this._padding;
+  }
+  set padding(value) {
+    if (!this._padding)
+      this._padding = new SpaceValue(this.popoverDiv, value, "padding");
+    else
+      this._padding.update(value);
+  }
+  removeTargetStyle(target, propertyName) {
+    let style2 = this.propertyClassMap[propertyName];
+    if (style2)
+      target.classList.remove(style2);
+  }
+  setTargetStyle(target, propertyName, value) {
+    this.removeTargetStyle(target, propertyName);
+    if (value) {
+      this.propertyClassMap[propertyName] = value;
+      target.classList.add(value);
+    }
+  }
+  init() {
+    var _a;
+    if (!this.wrapperDiv) {
+      if ((_a = this.options) == null ? void 0 : _a.onClose)
+        this.onClose = this.options.onClose;
+      this.placement = this.getAttribute("placement", true);
+      this.wrapperDiv = this.createElement("div", this);
+      this.popoverDiv = this.createElement("div", this.wrapperDiv);
+      this.bodyDiv = this.createElement("div", this.popoverDiv);
+      while (this.childNodes.length > 1) {
+        this.bodyDiv.appendChild(this.childNodes[0]);
+      }
+      this.overlayDiv = this.createElement("div", this);
+      this.prepend(this.overlayDiv);
+      const overlayStyle = getOverlayStyle2();
+      this.overlayDiv.classList.add(overlayStyle);
+      this.popoverDiv.classList.add(popoverMainContentStyle);
+      this.popoverDiv.classList.add("popover");
+      this.addEventListener("show", this._handleOnShow.bind(this));
+      window.addEventListener("keydown", (event) => {
+        if (!this.visible)
+          return;
+        if (event.key === "Escape") {
+          this.visible = false;
+        }
+      });
+      const itemAttr = this.getAttribute("item", true);
+      if (itemAttr)
+        this.item = itemAttr;
+      super.init();
+      const maxWidth = this.getAttribute("maxWidth", true);
+      if (maxWidth !== void 0)
+        this.setPropertyValue("maxWidth", this.maxWidth);
+      const minHeight = this.getAttribute("minHeight", true);
+      if (minHeight !== void 0)
+        this.setPropertyValue("minHeight", this.minHeight);
+      const minWidth = this.getAttribute("minWidth", true);
+      if (minWidth !== void 0)
+        this.setPropertyValue("minWidth", this.minWidth);
+      const height = this.getAttribute("height", true);
+      if (height !== void 0)
+        this.setPropertyValue("height", this.height);
+      const maxHeight = this.getAttribute("maxHeight", true);
+      if (maxHeight !== void 0)
+        this.setPropertyValue("maxHeight", this.maxHeight);
+      let border = this.getAttribute("border", true);
+      if (border) {
+        this._border = new Border(this.wrapperDiv, border);
+        this.style.border = "none";
+      }
+      let padding = this.getAttribute("padding", true);
+      if (padding) {
+        this._padding = new SpaceValue(this.popoverDiv, padding, "padding");
+      }
+      const noBackdropStyle = getNoBackdropStyle2();
+      this.setTargetStyle(this.wrapperDiv, "showBackdrop", noBackdropStyle);
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Popover = __decorateClass([
+  customElements2("i-popover")
+], Popover);
+
 // packages/chart/src/chart.ts
 var Chart = class extends Control {
   constructor(parent, options) {
@@ -36530,6 +36958,8 @@ var Iframe = class extends Control {
     this._url = value;
     if (!this.iframeElm)
       this.iframeElm = this.createElement("iframe", this);
+    if (this.allowFullscreen)
+      this.iframeElm.allowFullscreen = true;
     if (value !== void 0) {
       this.iframeElm.src = value || "";
       this.iframeElm.width = "100%";
@@ -36539,6 +36969,7 @@ var Iframe = class extends Control {
   }
   init() {
     super.init();
+    this.allowFullscreen = this.getAttribute("allowFullscreen", true);
     const url = this.getAttribute("url", true);
     if (url !== void 0)
       this.url = url;
@@ -36554,16 +36985,16 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme31.typography.fontFamily,
-  fontSize: Theme31.typography.fontSize,
+  fontFamily: Theme33.typography.fontFamily,
+  fontSize: Theme33.typography.fontSize,
   lineHeight: "25px",
-  color: Theme31.text.primary,
+  color: Theme33.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -36571,7 +37002,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme31.text.primary,
+      color: Theme33.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -36587,7 +37018,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme31.text.disabled,
+      color: Theme33.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -36834,7 +37265,7 @@ Pagination = __decorateClass([
 ], Pagination);
 
 // packages/progress/src/style/progress.css.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 var loading = keyframes({
   "0%": {
     left: "-100%"
@@ -36847,9 +37278,9 @@ cssRule("i-progress", {
   display: "block",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme32.typography.fontFamily,
-  fontSize: Theme32.typography.fontSize,
-  color: Theme32.text.primary,
+  fontFamily: Theme34.typography.fontFamily,
+  fontSize: Theme34.typography.fontSize,
+  color: Theme34.text.primary,
   position: "relative",
   $nest: {
     "&.is-loading .i-progress_overlay": {
@@ -36872,13 +37303,13 @@ cssRule("i-progress", {
     ".i-progress--exception": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme32.colors.error.light
+          backgroundColor: Theme34.colors.error.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme32.colors.error.light
+          backgroundColor: Theme34.colors.error.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme32.colors.error.light
+          borderColor: Theme34.colors.error.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -36886,13 +37317,13 @@ cssRule("i-progress", {
     ".i-progress--success": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme32.colors.success.light
+          backgroundColor: Theme34.colors.success.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme32.colors.success.light
+          backgroundColor: Theme34.colors.success.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme32.colors.success.light
+          borderColor: Theme34.colors.success.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -36900,13 +37331,13 @@ cssRule("i-progress", {
     ".i-progress--warning": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme32.colors.warning.light
+          backgroundColor: Theme34.colors.warning.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme32.colors.warning.light
+          backgroundColor: Theme34.colors.warning.light
         },
         ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme32.colors.warning.light
+          borderColor: Theme34.colors.warning.light
         },
         ".i-progress_item.i-progress_item-end": {}
       }
@@ -36914,14 +37345,14 @@ cssRule("i-progress", {
     ".i-progress--active": {
       $nest: {
         "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme32.colors.primary.light
+          backgroundColor: Theme34.colors.primary.light
         },
         "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme32.colors.primary.light
+          backgroundColor: Theme34.colors.primary.light
         },
         ".i-progress_item.i-progress_item-start": {
           backgroundColor: "transparent",
-          borderColor: Theme32.colors.primary.light
+          borderColor: Theme34.colors.primary.light
         }
       }
     },
@@ -36943,11 +37374,11 @@ cssRule("i-progress", {
           gap: "1px",
           $nest: {
             "&.has-bg": {
-              backgroundColor: Theme32.divider
+              backgroundColor: Theme34.divider
             },
             ".i-progress_bar-item": {
               flex: "auto",
-              backgroundColor: Theme32.divider
+              backgroundColor: Theme34.divider
             }
           }
         },
@@ -36972,7 +37403,7 @@ cssRule("i-progress", {
           borderStyle: "solid",
           borderImage: "initial",
           borderRadius: 14,
-          borderColor: Theme32.divider,
+          borderColor: Theme34.divider,
           padding: "4px 12px",
           order: 1
         },
@@ -37028,7 +37459,7 @@ cssRule("i-progress", {
 });
 
 // packages/progress/src/progress.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 var defaultVals = {
   percent: 0,
   height: 20,
@@ -37072,7 +37503,7 @@ var Progress = class extends Control {
     }
   }
   get strokeColor() {
-    return this._strokeColor || Theme33.colors.primary.main;
+    return this._strokeColor || Theme35.colors.primary.main;
   }
   set strokeColor(value) {
     this._strokeColor = value;
@@ -37207,11 +37638,11 @@ var Progress = class extends Control {
   get stroke() {
     let ret = this.strokeColor;
     if (this.percent === 100)
-      ret = Theme33.colors.success.main;
+      ret = Theme35.colors.success.main;
     return ret;
   }
   get trackColor() {
-    return Theme33.divider;
+    return Theme35.divider;
   }
   get progressTextSize() {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
@@ -37299,11 +37730,11 @@ Progress = __decorateClass([
 ], Progress);
 
 // packages/table/src/style/table.css.ts
-var Theme34 = theme_exports.ThemeVars;
+var Theme36 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme34.typography.fontFamily,
-  fontSize: Theme34.typography.fontSize,
-  color: Theme34.text.primary,
+  fontFamily: Theme36.typography.fontFamily,
+  fontSize: Theme36.typography.fontSize,
+  color: Theme36.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -37324,26 +37755,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme34.divider}`
+      borderBottom: `1px solid ${Theme36.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme34.divider}`,
+      borderBottom: `1px solid ${Theme36.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme34.action.hoverBackground,
-      color: Theme34.action.hover
+      background: Theme36.action.hoverBackground,
+      color: Theme36.action.hover
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme34.divider}`,
-          borderLeft: `1px solid ${Theme34.divider}`,
+          borderTop: `1px solid ${Theme36.divider}`,
+          borderLeft: `1px solid ${Theme36.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme34.divider} !important`,
-          borderBottom: `1px solid ${Theme34.divider}`
+          borderRight: `1px solid ${Theme36.divider} !important`,
+          borderBottom: `1px solid ${Theme36.divider}`
         }
       }
     },
@@ -37364,7 +37795,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme34.colors.primary.main
+          fill: Theme36.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -37393,12 +37824,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme34.text.primary
+          fill: Theme36.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme34.divider}`
+      borderRight: `1px solid ${Theme36.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -37492,7 +37923,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme35 = theme_exports.ThemeVars;
+var Theme37 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -37547,7 +37978,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme35.text.primary
+        fill: Theme37.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -37555,7 +37986,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme35.text.primary
+        fill: Theme37.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -38046,7 +38477,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme36 = theme_exports.ThemeVars;
+var Theme38 = theme_exports.ThemeVars;
 var sliderStyle = style({
   display: "flex",
   flexDirection: "column",
@@ -38078,7 +38509,7 @@ var sliderStyle = style({
     ".slider-arrow": {
       width: 28,
       height: 28,
-      fill: Theme36.colors.primary.main,
+      fill: Theme38.colors.primary.main,
       cursor: "pointer"
     },
     ".slider-arrow-hidden": {
@@ -38116,7 +38547,7 @@ var sliderStyle = style({
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme36.colors.primary.main}`,
+          border: `2px solid ${Theme38.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -38127,7 +38558,7 @@ var sliderStyle = style({
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme36.colors.primary.main
+          backgroundColor: Theme38.colors.primary.main
         }
       }
     }
@@ -38169,9 +38600,10 @@ var CarouselSlider = class extends Control {
   constructor(parent, options) {
     super(parent, options, { activeSlide: 0 });
     this._type = "dot";
-    this.posX1 = 0;
-    this.posX2 = 0;
+    this.pos1 = { x: 0, y: 0 };
+    this.pos2 = { x: 0, y: 0 };
     this.threshold = 30;
+    this.isHorizontalSwiping = false;
     this.dragStartHandler = this.dragStartHandler.bind(this);
     this.dragHandler = this.dragHandler.bind(this);
     this.dragEndHandler = this.dragEndHandler.bind(this);
@@ -38301,7 +38733,7 @@ var CarouselSlider = class extends Control {
       const sliderList = target.closest(".slider-list");
       if (sliderList && this.swipe) {
         this.dragHandler(event);
-        return true;
+        return this.isHorizontalSwiping;
       }
     }
     return false;
@@ -38397,6 +38829,7 @@ var CarouselSlider = class extends Control {
     });
   }
   renderDotPagination() {
+    var _a;
     if (!this.dotPagination)
       return;
     this.dotPagination.innerHTML = "";
@@ -38405,7 +38838,8 @@ var CarouselSlider = class extends Control {
       this.dotPagination.classList.add("hidden");
       return;
     }
-    this.indicators ? this.dotPagination.classList.remove("hidden") : this.dotPagination.classList.add("hidden");
+    const isShownIndicators = this.indicators && ((_a = this.items) == null ? void 0 : _a.length) > 1;
+    isShownIndicators ? this.dotPagination.classList.remove("hidden") : this.dotPagination.classList.add("hidden");
     if (this.hasChildNodes() && this.sliderListElm.childNodes.length) {
       const childLength = this.sliderListElm.childNodes.length;
       const totalDots = this.slidesToShow > 0 ? Math.ceil(childLength / this.slidesToShow) : childLength;
@@ -38501,32 +38935,50 @@ var CarouselSlider = class extends Control {
   }
   dragStartHandler(event) {
     if (event instanceof TouchEvent) {
-      this.posX1 = event.touches[0].clientX;
-      this.posX2 = 0;
+      this.pos1 = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      };
+      this.pos2 = {
+        x: 0,
+        y: 0
+      };
     } else {
       event.preventDefault();
-      this.posX1 = event.clientX;
-      this.posX2 = 0;
+      this.pos1 = {
+        x: event.clientX,
+        y: event.clientY
+      };
+      this.pos2 = {
+        x: 0,
+        y: 0
+      };
     }
     this.isSwiping = false;
+    this.isHorizontalSwiping = false;
     if (this.onSwipeStart)
       this.onSwipeStart();
   }
   dragHandler(event) {
     if (event instanceof TouchEvent) {
-      this.posX2 = this.posX1 - event.touches[0].clientX;
+      this.pos2.x = this.pos1.x - event.touches[0].clientX;
+      this.pos2.y = this.pos1.y - event.touches[0].clientY;
     } else {
-      this.posX2 = this.posX1 - event.clientX;
+      this.pos2.x = this.pos1.x - event.clientX;
+      this.pos2.y = this.pos1.y - event.clientY;
     }
-    this.isSwiping = Math.abs(this.posX2) > this.threshold;
+    this.isSwiping = Math.abs(this.pos2.x) > this.threshold;
+    this.isHorizontalSwiping = this.isSwiping && Math.abs(this.pos2.x) > Math.abs(this.pos2.y);
   }
   dragEndHandler(event) {
-    if (this.posX2 < -this.threshold) {
-      this.prev();
-    } else if (this.posX2 > this.threshold) {
-      this.next();
-    } else {
-      this.refresh();
+    if (this.isHorizontalSwiping) {
+      if (this.pos2.x < -this.threshold) {
+        this.prev();
+      } else if (this.pos2.x > this.threshold) {
+        this.next();
+      } else {
+        this.refresh();
+      }
     }
     if (this.onSwipeEnd)
       this.onSwipeEnd(this.isSwiping);
@@ -38661,6 +39113,25 @@ var Video = class extends Container {
       return;
     this._border = new Border(video, value);
   }
+  getPlayer() {
+    if (this.player)
+      return this.player;
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(() => {
+        if (this.player) {
+          clearInterval(interval);
+          resolve(this.player);
+        }
+      }, 100);
+    });
+  }
+  async loadLib() {
+    return new Promise((resolve, reject) => {
+      RequireJS.require(reqs, function(videoJs) {
+        resolve(videoJs);
+      });
+    });
+  }
   getVideoTypeFromExtension(url) {
     if (!url)
       return null;
@@ -38741,7 +39212,7 @@ Video = __decorateClass([
 ], Video);
 
 // packages/schema-designer/src/uiSchema.ts
-var Theme37 = theme_exports.ThemeVars;
+var Theme39 = theme_exports.ThemeVars;
 var dataUITypes = [
   { label: "VerticalLayout", value: "VerticalLayout" },
   { label: "HorizontalLayout", value: "HorizontalLayout" },
@@ -38995,7 +39466,7 @@ var SchemaDesignerUI = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme37.colors.primary.contrastText
+      fill: Theme39.colors.primary.contrastText
     }));
     btnAddElement.onClick = () => {
       this.createUISchema(pnlUIElements, currentLayout, true);
@@ -39084,7 +39555,7 @@ var SchemaDesignerUI = class extends Container {
           visible: false,
           width: 12,
           height: 12,
-          fill: Theme37.colors.secondary.main,
+          fill: Theme39.colors.secondary.main,
           tooltip: {
             content: "Remove this property",
             trigger: "hover"
@@ -39139,7 +39610,7 @@ var SchemaDesignerUI = class extends Container {
               visible: false,
               width: 12,
               height: 12,
-              fill: Theme37.colors.secondary.main,
+              fill: Theme39.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -39241,13 +39712,13 @@ var SchemaDesignerUI = class extends Container {
                   display: "flex",
                   padding: { top: 8, bottom: 8, left: 16, right: 16 },
                   border: { radius: 8 },
-                  background: { color: Theme37.action.selected }
+                  background: { color: Theme39.action.selected }
                 });
                 const iconTimesEnum = new Icon(pnlEnum, {
                   name: "times",
                   width: 14,
                   height: 14,
-                  fill: Theme37.colors.secondary.main,
+                  fill: Theme39.colors.secondary.main,
                   position: "absolute",
                   right: 2,
                   top: 2
@@ -39279,7 +39750,7 @@ var SchemaDesignerUI = class extends Container {
               position: "absolute",
               top: 5,
               right: 5,
-              fill: Theme37.colors.secondary.main,
+              fill: Theme39.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -39487,7 +39958,7 @@ var SchemaDesignerUI = class extends Container {
         name: "plus",
         width: "1em",
         height: "1em",
-        fill: Theme37.colors.primary.contrastText
+        fill: Theme39.colors.primary.contrastText
       }));
       const pnlFormDetail = new Panel(void 0, {
         padding: { top: 10, bottom: 10, left: 10, right: 10 }
@@ -39698,7 +40169,7 @@ var SchemaDesignerUI = class extends Container {
         name: "times-circle",
         width: 12,
         height: 12,
-        fill: Theme37.colors.secondary.main,
+        fill: Theme39.colors.secondary.main,
         visible: false
       });
       iconClear.onClick = () => {
@@ -39792,7 +40263,7 @@ var SchemaDesignerUI = class extends Container {
     if (isChildren) {
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme37.colors.secondary.main} !important` },
+        background: { color: `${Theme39.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         height: 28,
@@ -39802,7 +40273,7 @@ var SchemaDesignerUI = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme37.colors.primary.contrastText
+        fill: Theme39.colors.primary.contrastText
       }));
       btnDelete.onClick = () => {
         deleteElement();
@@ -39816,7 +40287,7 @@ var SchemaDesignerUI = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme37.colors.primary.contrastText
+        fill: Theme39.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -39889,12 +40360,12 @@ SchemaDesignerUI = __decorateClass([
 ], SchemaDesignerUI);
 
 // packages/schema-designer/src/style/schema-designer.css.ts
-var Theme38 = theme_exports.ThemeVars;
+var Theme40 = theme_exports.ThemeVars;
 var scrollBar = {
   "&::-webkit-scrollbar-track": {
     borderRadius: "12px",
     border: "1px solid transparent",
-    background: Theme38.action.hover
+    background: Theme40.action.hover
   },
   "&::-webkit-scrollbar": {
     width: "8px",
@@ -39902,7 +40373,7 @@ var scrollBar = {
   },
   "&::-webkit-scrollbar-thumb": {
     borderRadius: "12px",
-    background: Theme38.action.active
+    background: Theme40.action.active
   }
 };
 cssRule("i-schema-designer", {
@@ -39928,12 +40399,12 @@ cssRule("i-schema-designer", {
           height: "30px !important",
           width: "100% !important",
           border: 0,
-          borderBottom: `0.5px solid ${Theme38.divider}`,
+          borderBottom: `0.5px solid ${Theme40.divider}`,
           background: "transparent"
         },
         "textarea": {
           height: "100% !important",
-          border: `0.5px solid ${Theme38.divider}`,
+          border: `0.5px solid ${Theme40.divider}`,
           borderRadius: "1em",
           background: "transparent",
           $nest: scrollBar
@@ -39951,7 +40422,7 @@ cssRule("i-schema-designer", {
           background: "transparent !important",
           height: "30px !important",
           border: "0 !important",
-          borderBottom: `0.5px solid ${Theme38.divider} !important`
+          borderBottom: `0.5px solid ${Theme40.divider} !important`
         },
         ".selection": {
           background: "transparent",
@@ -39960,7 +40431,7 @@ cssRule("i-schema-designer", {
         },
         "span.icon-btn": {
           border: "0",
-          borderBottom: `0.5px solid ${Theme38.divider}`,
+          borderBottom: `0.5px solid ${Theme40.divider}`,
           borderRadius: "0",
           height: "30px !important",
           width: "32px !important",
@@ -39987,8 +40458,8 @@ cssRule("i-schema-designer", {
       }
     },
     "i-button": {
-      background: Theme38.colors.primary.main,
-      color: Theme38.colors.primary.contrastText
+      background: Theme40.colors.primary.main,
+      color: Theme40.colors.primary.contrastText
     },
     ".cs-wrapper--header": {
       padding: "5px 10px",
@@ -40001,12 +40472,12 @@ cssRule("i-schema-designer", {
     ".cs-prefix--items": {
       $nest: {
         ".cs-box--shadow": {
-          boxShadow: Theme38.shadows[2]
+          boxShadow: Theme40.shadows[2]
         }
       }
     },
     ".cs-box--enum": {
-      boxShadow: Theme38.shadows[2],
+      boxShadow: Theme40.shadows[2],
       padding: "8px 16px",
       borderRadius: 8,
       minWidth: 100,
@@ -40041,7 +40512,7 @@ cssRule("i-schema-designer", {
 });
 
 // packages/schema-designer/src/schemaDesigner.ts
-var Theme39 = theme_exports.ThemeVars;
+var Theme41 = theme_exports.ThemeVars;
 var dataTypes = [
   { label: "string", value: "string" },
   { label: "number", value: "number" },
@@ -40276,7 +40747,7 @@ var SchemaDesigner = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme39.colors.primary.contrastText
+      fill: Theme41.colors.primary.contrastText
     }));
     const hStackActions = new HStack(void 0, {
       verticalAlignment: "center",
@@ -40364,7 +40835,7 @@ var SchemaDesigner = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme39.colors.primary.contrastText
+        fill: Theme41.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -40379,7 +40850,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme39.colors.secondary.main,
+        fill: Theme41.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40399,7 +40870,7 @@ var SchemaDesigner = class extends Container {
         name: "exclamation-circle",
         width: 12,
         height: 12,
-        fill: Theme39.colors.secondary.main,
+        fill: Theme41.colors.secondary.main,
         tooltip: {
           content: "Invalid field",
           trigger: "hover"
@@ -40408,7 +40879,7 @@ var SchemaDesigner = class extends Container {
       });
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme39.colors.secondary.main} !important` },
+        background: { color: `${Theme41.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         padding: { top: 6, bottom: 6, left: 12, right: 12 }
@@ -40417,7 +40888,7 @@ var SchemaDesigner = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme39.colors.primary.contrastText
+        fill: Theme41.colors.primary.contrastText
       }));
       btnDelete.setAttribute("action", "delete");
       btnDelete.onClick = async () => {
@@ -40663,13 +41134,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme39.action.selected }
+          background: { color: Theme41.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme39.colors.secondary.main,
+          fill: Theme41.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -40713,7 +41184,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme39.colors.secondary.main,
+        fill: Theme41.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40802,13 +41273,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme39.action.selected }
+          background: { color: Theme41.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme39.colors.secondary.main,
+          fill: Theme41.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -40847,7 +41318,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme39.colors.secondary.main,
+        fill: Theme41.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40946,7 +41417,7 @@ var SchemaDesigner = class extends Container {
         name: "times",
         width: 14,
         height: 14,
-        fill: Theme39.colors.secondary.main,
+        fill: Theme41.colors.secondary.main,
         position: "absolute",
         right: 4,
         top: 4
@@ -41032,7 +41503,7 @@ var SchemaDesigner = class extends Container {
     if (parentFields.length) {
       new Label(vStack, {
         caption: "Advanced options",
-        font: { size: "16px", color: Theme39.colors.primary.main }
+        font: { size: "16px", color: Theme41.colors.primary.main }
       });
     }
     const gridLayout = new GridLayout(vStack, {
@@ -41077,7 +41548,7 @@ var SchemaDesigner = class extends Container {
         width: 12,
         height: 12,
         position: notCheckbox ? "absolute" : "relative",
-        fill: Theme39.colors.secondary.main,
+        fill: Theme41.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -41306,9 +41777,9 @@ SchemaDesigner = __decorateClass([
 ], SchemaDesigner);
 
 // packages/navigator/src/style/navigator.css.ts
-var Theme40 = theme_exports.ThemeVars;
+var Theme42 = theme_exports.ThemeVars;
 cssRule("i-nav", {
-  border: `1px solid ${Theme40.divider}`,
+  border: `1px solid ${Theme42.divider}`,
   $nest: {
     "> i-vstack": {
       alignItems: "center",
@@ -41317,7 +41788,7 @@ cssRule("i-nav", {
         ".search-container": {
           width: "100%",
           padding: 10,
-          borderBottom: `1px solid ${Theme40.divider}`,
+          borderBottom: `1px solid ${Theme42.divider}`,
           alignItems: "center",
           gap: 5,
           $nest: {
@@ -41329,7 +41800,7 @@ cssRule("i-nav", {
                 "input": {
                   background: "transparent",
                   border: "0",
-                  borderBottom: `1px solid ${Theme40.divider}`
+                  borderBottom: `1px solid ${Theme42.divider}`
                 }
               }
             }
@@ -41344,9 +41815,9 @@ cssRule("i-nav", {
     },
     "i-nav-item": {
       cursor: "pointer",
-      background: Theme40.background.main,
+      background: Theme42.background.main,
       borderLeft: "3px solid transparent",
-      borderBottom: `1px solid ${Theme40.divider}`,
+      borderBottom: `1px solid ${Theme42.divider}`,
       $nest: {
         "> i-grid-layout": {
           height: 50,
@@ -41355,14 +41826,14 @@ cssRule("i-nav", {
           alignItems: "center"
         },
         "i-icon": {
-          height: Theme40.typography.fontSize,
-          width: Theme40.typography.fontSize,
-          fill: Theme40.colors.primary.main
+          height: Theme42.typography.fontSize,
+          width: Theme42.typography.fontSize,
+          fill: Theme42.colors.primary.main
         },
         "&.active": {
-          color: Theme40.colors.primary.contrastText,
-          background: Theme40.colors.primary.main,
-          borderLeft: `3px solid ${Theme40.colors.primary.main}`
+          color: Theme42.colors.primary.contrastText,
+          background: Theme42.colors.primary.main,
+          borderLeft: `3px solid ${Theme42.colors.primary.main}`
         }
       }
     }
@@ -41671,19 +42142,19 @@ NavItem = __decorateClass([
 ], NavItem);
 
 // packages/breadcrumb/src/style/breadcrumb.css.ts
-var Theme41 = theme_exports.ThemeVars;
+var Theme43 = theme_exports.ThemeVars;
 cssRule("i-breadcrumb", {
   $nest: {
     "i-label": {
       padding: 5,
       margin: "0 5px",
-      color: Theme41.colors.primary.main
+      color: Theme43.colors.primary.main
     },
     "i-icon": {
       margin: "0 5px",
-      height: Theme41.typography.fontSize,
-      width: Theme41.typography.fontSize,
-      fill: Theme41.colors.primary.main
+      height: Theme43.typography.fontSize,
+      width: Theme43.typography.fontSize,
+      fill: Theme43.colors.primary.main
     }
   }
 });
@@ -41751,7 +42222,7 @@ Breadcrumb = __decorateClass([
 ], Breadcrumb);
 
 // packages/form/src/styles/index.css.ts
-var Theme42 = theme_exports.ThemeVars;
+var Theme44 = theme_exports.ThemeVars;
 var formStyle = style({
   $nest: {
     "i-vstack > .form-group": {
@@ -41766,7 +42237,7 @@ var formGroupStyle = style({
   justifyContent: "center"
 });
 var groupStyle = style({
-  border: `1px solid ${Theme42.divider}`,
+  border: `1px solid ${Theme44.divider}`,
   borderRadius: 5,
   width: "100%",
   marginBottom: 5
@@ -41783,8 +42254,8 @@ var groupBodyStyle = style({
 });
 var collapseBtnStyle = style({
   cursor: "pointer",
-  height: Theme42.typography.fontSize,
-  width: Theme42.typography.fontSize
+  height: Theme44.typography.fontSize,
+  width: Theme44.typography.fontSize
 });
 var inputStyle = style({
   width: "100% !important",
@@ -41793,9 +42264,9 @@ var inputStyle = style({
       width: "100% !important",
       maxWidth: "100%",
       padding: "0.5rem 1rem",
-      color: Theme42.input.fontColor,
-      backgroundColor: Theme42.input.background,
-      borderColor: Theme42.input.background,
+      color: Theme44.input.fontColor,
+      backgroundColor: Theme44.input.background,
+      borderColor: Theme44.input.background,
       borderRadius: "0.625rem",
       outline: "none"
     },
@@ -41818,16 +42289,16 @@ var datePickerStyle = style({
       width: "calc(100% - 24px) !important",
       maxWidth: "calc(100% - 24px)",
       padding: "0.5rem 1rem",
-      color: Theme42.input.fontColor,
-      backgroundColor: Theme42.input.background,
-      borderColor: Theme42.input.background,
+      color: Theme44.input.fontColor,
+      backgroundColor: Theme44.input.background,
+      borderColor: Theme44.input.background,
       outline: "none"
     },
     "> input:focus ~ .datepicker-toggle": {
-      borderColor: Theme42.colors.info.main
+      borderColor: Theme44.colors.info.main
     },
     ".datepicker-toggle": {
-      backgroundColor: Theme42.input.background,
+      backgroundColor: Theme44.input.background,
       width: "42px"
     }
   }
@@ -41839,9 +42310,9 @@ var comboBoxStyle = style({
       width: "100% !important",
       maxWidth: "100%",
       padding: "0.5rem 1rem",
-      color: Theme42.input.fontColor,
-      backgroundColor: Theme42.input.background,
-      borderColor: Theme42.input.background,
+      color: Theme44.input.fontColor,
+      backgroundColor: Theme44.input.background,
+      borderColor: Theme44.input.background,
       borderRadius: "0.625rem!important"
     },
     ".selection input": {
@@ -41851,7 +42322,7 @@ var comboBoxStyle = style({
     },
     "> .icon-btn": {
       justifyContent: "center",
-      borderColor: Theme42.input.background,
+      borderColor: Theme44.input.background,
       borderRadius: "0.625rem",
       width: "42px"
     }
@@ -41862,8 +42333,8 @@ var buttonStyle = style({
 });
 var iconButtonStyle = style({
   cursor: "pointer",
-  height: Theme42.typography.fontSize,
-  width: Theme42.typography.fontSize
+  height: Theme44.typography.fontSize,
+  width: Theme44.typography.fontSize
 });
 var checkboxStyle = style({
   $nest: {
@@ -41881,15 +42352,15 @@ var checkboxStyle = style({
 });
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme42.divider}`,
+  borderBottom: `1px solid ${Theme44.divider}`,
   marginBottom: 10,
   minHeight: "60px",
   alignItems: "center",
   fontWeight: 600
 });
 var listBtnAddStyle = style({
-  color: Theme42.colors.primary.contrastText,
-  backgroundColor: Theme42.colors.primary.main,
+  color: Theme44.colors.primary.contrastText,
+  backgroundColor: Theme44.colors.primary.main,
   padding: "0.5rem 1rem",
   borderRadius: 0,
   cursor: "pointer"
@@ -41973,8 +42444,8 @@ var listVerticalLayoutStyle = style({
 var listItemBtnDelete = style({
   cursor: "pointer",
   placeSelf: "center",
-  height: Theme42.typography.fontSize,
-  width: Theme42.typography.fontSize
+  height: Theme44.typography.fontSize,
+  width: Theme44.typography.fontSize
 });
 var tabsStyle = style({
   marginBottom: 41,
@@ -41987,12 +42458,12 @@ var tabsStyle = style({
         },
         "i-tab": {
           border: 0,
-          fontFamily: Theme42.typography.fontFamily,
-          fontSize: Theme42.typography.fontSize,
+          fontFamily: Theme44.typography.fontFamily,
+          fontSize: Theme44.typography.fontSize,
           fontWeight: 600,
           borderBottom: "1px solid transparent",
           background: "transparent",
-          color: Theme42.text.secondary,
+          color: Theme44.text.secondary,
           margin: "0 0.75rem",
           padding: "0.5rem 0",
           transition: "color .2s ease",
@@ -42001,12 +42472,12 @@ var tabsStyle = style({
               marginLeft: 0
             },
             "&:not(.disabled):hover": {
-              color: Theme42.text.primary
+              color: Theme44.text.primary
             },
             "&:not(.disabled).active": {
               background: "transparent",
-              color: Theme42.colors.info.main,
-              borderBottom: `1px solid ${Theme42.colors.info.main}`
+              color: Theme44.colors.info.main,
+              borderBottom: `1px solid ${Theme44.colors.info.main}`
             },
             ".tab-item": {
               padding: 0
@@ -42021,11 +42492,11 @@ var tabsStyle = style({
   }
 });
 var cardStyle = style({
-  border: `1px solid ${Theme42.divider}`
+  border: `1px solid ${Theme44.divider}`
 });
 var cardHeader = style({
   padding: 20,
-  borderBottom: `1px solid ${Theme42.divider}`,
+  borderBottom: `1px solid ${Theme44.divider}`,
   cursor: "pointer"
 });
 var cardBody = style({
@@ -42035,7 +42506,7 @@ var uploadStyle = style({
   height: "auto",
   width: "100%",
   margin: 0,
-  fontFamily: Theme42.typography.fontFamily,
+  fontFamily: Theme44.typography.fontFamily,
   $nest: {
     "> .i-upload-wrapper": {
       marginBottom: 0,
@@ -42052,7 +42523,7 @@ var tokenInputStyle = style({
       background: "transparent",
       $nest: {
         "&:hover": {
-          borderColor: `${Theme42.colors.primary.main} !important`
+          borderColor: `${Theme44.colors.primary.main} !important`
         }
       }
     },
