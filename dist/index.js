@@ -4085,34 +4085,6 @@ function BufferBigIntNotDefined () {
   const readonly = { writable: false, configurable: false, enumerable: true }
   const hidden = { writable: false, enumerable: false, configurable: false }
 
-  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/bases/base.js#L135
-  class ComposedDecoder {
-
-    constructor(decoders) {
-      this.decoders = decoders
-    }
-
-    or(decoder) {
-      return or(this, decoder)
-    }
-
-    decode(input) {
-      const prefix = /** @type {Prefix} */ (input[0])
-      const decoder = this.decoders[prefix]
-      if (decoder) {
-        return decoder.decode(input)
-      } else {
-        throw RangeError(`Unable to decode multibase string ${JSON.stringify(input)}, only inputs prefixed with ${Object.keys(this.decoders)} are supported`)
-      }
-    }
-  }
-
-  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/bases/base.js#L174
-  const or = (left, right) => new ComposedDecoder(/** @type {Decoders<L|R>} */({
-    ...(left.decoders || { [/** @type UnibaseDecoder<L> */(left).prefix]: left }),
-    ...(right.decoders || { [/** @type UnibaseDecoder<R> */(right).prefix]: right })
-  }))
-
   //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/bases/base.js#L78
   class Decoder {
 
@@ -4352,8 +4324,6 @@ function BufferBigIntNotDefined () {
 
   //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/bases/base.js#L268
   const _decode = (string, alphabet, bitsPerChar, name) => {
-    // Build the character lookup table:
-    /** @type {Record<string, number>} */
     const codes = {}
     for (let i = 0; i < alphabet.length; ++i) {
       codes[alphabet[i]] = i
@@ -4421,8 +4391,8 @@ function BufferBigIntNotDefined () {
     bitsPerChar: 5
   })
 
-  const DAG_PB_CODE = 0x70
-  const RAW_CODE = 0x55
+  const CODE_DAG_PB = 0x70
+  const CODE_RAW = 0x55
 
   //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/vendor/varint.js#L58
   var N1 = Math.pow(2, 7);
@@ -4644,8 +4614,8 @@ function BufferBigIntNotDefined () {
 
       switch (version) {
         case 0: {
-          if (code !== DAG_PB_CODE) {
-            throw new Error(`Version 0 CID must use dag-pb (code: ${DAG_PB_CODE}) block encoding`)
+          if (code !== CODE_DAG_PB) {
+            throw new Error(`Version 0 CID must use dag-pb (code: ${CODE_DAG_PB}) block encoding`)
           } else {
             return new CID(version, code, digest, digest.bytes)
           }
@@ -4699,7 +4669,7 @@ function BufferBigIntNotDefined () {
       }
 
       let version = next()
-      let codec = DAG_PB_CODE
+      let codec = CODE_DAG_PB
       if (version === 18) { // CIDv0
         version = 0
         offset = 0
@@ -4721,13 +4691,61 @@ function BufferBigIntNotDefined () {
     }
 
     static createV0(digest) {
-      return CID.create(0, DAG_PB_CODE, digest)
+      return CID.create(0, CODE_DAG_PB, digest)
     }
 
     static createV1(code, digest) {
       return CID.create(1, code, digest)
     }
   }
+
+  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/digest.js#L10
+  const create = (code, digest) => {
+    const size = digest.byteLength
+    const sizeOffset = encodingLength_1(code)
+    const digestOffset = sizeOffset + encodingLength_1(size)
+
+    const bytes = new Uint8Array(digestOffset + size)
+    encodeTo_1(code, bytes, 0)
+    encodeTo_1(size, bytes, sizeOffset)
+    bytes.set(digest, digestOffset)
+
+    return new Digest(code, size, digest, bytes)
+  }
+
+  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/hasher.js#L22
+  class Hasher {
+
+    constructor(name, code, encode) {
+      this.name = name
+      this.code = code
+      this.encode = encode
+    }
+
+    digest(input) {
+      if (input instanceof Uint8Array) {
+        const result = this.encode(input)
+        return result instanceof Uint8Array
+          ? create(this.code, result)
+          : result.then((digest) => create(this.code, digest))
+      } else {
+        throw Error('Unknown type, must be binary type')
+      }
+    }
+  }
+
+  const from = ({ name, code, encode }) => new Hasher(name, code, encode)
+
+  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/sha2.js#L7
+  const s_sha256 = from({
+    name: 'sha2-256',
+    code: 18,
+    //encode: (input) => coerce(crypto__default["default"].createHash('sha256').update(input).digest())
+    encode: (input) => {
+      return coerce(createHash('sha256').update(input).digest());
+    }
+  });
+
   /*---------------------------------------------------------------------------------------------
   *  Copyright (c) 2016, Daniel Wirtz  All rights reserved.
   *  https://github.com/protobufjs/protobuf.js/blob/master/LICENSE
@@ -4749,13 +4767,8 @@ function BufferBigIntNotDefined () {
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/util/minimal.js#L126
   const util_Buffer = (function () {
     try {
-      if (typeof window !== "undefined") {
-        return require("buffer").Buffer;
-      }
-      else
-        return Buffer;
-      // var Buffer = util_inquire("buffer").Buffer;
-      // return Buffer.prototype.utf8Write ? Buffer : null;
+      var Buffer = util_inquire("buffer").Buffer;
+      return Buffer.prototype.utf8Write ? Buffer : null;
     } catch (e) {
       return null;
     }
@@ -4763,7 +4776,6 @@ function BufferBigIntNotDefined () {
 
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/writer.js#L21
   function Op(fn, len, val) {
-
     this.fn = fn;
     this.len = len;
     this.next = undefined;
@@ -4775,7 +4787,6 @@ function BufferBigIntNotDefined () {
 
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/writer.js#L91
   function Writer() {
-
     this.len = 0;
     this.head = new Op(noop, 0, 0);
     this.tail = this.head;
@@ -4824,7 +4835,16 @@ function BufferBigIntNotDefined () {
     }
     return value.low || value.high ? new util_LongBits(value.low >>> 0, value.high >>> 0) : zero;
   };
-
+  util_LongBits.prototype.toNumber = function toNumber(unsigned) {
+    if (!unsigned && this.hi >>> 31) {
+        var lo = ~this.lo + 1 >>> 0,
+            hi = ~this.hi     >>> 0;
+        if (!lo)
+            hi = hi + 1 >>> 0;
+        return -(lo + hi * 4294967296);
+    }
+    return this.lo + this.hi * 4294967296;
+  };
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/util/longbits.js#L187
   util_LongBits.prototype.length = function length() {
     var part0 = this.lo,
@@ -5037,12 +5057,101 @@ function BufferBigIntNotDefined () {
 
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/reader.js#L22
   function Reader(buffer) {
-
     this.buf = buffer;
     this.pos = 0;
     this.len = buffer.length;
   }
+  function indexOutOfRange(reader, writeLength) {
+    return RangeError("index out of range: " + reader.pos + " + " + (writeLength || 1) + " > " + reader.len);
+  }
+  Reader.prototype.uint32 = (function read_uint32_setup() {
+    var value = 4294967295; // optimizer type-hint, tends to deopt otherwise (?!)
+    return function read_uint32() {
+        value = (         this.buf[this.pos] & 127       ) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] & 127) <<  7) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] & 127) << 14) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] & 127) << 21) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] &  15) << 28) >>> 0; if (this.buf[this.pos++] < 128) return value;
 
+        /* istanbul ignore if */
+        if ((this.pos += 5) > this.len) {
+            this.pos = this.len;
+            throw indexOutOfRange(this, 10);
+        }
+        return value;
+    };
+  })();
+  Reader.prototype.int32 = function read_int32() {
+    return this.uint32() | 0;
+  };
+  Reader.prototype.bytes = function read_bytes() {
+    var length = this.uint32(),
+        start  = this.pos,
+        end    = this.pos + length;
+
+    /* istanbul ignore if */
+    if (end > this.len)
+        throw indexOutOfRange(this, length);
+
+    this.pos += length;
+    if (Array.isArray(this.buf)) // plain array
+        return this.buf.slice(start, end);
+    return start === end // fix for IE 10/Win8 and others' subarray returning array of size 1
+        ? new this.buf.constructor(0)
+        : this._slice.call(this.buf, start, end);
+  };
+  //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/util/longbits.js#L123
+  function readLongVarint() {
+    var bits = new util_LongBits(0, 0);
+    var i = 0;
+    if (this.len - this.pos > 4) { // fast route (lo)
+        for (; i < 4; ++i) {
+            // 1st..4th
+            bits.lo = (bits.lo | (this.buf[this.pos] & 127) << i * 7) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+        // 5th
+        bits.lo = (bits.lo | (this.buf[this.pos] & 127) << 28) >>> 0;
+        bits.hi = (bits.hi | (this.buf[this.pos] & 127) >>  4) >>> 0;
+        if (this.buf[this.pos++] < 128)
+            return bits;
+        i = 0;
+    } else {
+        for (; i < 3; ++i) {
+            /* istanbul ignore if */
+            if (this.pos >= this.len)
+                throw indexOutOfRange(this);
+            // 1st..3th
+            bits.lo = (bits.lo | (this.buf[this.pos] & 127) << i * 7) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+        // 4th
+        bits.lo = (bits.lo | (this.buf[this.pos++] & 127) << i * 7) >>> 0;
+        return bits;
+    }
+    if (this.len - this.pos > 4) { // fast route (hi)
+        for (; i < 5; ++i) {
+            // 6th..10th
+            bits.hi = (bits.hi | (this.buf[this.pos] & 127) << i * 7 + 3) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+    } else {
+        for (; i < 5; ++i) {
+            /* istanbul ignore if */
+            if (this.pos >= this.len)
+                throw indexOutOfRange(this);
+            // 6th..10th
+            bits.hi = (bits.hi | (this.buf[this.pos] & 127) << i * 7 + 3) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+    }
+    /* istanbul ignore next */
+    throw Error("invalid varint encoding");
+  }
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/reader.js#L43
   var create_array = typeof Uint8Array !== "undefined"
     ? function create_typed_array(buffer) {
@@ -5068,7 +5177,9 @@ function BufferBigIntNotDefined () {
       }
       : create_array;
   };
-
+  Reader.create = r1_create();
+  Reader.prototype._slice = util_Array.prototype.subarray || /* istanbul ignore next */ util_Array.prototype.slice;
+  
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/util/minimal.js#L237
   function util_merge(dst, src, ifNotSet) {
     for (var keys = Object.keys(src), i = 0; i < keys.length; ++i)
@@ -5076,14 +5187,55 @@ function BufferBigIntNotDefined () {
         dst[keys[i]] = src[keys[i]];
     return dst;
   }
+  //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/reader.js#L334
+  Reader.prototype.skip = function skip(length) {
+    if (typeof length === "number") {
+        /* istanbul ignore if */
+        if (this.pos + length > this.len)
+            throw indexOutOfRange(this, length);
+        this.pos += length;
+    } else {
+        do {
+            /* istanbul ignore if */
+            if (this.pos >= this.len)
+                throw indexOutOfRange(this);
+        } while (this.buf[this.pos++] & 128);
+    }
+    return this;
+  };
+  Reader.prototype.skipType = function(wireType) {
+    switch (wireType) {
+        case 0:
+            this.skip();
+            break;
+        case 1:
+            this.skip(8);
+            break;
+        case 2:
+            this.skip(this.uint32());
+            break;
+        case 3:
+            while ((wireType = this.uint32() & 7) !== 4) {
+                this.skipType(wireType);
+            }
+            break;
+        case 5:
+            this.skip(4);
+            break;
 
+        /* istanbul ignore next */
+        default:
+            throw Error("invalid wire type " + wireType + " at offset " + this.pos);
+    }
+    return this;
+  };
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/reader.js#L382
   Reader._configure = function (BufferReader_) {
     BufferReader = BufferReader_;
     Reader.create = r1_create();
     BufferReader._configure();
 
-    var fn = "toLong";
+    var fn = "toNumber";
     util_merge(Reader.prototype, {
 
       int64: function read_int64() {
@@ -5092,26 +5244,110 @@ function BufferBigIntNotDefined () {
 
       uint64: function read_uint64() {
         return readLongVarint.call(this)[fn](true);
-      },
-
-      sint64: function read_sint64() {
-        return readLongVarint.call(this).zzDecode()[fn](false);
-      },
-
-      fixed64: function read_fixed64() {
-        return readFixed64.call(this)[fn](true);
-      },
-
-      sfixed64: function read_sfixed64() {
-        return readFixed64.call(this)[fn](false);
       }
-
     });
   };
   //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/writer_buffer.js#L16
   function BufferWriter() {
     Writer.call(this);
   }
+
+  //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/writer.js#L374
+  Writer.prototype.bytes = function write_bytes(value) {
+    var len = value.length >>> 0;
+    if (!len)
+      return this._push(writeByte, 1, 0);
+    if (util_isString(value)) {
+      var buf = Writer.alloc(len = base64.length(value));
+      base64.decode(value, buf, 0);
+      value = buf;
+    }
+    return this.uint32(len)._push(writeBytes, len, value);
+  };
+
+  //https://github.com/protobufjs/protobuf.js/blob/48457c47372c39e07a8ecf1360f80de7f263ab2e/lib/utf8/index.js#L15
+  function utf8_length(string) {
+    var len = 0,
+      c = 0;
+    for (var i = 0; i < string.length; ++i) {
+      c = string.charCodeAt(i);
+      if (c < 128)
+        len += 1;
+      else if (c < 2048)
+        len += 2;
+      else if ((c & 0xFC00) === 0xD800 && (string.charCodeAt(i + 1) & 0xFC00) === 0xDC00) {
+        ++i;
+        len += 4;
+      } else
+        len += 3;
+    }
+    return len;
+  };
+
+  //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/writer.js#L391
+  Writer.prototype.string = function write_string(value) {
+    var len = utf8_length(value);
+    return len
+      ? this.uint32(len)._push(utf8.write, len, value)
+      : this._push(writeByte, 1, 0);
+  };
+
+  //https://github.com/protobufjs/protobuf.js/blob/48457c47372c39e07a8ecf1360f80de7f263ab2e/src/writer.js#L207
+  Writer.prototype.uint32 = function write_uint32(value) {
+    this.len += (this.tail = this.tail.next = new VarintOp(
+      (value = value >>> 0)
+        < 128 ? 1
+        : value < 16384 ? 2
+          : value < 2097152 ? 3
+            : value < 268435456 ? 4
+              : 5,
+      value)).len;
+    return this;
+  };
+
+  //https://github.com/protobufjs/protobuf.js/blob/48457c47372c39e07a8ecf1360f80de7f263ab2e/src/writer.js#L59
+  function State(writer) {
+    this.head = writer.head;
+    this.tail = writer.tail;
+    this.len = writer.len;
+    this.next = writer.states;
+  }
+
+  //https://github.com/protobufjs/protobuf.js/blob/48457c47372c39e07a8ecf1360f80de7f263ab2e/src/writer.js#L403
+  Writer.prototype.fork = function fork() {
+    this.states = new State(this);
+    this.head = this.tail = new Op(noop, 0, 0);
+    this.len = 0;
+    return this;
+  };
+
+  //https://github.com/protobufjs/protobuf.js/blob/48457c47372c39e07a8ecf1360f80de7f263ab2e/src/writer.js#L414
+  Writer.prototype.reset = function reset() {
+    if (this.states) {
+      this.head = this.states.head;
+      this.tail = this.states.tail;
+      this.len = this.states.len;
+      this.states = this.states.next;
+    } else {
+      this.head = this.tail = new Op(noop, 0, 0);
+      this.len = 0;
+    }
+    return this;
+  };
+
+  //https://github.com/protobufjs/protobuf.js/blob/48457c47372c39e07a8ecf1360f80de7f263ab2e/src/writer.js#L431
+  Writer.prototype.ldelim = function ldelim() {
+    var head = this.head,
+      tail = this.tail,
+      len = this.len;
+    this.reset().uint32(len);
+    if (len) {
+      this.tail.next = head.next; // skip noop
+      this.tail = tail;
+      this.len += len;
+    }
+    return this;
+  };
 
   /*---------------------------------------------------------------------------------------------
   *  Copyright (c) Feross Aboukhadijeh, and other contributors.
@@ -5207,23 +5443,6 @@ function BufferBigIntNotDefined () {
       BufferReader.prototype._slice = util_Buffer.prototype.slice;
   };
 
-  //https://github.com/protobufjs/protobuf.js/blob/2cdbba32da9951c1ff14e55e65e4a9a9f24c70fd/src/util/minimal.js#L402
-  // util_configure = function () {
-  //   var Buffer = util_Buffer;
-  //   if (!Buffer) {
-  //     util_Buffer_from = util_Buffer_allocUnsafe = null;
-  //     return;
-  //   }
-  //   util_Buffer_from = Buffer.from !== Uint8Array.from && Buffer.from ||
-  //     function Buffer_from(value, encoding) {
-  //       return new Buffer(value, encoding);
-  //     };
-  //   util_Buffer_allocUnsafe = Buffer.allocUnsafe ||
-  //     function Buffer_allocUnsafe(size) {
-  //       return new Buffer(size);
-  //     };
-  // };
-
   protobuf.rpc = {};
   protobuf.roots = {};
   protobuf.configure = configure;
@@ -5239,6 +5458,65 @@ function BufferBigIntNotDefined () {
 
   var $protobuf = protobuf;
   var $protobuf__default = _interopDefaultLegacy($protobuf);
+
+  /*---------------------------------------------------------------------------------------------
+*  Licensed under the MIT License.
+*  https://github.com/IndigoUnited/js-err-code/blob/8dd437663a48e833ab70223f8a58a888985d1e3a/README.md
+*--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/IndigoUnited/js-err-code/blob/8dd437663a48e833ab70223f8a58a888985d1e3a/index.js#L15
+  function assign(obj, props) {
+    for (const key in props) {
+      Object.defineProperty(obj, key, {
+        value: props[key],
+        enumerable: true,
+        configurable: true,
+      });
+    }
+
+    return obj;
+  }
+
+  //https://github.com/IndigoUnited/js-err-code/blob/8dd437663a48e833ab70223f8a58a888985d1e3a/index.js#L34
+  function createError(err, code, props) {
+    if (!err || typeof err === 'string') {
+      throw new TypeError('Please pass an Error to err-code');
+    }
+
+    if (!props) {
+      props = {};
+    }
+
+    if (typeof code === 'object') {
+      props = code;
+      code = '';
+    }
+
+    if (code) {
+      props.code = code;
+    }
+
+    try {
+      return assign(err, props);
+    } catch (_) {
+      props.message = err.message;
+      props.stack = err.stack;
+
+      const ErrClass = function () { };
+
+      ErrClass.prototype = Object.create(Object.getPrototypeOf(err));
+
+      // @ts-ignore
+      const output = assign(new ErrClass(), props);
+
+      return output;
+    }
+  }
+
+  var errcode = createError;
+
+  function _interopDefaultLegacy(e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+  var errcode__default = /*#__PURE__*/_interopDefaultLegacy(errcode);
 
   /*---------------------------------------------------------------------------------------------
   *  Licensed under the MIT License.
@@ -5357,88 +5635,93 @@ function BufferBigIntNotDefined () {
         case 2:
           m.Type = 2;
           break;
-        case 'Metadata':
-        case 3:
-          m.Type = 3;
-          break;
-        case 'Symlink':
-        case 4:
-          m.Type = 4;
-          break;
-        case 'HAMTShard':
-        case 5:
-          m.Type = 5;
-          break;
       }
       return m;
     };
-
+    Data.toObject = function toObject(m, o) {
+      if (!o)
+          o = {};
+      var d = {};
+      if (o.arrays || o.defaults) {
+          d.blocksizes = [];
+      }
+      if (o.defaults) {
+          d.Type = o.enums === String ? "Raw" : 0;
+          if (o.bytes === String)
+              d.Data = "";
+          else {
+              d.Data = [];
+              if (o.bytes !== Array)
+                  d.Data = $util.newBuffer(d.Data);
+          }
+          if ($util.Long) {
+              var n = new $util.Long(0, 0, true);
+              d.filesize = o.longs === String ? n.toString() : o.longs === Number ? n.toNumber() : n;
+          } else
+              d.filesize = o.longs === String ? "0" : 0;
+          if ($util.Long) {
+              var n = new $util.Long(0, 0, true);
+              d.hashType = o.longs === String ? n.toString() : o.longs === Number ? n.toNumber() : n;
+          } else
+              d.hashType = o.longs === String ? "0" : 0;
+          if ($util.Long) {
+              var n = new $util.Long(0, 0, true);
+              d.fanout = o.longs === String ? n.toString() : o.longs === Number ? n.toNumber() : n;
+          } else
+              d.fanout = o.longs === String ? "0" : 0;
+          d.mode = 0;
+          d.mtime = null;
+      }
+      if (m.Type != null && m.hasOwnProperty("Type")) {
+          d.Type = o.enums === String ? $root.Data.DataType[m.Type] : m.Type;
+      }
+      if (m.Data != null && m.hasOwnProperty("Data")) {
+          d.Data = o.bytes === String ? $util.base64.encode(m.Data, 0, m.Data.length) : o.bytes === Array ? Array.prototype.slice.call(m.Data) : m.Data;
+      }
+      if (m.filesize != null && m.hasOwnProperty("filesize")) {
+          if (typeof m.filesize === "number")
+              d.filesize = o.longs === String ? String(m.filesize) : m.filesize;
+          else
+              d.filesize = o.longs === String ? $util.Long.prototype.toString.call(m.filesize) : o.longs === Number ? new $util.LongBits(m.filesize.low >>> 0, m.filesize.high >>> 0).toNumber(true) : m.filesize;
+      }
+      if (m.blocksizes && m.blocksizes.length) {
+          d.blocksizes = [];
+          for (var j = 0; j < m.blocksizes.length; ++j) {
+              if (typeof m.blocksizes[j] === "number")
+                  d.blocksizes[j] = o.longs === String ? String(m.blocksizes[j]) : m.blocksizes[j];
+              else
+                  d.blocksizes[j] = o.longs === String ? $util.Long.prototype.toString.call(m.blocksizes[j]) : o.longs === Number ? new $util.LongBits(m.blocksizes[j].low >>> 0, m.blocksizes[j].high >>> 0).toNumber(true) : m.blocksizes[j];
+          }
+      }
+      if (m.hashType != null && m.hasOwnProperty("hashType")) {
+          if (typeof m.hashType === "number")
+              d.hashType = o.longs === String ? String(m.hashType) : m.hashType;
+          else
+              d.hashType = o.longs === String ? $util.Long.prototype.toString.call(m.hashType) : o.longs === Number ? new $util.LongBits(m.hashType.low >>> 0, m.hashType.high >>> 0).toNumber(true) : m.hashType;
+      }
+      if (m.fanout != null && m.hasOwnProperty("fanout")) {
+          if (typeof m.fanout === "number")
+              d.fanout = o.longs === String ? String(m.fanout) : m.fanout;
+          else
+              d.fanout = o.longs === String ? $util.Long.prototype.toString.call(m.fanout) : o.longs === Number ? new $util.LongBits(m.fanout.low >>> 0, m.fanout.high >>> 0).toNumber(true) : m.fanout;
+      }
+      if (m.mode != null && m.hasOwnProperty("mode")) {
+          d.mode = m.mode;
+      }
+      if (m.mtime != null && m.hasOwnProperty("mtime")) {
+          d.mtime = $root.UnixTime.toObject(m.mtime, o);
+      }
+      return d;
+    };
     Data.DataType = function () {
       const valuesById = {}, values = Object.create(valuesById);
       values[valuesById[0] = 'Raw'] = 0;
       values[valuesById[1] = 'Directory'] = 1;
       values[valuesById[2] = 'File'] = 2;
-      values[valuesById[3] = 'Metadata'] = 3;
-      values[valuesById[4] = 'Symlink'] = 4;
-      values[valuesById[5] = 'HAMTShard'] = 5;
       return values;
     }();
     return Data;
   })();
-
-  // Retrieve and modify from https://github.com/IndigoUnited/js-err-code/blob/8dd437663a48e833ab70223f8a58a888985d1e3a/index.js#L15
-  function assign(obj, props) {
-    for (const key in props) {
-      Object.defineProperty(obj, key, {
-        value: props[key],
-        enumerable: true,
-        configurable: true,
-      });
-    }
-
-    return obj;
-  }
-
-  // Retrieve and modify from https://github.com/IndigoUnited/js-err-code/blob/8dd437663a48e833ab70223f8a58a888985d1e3a/index.js#L34
-  function createError(err, code, props) {
-    if (!err || typeof err === 'string') {
-      throw new TypeError('Please pass an Error to err-code');
-    }
-
-    if (!props) {
-      props = {};
-    }
-
-    if (typeof code === 'object') {
-      props = code;
-      code = '';
-    }
-
-    if (code) {
-      props.code = code;
-    }
-
-    try {
-      return assign(err, props);
-    } catch (_) {
-      props.message = err.message;
-      props.stack = err.stack;
-
-      const ErrClass = function () { };
-
-      ErrClass.prototype = Object.create(Object.getPrototypeOf(err));
-
-      // @ts-ignore
-      const output = assign(new ErrClass(), props);
-
-      return output;
-    }
-  }
-
-  var errcode = createError;
-
-  function _interopDefaultLegacy(e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-  var errcode__default = /*#__PURE__*/_interopDefaultLegacy(errcode);
 
   //https://github.com/ipfs/js-ipfs-unixfs/blob/de1a7f0afc144462b374919a44d3af4fae3a49da/packages/ipfs-unixfs/src/index.js#L10
   const types = [
@@ -5520,6 +5803,29 @@ function BufferBigIntNotDefined () {
 
   //https://github.com/ipfs/js-ipfs-unixfs/blob/de1a7f0afc144462b374919a44d3af4fae3a49da/packages/ipfs-unixfs/src/index.js#L122
   class UnixFS {
+    static unmarshal (marshaled) {
+      const message = PBData.decode(marshaled)
+      const decoded = PBData.toObject(message, {
+        defaults: false,
+        arrays: true,
+        longs: Number,
+        objects: false
+      })
+      const data = new UnixFS({
+        type: types[decoded.Type],
+        data: decoded.Data,
+        blockSizes: decoded.blocksizes,
+        mode: decoded.mode,
+        mtime: decoded.mtime
+          ? {
+              secs: decoded.mtime.Seconds,
+              nsecs: decoded.mtime.FractionalNanoseconds
+            }
+          : undefined
+      })
+      data._originalMode = decoded.mode || 0;
+      return data
+    };
     constructor(options = { type: 'file' }) {
       const { type, data, blockSizes, hashType, fanout, mtime, mode } = options;
       if (type && !types.includes(type)) {
@@ -5554,9 +5860,6 @@ function BufferBigIntNotDefined () {
     }
     addBlockSize(size) {
       this.blockSizes.push(size)
-    }
-    removeBlockSize(index) {
-      this.blockSizes.splice(index, 1)
     }
     fileSize() {
       if (this.isDirectory()) {
@@ -5899,52 +6202,6 @@ function BufferBigIntNotDefined () {
     , MSBALL = ~REST
     , INT = Math.pow(2, 31);
 
-  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/digest.js#L10
-  const create = (code, digest) => {
-    const size = digest.byteLength
-    const sizeOffset = encodingLength_1(code)
-    const digestOffset = sizeOffset + encodingLength_1(size)
-
-    const bytes = new Uint8Array(digestOffset + size)
-    encodeTo_1(code, bytes, 0)
-    encodeTo_1(size, bytes, sizeOffset)
-    bytes.set(digest, digestOffset)
-
-    return new Digest(code, size, digest, bytes)
-  }
-
-  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/hasher.js#L22
-  class Hasher {
-
-    constructor(name, code, encode) {
-      this.name = name
-      this.code = code
-      this.encode = encode
-    }
-
-    digest(input) {
-      if (input instanceof Uint8Array) {
-        const result = this.encode(input)
-        return result instanceof Uint8Array
-          ? create(this.code, result)
-          : result.then((digest) => create(this.code, digest))
-      } else {
-        throw Error('Unknown type, must be binary type')
-      }
-    }
-  }
-
-  const from = ({ name, code, encode }) => new Hasher(name, code, encode)
-
-  //https://github.com/multiformats/js-multiformats/blob/bb14a29dd823a517ef0c6c741d265e022591d831/src/hashes/sha2.js#L7
-  const s_sha256 = from({
-    name: 'sha2-256',
-    code: 18,
-    //encode: (input) => coerce(crypto__default["default"].createHash('sha256').update(input).digest())
-    encode: (input) => {
-      return coerce(createHash('sha256').update(input).digest());
-    }
-  });
   /*---------------------------------------------------------------------------------------------
   *  Copyright 2016-2020 Protocol Labs
   *  Licensed under the MIT License.
@@ -5955,7 +6212,7 @@ function BufferBigIntNotDefined () {
   const pbLinkProperties = ['Hash', 'Name', 'Tsize']
 
   //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/pb-encode.js#L1
-  const textEncoder = new TextEncoder()
+  const textEncoder = new TextEncoder();
   const maxInt32 = 2 ** 32
   const maxUInt32 = 2 ** 31
 
@@ -6201,7 +6458,182 @@ function BufferBigIntNotDefined () {
       }
     }
   }
+  //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/pb-decode.js#L16
+  var decodeVarint = (bytes, offset) => {
+    let v = 0
+  
+    for (let shift = 0; ; shift += 7) {
+      /* c8 ignore next 3 */
+      if (shift >= 64) {
+        throw new Error('protobuf: varint overflow')
+      }
+      /* c8 ignore next 3 */
+      if (offset >= bytes.length) {
+        throw new Error('protobuf: unexpected end of data')
+      }
+  
+      const b = bytes[offset++]
+      v += shift < 28 ? (b & 0x7f) << shift : (b & 0x7f) * (2 ** shift)
+      if (b < 0x80) {
+        break
+      }
+    }
+    return [v, offset]
+  }
+  //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/pb-decode.js#L43
+  var decodeBytes = (bytes, offset) => {
+    let byteLen
+    ;[byteLen, offset] = decodeVarint(bytes, offset)
+    const postOffset = offset + byteLen
+  
+    /* c8 ignore next 3 */
+    if (byteLen < 0 || postOffset < 0) {
+      throw new Error('protobuf: invalid length')
+    }
+    /* c8 ignore next 3 */
+    if (postOffset > bytes.length) {
+      throw new Error('protobuf: unexpected end of data')
+    }
+  
+    return [bytes.subarray(offset, postOffset), postOffset]
+  }
+  //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/pb-decode.js#L65
+  var decodeKey = (bytes, index) => {
+    let wire
+    ;[wire, index] = decodeVarint(bytes, index);
+    return [wire & 0x7, wire >> 3, index]
+  };
+  //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/pb-decode.js#L141
+  var decodeNode =(bytes) => {
+    const l = bytes.length
+    let index = 0
+    let links
+    let linksBeforeData = false
+    let data
+    while (index < l) {
+      let wireType, fieldNum
+      ;[wireType, fieldNum, index] = decodeKey(bytes, index)
 
+      if (wireType !== 2) {
+        throw new Error(`protobuf: (PBNode) invalid wireType, expected 2, got ${wireType}`)
+      }
+      if (fieldNum === 1) {
+        if (data) {
+          throw new Error('protobuf: (PBNode) duplicate Data section')
+        }
+
+        ;[data, index] = decodeBytes(bytes, index)
+        if (links) {
+          linksBeforeData = true
+        }
+      } else if (fieldNum === 2) {
+        if (linksBeforeData) { // interleaved Links/Dode/Links
+          throw new Error('protobuf: (PBNode) duplicate Links section')
+        } else if (!links) {
+          links = []
+        }
+        let byts
+        ;[byts, index] = decodeBytes(bytes, index)
+        links.push(decodeLink(byts))
+      } else {
+        throw new Error(`protobuf: (PBNode) invalid fieldNumber, expected 1 or 2, got ${fieldNum}`)
+      }
+    }
+    if (index > l) {
+      throw new Error('protobuf: (PBNode) unexpected end of data')
+    }
+    const node = {}
+    if (data) {
+      node.Data = data
+    }
+    node.Links = links || []
+    return node
+  }
+  //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/pb-decode.js#L76
+  var decodeLink = (bytes) => {
+    const link = {}
+    const l = bytes.length
+    let index = 0
+  
+    while (index < l) {
+      let wireType, fieldNum
+      ;[wireType, fieldNum, index] = decodeKey(bytes, index)
+  
+      if (fieldNum === 1) {
+        if (link.Hash) {
+          throw new Error('protobuf: (PBLink) duplicate Hash section')
+        }
+        if (wireType !== 2) {
+          throw new Error(`protobuf: (PBLink) wrong wireType (${wireType}) for Hash`)
+        }
+        if (link.Name !== undefined) {
+          throw new Error('protobuf: (PBLink) invalid order, found Name before Hash')
+        }
+        if (link.Tsize !== undefined) {
+          throw new Error('protobuf: (PBLink) invalid order, found Tsize before Hash')
+        }
+  
+        ;[link.Hash, index] = decodeBytes(bytes, index)
+      } else if (fieldNum === 2) {
+        if (link.Name !== undefined) {
+          throw new Error('protobuf: (PBLink) duplicate Name section')
+        }
+        if (wireType !== 2) {
+          throw new Error(`protobuf: (PBLink) wrong wireType (${wireType}) for Name`)
+        }
+        if (link.Tsize !== undefined) {
+          throw new Error('protobuf: (PBLink) invalid order, found Tsize before Name')
+        }
+  
+        let byts
+        ;[byts, index] = decodeBytes(bytes, index)
+        link.Name = textDecoder.decode(byts)
+      } else if (fieldNum === 3) {
+        if (link.Tsize !== undefined) {
+          throw new Error('protobuf: (PBLink) duplicate Tsize section')
+        }
+        if (wireType !== 0) {
+          throw new Error(`protobuf: (PBLink) wrong wireType (${wireType}) for Tsize`)
+        }
+  
+        ;[link.Tsize, index] = decodeVarint(bytes, index)
+      } else {
+        throw new Error(`protobuf: (PBLink) invalid fieldNumber, expected 1, 2 or 3, got ${fieldNum}`)
+      }
+    }  
+    /* c8 ignore next 3 */
+    if (index > l) {
+      throw new Error('protobuf: (PBLink) unexpected end of data')
+    }  
+    return link
+  };
+  //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/index.js#L53
+  var d_decode = (bytes) => {
+    const pbn = decodeNode(bytes)
+    const node = {}
+    if (pbn.Data) {
+      node.Data = pbn.Data
+    }
+    if (pbn.Links) {
+      node.Links = pbn.Links.map((l) => {
+        const link = {}
+        try {
+          link.Hash = CID.decode(l.Hash)
+        } catch (e) {}
+        if (!link.Hash) {
+          throw new Error('Invalid Hash field found in link, expected CID')
+        }
+        if (l.Name !== undefined) {
+          link.Name = l.Name
+        }
+        if (l.Tsize !== undefined) {
+          link.Tsize = l.Tsize
+        }
+        return link
+      })
+    }
+    return node
+  };
   //https://github.com/ipld/js-dag-pb/blob/422f91ea722efdd119b25a8c41087ef9a61f2252/src/index.js#L23
   var d_encode = (node) => {
     validate(node)
@@ -6228,2427 +6660,27 @@ function BufferBigIntNotDefined () {
     return encodeNode(pbn)
   }
 
-  const hashItems = async (items, version) => {
-    const opts = mergeOptions(defaultOptions, {cidVersion: 1, onlyHash: true, rawLeaves: true, maxChunkSize: 1048576})
-    if (version == undefined)
-      version = 1;
-    let Links = [];
-    for (let i = 0; i < items.length; i++) {
-      let item = items[i];
-      Links.push({
-        Name: item.name,
-        Hash: parse(item.cid),        
-        Tsize: item.size
-      })
-    };
-    Links.sort(linkComparator);
-    try {
-      const dirUnixFS = new UnixFS({
-        type: 'directory',
-        mtime: undefined,
-        mode: 493
-      });
-      const node = {
-        Data: dirUnixFS.marshal(),
-        Links
-      };
-      // const buffer = d_encode(node);
-
-      // const cid = await persist(buffer, {
-      //   get: async cid => { throw new Error(`unexpected block API get for ${cid}`) },
-      //   put: async () => { }
-      // }, opts);
-      // console.dir(opts);
-      // return {
-      //   size: 0,//bytes.length + Links.reduce((acc, curr) => acc + (curr.Tsize == null ? 0 : curr.Tsize), 0),
-      //   cid: cid.toString()
-      // }
-      const bytes = d_encode(node);      
-      const hash = await s_sha256.digest(bytes);
-      const dagPB_code = 0x70;
-      // const cid = CID.create(version, RAW_CODE, hash);
-      const cid = CID.create(version, dagPB_code, hash);
-      return {
-        size: bytes.length + Links.reduce((acc, curr) => acc + (curr.Tsize == null ? 0 : curr.Tsize), 0),
-        cid: cid.toString()
-      }
-    } catch (e) {
-      throw e;
-    }
-  };
-  const hashContent = async (value, version) => {
-    try {
-      if (version == undefined)
-        version = 1;
-      if (typeof (value) == 'string')
-        value = new TextEncoder("utf-8").encode(value);
-
-      var cid;
-      if (version == 0) {
-        const unixFS = new UnixFS({
-          type: 'file',
-          data: value
-        })
-        const bytes = d_encode({
-          Data: unixFS.marshal(),
-          Links: []
-        })
-        const hash = await s_sha256.digest(bytes);
-        cid = CID.create(version, DAG_PB_CODE, hash);
-      }
-      else {
-        const hash = await s_sha256.digest(value);
-        if (value.length <= 1048576) //1 MB
-          cid = CID.create(version, RAW_CODE, hash)
-        else
-          cid = CID.create(version, DAG_PB_CODE, hash)
-      }
-      return cid.toString();
-    }
-    catch (e) {
-      throw e;
-    }
-  };
-  const parse = function (cid) {
-    return CID.parse(cid)
-  };
-
-  // test start from here
-  const symbol = Symbol.for('BufferList')
-  function BufferList(buf) {
-    if (!(this instanceof BufferList)) {
-      return new BufferList(buf)
-    }
-
-    BufferList._init.call(this, buf)
-  }
-
-  BufferList._init = function _init(buf) {
-    Object.defineProperty(this, symbol, { value: true })
-
-    this._bufs = []
-    this.length = 0
-
-    if (buf) {
-      this.append(buf)
-    }
-  }
-
-  BufferList.prototype._new = function _new(buf) {
-    return new BufferList(buf)
-  }
-
-  BufferList.prototype._offset = function _offset(offset) {
-    if (offset === 0) {
-      return [0, 0]
-    }
-
-    let tot = 0
-
-    for (let i = 0; i < this._bufs.length; i++) {
-      const _t = tot + this._bufs[i].length
-      if (offset < _t || i === this._bufs.length - 1) {
-        return [i, offset - tot]
-      }
-      tot = _t
-    }
-  }
-
-  BufferList.prototype._reverseOffset = function (blOffset) {
-    const bufferId = blOffset[0]
-    let offset = blOffset[1]
-
-    for (let i = 0; i < bufferId; i++) {
-      offset += this._bufs[i].length
-    }
-
-    return offset
-  }
-
-  BufferList.prototype.get = function get(index) {
-    if (index > this.length || index < 0) {
-      return undefined
-    }
-
-    const offset = this._offset(index)
-
-    return this._bufs[offset[0]][offset[1]]
-  }
-
-  BufferList.prototype.slice = function slice(start, end) {
-    if (typeof start === 'number' && start < 0) {
-      start += this.length
-    }
-
-    if (typeof end === 'number' && end < 0) {
-      end += this.length
-    }
-
-    return this.copy(null, 0, start, end)
-  }
-
-  BufferList.prototype.copy = function copy(dst, dstStart, srcStart, srcEnd) {
-    if (typeof srcStart !== 'number' || srcStart < 0) {
-      srcStart = 0
-    }
-
-    if (typeof srcEnd !== 'number' || srcEnd > this.length) {
-      srcEnd = this.length
-    }
-
-    if (srcStart >= this.length) {
-      return dst || Buffer.alloc(0)
-    }
-
-    if (srcEnd <= 0) {
-      return dst || Buffer.alloc(0)
-    }
-
-    const copy = !!dst
-    const off = this._offset(srcStart)
-    const len = srcEnd - srcStart
-    let bytes = len
-    let bufoff = (copy && dstStart) || 0
-    let start = off[1]
-
-    // copy/slice everything
-    if (srcStart === 0 && srcEnd === this.length) {
-      if (!copy) {
-        // slice, but full concat if multiple buffers
-        return this._bufs.length === 1
-          ? this._bufs[0]
-          : util_Buffer.concat(this._bufs, this.length)
-      }
-
-      // copy, need to copy individual buffers
-      for (let i = 0; i < this._bufs.length; i++) {
-        this._bufs[i].copy(dst, bufoff)
-        bufoff += this._bufs[i].length
-      }
-
-      return dst
-    }
-
-    // easy, cheap case where it's a subset of one of the buffers
-    if (bytes <= this._bufs[off[0]].length - start) {
-      return copy
-        ? this._bufs[off[0]].copy(dst, dstStart, start, start + bytes)
-        : this._bufs[off[0]].slice(start, start + bytes)
-    }
-
-    if (!copy) {
-      // a slice, we need something to copy in to
-      dst = Buffer.allocUnsafe(len)
-    }
-
-    for (let i = off[0]; i < this._bufs.length; i++) {
-      const l = this._bufs[i].length - start
-
-      if (bytes > l) {
-        this._bufs[i].copy(dst, bufoff, start)
-        bufoff += l
-      } else {
-        this._bufs[i].copy(dst, bufoff, start, start + bytes)
-        bufoff += l
-        break
-      }
-
-      bytes -= l
-
-      if (start) {
-        start = 0
-      }
-    }
-
-    // safeguard so that we don't return uninitialized memory
-    if (dst.length > bufoff) return dst.slice(0, bufoff)
-
-    return dst
-  }
-
-  BufferList.prototype.shallowSlice = function shallowSlice(start, end) {
-    start = start || 0
-    end = typeof end !== 'number' ? this.length : end
-
-    if (start < 0) {
-      start += this.length
-    }
-
-    if (end < 0) {
-      end += this.length
-    }
-
-    if (start === end) {
-      return this._new()
-    }
-
-    const startOffset = this._offset(start)
-    const endOffset = this._offset(end)
-    const buffers = this._bufs.slice(startOffset[0], endOffset[0] + 1)
-
-    if (endOffset[1] === 0) {
-      buffers.pop()
-    } else {
-      buffers[buffers.length - 1] = buffers[buffers.length - 1].slice(0, endOffset[1])
-    }
-
-    if (startOffset[1] !== 0) {
-      buffers[0] = buffers[0].slice(startOffset[1])
-    }
-
-    return this._new(buffers)
-  }
-
-  BufferList.prototype.toString = function toString(encoding, start, end) {
-    return this.slice(start, end).toString(encoding)
-  }
-
-  BufferList.prototype.consume = function consume(bytes) {
-    // first, normalize the argument, in accordance with how Buffer does it
-    bytes = Math.trunc(bytes)
-    // do nothing if not a positive number
-    if (Number.isNaN(bytes) || bytes <= 0) return this
-
-    while (this._bufs.length) {
-      if (bytes >= this._bufs[0].length) {
-        bytes -= this._bufs[0].length
-        this.length -= this._bufs[0].length
-        this._bufs.shift()
-      } else {
-        this._bufs[0] = this._bufs[0].slice(bytes)
-        this.length -= bytes
-        break
-      }
-    }
-
-    return this
-  }
-
-  BufferList.prototype.duplicate = function duplicate() {
-    const copy = this._new()
-
-    for (let i = 0; i < this._bufs.length; i++) {
-      copy.append(this._bufs[i])
-    }
-
-    return copy
-  }
-  BufferList.prototype.append = function append(buf) {
-    if (buf == null) {
-      return this
-    }
-
-    if (buf.buffer) {
-      // append a view of the underlying ArrayBuffer
-      this._appendBuffer(util_Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength))
-    } else if (Array.isArray(buf)) {
-      for (let i = 0; i < buf.length; i++) {
-        this.append(buf[i])
-      }
-    } else if (this._isBufferList(buf)) {
-      // unwrap argument into individual BufferLists
-      for (let i = 0; i < buf._bufs.length; i++) {
-        this.append(buf._bufs[i])
-      }
-    } else {
-      // coerce number arguments to strings, since Buffer(number) does
-      // uninitialized memory allocation
-      if (typeof buf === 'number') {
-        buf = buf.toString()
-      }
-
-      this._appendBuffer(util_Buffer.from(buf))
-    }
-
-    return this
-  }
-
-  BufferList.prototype._appendBuffer = function appendBuffer(buf) {
-    this._bufs.push(buf)
-    this.length += buf.length
-  }
-
-  BufferList.prototype.indexOf = function (search, offset, encoding) {
-    if (encoding === undefined && typeof offset === 'string') {
-      encoding = offset
-      offset = undefined
-    }
-
-    if (typeof search === 'function' || Array.isArray(search)) {
-      throw new TypeError('The "value" argument must be one of type string, Buffer, BufferList, or Uint8Array.')
-    } else if (typeof search === 'number') {
-      search = util_Buffer.from([search])
-    } else if (typeof search === 'string') {
-      search = util_Buffer.from(search, encoding)
-    } else if (this._isBufferList(search)) {
-      search = search.slice()
-    } else if (Array.isArray(search.buffer)) {
-      search = util_Buffer.from(search.buffer, search.byteOffset, search.byteLength)
-    } else if (!Buffer.isBuffer(search)) {
-      search = util_Buffer.from(search)
-    }
-
-    offset = Number(offset || 0)
-
-    if (isNaN(offset)) {
-      offset = 0
-    }
-
-    if (offset < 0) {
-      offset = this.length + offset
-    }
-
-    if (offset < 0) {
-      offset = 0
-    }
-
-    if (search.length === 0) {
-      return offset > this.length ? this.length : offset
-    }
-
-    const blOffset = this._offset(offset)
-    let blIndex = blOffset[0] // index of which internal buffer we're working on
-    let buffOffset = blOffset[1] // offset of the internal buffer we're working on
-
-    // scan over each buffer
-    for (; blIndex < this._bufs.length; blIndex++) {
-      const buff = this._bufs[blIndex]
-
-      while (buffOffset < buff.length) {
-        const availableWindow = buff.length - buffOffset
-
-        if (availableWindow >= search.length) {
-          const nativeSearchResult = buff.indexOf(search, buffOffset)
-
-          if (nativeSearchResult !== -1) {
-            return this._reverseOffset([blIndex, nativeSearchResult])
-          }
-
-          buffOffset = buff.length - search.length + 1 // end of native search window
-        } else {
-          const revOffset = this._reverseOffset([blIndex, buffOffset])
-
-          if (this._match(revOffset, search)) {
-            return revOffset
-          }
-
-          buffOffset++
-        }
-      }
-
-      buffOffset = 0
-    }
-
-    return -1
-  }
-
-  BufferList.prototype._match = function (offset, search) {
-    if (this.length - offset < search.length) {
-      return false
-    }
-
-    for (let searchOffset = 0; searchOffset < search.length; searchOffset++) {
-      if (this.get(offset + searchOffset) !== search[searchOffset]) {
-        return false
-      }
-    }
-    return true
-  }
-
-    ; (function () {
-      const methods = {
-        readDoubleBE: 8,
-        readDoubleLE: 8,
-        readFloatBE: 4,
-        readFloatLE: 4,
-        readInt32BE: 4,
-        readInt32LE: 4,
-        readUInt32BE: 4,
-        readUInt32LE: 4,
-        readInt16BE: 2,
-        readInt16LE: 2,
-        readUInt16BE: 2,
-        readUInt16LE: 2,
-        readInt8: 1,
-        readUInt8: 1,
-        readIntBE: null,
-        readIntLE: null,
-        readUIntBE: null,
-        readUIntLE: null
-      }
-
-      for (const m in methods) {
-        (function (m) {
-          if (methods[m] === null) {
-            BufferList.prototype[m] = function (offset, byteLength) {
-              return this.slice(offset, offset + byteLength)[m](0, byteLength)
-            }
-          } else {
-            BufferList.prototype[m] = function (offset = 0) {
-              return this.slice(offset, offset + methods[m])[m](0)
-            }
-          }
-        }(m))
-      }
-    }())
-
-  // Used internally by the class and also as an indicator of this object being
-  // a `BufferList`. It's not possible to use `instanceof BufferList` in a browser
-  // environment because there could be multiple different copies of the
-  // BufferList class and some `BufferList`s might be `BufferList`s.
-  BufferList.prototype._isBufferList = function _isBufferList(b) {
-    return b instanceof BufferList || BufferList.isBufferList(b)
-  }
-
-  BufferList.isBufferList = function isBufferList(b) {
-    return b != null && b[symbol]
-  }
-  async function hamtHashFn(buf) {
-    const hash = await multihashing(buf, 'murmur3-128')
-
-    // Multihashing inserts preamble of 2 bytes. Remove it.
-    // Also, murmur3 outputs 128 bit but, accidentally, IPFS Go's
-    // implementation only uses the first 64, so we must do the same
-    // for parity..
-    const justHash = hash.slice(2, 10)
-    const length = justHash.length
-    const result = new Uint8Array(length)
-    // TODO: invert buffer because that's how Go impl does it
-    for (let i = 0; i < length; i++) {
-      result[length - i - 1] = justHash[i]
-    }
-
-    return result
-  }
-  async function* rabinChunker(source, options) {
-    let min, max, avg
-
-    if (options.minChunkSize && options.maxChunkSize && options.avgChunkSize) {
-      avg = options.avgChunkSize
-      min = options.minChunkSize
-      max = options.maxChunkSize
-    } else if (!options.avgChunkSize) {
-      throw errcode(new Error('please specify an average chunk size'), 'ERR_INVALID_AVG_CHUNK_SIZE')
-    } else {
-      avg = options.avgChunkSize
-      min = avg / 3
-      max = avg + (avg / 2)
-    }
-
-    // validate min/max/avg in the same way as go
-    if (min < 16) {
-      throw errcode(new Error('rabin min must be greater than 16'), 'ERR_INVALID_MIN_CHUNK_SIZE')
-    }
-
-    if (max < min) {
-      max = min
-    }
-
-    if (avg < min) {
-      avg = min
-    }
-
-    const sizepow = Math.floor(Math.log2(avg))
-
-    for await (const chunk of rabin(source, {
-      min: min,
-      max: max,
-      bits: sizepow,
-      window: options.window,
-      polynomial: options.polynomial
-    })) {
-      yield chunk
-    }
-  }
-  async function* rabin(source, options) {
-    const r = await create(options.bits, options.min, options.max, options.window)
-    const buffers = new BufferList()
-
-    for await (const chunk of source) {
-      buffers.append(chunk)
-
-      const sizes = r.fingerprint(chunk)
-
-      for (let i = 0; i < sizes.length; i++) {
-        const size = sizes[i]
-        const buf = buffers.slice(0, size)
-        buffers.consume(size)
-
-        yield buf
-      }
-    }
-
-    if (buffers.length) {
-      yield buffers.slice(0)
-    }
-  }
-  async function* fixedSizeChunker(source, options) {
-    let bl = new BufferList()
-    let currentLength = 0
-    let emitted = false
-    const maxChunkSize = options.maxChunkSize
-
-    for await (const buffer of source) {
-      bl.append(buffer)
-
-      currentLength += buffer.length
-
-      while (currentLength >= maxChunkSize) {
-        yield bl.slice(0, maxChunkSize)
-        emitted = true
-
-        // throw away consumed bytes
-        if (maxChunkSize === bl.length) {
-          bl = new BufferList()
-          currentLength = 0
-        } else {
-          const newBl = new BufferList()
-          newBl.append(bl.shallowSlice(maxChunkSize))
-          bl = newBl
-
-          // update our offset
-          currentLength -= maxChunkSize
-        }
-      }
-    }
-
-    if (!emitted || currentLength) {
-      // return any remaining bytes or an empty buffer
-      yield bl.slice(0, currentLength)
-    }
-  }
-  async function* dagBuilder1(source, block, options) {
-    for await (const entry of source) {
-      if (entry.path) {
-        if (entry.path.substring(0, 2) === './') {
-          options.wrapWithDirectory = true
-        }
-
-        entry.path = entry.path
-          .split('/')
-          .filter(path => path && path !== '.')
-          .join('/')
-      }
-
-      if (entry.content) {
-        let chunker
-
-        if (typeof options.chunker === 'function') {
-          chunker = options.chunker
-        } else if (options.chunker === 'rabin') {
-          chunker = rabinChunker
-        } else {
-          chunker = fixedSizeChunker
-        }
-
-        /**
-         * @type {ChunkValidator}
-         */
-        let chunkValidator
-
-        if (typeof options.chunkValidator === 'function') {
-          chunkValidator = options.chunkValidator
-        } else {
-          chunkValidator = validateChunks // point 5
-        }
-
-        /** @type {File} */
-        const file = {
-          path: entry.path,
-          mtime: entry.mtime,
-          mode: entry.mode,
-          content: chunker(chunkValidator(contentAsAsyncIterable(entry.content), options), options) // here change content to other data type
-        }
-
-        yield () => fileBuilder(file, block, options)
-      } else if (entry.path) {
-        const dir = {
-          path: entry.path,
-          mtime: entry.mtime,
-          mode: entry.mode
-        }
-
-        yield () => dirBuilder(dir, block, options)
-      } else {
-        throw new Error('Import candidate must have content or path or both')
-      }
-    }
-  }
-  async function* validateChunks(source) {
-    for await (const content of source) {
-      if (content.length === undefined) {
-        throw errCode(new Error('Content was invalid'), 'ERR_INVALID_CONTENT')
-      }
-
-      if (typeof content === 'string' || content instanceof String) {
-        yield uint8ArrayFromString(content.toString())
-      } else if (Array.isArray(content)) {
-        yield Uint8Array.from(content)
-      } else if (content instanceof Uint8Array) {
-        yield content
-      } else {
-        throw errCode(new Error('Content was invalid'), 'ERR_INVALID_CONTENT')
-      }
-    }
-  }
-  async function Multihashing(bytes, alg, length) {
-    const digest = await Multihashing.digest(bytes, alg, length)
-    return multihash.mh_encode(digest, alg, length)
-  }
-
-  const mh_names = Object.freeze({
-    'identity': 0x00,
-    'sha1': 0x11,
-    'sha2-256': 0x12,
-    'sha2-512': 0x13,
-    'sha3-512': 0x14,
-    'sha3-384': 0x15,
-    'sha3-256': 0x16,
-    'sha3-224': 0x17,
-    'shake-128': 0x18,
-    'shake-256': 0x19,
-    'keccak-224': 0x1a,
-    'keccak-256': 0x1b,
-    'keccak-384': 0x1c,
-    'keccak-512': 0x1d,
-    'blake3': 0x1e,
-    'murmur3-128': 0x22,
-    'murmur3-32': 0x23,
-    'dbl-sha2-256': 0x56,
-    'md4': 0xd4,
-    'md5': 0xd5,
-    'bmt': 0xd6,
-    'sha2-256-trunc254-padded': 0x1012,
-    'ripemd-128': 0x1052,
-    'ripemd-160': 0x1053,
-    'ripemd-256': 0x1054,
-    'ripemd-320': 0x1055,
-    'x11': 0x1100,
-    'kangarootwelve': 0x1d01,
-    'sm3-256': 0x534d,
-    'blake2b-8': 0xb201,
-    'blake2b-16': 0xb202,
-    'blake2b-24': 0xb203,
-    'blake2b-32': 0xb204,
-    'blake2b-40': 0xb205,
-    'blake2b-48': 0xb206,
-    'blake2b-56': 0xb207,
-    'blake2b-64': 0xb208,
-    'blake2b-72': 0xb209,
-    'blake2b-80': 0xb20a,
-    'blake2b-88': 0xb20b,
-    'blake2b-96': 0xb20c,
-    'blake2b-104': 0xb20d,
-    'blake2b-112': 0xb20e,
-    'blake2b-120': 0xb20f,
-    'blake2b-128': 0xb210,
-    'blake2b-136': 0xb211,
-    'blake2b-144': 0xb212,
-    'blake2b-152': 0xb213,
-    'blake2b-160': 0xb214,
-    'blake2b-168': 0xb215,
-    'blake2b-176': 0xb216,
-    'blake2b-184': 0xb217,
-    'blake2b-192': 0xb218,
-    'blake2b-200': 0xb219,
-    'blake2b-208': 0xb21a,
-    'blake2b-216': 0xb21b,
-    'blake2b-224': 0xb21c,
-    'blake2b-232': 0xb21d,
-    'blake2b-240': 0xb21e,
-    'blake2b-248': 0xb21f,
-    'blake2b-256': 0xb220,
-    'blake2b-264': 0xb221,
-    'blake2b-272': 0xb222,
-    'blake2b-280': 0xb223,
-    'blake2b-288': 0xb224,
-    'blake2b-296': 0xb225,
-    'blake2b-304': 0xb226,
-    'blake2b-312': 0xb227,
-    'blake2b-320': 0xb228,
-    'blake2b-328': 0xb229,
-    'blake2b-336': 0xb22a,
-    'blake2b-344': 0xb22b,
-    'blake2b-352': 0xb22c,
-    'blake2b-360': 0xb22d,
-    'blake2b-368': 0xb22e,
-    'blake2b-376': 0xb22f,
-    'blake2b-384': 0xb230,
-    'blake2b-392': 0xb231,
-    'blake2b-400': 0xb232,
-    'blake2b-408': 0xb233,
-    'blake2b-416': 0xb234,
-    'blake2b-424': 0xb235,
-    'blake2b-432': 0xb236,
-    'blake2b-440': 0xb237,
-    'blake2b-448': 0xb238,
-    'blake2b-456': 0xb239,
-    'blake2b-464': 0xb23a,
-    'blake2b-472': 0xb23b,
-    'blake2b-480': 0xb23c,
-    'blake2b-488': 0xb23d,
-    'blake2b-496': 0xb23e,
-    'blake2b-504': 0xb23f,
-    'blake2b-512': 0xb240,
-    'blake2s-8': 0xb241,
-    'blake2s-16': 0xb242,
-    'blake2s-24': 0xb243,
-    'blake2s-32': 0xb244,
-    'blake2s-40': 0xb245,
-    'blake2s-48': 0xb246,
-    'blake2s-56': 0xb247,
-    'blake2s-64': 0xb248,
-    'blake2s-72': 0xb249,
-    'blake2s-80': 0xb24a,
-    'blake2s-88': 0xb24b,
-    'blake2s-96': 0xb24c,
-    'blake2s-104': 0xb24d,
-    'blake2s-112': 0xb24e,
-    'blake2s-120': 0xb24f,
-    'blake2s-128': 0xb250,
-    'blake2s-136': 0xb251,
-    'blake2s-144': 0xb252,
-    'blake2s-152': 0xb253,
-    'blake2s-160': 0xb254,
-    'blake2s-168': 0xb255,
-    'blake2s-176': 0xb256,
-    'blake2s-184': 0xb257,
-    'blake2s-192': 0xb258,
-    'blake2s-200': 0xb259,
-    'blake2s-208': 0xb25a,
-    'blake2s-216': 0xb25b,
-    'blake2s-224': 0xb25c,
-    'blake2s-232': 0xb25d,
-    'blake2s-240': 0xb25e,
-    'blake2s-248': 0xb25f,
-    'blake2s-256': 0xb260,
-    'skein256-8': 0xb301,
-    'skein256-16': 0xb302,
-    'skein256-24': 0xb303,
-    'skein256-32': 0xb304,
-    'skein256-40': 0xb305,
-    'skein256-48': 0xb306,
-    'skein256-56': 0xb307,
-    'skein256-64': 0xb308,
-    'skein256-72': 0xb309,
-    'skein256-80': 0xb30a,
-    'skein256-88': 0xb30b,
-    'skein256-96': 0xb30c,
-    'skein256-104': 0xb30d,
-    'skein256-112': 0xb30e,
-    'skein256-120': 0xb30f,
-    'skein256-128': 0xb310,
-    'skein256-136': 0xb311,
-    'skein256-144': 0xb312,
-    'skein256-152': 0xb313,
-    'skein256-160': 0xb314,
-    'skein256-168': 0xb315,
-    'skein256-176': 0xb316,
-    'skein256-184': 0xb317,
-    'skein256-192': 0xb318,
-    'skein256-200': 0xb319,
-    'skein256-208': 0xb31a,
-    'skein256-216': 0xb31b,
-    'skein256-224': 0xb31c,
-    'skein256-232': 0xb31d,
-    'skein256-240': 0xb31e,
-    'skein256-248': 0xb31f,
-    'skein256-256': 0xb320,
-    'skein512-8': 0xb321,
-    'skein512-16': 0xb322,
-    'skein512-24': 0xb323,
-    'skein512-32': 0xb324,
-    'skein512-40': 0xb325,
-    'skein512-48': 0xb326,
-    'skein512-56': 0xb327,
-    'skein512-64': 0xb328,
-    'skein512-72': 0xb329,
-    'skein512-80': 0xb32a,
-    'skein512-88': 0xb32b,
-    'skein512-96': 0xb32c,
-    'skein512-104': 0xb32d,
-    'skein512-112': 0xb32e,
-    'skein512-120': 0xb32f,
-    'skein512-128': 0xb330,
-    'skein512-136': 0xb331,
-    'skein512-144': 0xb332,
-    'skein512-152': 0xb333,
-    'skein512-160': 0xb334,
-    'skein512-168': 0xb335,
-    'skein512-176': 0xb336,
-    'skein512-184': 0xb337,
-    'skein512-192': 0xb338,
-    'skein512-200': 0xb339,
-    'skein512-208': 0xb33a,
-    'skein512-216': 0xb33b,
-    'skein512-224': 0xb33c,
-    'skein512-232': 0xb33d,
-    'skein512-240': 0xb33e,
-    'skein512-248': 0xb33f,
-    'skein512-256': 0xb340,
-    'skein512-264': 0xb341,
-    'skein512-272': 0xb342,
-    'skein512-280': 0xb343,
-    'skein512-288': 0xb344,
-    'skein512-296': 0xb345,
-    'skein512-304': 0xb346,
-    'skein512-312': 0xb347,
-    'skein512-320': 0xb348,
-    'skein512-328': 0xb349,
-    'skein512-336': 0xb34a,
-    'skein512-344': 0xb34b,
-    'skein512-352': 0xb34c,
-    'skein512-360': 0xb34d,
-    'skein512-368': 0xb34e,
-    'skein512-376': 0xb34f,
-    'skein512-384': 0xb350,
-    'skein512-392': 0xb351,
-    'skein512-400': 0xb352,
-    'skein512-408': 0xb353,
-    'skein512-416': 0xb354,
-    'skein512-424': 0xb355,
-    'skein512-432': 0xb356,
-    'skein512-440': 0xb357,
-    'skein512-448': 0xb358,
-    'skein512-456': 0xb359,
-    'skein512-464': 0xb35a,
-    'skein512-472': 0xb35b,
-    'skein512-480': 0xb35c,
-    'skein512-488': 0xb35d,
-    'skein512-496': 0xb35e,
-    'skein512-504': 0xb35f,
-    'skein512-512': 0xb360,
-    'skein1024-8': 0xb361,
-    'skein1024-16': 0xb362,
-    'skein1024-24': 0xb363,
-    'skein1024-32': 0xb364,
-    'skein1024-40': 0xb365,
-    'skein1024-48': 0xb366,
-    'skein1024-56': 0xb367,
-    'skein1024-64': 0xb368,
-    'skein1024-72': 0xb369,
-    'skein1024-80': 0xb36a,
-    'skein1024-88': 0xb36b,
-    'skein1024-96': 0xb36c,
-    'skein1024-104': 0xb36d,
-    'skein1024-112': 0xb36e,
-    'skein1024-120': 0xb36f,
-    'skein1024-128': 0xb370,
-    'skein1024-136': 0xb371,
-    'skein1024-144': 0xb372,
-    'skein1024-152': 0xb373,
-    'skein1024-160': 0xb374,
-    'skein1024-168': 0xb375,
-    'skein1024-176': 0xb376,
-    'skein1024-184': 0xb377,
-    'skein1024-192': 0xb378,
-    'skein1024-200': 0xb379,
-    'skein1024-208': 0xb37a,
-    'skein1024-216': 0xb37b,
-    'skein1024-224': 0xb37c,
-    'skein1024-232': 0xb37d,
-    'skein1024-240': 0xb37e,
-    'skein1024-248': 0xb37f,
-    'skein1024-256': 0xb380,
-    'skein1024-264': 0xb381,
-    'skein1024-272': 0xb382,
-    'skein1024-280': 0xb383,
-    'skein1024-288': 0xb384,
-    'skein1024-296': 0xb385,
-    'skein1024-304': 0xb386,
-    'skein1024-312': 0xb387,
-    'skein1024-320': 0xb388,
-    'skein1024-328': 0xb389,
-    'skein1024-336': 0xb38a,
-    'skein1024-344': 0xb38b,
-    'skein1024-352': 0xb38c,
-    'skein1024-360': 0xb38d,
-    'skein1024-368': 0xb38e,
-    'skein1024-376': 0xb38f,
-    'skein1024-384': 0xb390,
-    'skein1024-392': 0xb391,
-    'skein1024-400': 0xb392,
-    'skein1024-408': 0xb393,
-    'skein1024-416': 0xb394,
-    'skein1024-424': 0xb395,
-    'skein1024-432': 0xb396,
-    'skein1024-440': 0xb397,
-    'skein1024-448': 0xb398,
-    'skein1024-456': 0xb399,
-    'skein1024-464': 0xb39a,
-    'skein1024-472': 0xb39b,
-    'skein1024-480': 0xb39c,
-    'skein1024-488': 0xb39d,
-    'skein1024-496': 0xb39e,
-    'skein1024-504': 0xb39f,
-    'skein1024-512': 0xb3a0,
-    'skein1024-520': 0xb3a1,
-    'skein1024-528': 0xb3a2,
-    'skein1024-536': 0xb3a3,
-    'skein1024-544': 0xb3a4,
-    'skein1024-552': 0xb3a5,
-    'skein1024-560': 0xb3a6,
-    'skein1024-568': 0xb3a7,
-    'skein1024-576': 0xb3a8,
-    'skein1024-584': 0xb3a9,
-    'skein1024-592': 0xb3aa,
-    'skein1024-600': 0xb3ab,
-    'skein1024-608': 0xb3ac,
-    'skein1024-616': 0xb3ad,
-    'skein1024-624': 0xb3ae,
-    'skein1024-632': 0xb3af,
-    'skein1024-640': 0xb3b0,
-    'skein1024-648': 0xb3b1,
-    'skein1024-656': 0xb3b2,
-    'skein1024-664': 0xb3b3,
-    'skein1024-672': 0xb3b4,
-    'skein1024-680': 0xb3b5,
-    'skein1024-688': 0xb3b6,
-    'skein1024-696': 0xb3b7,
-    'skein1024-704': 0xb3b8,
-    'skein1024-712': 0xb3b9,
-    'skein1024-720': 0xb3ba,
-    'skein1024-728': 0xb3bb,
-    'skein1024-736': 0xb3bc,
-    'skein1024-744': 0xb3bd,
-    'skein1024-752': 0xb3be,
-    'skein1024-760': 0xb3bf,
-    'skein1024-768': 0xb3c0,
-    'skein1024-776': 0xb3c1,
-    'skein1024-784': 0xb3c2,
-    'skein1024-792': 0xb3c3,
-    'skein1024-800': 0xb3c4,
-    'skein1024-808': 0xb3c5,
-    'skein1024-816': 0xb3c6,
-    'skein1024-824': 0xb3c7,
-    'skein1024-832': 0xb3c8,
-    'skein1024-840': 0xb3c9,
-    'skein1024-848': 0xb3ca,
-    'skein1024-856': 0xb3cb,
-    'skein1024-864': 0xb3cc,
-    'skein1024-872': 0xb3cd,
-    'skein1024-880': 0xb3ce,
-    'skein1024-888': 0xb3cf,
-    'skein1024-896': 0xb3d0,
-    'skein1024-904': 0xb3d1,
-    'skein1024-912': 0xb3d2,
-    'skein1024-920': 0xb3d3,
-    'skein1024-928': 0xb3d4,
-    'skein1024-936': 0xb3d5,
-    'skein1024-944': 0xb3d6,
-    'skein1024-952': 0xb3d7,
-    'skein1024-960': 0xb3d8,
-    'skein1024-968': 0xb3d9,
-    'skein1024-976': 0xb3da,
-    'skein1024-984': 0xb3db,
-    'skein1024-992': 0xb3dc,
-    'skein1024-1000': 0xb3dd,
-    'skein1024-1008': 0xb3de,
-    'skein1024-1016': 0xb3df,
-    'skein1024-1024': 0xb3e0,
-    'poseidon-bls12_381-a2-fc1': 0xb401,
-    'poseidon-bls12_381-a2-fc1-sc': 0xb402
-  })
-
-  const mh_codes = /** @type {import('./types').CodeNameMap} */({})
-  for (const key in mh_names) {
-    const name = /** @type {HashName} */(key)
-    mh_codes[mh_names[name]] = name
-  }
-  Object.freeze(mh_codes)
-
-  function createCodec(name, prefix, encode, decode) {
-    return {
-      name,
-      prefix,
-      encoder: {
-        name,
-        prefix,
-        encode
-      },
-      decoder: { decode }
-    };
-  }
-
-  const string = createCodec('utf8', 'u', buf => {
-    const decoder = new TextDecoder('utf8');
-    return 'u' + decoder.decode(buf);
-  }, str => {
-    const encoder = new TextEncoder();
-    return encoder.encode(str.substring(1));
-  });
-
-  var bases = {
-    utf8: string,
-    'utf-8': string,
-    // hex: basics.bases.base16,
-    // latin1: ascii,
-    // ascii: ascii,
-    // binary: ascii,
-    // ...basics.bases
-  };
-
-  function uint8ArrayToString(array, encoding = 'utf8') {
-    const base = bases[encoding];
-    if (!base) {
-      throw new Error(`Unsupported encoding "${encoding}"`);
-    }
-    if ((encoding === 'utf8' || encoding === 'utf-8') && globalThis.Buffer != null && globalThis.Buffer.from != null) {
-      return globalThis.Buffer.from(array.buffer, array.byteOffset, array.byteLength).toString('utf8');
-    }
-    return base.encoder.encode(array).substring(1);
-  }
-
-  function mh_toHexString(hash) {
-    if (!(hash instanceof Uint8Array)) {
-      throw new Error('must be passed a Uint8Array')
-    }
-
-    return uint8ArrayToString(hash, 'base16')
-  }
-
-  function mh_fromHexString(hash) {
-    return uint8ArrayFromString(hash, 'base16')
-  }
-
-  const encodeText = (text) => textEncoder.encode(text)
-
-  class Base {
-    constructor(name, code, factory, alphabet) {
-      this.name = name
-      this.code = code
-      this.codeBuf = encodeText(this.code)
-      this.alphabet = alphabet
-      this.codec = factory(alphabet)
-    }
-    encode(buf) {
-      return this.codec.encode(buf)
-    }
-    decode(string) {
-      for (const char of string) {
-        if (this.alphabet && this.alphabet.indexOf(char) < 0) {
-          throw new Error(`invalid character '${char}' in '${string}'`)
-        }
-      }
-      return this.codec.decode(string)
-    }
-  }
-
-  const rfc4648_1 = (bitsPerChar) => (alphabet) => {
-    return {
-      encode(input) {
-        return _encode(input, alphabet, bitsPerChar)
-      },
-      decode(input) {
-        return _decode(input, alphabet, bitsPerChar)
-      }
-    }
-  }
-
-  const constants = [
-    // ['identity', '\x00', identity, ''],
-    ['base2', '0', rfc4648_1(1), '01'],
-    ['base8', '7', rfc4648_1(3), '01234567'],
-    ['base10', '9', _basex, '0123456789'],
-    ['base16', 'f', rfc4648_1(4), '0123456789abcdef'],
-    ['base16upper', 'F', rfc4648_1(4), '0123456789ABCDEF'],
-    ['base32hex', 'v', rfc4648_1(5), '0123456789abcdefghijklmnopqrstuv'],
-    ['base32hexupper', 'V', rfc4648_1(5), '0123456789ABCDEFGHIJKLMNOPQRSTUV'],
-    ['base32hexpad', 't', rfc4648_1(5), '0123456789abcdefghijklmnopqrstuv='],
-    ['base32hexpadupper', 'T', rfc4648_1(5), '0123456789ABCDEFGHIJKLMNOPQRSTUV='],
-    ['base32', 'b', rfc4648_1(5), 'abcdefghijklmnopqrstuvwxyz234567'],
-    ['base32upper', 'B', rfc4648_1(5), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'],
-    ['base32pad', 'c', rfc4648_1(5), 'abcdefghijklmnopqrstuvwxyz234567='],
-    ['base32padupper', 'C', rfc4648_1(5), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567='],
-    ['base32z', 'h', rfc4648_1(5), 'ybndrfg8ejkmcpqxot1uwisza345h769'],
-    ['base36', 'k', _basex, '0123456789abcdefghijklmnopqrstuvwxyz'],
-    ['base36upper', 'K', _basex, '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'],
-    ['base58btc', 'z', _basex, '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'],
-    ['base58flickr', 'Z', _basex, '123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ'],
-    ['base64', 'm', rfc4648_1(6), 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'],
-    ['base64pad', 'M', rfc4648_1(6), 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='],
-    ['base64url', 'u', rfc4648_1(6), 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'],
-    ['base64urlpad', 'U', rfc4648_1(6), 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=']
-  ]
-
-  const constants1_names = constants.reduce((prev, tupple) => {
-    prev[tupple[0]] = new Base(tupple[0], tupple[1], tupple[2], tupple[3])
-    return prev
-  }, /** @type {Record<BaseName,Base>} */({}))
-
-  const constants1_codes = constants.reduce((prev, tupple) => {
-    prev[tupple[1]] = constants1_names[tupple[0]]
-    return prev
-  }, /** @type {Record<BaseCode,Base>} */({}))
-
-  function encoding(nameOrCode) {
-    if (Object.prototype.hasOwnProperty.call(constants1_names, /** @type {BaseName} */(nameOrCode))) {
-      return constants1_names[/** @type {BaseName} */(nameOrCode)]
-    } else if (Object.prototype.hasOwnProperty.call(constants1_codes, /** @type {BaseCode} */(nameOrCode))) {
-      return constants1_codes[/** @type {BaseCode} */(nameOrCode)]
-    } else {
-      throw new Error(`Unsupported encoding: ${nameOrCode}`)
-    }
-  }
-
-  function concat(arrs, length) {
-    const output = new Uint8Array(length)
-    let offset = 0
-
-    for (const arr of arrs) {
-      output.set(arr, offset)
-      offset += arr.length
-    }
-
-    return output
-  }
-
-  const textDecoder = new TextDecoder()
-  const decodeText = (bytes) => textDecoder.decode(bytes)
-  function validEncode(name, buf) {
-    const enc = encoding(name)
-    enc.decode(decodeText(buf))
-  }
-
-  function multibase(nameOrCode, buf) {
-    if (!buf) {
-      throw new Error('requires an encoded Uint8Array')
-    }
-    const { name, codeBuf } = encoding(nameOrCode)
-    validEncode(name, buf)
-
-    return concat([codeBuf, buf], codeBuf.length + buf.length)
-  }
-
-  function multibase_encode(nameOrCode, buf) {
-    const enc = encoding(nameOrCode)
-    const data = encodeText(enc.encode(buf))
-
-    return concat([enc.codeBuf, data], enc.codeBuf.length + data.length)
-  }
-
-  function multibase_decode(data) {
-    if (data instanceof Uint8Array) {
-      data = decodeText(data)
-    }
-    const prefix = data[0]
-    if (['f', 'F', 'v', 'V', 't', 'T', 'b', 'B', 'c', 'C', 'h', 'k', 'K'].includes(prefix)) {
-      data = data.toLowerCase()
-    }
-    const enc = encoding(/** @type {BaseCode} */(data[0]))
-    return enc.decode(data.substring(1))
-  }
-
-  function mh_toB58String(hash) {
-    if (!(hash instanceof Uint8Array)) {
-      throw new Error('must be passed a Uint8Array')
-    }
-    return uint8ArrayToString(multibase_encode('base58btc', hash)).slice(1)
-  }
-
-  function mh_fromB58String(hash) {
-    const encoded = hash instanceof Uint8Array
-      ? uint8ArrayToString(hash)
-      : hash
-
-    return multibase_decode('z' + encoded)
-  }
-
-  function mh_decode(bytes) {
-    if (!(bytes instanceof Uint8Array)) {
-      throw new Error('multihash must be a Uint8Array')
-    }
-
-    if (bytes.length < 2) {
-      throw new Error('multihash too short. must be > 2 bytes.')
-    }
-
-    const code = /** @type {HashCode} */(decode_2(bytes))
-    if (!mh_isValidCode(code)) {
-      throw new Error(`multihash unknown function code: 0x${code.toString(16)}`)
-    }
-    bytes = bytes.slice(decode_2.bytes)
-
-    const len = decode_2(bytes)
-    if (len < 0) {
-      throw new Error(`multihash invalid length: ${len}`)
-    }
-    bytes = bytes.slice(decode_2.bytes)
-
-    if (bytes.length !== len) {
-      throw new Error(`multihash length inconsistent: 0x${uint8ArrayToString(bytes, 'base16')}`)
-    }
-
-    return {
-      code,
-      name: mh_codes[code],
-      length: len,
-      digest: bytes
-    }
-  }
-
-  function mh_encode(digest, code, length) {
-    if (!digest || code === undefined) {
-      throw new Error('multihash encode requires at least two args: digest, code')
-    }
-    const hashfn = mh_coerceCode(code)
-
-    if (!(digest instanceof Uint8Array)) {
-      throw new Error('digest should be a Uint8Array')
-    }
-
-    if (length == null) {
-      length = digest.length
-    }
-
-    if (length && digest.length !== length) {
-      throw new Error('digest length should be equal to specified length.')
-    }
-
-    function alloc_allocUnsafe(size = 0) {
-      if (globalThis.Buffer != null && globalThis.Buffer.allocUnsafe != null) {
-        return globalThis.Buffer.allocUnsafe(size);
-      }
-      return new Uint8Array(size);
-    }
-
-    const hash = encode_2(hashfn)
-    const len = encode_2(length)
-    function uint8ArrayConcat(arrays, length) {
-      if (!length) {
-        length = arrays.reduce((acc, curr) => acc + curr.length, 0);
-      }
-      const output = alloc_allocUnsafe(length);
-      let offset = 0;
-      for (const arr of arrays) {
-        output.set(arr, offset);
-        offset += arr.length;
-      }
-      return output;
-    }
-    return uint8ArrayConcat([hash, len, digest], hash.length + len.length + digest.length)
-  }
-
-  function mh_coerceCode(name) {
-    let code = name
-
-    if (typeof name === 'string') {
-      if (mh_names[name] === undefined) {
-        throw new Error(`Unrecognized hash function named: ${name}`)
-      }
-      code = mh_names[name]
-    }
-
-    if (typeof code !== 'number') {
-      throw new Error(`Hash function code should be a number. Got: ${code}`)
-    }
-
-    if (mh_codes[code] === undefined && !mh_isAppCode(code)) {
-      throw new Error(`Unrecognized function code: ${code}`)
-    }
-
-    return code
-  }
-
-  function mh_isAppCode(code) {
-    return code > 0 && code < 0x10
-  }
-
-  function mh_validate(multihash) {
-    mh_decode(multihash)
-  }
-
-  function mh_prefix(multihash) {
-    mh_validate(multihash)
-
-    return multihash.subarray(0, 2)
-  }
-
-  function mh_isValidCode(code) {
-    if (mh_isAppCode(code)) {
-      return true
-    }
-
-    if (mh_codes[code]) {
-      return true
-    }
-
-    return false
-  }
-
-  const multihash = {
-    mh_names,
-    mh_codes,
-    mh_toHexString,
-    mh_fromHexString,
-    mh_toB58String,
-    mh_fromB58String,
-    mh_decode,
-    mh_encode,
-    mh_coerceCode,
-    mh_isAppCode,
-    mh_validate,
-    mh_prefix,
-    mh_isValidCode
-  }
-
-  Multihashing.multihash = multihash
-
-  Multihashing.digest = async (bytes, alg, length) => {
-    const hash = Multihashing.createHash(alg)
-    const digest = await hash(bytes)
-    return length ? digest.slice(0, length) : digest
-  }
-
-  Multihashing.createHash = function (alg) {
-    if (!alg) {
-      const e = errcode(new Error('hash algorithm must be specified'), 'ERR_HASH_ALGORITHM_NOT_SPECIFIED')
-      throw e
-    }
-    const code = multihash.mh_coerceCode(alg)
-    if (!Multihashing.functions[code]) {
-      throw errcode(new Error(`multihash function '${alg}' not yet supported`), 'ERR_HASH_ALGORITHM_NOT_SUPPORTED')
-    }
-    return Multihashing.functions[code]
-  }
-
-  const digest = async (data, alg) => {
-    switch (alg) {
-      // case 'sha1':
-      //   return crypto.createHash('sha1').update(data).digest()
-      case 'sha2-256':
-        return createHash('sha256').update(data).digest()
-      // case 'sha2-512':
-      //   return crypto.createHash('sha512').update(data).digest()
-      case 'dbl-sha2-256': {
-        const first = createHash('sha256').update(data).digest()
-        return createHash('sha256').update(first).digest()
-      }
-      default:
-        throw new Error(`${alg} is not a supported algorithm`)
-    }
-  }
-
-  const { factory: sha } = {
-    factory: (alg) => async (data) => {
-      return digest(data, alg)
-    },
-    digest,
-    multihashing: async (buf, alg, length) => {
-      const h = await digest(buf, alg)
-      return multihash.encode(h, alg, length)
-    }
-  }
-
-  var crypto = {
-    // identity,
-    // sha1: sha('sha1'),
-    sha2256: sha('sha2-256'),
-    // sha2512: sha('sha2-512'),
-    // dblSha2256: sha('dbl-sha2-256'),
-    // sha3224: hash('sha3-224'),
-    // sha3256: hash('sha3-256'),
-    // sha3384: hash('sha3-384'),
-    // sha3512: hash('sha3-512'),
-    // shake128: hash('shake-128'),
-    // shake256: hash('shake-256'),
-    // keccak224: hash('keccak-224'),
-    // keccak256: hash('keccak-256'),
-    // keccak384: hash('keccak-384'),
-    // keccak512: hash('keccak-512'),
-    // murmur3128: hash('murmur3-128'),
-    // murmur332: hash('murmur3-32'),
-    // addBlake: blake_1
-  }
-  Multihashing.functions = {
-    // // identity
-    // 0x00: crypto.identity,
-    // // sha1
-    // 0x11: crypto.sha1,
-    // sha2-256
-    0x12: crypto.sha2256,
-    // sha2-512
-    // 0x13: crypto.sha2512,
-    // // sha3-512
-    // 0x14: crypto.sha3512,
-    // // sha3-384
-    // 0x15: crypto.sha3384,
-    // // sha3-256
-    // 0x16: crypto.sha3256,
-    // // sha3-224
-    // 0x17: crypto.sha3224,
-    // // shake-128
-    // 0x18: crypto.shake128,
-    // // shake-256
-    // 0x19: crypto.shake256,
-    // // keccak-224
-    // 0x1A: crypto.keccak224,
-    // // keccak-256
-    // 0x1B: crypto.keccak256,
-    // // keccak-384
-    // 0x1C: crypto.keccak384,
-    // // keccak-512
-    // 0x1D: crypto.keccak512,
-    // // murmur3-128
-    // 0x22: crypto.murmur3128,
-    // // murmur3-32
-    // 0x23: crypto.murmur332,
-    // dbl-sha2-256
-    0x56: crypto.dblSha2256
-  }
-
-  Multihashing.validate = async (bytes, hash) => {
-    const newHash = await Multihashing(bytes, multihash.decode(hash).name)
-
-    return equals(hash, newHash)
-  }
-
-  const CIDUtil = {
-    checkCIDComponents: function (other) {
-      if (other == null) {
-        return 'null values are not valid CIDs'
-      }
-
-      if (!(other.version === 0 || other.version === 1)) {
-        return 'Invalid version, must be a number equal to 1 or 0'
-      }
-
-      if (typeof other.codec !== 'string') {
-        return 'codec must be string'
-      }
-
-      if (other.version === 0) {
-        if (other.codec !== 'dag-pb') {
-          return "codec must be 'dag-pb' for CIDv0"
-        }
-        if (other.multibaseName !== 'base58btc') {
-          return "multibaseName must be 'base58btc' for CIDv0"
-        }
-      }
-
-      if (!(other.multihash instanceof Uint8Array)) {
-        return 'multihash must be a Uint8Array'
-      }
-
-      try {
-        var mh = multihash
-        mh.mh_validate(other.multihash)
-      } catch (err) {
-        let errorMsg = err.message
-        if (!errorMsg) { // Just in case mh.validate() throws an error with empty error message
-          errorMsg = 'Multihash validation failed'
-        }
-        return errorMsg
-      }
-    }
-  }
-
-  function uint8ArrayToNumber(buf) {
-    return parseInt(uint8ArrayToString(buf, 'base16'), 16)
-  }
-
-  function varintUint8ArrayEncode(input) {
-    return Uint8Array.from(encode_2(uint8ArrayToNumber(input)))
-  }
-
-  const baseTable = Object.freeze({
-    'identity': 0x00,
-    'cidv1': 0x01,
-    'cidv2': 0x02,
-    'cidv3': 0x03,
-    'ip4': 0x04,
-    'tcp': 0x06,
-    'sha1': 0x11,
-    'sha2-256': 0x12,
-    'sha2-512': 0x13,
-    'sha3-512': 0x14,
-    'sha3-384': 0x15,
-    'sha3-256': 0x16,
-    'sha3-224': 0x17,
-    'shake-128': 0x18,
-    'shake-256': 0x19,
-    'keccak-224': 0x1a,
-    'keccak-256': 0x1b,
-    'keccak-384': 0x1c,
-    'keccak-512': 0x1d,
-    'blake3': 0x1e,
-    'dccp': 0x21,
-    'murmur3-128': 0x22,
-    'murmur3-32': 0x23,
-    'ip6': 0x29,
-    'ip6zone': 0x2a,
-    'path': 0x2f,
-    'multicodec': 0x30,
-    'multihash': 0x31,
-    'multiaddr': 0x32,
-    'multibase': 0x33,
-    'dns': 0x35,
-    'dns4': 0x36,
-    'dns6': 0x37,
-    'dnsaddr': 0x38,
-    'protobuf': 0x50,
-    'cbor': 0x51,
-    'raw': 0x55,
-    'dbl-sha2-256': 0x56,
-    'rlp': 0x60,
-    'bencode': 0x63,
-    'dag-pb': 0x70,
-    'dag-cbor': 0x71,
-    'libp2p-key': 0x72,
-    'git-raw': 0x78,
-    'torrent-info': 0x7b,
-    'torrent-file': 0x7c,
-    'leofcoin-block': 0x81,
-    'leofcoin-tx': 0x82,
-    'leofcoin-pr': 0x83,
-    'sctp': 0x84,
-    'dag-jose': 0x85,
-    'dag-cose': 0x86,
-    'eth-block': 0x90,
-    'eth-block-list': 0x91,
-    'eth-tx-trie': 0x92,
-    'eth-tx': 0x93,
-    'eth-tx-receipt-trie': 0x94,
-    'eth-tx-receipt': 0x95,
-    'eth-state-trie': 0x96,
-    'eth-account-snapshot': 0x97,
-    'eth-storage-trie': 0x98,
-    'eth-receipt-log-trie': 0x99,
-    'eth-reciept-log': 0x9a,
-    'bitcoin-block': 0xb0,
-    'bitcoin-tx': 0xb1,
-    'bitcoin-witness-commitment': 0xb2,
-    'zcash-block': 0xc0,
-    'zcash-tx': 0xc1,
-    'caip-50': 0xca,
-    'streamid': 0xce,
-    'stellar-block': 0xd0,
-    'stellar-tx': 0xd1,
-    'md4': 0xd4,
-    'md5': 0xd5,
-    'bmt': 0xd6,
-    'decred-block': 0xe0,
-    'decred-tx': 0xe1,
-    'ipld-ns': 0xe2,
-    'ipfs-ns': 0xe3,
-    'swarm-ns': 0xe4,
-    'ipns-ns': 0xe5,
-    'zeronet': 0xe6,
-    'secp256k1-pub': 0xe7,
-    'bls12_381-g1-pub': 0xea,
-    'bls12_381-g2-pub': 0xeb,
-    'x25519-pub': 0xec,
-    'ed25519-pub': 0xed,
-    'bls12_381-g1g2-pub': 0xee,
-    'dash-block': 0xf0,
-    'dash-tx': 0xf1,
-    'swarm-manifest': 0xfa,
-    'swarm-feed': 0xfb,
-    'udp': 0x0111,
-    'p2p-webrtc-star': 0x0113,
-    'p2p-webrtc-direct': 0x0114,
-    'p2p-stardust': 0x0115,
-    'p2p-circuit': 0x0122,
-    'dag-json': 0x0129,
-    'udt': 0x012d,
-    'utp': 0x012e,
-    'unix': 0x0190,
-    'thread': 0x0196,
-    'p2p': 0x01a5,
-    'ipfs': 0x01a5,
-    'https': 0x01bb,
-    'onion': 0x01bc,
-    'onion3': 0x01bd,
-    'garlic64': 0x01be,
-    'garlic32': 0x01bf,
-    'tls': 0x01c0,
-    'noise': 0x01c6,
-    'quic': 0x01cc,
-    'ws': 0x01dd,
-    'wss': 0x01de,
-    'p2p-websocket-star': 0x01df,
-    'http': 0x01e0,
-    'swhid-1-snp': 0x01f0,
-    'json': 0x0200,
-    'messagepack': 0x0201,
-    'libp2p-peer-record': 0x0301,
-    'libp2p-relay-rsvp': 0x0302,
-    'car-index-sorted': 0x0400,
-    'sha2-256-trunc254-padded': 0x1012,
-    'ripemd-128': 0x1052,
-    'ripemd-160': 0x1053,
-    'ripemd-256': 0x1054,
-    'ripemd-320': 0x1055,
-    'x11': 0x1100,
-    'p256-pub': 0x1200,
-    'p384-pub': 0x1201,
-    'p521-pub': 0x1202,
-    'ed448-pub': 0x1203,
-    'x448-pub': 0x1204,
-    'ed25519-priv': 0x1300,
-    'secp256k1-priv': 0x1301,
-    'x25519-priv': 0x1302,
-    'kangarootwelve': 0x1d01,
-    'sm3-256': 0x534d,
-    'blake2b-8': 0xb201,
-    'blake2b-16': 0xb202,
-    'blake2b-24': 0xb203,
-    'blake2b-32': 0xb204,
-    'blake2b-40': 0xb205,
-    'blake2b-48': 0xb206,
-    'blake2b-56': 0xb207,
-    'blake2b-64': 0xb208,
-    'blake2b-72': 0xb209,
-    'blake2b-80': 0xb20a,
-    'blake2b-88': 0xb20b,
-    'blake2b-96': 0xb20c,
-    'blake2b-104': 0xb20d,
-    'blake2b-112': 0xb20e,
-    'blake2b-120': 0xb20f,
-    'blake2b-128': 0xb210,
-    'blake2b-136': 0xb211,
-    'blake2b-144': 0xb212,
-    'blake2b-152': 0xb213,
-    'blake2b-160': 0xb214,
-    'blake2b-168': 0xb215,
-    'blake2b-176': 0xb216,
-    'blake2b-184': 0xb217,
-    'blake2b-192': 0xb218,
-    'blake2b-200': 0xb219,
-    'blake2b-208': 0xb21a,
-    'blake2b-216': 0xb21b,
-    'blake2b-224': 0xb21c,
-    'blake2b-232': 0xb21d,
-    'blake2b-240': 0xb21e,
-    'blake2b-248': 0xb21f,
-    'blake2b-256': 0xb220,
-    'blake2b-264': 0xb221,
-    'blake2b-272': 0xb222,
-    'blake2b-280': 0xb223,
-    'blake2b-288': 0xb224,
-    'blake2b-296': 0xb225,
-    'blake2b-304': 0xb226,
-    'blake2b-312': 0xb227,
-    'blake2b-320': 0xb228,
-    'blake2b-328': 0xb229,
-    'blake2b-336': 0xb22a,
-    'blake2b-344': 0xb22b,
-    'blake2b-352': 0xb22c,
-    'blake2b-360': 0xb22d,
-    'blake2b-368': 0xb22e,
-    'blake2b-376': 0xb22f,
-    'blake2b-384': 0xb230,
-    'blake2b-392': 0xb231,
-    'blake2b-400': 0xb232,
-    'blake2b-408': 0xb233,
-    'blake2b-416': 0xb234,
-    'blake2b-424': 0xb235,
-    'blake2b-432': 0xb236,
-    'blake2b-440': 0xb237,
-    'blake2b-448': 0xb238,
-    'blake2b-456': 0xb239,
-    'blake2b-464': 0xb23a,
-    'blake2b-472': 0xb23b,
-    'blake2b-480': 0xb23c,
-    'blake2b-488': 0xb23d,
-    'blake2b-496': 0xb23e,
-    'blake2b-504': 0xb23f,
-    'blake2b-512': 0xb240,
-    'blake2s-8': 0xb241,
-    'blake2s-16': 0xb242,
-    'blake2s-24': 0xb243,
-    'blake2s-32': 0xb244,
-    'blake2s-40': 0xb245,
-    'blake2s-48': 0xb246,
-    'blake2s-56': 0xb247,
-    'blake2s-64': 0xb248,
-    'blake2s-72': 0xb249,
-    'blake2s-80': 0xb24a,
-    'blake2s-88': 0xb24b,
-    'blake2s-96': 0xb24c,
-    'blake2s-104': 0xb24d,
-    'blake2s-112': 0xb24e,
-    'blake2s-120': 0xb24f,
-    'blake2s-128': 0xb250,
-    'blake2s-136': 0xb251,
-    'blake2s-144': 0xb252,
-    'blake2s-152': 0xb253,
-    'blake2s-160': 0xb254,
-    'blake2s-168': 0xb255,
-    'blake2s-176': 0xb256,
-    'blake2s-184': 0xb257,
-    'blake2s-192': 0xb258,
-    'blake2s-200': 0xb259,
-    'blake2s-208': 0xb25a,
-    'blake2s-216': 0xb25b,
-    'blake2s-224': 0xb25c,
-    'blake2s-232': 0xb25d,
-    'blake2s-240': 0xb25e,
-    'blake2s-248': 0xb25f,
-    'blake2s-256': 0xb260,
-    'skein256-8': 0xb301,
-    'skein256-16': 0xb302,
-    'skein256-24': 0xb303,
-    'skein256-32': 0xb304,
-    'skein256-40': 0xb305,
-    'skein256-48': 0xb306,
-    'skein256-56': 0xb307,
-    'skein256-64': 0xb308,
-    'skein256-72': 0xb309,
-    'skein256-80': 0xb30a,
-    'skein256-88': 0xb30b,
-    'skein256-96': 0xb30c,
-    'skein256-104': 0xb30d,
-    'skein256-112': 0xb30e,
-    'skein256-120': 0xb30f,
-    'skein256-128': 0xb310,
-    'skein256-136': 0xb311,
-    'skein256-144': 0xb312,
-    'skein256-152': 0xb313,
-    'skein256-160': 0xb314,
-    'skein256-168': 0xb315,
-    'skein256-176': 0xb316,
-    'skein256-184': 0xb317,
-    'skein256-192': 0xb318,
-    'skein256-200': 0xb319,
-    'skein256-208': 0xb31a,
-    'skein256-216': 0xb31b,
-    'skein256-224': 0xb31c,
-    'skein256-232': 0xb31d,
-    'skein256-240': 0xb31e,
-    'skein256-248': 0xb31f,
-    'skein256-256': 0xb320,
-    'skein512-8': 0xb321,
-    'skein512-16': 0xb322,
-    'skein512-24': 0xb323,
-    'skein512-32': 0xb324,
-    'skein512-40': 0xb325,
-    'skein512-48': 0xb326,
-    'skein512-56': 0xb327,
-    'skein512-64': 0xb328,
-    'skein512-72': 0xb329,
-    'skein512-80': 0xb32a,
-    'skein512-88': 0xb32b,
-    'skein512-96': 0xb32c,
-    'skein512-104': 0xb32d,
-    'skein512-112': 0xb32e,
-    'skein512-120': 0xb32f,
-    'skein512-128': 0xb330,
-    'skein512-136': 0xb331,
-    'skein512-144': 0xb332,
-    'skein512-152': 0xb333,
-    'skein512-160': 0xb334,
-    'skein512-168': 0xb335,
-    'skein512-176': 0xb336,
-    'skein512-184': 0xb337,
-    'skein512-192': 0xb338,
-    'skein512-200': 0xb339,
-    'skein512-208': 0xb33a,
-    'skein512-216': 0xb33b,
-    'skein512-224': 0xb33c,
-    'skein512-232': 0xb33d,
-    'skein512-240': 0xb33e,
-    'skein512-248': 0xb33f,
-    'skein512-256': 0xb340,
-    'skein512-264': 0xb341,
-    'skein512-272': 0xb342,
-    'skein512-280': 0xb343,
-    'skein512-288': 0xb344,
-    'skein512-296': 0xb345,
-    'skein512-304': 0xb346,
-    'skein512-312': 0xb347,
-    'skein512-320': 0xb348,
-    'skein512-328': 0xb349,
-    'skein512-336': 0xb34a,
-    'skein512-344': 0xb34b,
-    'skein512-352': 0xb34c,
-    'skein512-360': 0xb34d,
-    'skein512-368': 0xb34e,
-    'skein512-376': 0xb34f,
-    'skein512-384': 0xb350,
-    'skein512-392': 0xb351,
-    'skein512-400': 0xb352,
-    'skein512-408': 0xb353,
-    'skein512-416': 0xb354,
-    'skein512-424': 0xb355,
-    'skein512-432': 0xb356,
-    'skein512-440': 0xb357,
-    'skein512-448': 0xb358,
-    'skein512-456': 0xb359,
-    'skein512-464': 0xb35a,
-    'skein512-472': 0xb35b,
-    'skein512-480': 0xb35c,
-    'skein512-488': 0xb35d,
-    'skein512-496': 0xb35e,
-    'skein512-504': 0xb35f,
-    'skein512-512': 0xb360,
-    'skein1024-8': 0xb361,
-    'skein1024-16': 0xb362,
-    'skein1024-24': 0xb363,
-    'skein1024-32': 0xb364,
-    'skein1024-40': 0xb365,
-    'skein1024-48': 0xb366,
-    'skein1024-56': 0xb367,
-    'skein1024-64': 0xb368,
-    'skein1024-72': 0xb369,
-    'skein1024-80': 0xb36a,
-    'skein1024-88': 0xb36b,
-    'skein1024-96': 0xb36c,
-    'skein1024-104': 0xb36d,
-    'skein1024-112': 0xb36e,
-    'skein1024-120': 0xb36f,
-    'skein1024-128': 0xb370,
-    'skein1024-136': 0xb371,
-    'skein1024-144': 0xb372,
-    'skein1024-152': 0xb373,
-    'skein1024-160': 0xb374,
-    'skein1024-168': 0xb375,
-    'skein1024-176': 0xb376,
-    'skein1024-184': 0xb377,
-    'skein1024-192': 0xb378,
-    'skein1024-200': 0xb379,
-    'skein1024-208': 0xb37a,
-    'skein1024-216': 0xb37b,
-    'skein1024-224': 0xb37c,
-    'skein1024-232': 0xb37d,
-    'skein1024-240': 0xb37e,
-    'skein1024-248': 0xb37f,
-    'skein1024-256': 0xb380,
-    'skein1024-264': 0xb381,
-    'skein1024-272': 0xb382,
-    'skein1024-280': 0xb383,
-    'skein1024-288': 0xb384,
-    'skein1024-296': 0xb385,
-    'skein1024-304': 0xb386,
-    'skein1024-312': 0xb387,
-    'skein1024-320': 0xb388,
-    'skein1024-328': 0xb389,
-    'skein1024-336': 0xb38a,
-    'skein1024-344': 0xb38b,
-    'skein1024-352': 0xb38c,
-    'skein1024-360': 0xb38d,
-    'skein1024-368': 0xb38e,
-    'skein1024-376': 0xb38f,
-    'skein1024-384': 0xb390,
-    'skein1024-392': 0xb391,
-    'skein1024-400': 0xb392,
-    'skein1024-408': 0xb393,
-    'skein1024-416': 0xb394,
-    'skein1024-424': 0xb395,
-    'skein1024-432': 0xb396,
-    'skein1024-440': 0xb397,
-    'skein1024-448': 0xb398,
-    'skein1024-456': 0xb399,
-    'skein1024-464': 0xb39a,
-    'skein1024-472': 0xb39b,
-    'skein1024-480': 0xb39c,
-    'skein1024-488': 0xb39d,
-    'skein1024-496': 0xb39e,
-    'skein1024-504': 0xb39f,
-    'skein1024-512': 0xb3a0,
-    'skein1024-520': 0xb3a1,
-    'skein1024-528': 0xb3a2,
-    'skein1024-536': 0xb3a3,
-    'skein1024-544': 0xb3a4,
-    'skein1024-552': 0xb3a5,
-    'skein1024-560': 0xb3a6,
-    'skein1024-568': 0xb3a7,
-    'skein1024-576': 0xb3a8,
-    'skein1024-584': 0xb3a9,
-    'skein1024-592': 0xb3aa,
-    'skein1024-600': 0xb3ab,
-    'skein1024-608': 0xb3ac,
-    'skein1024-616': 0xb3ad,
-    'skein1024-624': 0xb3ae,
-    'skein1024-632': 0xb3af,
-    'skein1024-640': 0xb3b0,
-    'skein1024-648': 0xb3b1,
-    'skein1024-656': 0xb3b2,
-    'skein1024-664': 0xb3b3,
-    'skein1024-672': 0xb3b4,
-    'skein1024-680': 0xb3b5,
-    'skein1024-688': 0xb3b6,
-    'skein1024-696': 0xb3b7,
-    'skein1024-704': 0xb3b8,
-    'skein1024-712': 0xb3b9,
-    'skein1024-720': 0xb3ba,
-    'skein1024-728': 0xb3bb,
-    'skein1024-736': 0xb3bc,
-    'skein1024-744': 0xb3bd,
-    'skein1024-752': 0xb3be,
-    'skein1024-760': 0xb3bf,
-    'skein1024-768': 0xb3c0,
-    'skein1024-776': 0xb3c1,
-    'skein1024-784': 0xb3c2,
-    'skein1024-792': 0xb3c3,
-    'skein1024-800': 0xb3c4,
-    'skein1024-808': 0xb3c5,
-    'skein1024-816': 0xb3c6,
-    'skein1024-824': 0xb3c7,
-    'skein1024-832': 0xb3c8,
-    'skein1024-840': 0xb3c9,
-    'skein1024-848': 0xb3ca,
-    'skein1024-856': 0xb3cb,
-    'skein1024-864': 0xb3cc,
-    'skein1024-872': 0xb3cd,
-    'skein1024-880': 0xb3ce,
-    'skein1024-888': 0xb3cf,
-    'skein1024-896': 0xb3d0,
-    'skein1024-904': 0xb3d1,
-    'skein1024-912': 0xb3d2,
-    'skein1024-920': 0xb3d3,
-    'skein1024-928': 0xb3d4,
-    'skein1024-936': 0xb3d5,
-    'skein1024-944': 0xb3d6,
-    'skein1024-952': 0xb3d7,
-    'skein1024-960': 0xb3d8,
-    'skein1024-968': 0xb3d9,
-    'skein1024-976': 0xb3da,
-    'skein1024-984': 0xb3db,
-    'skein1024-992': 0xb3dc,
-    'skein1024-1000': 0xb3dd,
-    'skein1024-1008': 0xb3de,
-    'skein1024-1016': 0xb3df,
-    'skein1024-1024': 0xb3e0,
-    'poseidon-bls12_381-a2-fc1': 0xb401,
-    'poseidon-bls12_381-a2-fc1-sc': 0xb402,
-    'zeroxcert-imprint-256': 0xce11,
-    'fil-commitment-unsealed': 0xf101,
-    'fil-commitment-sealed': 0xf102,
-    'holochain-adr-v0': 0x807124,
-    'holochain-adr-v1': 0x817124,
-    'holochain-key-v0': 0x947124,
-    'holochain-key-v1': 0x957124,
-    'holochain-sig-v0': 0xa27124,
-    'holochain-sig-v1': 0xa37124,
-    'skynet-ns': 0xb19910,
-    'arweave-ns': 0xb29910
-  })
-
-  function varintEncode(num) {
-    return Uint8Array.from(encode_2(num))
-  }
-
-  const nameToVarint = /** @type {NameUint8ArrayMap} */ ({})
-  const constantToCode = /** @type {ConstantCodeMap} */({})
-  const codeToName = /** @type {CodeNameMap} */({})
-
-  function getVarintFromName(name) {
-    const code = nameToVarint[name]
-    if (code === undefined) {
-      throw new Error(`Codec "${name}" not found`)
-    }
-    return code
-  }
-  for (const name in baseTable) {
-    const codecName = /** @type {CodecName} */(name)
-    const code = baseTable[codecName]
-    nameToVarint[codecName] = varintEncode(code)
-
-    const constant = /** @type {CodecConstant} */(codecName.toUpperCase().replace(/-/g, '_'))
-    constantToCode[constant] = code
-
-    if (!codeToName[code]) {
-      codeToName[code] = codecName
-    }
-  }
-
-  Object.freeze(nameToVarint)
-  Object.freeze(constantToCode)
-  Object.freeze(codeToName)
-
-  const multicodec = {
-    addPrefix: function addPrefix(multicodecStrOrCode, data) {
-      let prefix
-
-      if (multicodecStrOrCode instanceof Uint8Array) {
-        prefix = varintUint8ArrayEncode(multicodecStrOrCode)
-      } else {
-        if (nameToVarint[multicodecStrOrCode]) {
-          prefix = nameToVarint[multicodecStrOrCode]
-        } else {
-          throw new Error('multicodec not recognized')
-        }
-      }
-
-      return uint8ArrayConcat([prefix, data], prefix.length + data.length)
-    },
-    rmPrefix: function rmPrefix(data) {
-      varint.decode(/** @type {Buffer} */(data))
-      return data.slice(varint.decode.bytes)
-    },
-    getCodeVarint: function getCodeVarint(name) {
-      return getVarintFromName(name)
-    },
-  }
-
-  function allocUnsafe(size = 0) {
-    if (globalThis.Buffer != null && globalThis.Buffer.allocUnsafe != null) {
-      return globalThis.Buffer.allocUnsafe(size);
-    }
-    return new Uint8Array(size);
-  }
-
-  function uint8ArrayConcat(arrays, length) {
-    if (!length) {
-      length = arrays.reduce((acc, curr) => acc + curr.length, 0);
-    }
-    const output = allocUnsafe(length);
-    let offset = 0;
-    for (const arr of arrays) {
-      output.set(arr, offset);
-      offset += arr.length;
-    }
-    return output;
-  }
-
-  function multibase_encode(nameOrCode, buf) {
-    const enc = encoding(nameOrCode)
-    const data = encodeText(enc.encode(buf))
-
-    return concat([enc.codeBuf, data], enc.codeBuf.length + data.length)
-  }
-
-  class CID_1 {
-    constructor(version, codec, multihash, multibaseName) {
-      this.version
-      this.codec
-      this.multihash
-
-      Object.defineProperty(this, symbol, { value: true })
-      if (CID_1.isCID(version)) {
-        const cid = /** @type {CID_1} */(version)
-        this.version = cid.version
-        this.codec = cid.codec
-        this.multihash = cid.multihash
-        this.multibaseName = cid.multibaseName || (cid.version === 0 ? 'base58btc' : 'base32')
-        return
-      }
-
-      if (typeof version === 'string') {
-        // e.g. 'base32' or false
-        const baseName = multibase.isEncoded(version)
-        if (baseName) {
-          // version is a CID String encoded with multibase, so v1
-          const cid = multibase.decode(version)
-          this.version = /** @type {CIDVersion} */(parseInt(cid[0].toString(), 16))
-          this.codec = multicodec.getCodec(cid.slice(1))
-          this.multihash = multicodec.rmPrefix(cid.slice(1))
-          this.multibaseName = baseName
-        } else {
-          // version is a base58btc string multihash, so v0
-          this.version = 0
-          this.codec = 'dag-pb'
-          this.multihash = mh.fromB58String(version)
-          this.multibaseName = 'base58btc'
-        }
-        CID_1.validateCID(this)
-        Object.defineProperty(this, 'string', { value: version })
-        return
-      }
-
-      if (version instanceof Uint8Array) {
-        const v = parseInt(version[0].toString(), 16)
-        if (v === 1) {
-          // version is a CID Uint8Array
-          const cid = version
-          this.version = v
-          this.codec = multicodec.getCodec(cid.slice(1))
-          this.multihash = multicodec.rmPrefix(cid.slice(1))
-          this.multibaseName = 'base32'
-        } else {
-          // version is a raw multihash Uint8Array, so v0
-          this.version = 0
-          this.codec = 'dag-pb'
-          this.multihash = version
-          this.multibaseName = 'base58btc'
-        }
-        CID_1.validateCID(this)
-        return
-      }
-
-      // otherwise, assemble the CID from the parameters
-
-      this.version = version
-
-      if (typeof codec === 'number') {
-        codec = codecInts[codec]
-      }
-
-      this.codec = /** @type {CodecName} */ (codec)
-      this.multihash = /** @type {Uint8Array} */ (multihash)
-      this.multibaseName = multibaseName || (version === 0 ? 'base58btc' : 'base32')
-
-      CID_1.validateCID(this)
-    }
-
-    get bytes() {
-      let bytes = this._bytes
-
-      if (!bytes) {
-        if (this.version === 0) {
-          bytes = this.multihash
-        } else if (this.version === 1) {
-          const codec = multicodec.getCodeVarint(this.codec)
-          bytes = uint8ArrayConcat([
-            [1], codec, this.multihash
-          ], 1 + codec.byteLength + this.multihash.byteLength)
-        } else {
-          throw new Error('unsupported version')
-        }
-        Object.defineProperty(this, '_bytes', { value: bytes })
-      }
-
-      return bytes
-    }
-
-    get prefix() {
-      const codec = multicodec.getCodeVarint(this.codec)
-      const multihash = mh.prefix(this.multihash)
-      const prefix = uint8ArrayConcat([
-        [this.version], codec, multihash
-      ], 1 + codec.byteLength + multihash.byteLength)
-
-      return prefix
-    }
-
-    get code() {
-      return codecs[this.codec]
-    }
-
-    toV0() {
-      if (this.codec !== 'dag-pb') {
-        throw new Error('Cannot convert a non dag-pb CID to CIDv0')
-      }
-
-      const { name, length } = mh.decode(this.multihash)
-
-      if (name !== 'sha2-256') {
-        throw new Error('Cannot convert non sha2-256 multihash CID to CIDv0')
-      }
-
-      if (length !== 32) {
-        throw new Error('Cannot convert non 32 byte multihash CID to CIDv0')
-      }
-
-      return new CID_1(0, this.codec, this.multihash)
-    }
-
-    toV1() {
-      return new CID_1(1, this.codec, this.multihash, this.multibaseName)
-    }
-
-    toBaseEncodedString(base = this.multibaseName) {
-      if (this.string && this.string.length !== 0 && base === this.multibaseName) {
-        return this.string
-      }
-      let str
-      if (this.version === 0) {
-        if (base !== 'base58btc') {
-          throw new Error('not supported with CIDv0, to support different bases, please migrate the instance do CIDv1, you can do that through cid.toV1()')
-        }
-        str = multihash.mh_toB58String(this.multihash)
-      } else if (this.version === 1) {
-        str = uint8ArrayToString(multibase_encode(base, this.bytes))
-      } else {
-        throw new Error('unsupported version')
-      }
-      if (base === this.multibaseName) {
-        // cache the string value
-        Object.defineProperty(this, 'string', { value: str })
-      }
-      return str
-    }
-
-    [Symbol.for('nodejs.util.inspect.custom')]() {
-      return 'CID_1(' + this.toString() + ')'
-    }
-
-    toString(base) {
-      return this.toBaseEncodedString(base)
-    }
-
-    toJSON() {
-      return {
-        codec: this.codec,
-        version: this.version,
-        hash: this.multihash
-      }
-    }
-
-    equals(other) {
-      return this.codec === other.codec &&
-        this.version === other.version &&
-        uint8ArrayEquals(this.multihash, other.multihash)
-    }
-
-    static validateCID(other) {
-      const errorMsg = CIDUtil.checkCIDComponents(other)
-      if (errorMsg) {
-        throw new Error(errorMsg)
-      }
-    }
-
-    static isCID(value) {
-      return value instanceof CID_1 || Boolean(value && value[symbol])
-    }
-  }
-
-  const persist = async (buffer, block, options) => {
-    if (!options.codec) {
-      options.codec = 'dag-pb'
-    }
-
-    if (!options.cidVersion) {
-      options.cidVersion = 0
-    }
-
-    if (!options.hashAlg) {
-      options.hashAlg = 'sha2-256'
-    }
-
-    if (options.hashAlg !== 'sha2-256') {
-      options.cidVersion = 1
-    }
-
-    const multihash = await Multihashing(buffer, options.hashAlg) // buffer is [Uint8Array]
-    const cid = new CID_1(options.cidVersion, options.codec, multihash)
-
-    if (!options.onlyHash) {
-      await block.put(buffer, {
-        pin: options.pin,
-        preload: options.preload,
-        timeout: options.timeout,
-        cid
-      })
-    }
-
-    return cid
-  }
-  function exec(arr, comp) {
-    if (typeof (comp) !== 'function') {
-      comp = function (a, b) {
-        return String(a).localeCompare(b)
-      };
-    }
-    var len = arr.length;
-    if (len <= 1) {
-      return arr
-    }
-    var buffer = new Array(len);
-    for (var chk = 1; chk < len; chk *= 2) {
-      pass(arr, comp, chk, buffer);
-
-      var tmp = arr;
-      arr = buffer;
-      buffer = tmp;
-    }
-
-    return arr
-  }
-  var pass = function (arr, comp, chk, result) {
-    var len = arr.length;
-    var i = 0;
-    // Step size / double chunk size.
-    var dbl = chk * 2;
-    // Bounds of the left and right chunks.
-    var l, r, e;
-    // Iterators over the left and right chunk.
-    var li, ri;
-
-    // Iterate over pairs of chunks.
-    for (l = 0; l < len; l += dbl) {
-      r = l + chk;
-      e = r + chk;
-      if (r > len) r = len;
-      if (e > len) e = len;
-
-      // Iterate both chunks in parallel.
-      li = l;
-      ri = r;
-      while (true) {
-        // Compare the chunks.
-        if (li < r && ri < e) {
-          // This works for a regular `sort()` compatible comparator,
-          // but also for a simple comparator like: `a > b`
-          if (comp(arr[li], arr[ri]) <= 0) {
-            result[i++] = arr[li++];
-          }
-          else {
-            result[i++] = arr[ri++];
-          }
-        }
-        // Nothing to compare, just flush what's left.
-        else if (li < r) {
-          result[i++] = arr[li++];
-        }
-        else if (ri < e) {
-          result[i++] = arr[ri++];
-        }
-        // Both iterators are at the chunk ends.
-        else {
-          break
-        }
-      }
-    }
-  };
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (c) 2016-2018 Protocol Labs
+  *  Licensed under the MIT License.
+  *  https://github.com/ipld/js-ipld-dag-pb/blob/master/LICENSE.md
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/dag-node/sortLinks.js#L28
   const sortLinks = (links) => {
     const sort = stable;
     sort.inplace(links, linkSort)
   }
-  function uint8ArrayCompare(a, b) {
-    for (let i = 0; i < a.byteLength; i++) {
-      if (a[i] < b[i]) {
-        return -1
-      }
 
-      if (a[i] > b[i]) {
-        return 1
-      }
-    }
-
-    if (a.byteLength > b.byteLength) {
-      return 1
-    }
-
-    if (a.byteLength < b.byteLength) {
-      return -1
-    }
-
-    return 0
-  }
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/dag-node/sortLinks.js#L15
   const linkSort = (a, b) => {
     const buf1 = a.nameAsBuffer
     const buf2 = b.nameAsBuffer
 
     return uint8ArrayCompare(buf1, buf2)
   }
-  var stable = function (arr, comp) {
-    return exec(arr.slice(), comp)
-  };
-  stable.inplace = function (arr, comp) {
-    var result = exec(arr, comp);
 
-    // This simply copies back if the result isn't in the original array,
-    // which happens on an odd number of passes.
-    if (result !== arr) {
-      pass(result, null, arr.length, arr);
-    }
-
-    return arr
-  };
-
-  function uint8ArrayFromString(string, encoding = 'utf8') {
-    const base = bases[encoding]
-
-    if (!base) {
-      throw new Error(`Unsupported encoding "${encoding}"`)
-    }
-
-    // add multibase prefix
-    return base.decoder.decode(`${base.prefix}${string}`)
-  }
-
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/dag-link/dagLink.js#L9
   class DAGLink {
     constructor(name, size, cid) {
       if (!cid) {
@@ -8656,7 +6688,7 @@ function BufferBigIntNotDefined () {
       }
       this.Name = name || ''
       this.Tsize = size
-      this.Hash = new CID_1(cid)
+      this.Hash = new CID1(cid)
 
       Object.defineProperties(this, {
         _nameBuf: { value: null, writable: true, enumerable: false }
@@ -8687,12 +6719,10 @@ function BufferBigIntNotDefined () {
       return this._nameBuf
     }
   }
+
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/dag-node/dagNode.js#L18
   class DAGNode {
-    /**
-     *@param {Uint8Array | string} [data]
-     * @param {(DAGLink | DAGLinkLike)[]} links
-     * @param {number | null} [serializedSize]
-     */
+
     constructor(data, links = [], serializedSize = null) {
       if (!data) {
         data = new Uint8Array(0)
@@ -8796,6 +6826,8 @@ function BufferBigIntNotDefined () {
       throw new Error("Can't set property: 'size' is immutable")
     }
   }
+
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/serialize.js#L23
   const toProtoBuf = (node) => {
     const pbn = {}
 
@@ -8820,49 +6852,21 @@ function BufferBigIntNotDefined () {
 
     return pbn
   }
+
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/serialize.js#L53
   const serializeDAGNode = (node) => {
     return encode(toProtoBuf(node))
   }
-  Writer.prototype.bytes = function write_bytes(value) {
-    var len = value.length >>> 0;
-    if (!len)
-      return this._push(writeByte, 1, 0);
-    if (util_isString(value)) {
-      var buf = Writer.alloc(len = base64.length(value));
-      base64.decode(value, buf, 0);
-      value = buf;
-    }
-    return this.uint32(len)._push(writeBytes, len, value);
-  };
-  function utf8_length(string) {
-    var len = 0,
-      c = 0;
-    for (var i = 0; i < string.length; ++i) {
-      c = string.charCodeAt(i);
-      if (c < 128)
-        len += 1;
-      else if (c < 2048)
-        len += 2;
-      else if ((c & 0xFC00) === 0xD800 && (string.charCodeAt(i + 1) & 0xFC00) === 0xDC00) {
-        ++i;
-        len += 4;
-      } else
-        len += 3;
-    }
-    return len;
-  };
-  Writer.prototype.string = function write_string(value) {
-    var len = utf8_length(value);
-    return len
-      ? this.uint32(len)._push(utf8.write, len, value)
-      : this._push(writeByte, 1, 0);
-  };
+
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/dag.js#L31
   function PBLink(p) {
     if (p)
       for (var ks = Object.keys(p), i = 0; i < ks.length; ++i)
         if (p[ks[i]] != null)
           this[ks[i]] = p[ks[i]];
   }
+
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/dag.js#L71
   PBLink.encode = function encode(m, w) {
     if (!w)
       w = $Writer.create();
@@ -8875,58 +6879,7 @@ function BufferBigIntNotDefined () {
     return w;
   };
 
-  Writer.prototype.uint32 = function write_uint32(value) {
-    // here, the call to this.push has been inlined and a varint specific Op subclass is used.
-    // uint32 is by far the most frequently used operation and benefits significantly from this.
-    this.len += (this.tail = this.tail.next = new VarintOp(
-      (value = value >>> 0)
-        < 128 ? 1
-        : value < 16384 ? 2
-          : value < 2097152 ? 3
-            : value < 268435456 ? 4
-              : 5,
-      value)).len;
-    return this;
-  };
-
-  function State(writer) {
-    this.head = writer.head;
-    this.tail = writer.tail;
-    this.len = writer.len;
-    this.next = writer.states;
-  }
-
-  Writer.prototype.fork = function fork() {
-    this.states = new State(this);
-    this.head = this.tail = new Op(noop, 0, 0);
-    this.len = 0;
-    return this;
-  };
-  Writer.prototype.reset = function reset() {
-    if (this.states) {
-      this.head = this.states.head;
-      this.tail = this.states.tail;
-      this.len = this.states.len;
-      this.states = this.states.next;
-    } else {
-      this.head = this.tail = new Op(noop, 0, 0);
-      this.len = 0;
-    }
-    return this;
-  };
-  Writer.prototype.ldelim = function ldelim() {
-    var head = this.head,
-      tail = this.tail,
-      len = this.len;
-    this.reset().uint32(len);
-    if (len) {
-      this.tail.next = head.next; // skip noop
-      this.tail = tail;
-      this.len += len;
-    }
-    return this;
-  };
-
+  //https://github.com/ipld/js-ipld-dag-pb/blob/6b0e011b7917611386cff392d56bfd81c8cacf8c/src/serialize.js#L87
   function encode(pbf) {
     const writer = Writer.create()
 
@@ -8943,1036 +6896,1458 @@ function BufferBigIntNotDefined () {
     return writer.finish()
   }
 
-  const dirBuilder = async (item, block, options) => {
-    const unixfs = new UnixFS({
-      type: 'directory',
-      mtime: item.mtime,
-      mode: item.mode
-    })
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (c) 2013-2019 bl contributors
+  *  Licensed under the MIT License.
+  *  https://github.com/rvagg/bl/blob/master/LICENSE.md
+  *--------------------------------------------------------------------------------------------*/
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L4
+  const symbol = Symbol.for('BufferList')
+  function BufferList(buf) {
+    if (!(this instanceof BufferList)) {
+      return new BufferList(buf)
+    }
 
-    const buffer = new DAGNode(unixfs.marshal()).serialize()
-    const cid = await persist(buffer, block, options)
-    const path = item.path
+    BufferList._init.call(this, buf)
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L14
+  BufferList._init = function _init(buf) {
+    Object.defineProperty(this, symbol, { value: true })
+
+    this._bufs = []
+    this.length = 0
+
+    if (buf) {
+      this.append(buf)
+    }
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L25
+  BufferList.prototype._new = function _new(buf) {
+    return new BufferList(buf)
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L29
+  BufferList.prototype._offset = function _offset(offset) {
+    if (offset === 0) {
+      return [0, 0]
+    }
+
+    let tot = 0
+
+    for (let i = 0; i < this._bufs.length; i++) {
+      const _t = tot + this._bufs[i].length
+      if (offset < _t || i === this._bufs.length - 1) {
+        return [i, offset - tot]
+      }
+      tot = _t
+    }
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L45
+  BufferList.prototype._reverseOffset = function (blOffset) {
+    const bufferId = blOffset[0]
+    let offset = blOffset[1]
+
+    for (let i = 0; i < bufferId; i++) {
+      offset += this._bufs[i].length
+    }
+
+    return offset
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L56
+  BufferList.prototype.get = function get(index) {
+    if (index > this.length || index < 0) {
+      return undefined
+    }
+
+    const offset = this._offset(index)
+
+    return this._bufs[offset[0]][offset[1]]
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L66
+  BufferList.prototype.slice = function slice(start, end) {
+    if (typeof start === 'number' && start < 0) {
+      start += this.length
+    }
+
+    if (typeof end === 'number' && end < 0) {
+      end += this.length
+    }
+
+    return this.copy(null, 0, start, end)
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L78
+  BufferList.prototype.copy = function copy(dst, dstStart, srcStart, srcEnd) {
+    if (typeof srcStart !== 'number' || srcStart < 0) {
+      srcStart = 0
+    }
+
+    if (typeof srcEnd !== 'number' || srcEnd > this.length) {
+      srcEnd = this.length
+    }
+
+    if (srcStart >= this.length) {
+      return dst || Buffer.alloc(0)
+    }
+
+    if (srcEnd <= 0) {
+      return dst || Buffer.alloc(0)
+    }
+
+    const copy = !!dst
+    const off = this._offset(srcStart)
+    const len = srcEnd - srcStart
+    let bytes = len
+    let bufoff = (copy && dstStart) || 0
+    let start = off[1]
+
+    // copy/slice everything
+    if (srcStart === 0 && srcEnd === this.length) {
+      if (!copy) {
+        // slice, but full concat if multiple buffers
+        return this._bufs.length === 1
+          ? this._bufs[0]
+          : util_Buffer.concat(this._bufs, this.length)
+      }
+
+      // copy, need to copy individual buffers
+      for (let i = 0; i < this._bufs.length; i++) {
+        this._bufs[i].copy(dst, bufoff)
+        bufoff += this._bufs[i].length
+      }
+
+      return dst
+    }
+
+    // easy, cheap case where it's a subset of one of the buffers
+    if (bytes <= this._bufs[off[0]].length - start) {
+      return copy
+        ? this._bufs[off[0]].copy(dst, dstStart, start, start + bytes)
+        : this._bufs[off[0]].slice(start, start + bytes)
+    }
+
+    if (!copy) {
+      // a slice, we need something to copy in to
+      dst = Buffer.allocUnsafe(len)
+    }
+
+    for (let i = off[0]; i < this._bufs.length; i++) {
+      const l = this._bufs[i].length - start
+
+      if (bytes > l) {
+        this._bufs[i].copy(dst, bufoff, start)
+        bufoff += l
+      } else {
+        this._bufs[i].copy(dst, bufoff, start, start + bytes)
+        bufoff += l
+        break
+      }
+
+      bytes -= l
+
+      if (start) {
+        start = 0
+      }
+    }
+
+    // safeguard so that we don't return uninitialized memory
+    if (dst.length > bufoff) return dst.slice(0, bufoff)
+
+    return dst
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L157
+  BufferList.prototype.shallowSlice = function shallowSlice(start, end) {
+    start = start || 0
+    end = typeof end !== 'number' ? this.length : end
+
+    if (start < 0) {
+      start += this.length
+    }
+
+    if (end < 0) {
+      end += this.length
+    }
+
+    if (start === end) {
+      return this._new()
+    }
+
+    const startOffset = this._offset(start)
+    const endOffset = this._offset(end)
+    const buffers = this._bufs.slice(startOffset[0], endOffset[0] + 1)
+
+    if (endOffset[1] === 0) {
+      buffers.pop()
+    } else {
+      buffers[buffers.length - 1] = buffers[buffers.length - 1].slice(0, endOffset[1])
+    }
+
+    if (startOffset[1] !== 0) {
+      buffers[0] = buffers[0].slice(startOffset[1])
+    }
+
+    return this._new(buffers)
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L190
+  BufferList.prototype.toString = function toString(encoding, start, end) {
+    return this.slice(start, end).toString(encoding)
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L194
+  BufferList.prototype.consume = function consume(bytes) {
+    // first, normalize the argument, in accordance with how Buffer does it
+    bytes = Math.trunc(bytes)
+    // do nothing if not a positive number
+    if (Number.isNaN(bytes) || bytes <= 0) return this
+
+    while (this._bufs.length) {
+      if (bytes >= this._bufs[0].length) {
+        bytes -= this._bufs[0].length
+        this.length -= this._bufs[0].length
+        this._bufs.shift()
+      } else {
+        this._bufs[0] = this._bufs[0].slice(bytes)
+        this.length -= bytes
+        break
+      }
+    }
+
+    return this
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L215
+  BufferList.prototype.duplicate = function duplicate() {
+    const copy = this._new()
+
+    for (let i = 0; i < this._bufs.length; i++) {
+      copy.append(this._bufs[i])
+    }
+
+    return copy
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L225
+  BufferList.prototype.append = function append(buf) {
+    if (buf == null) {
+      return this
+    }
+
+    if (buf.buffer) {
+      // append a view of the underlying ArrayBuffer
+      this._appendBuffer(util_Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength))
+    } else if (Array.isArray(buf)) {
+      for (let i = 0; i < buf.length; i++) {
+        this.append(buf[i])
+      }
+    } else if (this._isBufferList(buf)) {
+      // unwrap argument into individual BufferLists
+      for (let i = 0; i < buf._bufs.length; i++) {
+        this.append(buf._bufs[i])
+      }
+    } else {
+      // coerce number arguments to strings, since Buffer(number) does
+      // uninitialized memory allocation
+      if (typeof buf === 'number') {
+        buf = buf.toString()
+      }
+
+      this._appendBuffer(util_Buffer.from(buf))
+    }
+
+    return this
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L255
+  BufferList.prototype._appendBuffer = function appendBuffer(buf) {
+    this._bufs.push(buf)
+    this.length += buf.length
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L260
+  BufferList.prototype.indexOf = function (search, offset, encoding) {
+    if (encoding === undefined && typeof offset === 'string') {
+      encoding = offset
+      offset = undefined
+    }
+
+    if (typeof search === 'function' || Array.isArray(search)) {
+      throw new TypeError('The "value" argument must be one of type string, Buffer, BufferList, or Uint8Array.')
+    } else if (typeof search === 'number') {
+      search = util_Buffer.from([search])
+    } else if (typeof search === 'string') {
+      search = util_Buffer.from(search, encoding)
+    } else if (this._isBufferList(search)) {
+      search = search.slice()
+    } else if (Array.isArray(search.buffer)) {
+      search = util_Buffer.from(search.buffer, search.byteOffset, search.byteLength)
+    } else if (!Buffer.isBuffer(search)) {
+      search = util_Buffer.from(search)
+    }
+
+    offset = Number(offset || 0)
+
+    if (isNaN(offset)) {
+      offset = 0
+    }
+
+    if (offset < 0) {
+      offset = this.length + offset
+    }
+
+    if (offset < 0) {
+      offset = 0
+    }
+
+    if (search.length === 0) {
+      return offset > this.length ? this.length : offset
+    }
+
+    const blOffset = this._offset(offset)
+    let blIndex = blOffset[0] // index of which internal buffer we're working on
+    let buffOffset = blOffset[1] // offset of the internal buffer we're working on
+
+    // scan over each buffer
+    for (; blIndex < this._bufs.length; blIndex++) {
+      const buff = this._bufs[blIndex]
+
+      while (buffOffset < buff.length) {
+        const availableWindow = buff.length - buffOffset
+
+        if (availableWindow >= search.length) {
+          const nativeSearchResult = buff.indexOf(search, buffOffset)
+
+          if (nativeSearchResult !== -1) {
+            return this._reverseOffset([blIndex, nativeSearchResult])
+          }
+
+          buffOffset = buff.length - search.length + 1 // end of native search window
+        } else {
+          const revOffset = this._reverseOffset([blIndex, buffOffset])
+
+          if (this._match(revOffset, search)) {
+            return revOffset
+          }
+
+          buffOffset++
+        }
+      }
+
+      buffOffset = 0
+    }
+
+    return -1
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L334
+  BufferList.prototype._match = function (offset, search) {
+    if (this.length - offset < search.length) {
+      return false
+    }
+
+    for (let searchOffset = 0; searchOffset < search.length; searchOffset++) {
+      if (this.get(offset + searchOffset) !== search[searchOffset]) {
+        return false
+      }
+    }
+    return true
+  }
+
+    //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L347
+    ; (function () {
+      const methods = {
+        readDoubleBE: 8,
+        readDoubleLE: 8,
+        readFloatBE: 4,
+        readFloatLE: 4,
+        readInt32BE: 4,
+        readInt32LE: 4,
+        readUInt32BE: 4,
+        readUInt32LE: 4,
+        readInt16BE: 2,
+        readInt16LE: 2,
+        readUInt16BE: 2,
+        readUInt16LE: 2,
+        readInt8: 1,
+        readUInt8: 1,
+        readIntBE: null,
+        readIntLE: null,
+        readUIntBE: null,
+        readUIntLE: null
+      }
+
+      for (const m in methods) {
+        (function (m) {
+          if (methods[m] === null) {
+            BufferList.prototype[m] = function (offset, byteLength) {
+              return this.slice(offset, offset + byteLength)[m](0, byteLength)
+            }
+          } else {
+            BufferList.prototype[m] = function (offset = 0) {
+              return this.slice(offset, offset + methods[m])[m](0)
+            }
+          }
+        }(m))
+      }
+    }())
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L388
+  BufferList.prototype._isBufferList = function _isBufferList(b) {
+    return b instanceof BufferList || BufferList.isBufferList(b)
+  }
+
+  //https://github.com/rvagg/bl/blob/f7a00711cbf04a20d42f7aebfe2fa948390b9ccd/BufferList.js#L392
+  BufferList.isBufferList = function isBufferList(b) {
+    return b != null && b[symbol]
+  }
+
+  // No license(?)
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/util/bases.js#L15
+  function createCodec(name, prefix, encode, decode) {
+    return {
+      name,
+      prefix,
+      encoder: {
+        name,
+        prefix,
+        encode
+      },
+      decoder: { decode }
+    };
+  }
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/util/bases.js#L30
+  const string = createCodec('utf8', 'u', buf => {
+    const decoder = new TextDecoder('utf8');
+    return 'u' + decoder.decode(buf);
+  }, str => {
+    const encoder = new TextEncoder();
+    return encoder.encode(str.substring(1));
+  });
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/util/bases.js#L63
+  var bases = {
+    utf8: string,
+    'utf-8': string,
+  };
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/to-string.js#L18
+  function uint8ArrayToString(array, encoding = 'utf8') {
+    const base = bases[encoding];
+    if (!base) {
+      throw new Error(`Unsupported encoding "${encoding}"`);
+    }
+    if ((encoding === 'utf8' || encoding === 'utf-8') && globalThis.Buffer != null && globalThis.Buffer.from != null) {
+      return globalThis.Buffer.from(array.buffer, array.byteOffset, array.byteLength).toString('utf8');
+    }
+    return base.encoder.encode(array).substring(1);
+  }
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/alloc.js#L24
+  function allocUnsafe(size = 0) {
+    if (globalThis.Buffer != null && globalThis.Buffer.allocUnsafe != null) {
+      return globalThis.Buffer.allocUnsafe(size);
+    }
+    return new Uint8Array(size);
+  }
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/concat.js#L9
+  function uint8ArrayConcat(arrays, length) {
+    if (!length) {
+      length = arrays.reduce((acc, curr) => acc + curr.length, 0);
+    }
+    const output = allocUnsafe(length);
+    let offset = 0;
+    for (const arr of arrays) {
+      output.set(arr, offset);
+      offset += arr.length;
+    }
+    return output;
+  }
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/compare.js#L7
+  function uint8ArrayCompare(a, b) {
+    for (let i = 0; i < a.byteLength; i++) {
+      if (a[i] < b[i]) {
+        return -1
+      }
+
+      if (a[i] > b[i]) {
+        return 1
+      }
+    }
+
+    if (a.byteLength > b.byteLength) {
+      return 1
+    }
+
+    if (a.byteLength < b.byteLength) {
+      return -1
+    }
+
+    return 0
+  }
+
+  //https://github.com/achingbrain/uint8arrays/blob/56329d16d6ca575c9638f3abb9601b8a034783b8/src/from-string.js#L18
+  function uint8ArrayFromString(string, encoding = 'utf8') {
+    const base = bases[encoding]
+
+    if (!base) {
+      throw new Error(`Unsupported encoding "${encoding}"`)
+    }
+
+    return base.decoder.decode(`${base.prefix}${string}`)
+  }
+
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (c) 2020 Protocol Labs
+  *  Licensed under the MIT License.
+  *  https://github.com/multiformats/js-multihash/blob/master/LICENSE
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/constants.js#L18
+  const mh_names = Object.freeze({
+    'sha2-256': 0x12,
+  })
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L13
+  const mh_codes = /** @type {import('./types').CodeNameMap} */({})
+  for (const key in mh_names) {
+    const name = /** @type {HashName} */(key)
+    mh_codes[mh_names[name]] = name
+  }
+  Object.freeze(mh_codes)
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L28
+  function mh_toHexString(hash) {
+    if (!(hash instanceof Uint8Array)) {
+      throw new Error('must be passed a Uint8Array')
+    }
+
+    return uint8ArrayToString(hash, 'base16')
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L42
+  function mh_fromHexString(hash) {
+    return uint8ArrayFromString(hash, 'base16')
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L52
+  function mh_toB58String(hash) {
+    if (!(hash instanceof Uint8Array)) {
+      throw new Error('must be passed a Uint8Array')
+    }
+    return uint8ArrayToString(multibase_encode('base58btc', hash)).slice(1)
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L66
+  function mh_fromB58String(hash) {
+    const encoded = hash instanceof Uint8Array
+      ? uint8ArrayToString(hash)
+      : hash
+
+    return multibase_decode('z' + encoded)
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L80
+  function mh_decode(bytes) {
+    if (!(bytes instanceof Uint8Array)) {
+      throw new Error('multihash must be a Uint8Array')
+    }
+
+    if (bytes.length < 2) {
+      throw new Error('multihash too short. must be > 2 bytes.')
+    }
+
+    const code = /** @type {HashCode} */(decode_2(bytes))
+    if (!mh_isValidCode(code)) {
+      throw new Error(`multihash unknown function code: 0x${code.toString(16)}`)
+    }
+    bytes = bytes.slice(decode_2.bytes)
+
+    const len = decode_2(bytes)
+    if (len < 0) {
+      throw new Error(`multihash invalid length: ${len}`)
+    }
+    bytes = bytes.slice(decode_2.bytes)
+
+    if (bytes.length !== len) {
+      throw new Error(`multihash length inconsistent: 0x${uint8ArrayToString(bytes, 'base16')}`)
+    }
 
     return {
-      cid,
-      path,
-      unixfs,
-      size: buffer.length
+      code,
+      name: mh_codes[code],
+      length: len,
+      digest: bytes
     }
   }
 
-  async function reduceToParents(source, reduce, options) {
-    const roots = []
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L123
+  function mh_encode(digest, code, length) {
+    if (!digest || code === undefined) {
+      throw new Error('multihash encode requires at least two args: digest, code')
+    }
+    const hashfn = mh_coerceCode(code)
 
-    for await (const chunked of batch(source, options.maxChildrenPerNode)) {
-      roots.push(await reduce(chunked))
+    if (!(digest instanceof Uint8Array)) {
+      throw new Error('digest should be a Uint8Array')
     }
 
-    if (roots.length > 1) {
-      return reduceToParents(roots, reduce, options)
+    if (length == null) {
+      length = digest.length
     }
 
-    return roots[0]
+    if (length && digest.length !== length) {
+      throw new Error('digest length should be equal to specified length.')
+    }
+
+    function alloc_allocUnsafe(size = 0) {
+      if (globalThis.Buffer != null && globalThis.Buffer.allocUnsafe != null) {
+        return globalThis.Buffer.allocUnsafe(size);
+      }
+      return new Uint8Array(size);
+    }
+
+    const hash = encode_2(hashfn)
+    const len = encode_2(length)
+    function uint8ArrayConcat(arrays, length) {
+      if (!length) {
+        length = arrays.reduce((acc, curr) => acc + curr.length, 0);
+      }
+      const output = alloc_allocUnsafe(length);
+      let offset = 0;
+      for (const arr of arrays) {
+        output.set(arr, offset);
+        offset += arr.length;
+      }
+      return output;
+    }
+    return uint8ArrayConcat([hash, len, digest], hash.length + len.length + digest.length)
   }
 
-  const all = async (source) => {
-    const arr = []
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L155
+  function mh_coerceCode(name) {
+    let code = name
 
-    for await (const entry of source) {
-      arr.push(entry)
+    if (typeof name === 'string') {
+      if (mh_names[name] === undefined) {
+        throw new Error(`Unrecognized hash function named: ${name}`)
+      }
+      code = mh_names[name]
+    }
+
+    if (typeof code !== 'number') {
+      throw new Error(`Hash function code should be a number. Got: ${code}`)
+    }
+
+    if (mh_codes[code] === undefined && !mh_isAppCode(code)) {
+      throw new Error(`Unrecognized function code: ${code}`)
+    }
+
+    return code
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L183
+  function mh_isAppCode(code) {
+    return code > 0 && code < 0x10
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L212
+  function mh_validate(multihash) {
+    mh_decode(multihash)
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L223
+  function mh_prefix(multihash) {
+    mh_validate(multihash)
+
+    return multihash.subarray(0, 2)
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L193
+  function mh_isValidCode(code) {
+    if (mh_isAppCode(code)) {
+      return true
+    }
+
+    if (mh_codes[code]) {
+      return true
+    }
+
+    return false
+  }
+
+  //https://github.com/multiformats/js-multihash/blob/98ebff7e248bc842fbdfb22b14b58fb9c8679f96/src/index.js#L229
+  const multihash = {
+    mh_names,
+    mh_codes,
+    mh_toHexString,
+    mh_fromHexString,
+    mh_toB58String,
+    mh_fromB58String,
+    mh_decode,
+    mh_encode,
+    mh_coerceCode,
+    mh_isAppCode,
+    mh_validate,
+    mh_prefix,
+    mh_isValidCode
+  }
+
+
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (c) 2020 Protocol Labs
+  *  Licensed under the MIT License.
+  *  https://github.com/multiformats/js-multihashing-async/blob/master/LICENSE
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/index.js#L21
+  async function Multihashing(bytes, alg, length) {
+    const digest = await Multihashing.digest(bytes, alg, length)
+    return multihash.mh_encode(digest, alg, length)
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/index.js#L29
+  Multihashing.multihash = multihash
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/index.js#L37
+  Multihashing.digest = async (bytes, alg, length) => {
+    const hash = Multihashing.createHash(alg)
+    const digest = await hash(bytes)
+    return length ? digest.slice(0, length) : digest
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/index.js#L49
+  Multihashing.createHash = function (alg) {
+    if (!alg) {
+      const e = errcode(new Error('hash algorithm must be specified'), 'ERR_HASH_ALGORITHM_NOT_SPECIFIED')
+      throw e
+    }
+    const code = multihash.mh_coerceCode(alg)
+    if (!Multihashing.functions[code]) {
+      throw errcode(new Error(`multihash function '${alg}' not yet supported`), 'ERR_HASH_ALGORITHM_NOT_SUPPORTED')
+    }
+    return Multihashing.functions[code]
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/sha.js#L21
+  const digest = async (data, alg) => {
+    switch (alg) {
+      case 'sha2-256':
+        return createHash('sha256').update(data).digest()
+      default:
+        throw new Error(`${alg} is not a supported algorithm`)
+    }
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/sha.js#L38
+  const { factory: sha } = {
+    factory: (alg) => async (data) => {
+      return digest(data, alg)
+    },
+    digest,
+    multihashing: async (buf, alg, length) => {
+      const h = await digest(buf, alg)
+      return multihash.encode(h, alg, length)
+    }
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/crypto.js#L53
+  var crypto = {
+    sha2256: sha('sha2-256'),
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/index.js#L69
+  Multihashing.functions = {
+    0x12: crypto.sha2256,
+  }
+
+  //https://github.com/multiformats/js-multihashing-async/blob/52b2c2b61a16a94ba0a93548209f85a01cffb5dc/src/index.js#L114
+  Multihashing.validate = async (bytes, hash) => {
+    const newHash = await Multihashing(bytes, multihash.decode(hash).name)
+    return equals(hash, newHash)
+  }
+
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (c) 2020 Protocol Labs Inc
+  *  Licensed under the MIT License.
+  *  https://github.com/multiformats/js-multibase/blob/master/LICENSE
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/base.js#L3
+  const encodeText = (text) => textEncoder.encode(text)
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/base.js#L13
+  class Base {
+    constructor(name, code, factory, alphabet) {
+      this.name = name
+      this.code = code
+      this.codeBuf = encodeText(this.code)
+      this.alphabet = alphabet
+      this.codec = factory(alphabet)
+    }
+    encode(buf) {
+      return this.codec.encode(buf)
+    }
+    decode(string) {
+      for (const char of string) {
+        if (this.alphabet && this.alphabet.indexOf(char) < 0) {
+          throw new Error(`invalid character '${char}' in '${string}'`)
+        }
+      }
+      return this.codec.decode(string)
+    }
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/rfc4648.js#L104
+  const rfc4648_1 = (bitsPerChar) => (alphabet) => {
+    return {
+      encode(input) {
+        return _encode(input, alphabet, bitsPerChar)
+      },
+      decode(input) {
+        return _decode(input, alphabet, bitsPerChar)
+      }
+    }
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/constants.js#L27
+  const constants = [
+    ['base32', 'b', rfc4648_1(5), 'abcdefghijklmnopqrstuvwxyz234567'],
+    ['base58btc', 'z', _basex, '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'],
+  ]
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/constants.js#L54
+  const constants1_names = constants.reduce((prev, tupple) => {
+    prev[tupple[0]] = new Base(tupple[0], tupple[1], tupple[2], tupple[3])
+    return prev
+  }, /** @type {Record<BaseName,Base>} */({}))
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/constants.js#L59
+  const constants1_codes = constants.reduce((prev, tupple) => {
+    prev[tupple[1]] = constants1_names[tupple[0]]
+    return prev
+  }, /** @type {Record<BaseCode,Base>} */({}))
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/index.js#L115
+  function encoding(nameOrCode) {
+    if (Object.prototype.hasOwnProperty.call(constants1_names, /** @type {BaseName} */(nameOrCode))) {
+      return constants1_names[/** @type {BaseName} */(nameOrCode)]
+    } else if (Object.prototype.hasOwnProperty.call(constants1_codes, /** @type {BaseCode} */(nameOrCode))) {
+      return constants1_codes[/** @type {BaseCode} */(nameOrCode)]
+    } else {
+      throw new Error(`Unsupported encoding: ${nameOrCode}`)
+    }
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/util.js#L24
+  function concat(arrs, length) {
+    const output = new Uint8Array(length)
+    let offset = 0
+
+    for (const arr of arrs) {
+      output.set(arr, offset)
+      offset += arr.length
+    }
+
+    return output
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/util.js#L3
+  const textDecoder = new TextDecoder()
+  const decodeText = (bytes) => textDecoder.decode(bytes)
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/index.js#L103
+  function validEncode(name, buf) {
+    const enc = encoding(name)
+    enc.decode(decodeText(buf))
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/index.js#L23
+  function multibase(nameOrCode, buf) {
+    if (!buf) {
+      throw new Error('requires an encoded Uint8Array')
+    }
+    const { name, codeBuf } = encoding(nameOrCode)
+    validEncode(name, buf)
+
+    return concat([codeBuf, buf], codeBuf.length + buf.length)
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/index.js#L42
+  function multibase_encode(nameOrCode, buf) {
+    const enc = encoding(nameOrCode)
+    const data = encodeText(enc.encode(buf))
+
+    return concat([enc.codeBuf, data], enc.codeBuf.length + data.length)
+  }
+
+  //https://github.com/multiformats/js-multibase/blob/f3a4e2dd0c0090b44bb0af67336594122ec930e2/src/index.js#L58
+  function multibase_decode(data) {
+    if (data instanceof Uint8Array) {
+      data = decodeText(data)
+    }
+    const prefix = data[0]
+    if (['f', 'F', 'v', 'V', 't', 'T', 'b', 'B', 'c', 'C', 'h', 'k', 'K'].includes(prefix)) {
+      data = data.toLowerCase()
+    }
+    const enc = encoding(/** @type {BaseCode} */(data[0]))
+    return enc.decode(data.substring(1))
+  }
+
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (c) 2016 Friedel Ziegelmayer
+  *  Licensed under the MIT License.
+  *  https://github.com/multiformats/js-cid/blob/master/LICENSE
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/multiformats/js-cid/blob/2ed9449c7a7d2df522485822ae46f2d8d10fbbcc/src/cid-util.js#L5
+  const CIDUtil = {
+    checkCIDComponents: function (other) {
+      if (other == null) {
+        return 'null values are not valid CIDs'
+      }
+
+      if (!(other.version === 0 || other.version === 1)) {
+        return 'Invalid version, must be a number equal to 1 or 0'
+      }
+
+      if (typeof other.codec !== 'string') {
+        return 'codec must be string'
+      }
+
+      if (other.version === 0) {
+        if (other.codec !== 'dag-pb') {
+          return "codec must be 'dag-pb' for CIDv0"
+        }
+        if (other.multibaseName !== 'base58btc') {
+          return "multibaseName must be 'base58btc' for CIDv0"
+        }
+      }
+
+      if (!(other.multihash instanceof Uint8Array)) {
+        return 'multihash must be a Uint8Array'
+      }
+
+      try {
+        var mh = multihash
+        mh.mh_validate(other.multihash)
+      } catch (err) {
+        let errorMsg = err.message
+        if (!errorMsg) { // Just in case mh.validate() throws an error with empty error message
+          errorMsg = 'Multihash validation failed'
+        }
+        return errorMsg
+      }
+    }
+  }
+
+  //https://github.com/multiformats/js-cid/blob/2ed9449c7a7d2df522485822ae46f2d8d10fbbcc/src/index.js#L38
+  class CID1 {
+    constructor(version, codec, multihash, multibaseName) {
+      this.version
+      this.codec
+      this.multihash
+
+      Object.defineProperty(this, symbol, { value: true })
+      if (CID1.isCID(version)) {
+        const cid = /** @type {CID1} */(version)
+        this.version = cid.version
+        this.codec = cid.codec
+        this.multihash = cid.multihash
+        this.multibaseName = cid.multibaseName || (cid.version === 0 ? 'base58btc' : 'base32')
+        return
+      }
+
+      this.version = version
+
+      this.codec = /** @type {CodecName} */ (codec)
+      this.multihash = /** @type {Uint8Array} */ (multihash)
+      this.multibaseName = multibaseName || (version === 0 ? 'base58btc' : 'base32')
+
+      CID1.validateCID(this)
+    }
+
+    get bytes() {
+      let bytes = this._bytes
+
+      if (!bytes) {
+        if (this.version === 0) {
+          bytes = this.multihash
+        } else if (this.version === 1) {
+          const codec = multicodec.getCodeVarint(this.codec)
+          bytes = uint8ArrayConcat([
+            [1], codec, this.multihash
+          ], 1 + codec.byteLength + this.multihash.byteLength)
+        } else {
+          throw new Error('unsupported version')
+        }
+        Object.defineProperty(this, '_bytes', { value: bytes })
+      }
+
+      return bytes
+    }
+
+    toBaseEncodedString(base = this.multibaseName) {
+      if (this.string && this.string.length !== 0 && base === this.multibaseName) {
+        return this.string
+      }
+      let str
+      if (this.version === 0) {
+        if (base !== 'base58btc') {
+          throw new Error('not supported with CIDv0, to support different bases, please migrate the instance do CIDv1, you can do that through cid.toV1()')
+        }
+        str = multihash.mh_toB58String(this.multihash)
+      } else if (this.version === 1) {
+        str = uint8ArrayToString(multibase_encode(base, this.bytes))
+      } else {
+        throw new Error('unsupported version')
+      }
+      if (base === this.multibaseName) {
+        // cache the string value
+        Object.defineProperty(this, 'string', { value: str })
+      }
+      return str
+    }
+
+    toString(base) {
+      return this.toBaseEncodedString(base)
+    }
+
+    static validateCID(other) {
+      const errorMsg = CIDUtil.checkCIDComponents(other)
+      if (errorMsg) {
+        throw new Error(errorMsg)
+      }
+    }
+
+    static isCID(value) {
+      return value instanceof CID1 || Boolean(value && value[symbol])
+    }
+  }
+
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright © 2016 Multiformats
+  *  Licensed under the MIT License.
+  *  https://github.com/multiformats/js-multicodec/blob/master/LICENSE
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/util.js#L17
+  function uint8ArrayToNumber(buf) {
+    return parseInt(uint8ArrayToString(buf, 'base16'), 16)
+  }
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/util.js#L35
+  function varintUint8ArrayEncode(input) {
+    return Uint8Array.from(encode_2(uint8ArrayToNumber(input)))
+  }
+
+  const baseTable = Object.freeze({
+    'raw': CODE_RAW,
+    'dag-pb': CODE_DAG_PB,
+  })
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/util.js#L42
+  function varintEncode(num) {
+    return Uint8Array.from(encode_2(num))
+  }
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/maps.js#L12
+  const nameToVarint = /** @type {NameUint8ArrayMap} */ ({})
+  const constantToCode = /** @type {ConstantCodeMap} */({})
+  const codeToName = /** @type {CodeNameMap} */({})
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/index.js#L111
+  function getVarintFromName(name) {
+    const code = nameToVarint[name]
+    if (code === undefined) {
+      throw new Error(`Codec "${name}" not found`)
+    }
+    return code
+  }
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/maps.js#L17
+  for (const name in baseTable) {
+    const codecName = /** @type {CodecName} */(name)
+    const code = baseTable[codecName]
+    nameToVarint[codecName] = varintEncode(code)
+
+    const constant = /** @type {CodecConstant} */(codecName.toUpperCase().replace(/-/g, '_'))
+    constantToCode[constant] = code
+
+    if (!codeToName[code]) {
+      codeToName[code] = codecName
+    }
+  }
+
+  //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/maps.js#L30
+  Object.freeze(nameToVarint)
+  Object.freeze(constantToCode)
+  Object.freeze(codeToName)
+
+  const multicodec = {
+    //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/index.js#L29
+    addPrefix: function addPrefix(multicodecStrOrCode, data) {
+      let prefix
+
+      if (multicodecStrOrCode instanceof Uint8Array) {
+        prefix = varintUint8ArrayEncode(multicodecStrOrCode)
+      } else {
+        if (nameToVarint[multicodecStrOrCode]) {
+          prefix = nameToVarint[multicodecStrOrCode]
+        } else {
+          throw new Error('multicodec not recognized')
+        }
+      }
+
+      return uint8ArrayConcat([prefix, data], prefix.length + data.length)
+    },
+    //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/index.js#L51
+    rmPrefix: function rmPrefix(data) {
+      varint.decode(/** @type {Buffer} */(data))
+      return data.slice(varint.decode.bytes)
+    },
+    //https://github.com/multiformats/js-multicodec/blob/2945d8b4f65552cb93ae60892f69ee6fac24b359/src/index.js#L77
+    getCodeVarint: function getCodeVarint(name) {
+      return getVarintFromName(name)
+    },
+  }
+
+  /*---------------------------------------------------------------------------------------------
+  *  Copyright (C) 2018 Angry Bytes and contributors.
+  *  https://github.com/Two-Screen/stable/blob/master/README.md
+  *--------------------------------------------------------------------------------------------*/
+
+  //https://github.com/Two-Screen/stable/blob/fff2be6088a96c9613e3799cb966c912c6d6fcb7/stable.js#L31
+  function exec(arr, comp) {
+    if (typeof (comp) !== 'function') {
+      comp = function (a, b) {
+        return String(a).localeCompare(b)
+      };
+    }
+    var len = arr.length;
+    if (len <= 1) {
+      return arr
+    }
+    var buffer = new Array(len);
+    for (var chk = 1; chk < len; chk *= 2) {
+      pass(arr, comp, chk, buffer);
+
+      var tmp = arr;
+      arr = buffer;
+      buffer = tmp;
     }
 
     return arr
   }
 
-  const dagBuilders = {
-    flat: async function (source, reduce) {
-      return reduce(await all(source))
-    },
-    balanced: function balanced(source, reduce, options) {
-      return reduceToParents(source, reduce, options)
-    },
-    trickle: async function trickleStream(source, reduce, options) {
-      const root = new Root(options.layerRepeat)
-      let iteration = 0
-      let maxDepth = 1
+  //https://github.com/Two-Screen/stable/blob/fff2be6088a96c9613e3799cb966c912c6d6fcb7/stable.js#L60
+  var pass = function (arr, comp, chk, result) {
+    var len = arr.length;
+    var i = 0;
+    // Step size / double chunk size.
+    var dbl = chk * 2;
+    // Bounds of the left and right chunks.
+    var l, r, e;
+    // Iterators over the left and right chunk.
+    var li, ri;
 
-      /** @type {SubTree} */
-      let subTree = root
+    // Iterate over pairs of chunks.
+    for (l = 0; l < len; l += dbl) {
+      r = l + chk;
+      e = r + chk;
+      if (r > len) r = len;
+      if (e > len) e = len;
 
-      for await (const layer of batch(source, options.maxChildrenPerNode)) {
-        if (subTree.isFull()) {
-          if (subTree !== root) {
-            root.addChild(await subTree.reduce(reduce))
+      // Iterate both chunks in parallel.
+      li = l;
+      ri = r;
+      while (true) {
+        // Compare the chunks.
+        if (li < r && ri < e) {
+          // This works for a regular `sort()` compatible comparator,
+          // but also for a simple comparator like: `a > b`
+          if (comp(arr[li], arr[ri]) <= 0) {
+            result[i++] = arr[li++];
           }
-
-          if (iteration && iteration % options.layerRepeat === 0) {
-            maxDepth++
-          }
-
-          subTree = new SubTree(maxDepth, options.layerRepeat, iteration)
-
-          iteration++
-        }
-
-        subTree.append(layer)
-      }
-
-      if (subTree && subTree !== root) {
-        root.addChild(await subTree.reduce(reduce))
-      }
-
-      return root.reduce(reduce)
-    }
-  }
-
-  class SubTree {
-    /**
-     * @param {number} maxDepth
-     * @param {number} layerRepeat
-     * @param {number} [iteration=0]
-     */
-    constructor(maxDepth, layerRepeat, iteration = 0) {
-      this.maxDepth = maxDepth
-      this.layerRepeat = layerRepeat
-      this.currentDepth = 1
-      this.iteration = iteration
-
-      /** @type {TrickleDagNode} */
-      this.root = this.node = this.parent = {
-        children: [],
-        depth: this.currentDepth,
-        maxDepth,
-        maxChildren: (this.maxDepth - this.currentDepth) * this.layerRepeat
-      }
-    }
-
-    isFull() {
-      if (!this.root.data) {
-        return false
-      }
-
-      if (this.currentDepth < this.maxDepth && this.node.maxChildren) {
-        // can descend
-        this._addNextNodeToParent(this.node)
-
-        return false
-      }
-
-      // try to find new node from node.parent
-      const distantRelative = this._findParent(this.node, this.currentDepth)
-
-      if (distantRelative) {
-        this._addNextNodeToParent(distantRelative)
-
-        return false
-      }
-
-      return true
-    }
-
-    /**
-     * @param {TrickleDagNode} parent
-     */
-    _addNextNodeToParent(parent) {
-      this.parent = parent
-
-      // find site for new node
-      const nextNode = {
-        children: [],
-        depth: parent.depth + 1,
-        parent,
-        maxDepth: this.maxDepth,
-        maxChildren: Math.floor(parent.children.length / this.layerRepeat) * this.layerRepeat
-      }
-
-      // @ts-ignore
-      parent.children.push(nextNode)
-
-      this.currentDepth = nextNode.depth
-      this.node = nextNode
-    }
-
-    /**
-     *
-     * @param {InProgressImportResult[]} layer
-     */
-    append(layer) {
-      this.node.data = layer
-    }
-
-    /**
-     * @param {Reducer} reduce
-     */
-    reduce(reduce) {
-      return this._reduce(this.root, reduce)
-    }
-
-    /**
-     * @param {TrickleDagNode} node
-     * @param {Reducer} reduce
-     * @returns {Promise<InProgressImportResult>}
-     */
-    async _reduce(node, reduce) {
-      /** @type {InProgressImportResult[]} */
-      let children = []
-
-      if (node.children.length) {
-        children = await Promise.all(
-          node.children
-            // @ts-ignore
-            .filter(child => child.data)
-            // @ts-ignore
-            .map(child => this._reduce(child, reduce))
-        )
-      }
-
-      return reduce((node.data || []).concat(children))
-    }
-
-    /**
-     * @param {TrickleDagNode} node
-     * @param {number} depth
-     * @returns {TrickleDagNode | undefined}
-     */
-    _findParent(node, depth) {
-      const parent = node.parent
-
-      if (!parent || parent.depth === 0) {
-        return
-      }
-
-      if (parent.children.length === parent.maxChildren || !parent.maxChildren) {
-        // this layer is full, may be able to traverse to a different branch
-        return this._findParent(parent, depth)
-      }
-
-      return parent
-    }
-  }
-
-  class Root extends SubTree {
-    /**
-     * @param {number} layerRepeat
-     */
-    constructor(layerRepeat) {
-      super(0, layerRepeat)
-
-      this.root.depth = 0
-      this.currentDepth = 1
-    }
-
-    /**
-     * @param {InProgressImportResult} child
-     */
-    addChild(child) {
-      this.root.children.push(child)
-    }
-
-    /**
-     * @param {Reducer} reduce
-     */
-    reduce(reduce) {
-      return reduce((this.root.data || []).concat(this.root.children))
-    }
-  }
-
-  function fileBuilder(file, block, options) {
-    const dagBuilder = dagBuilders[options.strategy]
-
-    if (!dagBuilder) {
-      throw errCode(new Error(`Unknown importer build strategy name: ${options.strategy}`), 'ERR_BAD_STRATEGY')
-    }
-    return dagBuilder(buildFileBatch(file, block, options), reduce(file, block, options), options)
-  }
-
-  async function* bufferImporter1(file, block, options) {
-    for await (let buffer of file.content) {
-      yield async () => {
-        options.progress(buffer.length, file.path)
-        let unixfs
-
-        /** @type {import('../../types/src').PersistOptions} */
-        const opts = {
-          codec: 'dag-pb',
-          cidVersion: options.cidVersion,
-          hashAlg: options.hashAlg,
-          onlyHash: options.onlyHash
-        }
-
-        if (options.rawLeaves) {
-          opts.codec = 'raw'
-          opts.cidVersion = 1
-        } else {
-          unixfs = new UnixFS({
-            type: options.leafType,
-            data: buffer,
-            mtime: file.mtime,
-            mode: file.mode
-          })
-
-          buffer = new DAGNode(unixfs.marshal()).serialize()  // buffer is [Uint8Array]
-        }
-        return {
-          cid: await persist(buffer, block, opts),
-          unixfs,
-          size: buffer.length
-        }
-      }
-    }
-  }
-
-  async function* buildFileBatch(file, block, options) {
-    let count = -1
-    let previous
-    let bufferImporter
-
-    if (typeof options.bufferImporter === 'function') {
-      bufferImporter = options.bufferImporter
-    } else {
-      bufferImporter = bufferImporter1
-    }
-
-    for await (const entry of parallelBatch(bufferImporter(file, block, options), options.blockWriteConcurrency)) {
-      count++
-
-      if (count === 0) {
-        previous = entry
-        continue
-      } else if (count === 1 && previous) {
-        yield previous
-        previous = null
-      }
-
-      yield entry
-    }
-
-    if (previous) {
-      previous.single = true
-      yield previous
-    }
-  }
-
-  const reduce = (file, block, options) => {
-    /**
-     * @type {Reducer}
-     */
-    async function reducer(leaves) {
-      if (leaves.length === 1 && leaves[0].single && options.reduceSingleLeafToSelf) {
-        const leaf = leaves[0]
-
-        if (leaf.cid.codec === 'raw' && (file.mtime !== undefined || file.mode !== undefined)) {
-          // only one leaf node which is a buffer - we have metadata so convert it into a
-          // UnixFS entry otherwise we'll have nowhere to store the metadata
-          let { data: buffer } = await block.get(leaf.cid, options)
-
-          leaf.unixfs = new UnixFS({
-            type: 'file',
-            mtime: file.mtime,
-            mode: file.mode,
-            data: buffer
-          })
-
-          const multihash = mh.decode(leaf.cid.multihash)
-          buffer = new DAGNode(leaf.unixfs.marshal()).serialize()
-
-          leaf.cid = await persist(buffer, block, {
-            ...options,
-            codec: 'dag-pb',
-            hashAlg: multihash.name,
-            cidVersion: options.cidVersion
-          })
-          leaf.size = buffer.length
-        }
-        return {
-          cid: leaf.cid,
-          path: file.path,
-          unixfs: leaf.unixfs,
-          size: leaf.size
-        }
-      }
-
-      // create a parent node and add all the leaves
-      const f = new UnixFS({
-        type: 'file',
-        mtime: file.mtime,
-        mode: file.mode
-      })
-
-      const links = leaves
-        .filter(leaf => {
-          if (leaf.cid.codec === 'raw' && leaf.size) {
-            return true
-          }
-
-          if (leaf.unixfs && !leaf.unixfs.data && leaf.unixfs.fileSize()) {
-            return true
-          }
-
-          return Boolean(leaf.unixfs && leaf.unixfs.data && leaf.unixfs.data.length)
-        })
-        .map((leaf) => {
-          if (leaf.cid.codec === 'raw') {
-            // node is a leaf buffer
-            f.addBlockSize(leaf.size)
-
-            return new DAGLink('', leaf.size, leaf.cid)
-          }
-
-          if (!leaf.unixfs || !leaf.unixfs.data) {
-            // node is an intermediate node
-            f.addBlockSize((leaf.unixfs && leaf.unixfs.fileSize()) || 0)
-          } else {
-            // node is a unixfs 'file' leaf node
-            f.addBlockSize(leaf.unixfs.data.length)
-          }
-
-          return new DAGLink('', leaf.size, leaf.cid)
-        })
-
-      const node = new DAGNode(f.marshal(), links)
-      const buffer = node.serialize()
-      const cid = await persist(buffer, block, options)
-
-      return {
-        cid,
-        path: file.path,
-        unixfs: f,
-        size: buffer.length + node.Links.reduce((acc, curr) => acc + curr.Tsize, 0)
-      }
-    }
-
-    return reducer
-  }
-
-  function contentAsAsyncIterable(content) {
-    try {
-      if (content instanceof Uint8Array) {
-        return (async function* () {
-          yield content
-        }())
-      } else if (isIterable(content)) {
-        return (async function* () {
-          yield* content
-        }())
-      } else if (isAsyncIterable(content)) { // step 4
-        return content
-      }
-    } catch {
-      throw errCode(new Error('Content was invalid'), 'ERR_INVALID_CONTENT')
-    }
-
-    throw errCode(new Error('Content was invalid'), 'ERR_INVALID_CONTENT')
-  }
-
-  function isIterable(thing) {
-    return Symbol.iterator in thing
-  }
-
-  function isAsyncIterable(thing) {
-    return Symbol.asyncIterator in thing
-  }
-
-  const toPathComponents = (path = '') => {
-    // split on / unless escaped with \
-    return (path
-      .trim()
-      .match(/([^\\^/]|\\\/)+/g) || [])
-      .filter(Boolean)
-  }
-
-
-  async function addToTree(elem, tree, options) {
-    const pathElems = toPathComponents(elem.path || '')
-    const lastIndex = pathElems.length - 1
-    let parent = tree
-    let currentPath = ''
-
-    // no need to build tree, if parent = tree
-    for (let i = 0; i < pathElems.length; i++) {
-      const pathElem = pathElems[i]
-
-      currentPath += `${currentPath ? '/' : ''}${pathElem}`
-
-      const last = (i === lastIndex)
-      parent.dirty = true
-      parent.cid = undefined
-      parent.size = undefined
-
-      if (last) {
-        await parent.put(pathElem, elem)
-        tree = await flatToShard(null, parent, options.shardSplitThreshold, options)
-      } else {
-        let dir = await parent.get(pathElem)
-
-        if (!dir || !(dir instanceof Dir)) {
-          dir = new DirFlat({
-            root: false,
-            dir: true,
-            parent: parent,
-            parentKey: pathElem,
-            path: currentPath,
-            dirty: true,
-            flat: true,
-            mtime: dir && dir.unixfs && dir.unixfs.mtime,
-            mode: dir && dir.unixfs && dir.unixfs.mode
-          }, options)
-        }
-
-        await parent.put(pathElem, dir)
-
-        parent = dir
-      }
-    }
-    return tree
-  }
-
-  /**
-   * @param {Dir | InProgressImportResult} tree
-   * @param {BlockAPI} block
-   */
-  async function* flushAndYield(tree, block) {
-    if (!(tree instanceof Dir)) {
-      if (tree && tree.unixfs && tree.unixfs.isDirectory()) {
-        yield tree
-      }
-
-      return
-    }
-
-    yield* tree.flush(block)
-  }
-
-  async function* treeBuilder1(source, block, options) {
-    /** @type {Dir} */
-    let tree = new DirFlat({
-      root: true,
-      dir: true,
-      path: '',
-      dirty: true,
-      flat: true
-    }, options)
-
-    for await (const entry of source) {
-      if (!entry) {
-        continue
-      }
-
-      tree = await addToTree(entry, tree, options)
-
-      if (!entry.unixfs || !entry.unixfs.isDirectory()) {
-        yield entry
-      }
-    }
-
-    if (options.wrapWithDirectory) {
-      yield* flushAndYield(tree, block)
-    } else {
-      for await (const unwrapped of tree.eachChildSeries()) {
-        if (!unwrapped) {
-          continue
-        }
-
-        yield* flushAndYield(unwrapped.child, block)
-      }
-    }
-  }
-
-  async function* batch(source, size = 1) {
-    let things = []
-
-    if (size < 1) {
-      size = 1
-    }
-
-    for await (const thing of source) {
-      things.push(thing)
-
-      while (things.length >= size) {
-        yield things.slice(0, size)
-
-        things = things.slice(size)
-      }
-    }
-
-    while (things.length) {
-      yield things.slice(0, size)
-
-      things = things.slice(size)
-    }
-  }
-
-
-  async function* parallelBatch(source, size = 1) {
-    for await (const tasks of batch(source, size)) {
-      /** @type {Promise<Success<T>|Failure>[]} */
-      const things = tasks.map(
-        /**
-         * @param {() => Promise<T>} p
-         */
-        p => {
-          return p().then(value => ({ ok: true, value }), err => ({ ok: false, err }))
-        })
-
-      for (let i = 0; i < things.length; i++) {
-        const result = await things[i]
-        if (result.ok) {
-          yield result.value
-        } else {
-          throw result.err  // always go here
-        }
-      }
-    }
-  }
-  class Dir {
-    constructor(props, options) {
-      this.options = options || {}
-
-      this.root = props.root
-      this.dir = props.dir
-      this.path = props.path
-      this.dirty = props.dirty
-      this.flat = props.flat
-      this.parent = props.parent
-      this.parentKey = props.parentKey
-      this.unixfs = props.unixfs
-      this.mode = props.mode
-      this.mtime = props.mtime
-
-      this.cid = undefined
-      this.size = undefined
-    }
-
-    async put(name, value) { }
-    get(name) {
-      return Promise.resolve(this)
-    }
-    async * eachChildSeries() { }
-    async * flush(block) { }
-  }
-  class DirFlat extends Dir {
-    /**
-     * @param {DirProps} props
-     * @param {ImporterOptions} options
-     */
-    constructor(props, options) {
-      super(props, options)
-
-      /** @type {{ [key: string]: InProgressImportResult | Dir }} */
-      this._children = {}
-    }
-
-    /**
-     * @param {string} name
-     * @param {InProgressImportResult | Dir} value
-     */
-    async put(name, value) {
-      this.cid = undefined
-      this.size = undefined
-
-      this._children[name] = value
-    }
-
-    /**
-     * @param {string} name
-     */
-    get(name) {
-      return Promise.resolve(this._children[name])
-    }
-
-    childCount() {
-      return Object.keys(this._children).length
-    }
-
-    directChildrenCount() {
-      return this.childCount()
-    }
-
-    onlyChild() {
-      return this._children[Object.keys(this._children)[0]]
-    }
-
-    async * eachChildSeries() {
-      const keys = Object.keys(this._children)
-
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i]
-
-        yield {
-          key: key,
-          child: this._children[key]
-        }
-      }
-    }
-
-    /**
-     * @param {BlockAPI} block
-     * @returns {AsyncIterable<ImportResult>}
-     */
-    async * flush(block) {
-      const children = Object.keys(this._children)
-      const links = []
-
-      for (let i = 0; i < children.length; i++) {
-        let child = this._children[children[i]]
-
-        if (child instanceof Dir) {
-          for await (const entry of child.flush(block)) {
-            child = entry
-
-            yield child
+          else {
+            result[i++] = arr[ri++];
           }
         }
-
-        if (child.size != null && child.cid) {
-          links.push(new DAGLink(children[i], child.size, child.cid))
+        // Nothing to compare, just flush what's left.
+        else if (li < r) {
+          result[i++] = arr[li++];
+        }
+        else if (ri < e) {
+          result[i++] = arr[ri++];
+        }
+        // Both iterators are at the chunk ends.
+        else {
+          break
         }
       }
-
-      const unixfs = new UnixFS({
-        type: 'directory',
-        mtime: this.mtime,
-        mode: this.mode
-      })
-
-      const node = new DAGNode(unixfs.marshal(), links)
-      const buffer = node.serialize()
-      const cid = await persist(buffer, block, this.options)
-      const size = buffer.length + node.Links.reduce(
-        /**
-         * @param {number} acc
-         * @param {DAGLink} curr
-         */
-        (acc, curr) => acc + curr.Tsize,
-        0)
-
-      this.cid = cid
-      this.size = size
-
-      yield {
-        cid,
-        unixfs,
-        path: this.path,
-        size
-      }
     }
-  }
-
-  const defaultOptions = {
-    chunker: 'fixed',
-    strategy: 'balanced', // 'flat', 'trickle'
-    rawLeaves: false,
-    onlyHash: false,
-    reduceSingleLeafToSelf: true,
-    hashAlg: 'sha2-256',
-    leafType: 'file', // 'raw'
-    cidVersion: 0,
-    progress: () => () => { },
-    shardSplitThreshold: 1000,
-    fileImportConcurrency: 50,
-    blockWriteConcurrency: 10,
-    minChunkSize: 262144,
-    maxChunkSize: 262144,
-    avgChunkSize: 262144,
-    window: 16,
-    // FIXME: This number is too big for JavaScript
-    // https://github.com/ipfs/go-ipfs-chunker/blob/d0125832512163708c0804a3cda060e21acddae4/rabin.go#L11
-    polynomial: 17437180132763653, // eslint-disable-line no-loss-of-precision
-    maxChildrenPerNode: 174,
-    layerRepeat: 4,
-    wrapWithDirectory: false,
-    pin: false,
-    recursive: false,
-    hidden: false,
-    preload: false,
-    timeout: undefined,
-    hamtHashFn,
-    hamtHashCode: 0x22,
-    hamtBucketBits: 8
-  }
-
-  const isOptionObject = value => {
-    if (Object.prototype.toString.call(value) !== '[object Object]') {
-      return false;
-    }
-
-    const prototype = Object.getPrototypeOf(value);
-    return prototype === null || prototype === Object.prototype;
   };
 
-  const { hasOwnProperty } = Object.prototype;
-  const { propertyIsEnumerable } = Object;
-  const defineProperty = (object, name, value) => Object.defineProperty(object, name, {
-    value,
-    writable: true,
-    enumerable: true,
-    configurable: true
-  });
+  //https://github.com/Two-Screen/stable/blob/fff2be6088a96c9613e3799cb966c912c6d6fcb7/stable.js#L13
+  var stable = function (arr, comp) {
+    return exec(arr.slice(), comp)
+  };
+
+  //https://github.com/Two-Screen/stable/blob/fff2be6088a96c9613e3799cb966c912c6d6fcb7/stable.js#L17
+  stable.inplace = function (arr, comp) {
+    var result = exec(arr, comp);
+
+    if (result !== arr) {
+      pass(result, null, arr.length, arr);
+    }
+
+    return arr
+  };
 
   const globalThis = this;
-  const defaultMergeOptions = {
-    concatArrays: false,
-    ignoreUndefined: false
-  };
-
-  const getEnumerableOwnPropertyKeys = value => {
-    const keys = [];
-
-    for (const key in value) {
-      if (hasOwnProperty.call(value, key)) {
-        keys.push(key);
-      }
-    }
-
-    /* istanbul ignore else  */
-    if (Object.getOwnPropertySymbols) {
-      const symbols = Object.getOwnPropertySymbols(value);
-
-      for (const symbol of symbols) {
-        if (propertyIsEnumerable.call(value, symbol)) {
-          keys.push(symbol);
-        }
-      }
-    }
-
-    return keys;
-  };
-
-  function clone(value) {
-    if (Array.isArray(value)) {
-      return cloneArray(value);
-    }
-
-    if (isOptionObject(value)) {
-      return cloneOptionObject(value);
-    }
-
-    return value;
-  }
-
-  function cloneArray(array) {
-    const result = array.slice(0, 0);
-
-    getEnumerableOwnPropertyKeys(array).forEach(key => {
-      defineProperty(result, key, clone(array[key]));
-    });
-
-    return result;
-  }
-
-  function cloneOptionObject(object) {
-    const result = Object.getPrototypeOf(object) === null ? Object.create(null) : {};
-
-    getEnumerableOwnPropertyKeys(object).forEach(key => {
-      defineProperty(result, key, clone(object[key]));
-    });
-
-    return result;
-  }
-
-  const mergeKeys = (merged, source, keys, config) => {
-    keys.forEach(key => {
-      if (typeof source[key] === 'undefined' && config.ignoreUndefined) {
-        return;
-      }
-
-      // Do not recurse into prototype chain of merged
-      if (key in merged && merged[key] !== Object.getPrototypeOf(merged)) {
-        defineProperty(merged, key, merge(merged[key], source[key], config));
-      } else {
-        defineProperty(merged, key, clone(source[key]));
-      }
-    });
-
-    return merged;
-  };
-
-  const concatArrays = (merged, source, config) => {
-    let result = merged.slice(0, 0);
-    let resultIndex = 0;
-
-    [merged, source].forEach(array => {
-      const indices = [];
-
-      // `result.concat(array)` with cloning
-      for (let k = 0; k < array.length; k++) {
-        if (!hasOwnProperty.call(array, k)) {
-          continue;
-        }
-
-        indices.push(String(k));
-
-        if (array === merged) {
-          // Already cloned
-          defineProperty(result, resultIndex++, array[k]);
-        } else {
-          defineProperty(result, resultIndex++, clone(array[k]));
-        }
-      }
-
-      // Merge non-index keys
-      result = mergeKeys(result, array, getEnumerableOwnPropertyKeys(array).filter(key => !indices.includes(key)), config);
-    });
-
-    return result;
-  };
-
-  function merge(merged, source, config) {
-    if (config.concatArrays && Array.isArray(merged) && Array.isArray(source)) {
-      return concatArrays(merged, source, config);
-    }
-
-    if (!isOptionObject(source) || !isOptionObject(merged)) {
-      return clone(source);
-    }
-
-    return mergeKeys(merged, source, getEnumerableOwnPropertyKeys(source), config);
-  }
-
-  function merge_options(...options) {
-    const config = merge(clone(defaultMergeOptions), (this !== globalThis && this) || {}, defaultMergeOptions);
-    let merged = { _: {} };
-
-    for (const option of options) {
-      if (option === undefined) {
-        continue;
-      }
-
-      if (!isOptionObject(option)) {
-        throw new TypeError('`' + option + '` is not an Option Object');
-      }
-
-      merged = merge(merged, { _: option }, config);
-    }
-
-    return merged._;
-  };
-
-  const mergeOptions = merge_options.bind({ ignoreUndefined: true })
   
-  async function* importer(source, block, options = {}) {
-    const opts = mergeOptions(defaultOptions, options)
-
-    let dagBuilder
-
-    if (typeof options.dagBuilder === 'function') {
-      dagBuilder = options.dagBuilder
-    } else {
-      dagBuilder = dagBuilder1 // step 2
+  async function hashChunk(data, version){
+    let size = data.length;
+    const dataSize = data.length;
+    let multihash;
+    if (version == 0){
+      const unixFS = new UnixFS({
+        type: 'file',
+        data: data
+      })
+      let bytes = d_encode({
+        Data: unixFS.marshal(),
+        Links: []
+      })
+      multihash = await Multihashing(bytes, 'sha2-256')
+      size = bytes.length;
     }
-
-    let treeBuilder
-
-    if (typeof options.treeBuilder === 'function') {
-      treeBuilder = options.treeBuilder
-    } else {
-      treeBuilder = treeBuilder1 // step 3
-    }
-
-    /** @type {AsyncIterable<ImportCandidate> | Iterable<ImportCandidate>} */
-    let candidates
-
-    if (Symbol.asyncIterator in source || Symbol.iterator in source) {
-      // @ts-ignore
-      candidates = source // step 3
-    } else {
-      // @ts-ignore
-      candidates = [source]
-    }
-    for await (const entry of treeBuilder(parallelBatch(dagBuilder(candidates, block, opts), opts.fileImportConcurrency), block, opts)) {
-      // step 5
-      yield {
-        cid: entry.cid,
-        path: entry.path,
-        unixfs: entry.unixfs,
-        size: entry.size
+    else{
+      multihash = await Multihashing(data, 'sha2-256') // buffer is [Uint8Array]
+    };
+    let codec = version==1?'raw':'dag-pb';
+    const cid = new CID1(version, codec, multihash)
+    return {
+      size: size,
+      dataSize: dataSize,
+      cid: cid
+    };
+  };
+  async function hashChunks(chunks, version){
+    let contentLength = 0;
+    const unixfs = new UnixFS({
+      type: 'file'
+    });
+    let links = [];
+    for (let i = 0; i < chunks.length; i++) {
+      let item = chunks[i];
+      contentLength += (item.dataSize || item.size);      
+      unixfs.addBlockSize(item.dataSize || item.size);
+      let cid = item.cid
+      if (typeof(cid) == 'string'){
+        let parsed = parse(item.cid);
+        cid = new CID1(version, 'raw', parsed.multihash.bytes)
+      };
+      links.push(new DAGLink('', item.size, cid))
+    };
+    const node = new DAGNode(unixfs.marshal(), links)
+    const buffer = node.serialize();
+    const multihash = await Multihashing(buffer, 'sha2-256') // buffer is [Uint8Array]
+    const cid = new CID1(version, 'dag-pb', multihash)
+    return {
+      size: buffer.length + contentLength,
+      type: 'file',
+      cid: cid.toString(),
+      bytes: buffer
+    };
+  };
+  async function hashItems(items, version){
+    if (version == undefined)
+      version = 1;
+    let Links = [];
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      Links.push({
+        Name: item.name,
+        Hash: parse(item.cid),
+        Tsize: item.size
+      })
+    };
+    Links.sort(linkComparator);
+    try {
+      const dirUnixFS = new UnixFS({
+        type: 'directory',
+        mtime: undefined,
+        mode: 493
+      });
+      const node = {
+        Data: dirUnixFS.marshal(),
+        Links
+      };
+      const bytes = d_encode(node);
+      const hash = await s_sha256.digest(bytes);
+      // const cid = CID.create(version, RAW_CODE, hash);
+      const cid = CID.create(version, CODE_DAG_PB, hash).toString();
+      return {
+        size: bytes.length + Links.reduce((acc, curr) => acc + (curr.Tsize == null ? 0 : curr.Tsize), 0),
+        code: CODE_DAG_PB,
+        name: '',
+        type: 'dir',
+        links: items,
+        cid: cid,
+        bytes: bytes
       }
+    } catch (e) {
+      throw e;
     }
-  }
-  const block = {
-    get: async cid => { throw new Error(`unexpected block API get for ${cid}`) },
-    put: async () => { throw new Error('unexpected block API put') }
-  }
-  async function hashFile(content, version, options) {
-    
-    var options = options || {}
-    options.onlyHash = true
-    options.cidVersion = version
-    
+  };
+  function parse(cid, bytes) {
+    let result = CID.parse(cid);
+    if (bytes){
+      let decoded = d_decode(bytes);
+      result.links = decoded.Links;
+      if (result.code == CODE_DAG_PB)
+          result.size = bytes.length + decoded.Links.reduce((acc, curr) => acc + (curr.Tsize == null ? 0 : curr.Tsize), 0);
+      if (decoded.Data){
+        decoded.Data = UnixFS.unmarshal(decoded.Data)
+        result.type = decoded.Data.type;
+        // if (result.type == 'directory')
+        // else if(result.type == 'file' && result.code == CODE_DAG_PB){
+        //   result.size = result.size || (decoded.Links.reduce((acc, curr) => acc + (curr.Tsize == null ? 0 : curr.Tsize), 0))
+        // };
+      };
+    };
+    return result;
+  };
+  async function hashContent(content, version) {
+    // let buffer = [];
+    let items = [];
+    let contentLength = 0;
     if (typeof content === 'string') {
-      content = new TextEncoder().encode(content)
-    }
+      content = new TextEncoder("utf-8").encode(content)
+      // // new TextEncoder("utf-8").encode(value);
+      // let chunkSize = 1048576;
+      // if (version == 0){
+      //   chunkSize = 262144;
+      //   let offset = 0  
+      //   const size = Math.ceil(content.length/chunkSize);
+      //   for (let i = 0; i < size; i++) {
+      //     let data = textEncoder.encode(content.substr(offset, chunkSize));
+      //     contentLength += data.length;
+      //     items.push(await hashChunk(data, version));
+      //     offset += chunkSize;
+      //   }
+      // }
+      // else{
+      //   content = new TextEncoder("utf-8").encode(content);
 
-    let lastCid
-    let lastSize;
-    for await (const { cid,size } of importer([{ content }], block, options)) {
-      lastCid = cid;
-      lastSize = size;
+      // }
     }
-    return {cid: lastCid.toString(), size: lastSize}
-  };
+    if (content instanceof Uint8Array){
+      let chunkSize = 1048576;
+      if (version == 0)
+        chunkSize = 262144;
 
-  const hexToBinary = (hexString) => {
-    return hexString
-      .split('')
-      .map(hex => parseInt(hex, 16).toString(2).padStart(4, '0'))
-      .join('');
+      let offset = 0  
+      const size = Math.ceil(content.length/chunkSize)
+      for (let i = 0; i < size; i++) {
+        let data = content.slice(offset, offset + chunkSize);
+        contentLength += data.length;
+        items.push(await hashChunk(data, version));
+        offset += chunkSize;
+      }
+    }
+    else{
+      for await (const data of content) {
+        // buffer.push(data);
+        contentLength += data.length;
+        items.push(await hashChunk(data, version));
+      };
+    };
+    if (items.length == 1){
+      return {
+        size: contentLength,
+        type: 'file',
+        code: CODE_RAW,
+        cid: items[0].cid.toString()
+      };
+    }
+    else{
+      let result= await hashChunks(items, version);
+      let links = [];
+      for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        links.push({
+          cid: item.cid.toString(),
+          size: item.size
+        })
+      };
+      return {
+        cid: result.cid,
+        size: result.size,
+        code: CODE_DAG_PB,
+        type: 'file',
+        bytes: result.bytes,
+        links: links
+      };
+    }
   };
-  
-  const base64Encode = (binaryInput) => {
+  function base64Encode(binaryInput){
     const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     let result = '';
-    // let padding = 0;
-  
-    // Calculate the padding needed
     if (binaryInput.length % 3 === 1) {
       binaryInput += '00';
-      // padding = 2;
     } else if (binaryInput.length % 3 === 2) {
       binaryInput += '0';
-      // padding = 1;
-    }
-  
+    };
     for (let i = 0; i < binaryInput.length; i += 6) {
       const chunk = binaryInput.slice(i, i + 6);
       const decimalValue = parseInt(chunk, 2);
       result += base64Chars.charAt(decimalValue);
-    }
-  
-    // Add padding '=' characters
+    };
     const padding = calculatePadding(result);
     result += '='.repeat(padding);
-  
     return result;
   };
-
   function calculatePadding(inputNumber) {
     const inputLength = inputNumber.toString().length;
     const nextMultipleOf4 = Math.ceil(inputLength / 4) * 4;
     const difference = nextMultipleOf4 - inputLength;
     return difference;
-  }
-  
-  async function cidToSri(cid) {
+  };
+  function hexToBinary(hexString){
+    return hexString
+      .split('')
+      .map(hex => parseInt(hex, 16).toString(2).padStart(4, '0'))
+      .join('');
+  };
+  function cidToHash(cid) {
     const parsedCid = parse(cid);
     const hashBuffer = Buffer.from(parsedCid.multihash.bytes);
     const hashHex = Array.from(hashBuffer.slice(2)).map(byte => byte.toString(16).toUpperCase().padStart(2, '0')).join('');
     const binaryInput = hexToBinary(hashHex);
     return base64Encode(binaryInput);
-  }
+  };
   // AMD
-  // if (typeof define == 'function' && define.amd)
-    define('@ijstech/ipfs-utils', function () { return { parse, hashItems, hashContent, hashFile, cidToSri, mergeOptions }; })
+  if (typeof define == 'function' && define.amd)
+    define('@ijstech/ipfs-utils', function () { return {cidToHash, parse, hashChunk, hashChunks, hashItems, hashContent }; })
   // Node.js
-  // else if (typeof module != 'undefined' && module.exports)
-  //   module.exports = { parse, hashItems, hashContent, hashFile, mergeOptions }
-  // // Browser
-  // else {
-  //   if (!globalObject)
-  //     globalObject = typeof self != 'undefined' && self ? self : window;
-  //   globalObject.IPFSUtils = { parse, hashItems, hashContent, hashFile, mergeOptions };
-  // };
+  else if (typeof module != 'undefined' && module.exports)
+    module.exports = {cidToHash, parse, hashChunk, hashChunks, hashItems, hashContent }
+  // Browser
+  else {
+    if (!globalObject)
+      globalObject = typeof self != 'undefined' && self ? self : window;
+    globalObject.IPFSUtils = {cidToHash, parse, hashChunk, hashChunks, hashItems, hashContent };
+  };
 })(this);
 /*! @license DOMPurify 3.0.1 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.0.1/LICENSE */
 
@@ -11778,9 +10153,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// node_modules/moment/moment.js
+// ../../node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "node_modules/moment/moment.js"(exports, module2) {
+  "../../node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -16288,6 +14663,7 @@ function stylize(rulesList, stylesList, key2, styles, parentClassName) {
   const style2 = stringifyProperties(sortTuples(properties));
   let pid = style2;
   if (key2.charCodeAt(0) === 64) {
+    pid += `:${key2}`;
     const childRules = [];
     const childStyles = [];
     if (parent && style2) {
@@ -17729,6 +16105,19 @@ var getSpacingValue = (value) => {
     return value + "px";
   return value;
 };
+var getMediaQueryRule = (mediaQuery) => {
+  let mediaQueryRule;
+  const maxWidth = mediaQuery.maxWidth ? getSpacingValue(mediaQuery.maxWidth) : 0;
+  const minWidth = mediaQuery.minWidth ? getSpacingValue(mediaQuery.minWidth) : 0;
+  if (minWidth && maxWidth) {
+    mediaQueryRule = `@media (min-width: ${minWidth}) and (max-width: ${maxWidth})`;
+  } else if (minWidth) {
+    mediaQueryRule = `@media (min-width: ${minWidth})`;
+  } else if (maxWidth) {
+    mediaQueryRule = `@media (max-width: ${maxWidth})`;
+  }
+  return mediaQueryRule;
+};
 var getControlMediaQueriesStyle = (mediaQueries, props) => {
   var _a;
   let styleObj = {
@@ -17736,54 +16125,62 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
   };
   if (mediaQueries) {
     for (let mediaQuery of mediaQueries) {
-      let mediaQueryRule;
-      if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-        mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-      } else if (mediaQuery.minWidth) {
-        mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-      } else if (mediaQuery.maxWidth) {
-        mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-      }
+      let mediaQueryRule = getMediaQueryRule(mediaQuery);
       if (mediaQueryRule) {
         styleObj["$nest"][mediaQueryRule] = {};
-        if (mediaQuery.properties.display) {
-          styleObj["$nest"][mediaQueryRule]["display"] = `${mediaQuery.properties.display} !important`;
+        let {
+          display,
+          visible,
+          padding,
+          margin,
+          position,
+          border,
+          overflow,
+          background,
+          grid,
+          zIndex,
+          top,
+          left,
+          right,
+          bottom,
+          maxHeight,
+          maxWidth
+        } = mediaQuery.properties || {};
+        if (display) {
+          styleObj["$nest"][mediaQueryRule]["display"] = `${display} !important`;
         }
-        if (typeof mediaQuery.properties.visible === "boolean") {
-          const visible = mediaQuery.properties.visible;
-          const display = mediaQuery.properties.display;
+        if (typeof visible === "boolean") {
           const currentDisplay = (_a = display != null ? display : props == null ? void 0 : props.display) != null ? _a : "flex";
           styleObj["$nest"][mediaQueryRule]["display"] = visible ? `${currentDisplay} !important` : "none !important";
         }
-        if (mediaQuery.properties.padding) {
-          const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.padding;
-          styleObj["$nest"][mediaQueryRule]["padding"] = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)} !important`;
+        if (padding) {
+          const { top: top2 = 0, right: right2 = 0, bottom: bottom2 = 0, left: left2 = 0 } = padding;
+          styleObj["$nest"][mediaQueryRule]["padding"] = `${getSpacingValue(top2)} ${getSpacingValue(right2)} ${getSpacingValue(bottom2)} ${getSpacingValue(left2)} !important`;
         }
-        if (mediaQuery.properties.margin) {
-          const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.margin;
-          styleObj["$nest"][mediaQueryRule]["margin"] = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)} !important`;
+        if (margin) {
+          const { top: top2 = 0, right: right2 = 0, bottom: bottom2 = 0, left: left2 = 0 } = margin;
+          styleObj["$nest"][mediaQueryRule]["margin"] = `${getSpacingValue(top2)} ${getSpacingValue(right2)} ${getSpacingValue(bottom2)} ${getSpacingValue(left2)} !important`;
         }
-        if (mediaQuery.properties.border) {
-          const { radius, width, style: style2, color, bottom, top, left, right } = mediaQuery.properties.border;
+        if (border) {
+          const { radius, width, style: style2, color, bottom: bottom2, top: top2, left: left2, right: right2 } = border;
           if (width !== void 0 && width !== null)
             styleObj["$nest"][mediaQueryRule]["border"] = `${width || ""} ${style2 || ""} ${color || ""}!important`;
           if (radius)
             styleObj["$nest"][mediaQueryRule]["borderRadius"] = `${getSpacingValue(radius)} !important`;
-          if (bottom)
-            styleObj["$nest"][mediaQueryRule]["borderBottom"] = `${getSpacingValue(bottom.width || "")} ${bottom.style || ""} ${bottom.color || ""}!important`;
-          if (top)
-            styleObj["$nest"][mediaQueryRule]["borderTop"] = `${getSpacingValue(top.width || "") || ""} ${top.style || ""} ${top.color || ""}!important`;
-          if (left)
-            styleObj["$nest"][mediaQueryRule]["borderLeft"] = `${getSpacingValue(left.width || "")} ${left.style || ""} ${left.color || ""}!important`;
-          if (right)
-            styleObj["$nest"][mediaQueryRule]["borderRight"] = `${getSpacingValue(right.width || "")} ${right.style || ""} ${right.color || ""}!important`;
+          if (bottom2)
+            styleObj["$nest"][mediaQueryRule]["borderBottom"] = `${getSpacingValue(bottom2.width || "")} ${bottom2.style || ""} ${bottom2.color || ""}!important`;
+          if (top2)
+            styleObj["$nest"][mediaQueryRule]["borderTop"] = `${getSpacingValue(top2.width || "") || ""} ${top2.style || ""} ${top2.color || ""}!important`;
+          if (left2)
+            styleObj["$nest"][mediaQueryRule]["borderLeft"] = `${getSpacingValue(left2.width || "")} ${left2.style || ""} ${left2.color || ""}!important`;
+          if (right2)
+            styleObj["$nest"][mediaQueryRule]["borderRight"] = `${getSpacingValue(right2.width || "")} ${right2.style || ""} ${right2.color || ""}!important`;
         }
-        if (mediaQuery.properties.background) {
-          const bgProp = mediaQuery.properties.background;
-          const value = getBackground(bgProp);
+        if (background) {
+          const value = getBackground(background);
           styleObj["$nest"][mediaQueryRule]["background"] = value.background + "!important";
         }
-        if (mediaQuery.properties.grid) {
+        if (grid) {
           const {
             column,
             columnSpan,
@@ -17792,7 +16189,7 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
             horizontalAlignment,
             verticalAlignment,
             area
-          } = mediaQuery.properties.grid;
+          } = grid;
           if (column && columnSpan) {
             styleObj["$nest"][mediaQueryRule]["gridColumn"] = `${column + " / span " + columnSpan}!important`;
           } else if (column)
@@ -17812,32 +16209,31 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
           if (verticalAlignment)
             styleObj["$nest"][mediaQueryRule]["alignItems"] = `${verticalAlignment}!important`;
         }
-        if (mediaQuery.properties.position) {
-          styleObj["$nest"][mediaQueryRule]["position"] = `${mediaQuery.properties.position} !important`;
+        if (position) {
+          styleObj["$nest"][mediaQueryRule]["position"] = `${position} !important`;
         }
-        if (mediaQuery.properties.zIndex !== void 0 && mediaQuery.properties.zIndex !== null) {
-          styleObj["$nest"][mediaQueryRule]["zIndex"] = `${mediaQuery.properties.zIndex} !important`;
+        if (zIndex !== void 0 && zIndex !== null) {
+          styleObj["$nest"][mediaQueryRule]["zIndex"] = `${zIndex} !important`;
         }
-        if (mediaQuery.properties.top !== void 0 && mediaQuery.properties.top !== null) {
-          styleObj["$nest"][mediaQueryRule]["top"] = `${getSpacingValue(mediaQuery.properties.top)} !important`;
+        if (top !== void 0 && top !== null) {
+          styleObj["$nest"][mediaQueryRule]["top"] = `${getSpacingValue(top)} !important`;
         }
-        if (mediaQuery.properties.left !== void 0 && mediaQuery.properties.left !== null) {
-          styleObj["$nest"][mediaQueryRule]["left"] = `${getSpacingValue(mediaQuery.properties.left)} !important`;
+        if (left !== void 0 && left !== null) {
+          styleObj["$nest"][mediaQueryRule]["left"] = `${getSpacingValue(left)} !important`;
         }
-        if (mediaQuery.properties.right !== void 0 && mediaQuery.properties.right !== null) {
-          styleObj["$nest"][mediaQueryRule]["right"] = `${getSpacingValue(mediaQuery.properties.right)} !important`;
+        if (right !== void 0 && right !== null) {
+          styleObj["$nest"][mediaQueryRule]["right"] = `${getSpacingValue(right)} !important`;
         }
-        if (mediaQuery.properties.bottom !== void 0 && mediaQuery.properties.bottom !== null) {
-          styleObj["$nest"][mediaQueryRule]["bottom"] = `${getSpacingValue(mediaQuery.properties.bottom)} !important`;
+        if (bottom !== void 0 && bottom !== null) {
+          styleObj["$nest"][mediaQueryRule]["bottom"] = `${getSpacingValue(bottom)} !important`;
         }
-        if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
-          styleObj["$nest"][mediaQueryRule]["maxHeight"] = `${getSpacingValue(mediaQuery.properties.maxHeight)} !important`;
+        if (maxHeight !== void 0 && maxHeight !== null) {
+          styleObj["$nest"][mediaQueryRule]["maxHeight"] = `${getSpacingValue(maxHeight)} !important`;
         }
-        if (mediaQuery.properties.maxWidth !== void 0 && mediaQuery.properties.maxWidth !== null) {
-          styleObj["$nest"][mediaQueryRule]["maxWidth"] = `${getSpacingValue(mediaQuery.properties.maxWidth)} !important`;
+        if (maxWidth !== void 0 && maxWidth !== null) {
+          styleObj["$nest"][mediaQueryRule]["maxWidth"] = `${getSpacingValue(maxWidth)} !important`;
         }
-        if (mediaQuery.properties.overflow) {
-          const overflow = mediaQuery.properties.overflow;
+        if (overflow) {
           if (typeof overflow === "string") {
             styleObj["$nest"][mediaQueryRule]["overflow"] = `${overflow} !important`;
           } else {
@@ -20071,6 +18467,11 @@ var applicationStyle = style({
 // packages/ipfs/src/index.ts
 var src_exports2 = {};
 __export(src_exports2, {
+  CidCode: () => CidCode,
+  FileManager: () => FileManager,
+  FileManagerHttpTransport: () => FileManagerHttpTransport,
+  FileNode: () => FileNode,
+  cidToHash: () => cidToHash,
   cidToSri: () => cidToSri,
   hashContent: () => hashContent,
   hashFile: () => hashFile,
@@ -20078,55 +18479,687 @@ __export(src_exports2, {
   hashItems: () => hashItems,
   parse: () => parse
 });
+
+// packages/ipfs/src/utils.ts
 var import_ipfs_utils = __toModule(require("@ijstech/ipfs-utils"));
-function parse(cid) {
-  return import_ipfs_utils.default.parse(cid);
+
+// packages/ipfs/src/types.ts
+var CidCode;
+(function(CidCode2) {
+  CidCode2[CidCode2["DAG_PB"] = 112] = "DAG_PB";
+  CidCode2[CidCode2["RAW"] = 85] = "RAW";
+})(CidCode || (CidCode = {}));
+
+// packages/ipfs/src/utils.ts
+function parse(cid, bytes) {
+  let result = import_ipfs_utils.default.parse(cid, bytes);
+  let links = [];
+  if (result.links) {
+    for (let i = 0; i < result.links.length; i++) {
+      let link = result.links[i];
+      links.push({
+        cid: link.Hash.toString(),
+        name: link.Name,
+        size: link.Tsize
+      });
+    }
+  }
+  ;
+  return {
+    cid,
+    size: result.size,
+    code: result.code,
+    type: result.type == "directory" ? "dir" : result.type == "file" ? "file" : result.code == CidCode.RAW ? "file" : void 0,
+    multihash: result.multihash,
+    links,
+    bytes: result.bytes
+  };
 }
 async function hashItems(items, version) {
-  let result = await import_ipfs_utils.default.hashItems(items || [], version);
-  result.type = "dir";
-  result.links = items;
-  return result;
+  return await import_ipfs_utils.default.hashItems(items || [], version);
 }
 async function hashContent(content, version) {
   if (version == void 0)
     version = 1;
-  if (content.length == 0)
-    return await import_ipfs_utils.default.hashContent("", version);
-  let result;
-  if (version == 1) {
-    result = await import_ipfs_utils.default.hashFile(content, version, {
-      rawLeaves: true,
-      maxChunkSize: 1048576,
-      maxChildrenPerNode: 1024
-    });
-  } else
-    result = await import_ipfs_utils.default.hashFile(content, version);
-  result.type = "file";
-  return result;
+  if (content.length == 0) {
+    return {
+      cid: version == 1 ? "bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku" : "QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH",
+      type: "file",
+      code: version == 1 ? 85 : 112,
+      size: 0
+    };
+  }
+  return import_ipfs_utils.default.hashContent(content, version);
 }
 async function hashFile(file, version) {
   if (version == void 0)
     version = 1;
-  if (file.size == 0)
-    return await import_ipfs_utils.default.hashContent("", version);
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(file);
-    reader.addEventListener("error", (event) => {
-      reject("Error occurred reading file");
-    });
-    reader.addEventListener("load", async (event) => {
-      const data = new Uint8Array(event.target.result);
-      let result = await import_ipfs_utils.default.hashFile(data, version, {
-        rawLeaves: true,
-        maxChunkSize: 1048576,
-        maxChildrenPerNode: 1024
+  if (file instanceof File) {
+    if (file.size == 0)
+      return await import_ipfs_utils.default.hashContent("", version);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsArrayBuffer(file);
+      reader.addEventListener("error", (event) => {
+        reject("Error occurred reading file");
       });
-      resolve(result);
+      reader.addEventListener("load", async (event) => {
+        const data = new Uint8Array(event.target.result);
+        let result = await import_ipfs_utils.default.hashContent(data, version);
+        resolve(result);
+      });
     });
-  });
+  } else
+    return import_ipfs_utils.default.hashContent(file, version);
 }
+function cidToHash(cid) {
+  return import_ipfs_utils.default.cidToHash(cid);
+}
+
+// packages/ipfs/src/fileManager.ts
+var FileManagerHttpTransport = class {
+  constructor(options) {
+    this.updated = {};
+    this.options = options || {};
+    this.options.endpoint = this.options.endpoint || "";
+  }
+  async applyUpdate(node) {
+    var _a, _b, _c;
+    let cidInfo = node.cidInfo;
+    if (cidInfo && !this.updated[cidInfo.cid]) {
+      let result = await this.getUploadUrl(cidInfo, node.isRoot);
+      let endpoints = result == null ? void 0 : result.data;
+      if (await node.isFolder()) {
+        let url = endpoints == null ? void 0 : endpoints[cidInfo.cid];
+        if (!(url == null ? void 0 : url.exists) && cidInfo.bytes && (url == null ? void 0 : url.url)) {
+          let method = (url == null ? void 0 : url.method) || "PUT";
+          let headers = (url == null ? void 0 : url.headers) || {};
+          headers["Content-Type"] = headers["Content-Type"] || "application/octet-stream";
+          headers["Content-Length"] = cidInfo.bytes.length.toString();
+          let res = await fetch(url.url, {
+            method,
+            headers,
+            body: cidInfo.bytes
+          });
+          if (!res.ok)
+            throw new Error(res.statusText);
+        }
+        ;
+      } else if (((_a = cidInfo.links) == null ? void 0 : _a.length) && ((_b = cidInfo.links) == null ? void 0 : _b.length) > 0) {
+        let offset = 0;
+        for (let link of cidInfo.links) {
+          let url = endpoints == null ? void 0 : endpoints[link.cid];
+          if ((url == null ? void 0 : url.url) && !(url == null ? void 0 : url.exists)) {
+            let method = (url == null ? void 0 : url.method) || "PUT";
+            let headers = (url == null ? void 0 : url.headers) || {};
+            headers["Content-Type"] = headers["Content-Type"] || "application/octet-stream";
+            headers["Content-Length"] = link.size.toString();
+            let body;
+            if (node.fileContent)
+              body = (_c = node.fileContent) == null ? void 0 : _c.slice(offset, offset + link.size);
+            else if (node.file) {
+              let chunk = node.file.slice(offset, offset + link.size);
+              body = chunk;
+            }
+            ;
+            offset += link.size;
+            let res = await fetch(url.url, {
+              method,
+              headers,
+              body
+            });
+            if (!res.ok)
+              throw new Error(res.statusText);
+          }
+          ;
+        }
+        ;
+        if (cidInfo.bytes) {
+          let url = endpoints == null ? void 0 : endpoints[cidInfo.cid];
+          if ((url == null ? void 0 : url.url) && !(url == null ? void 0 : url.exists)) {
+            let method = (url == null ? void 0 : url.method) || "PUT";
+            let headers = (url == null ? void 0 : url.headers) || {};
+            headers["Content-Type"] = headers["Content-Type"] || "application/octet-stream";
+            headers["Content-Length"] = cidInfo.bytes.length.toString();
+            let res = await fetch(url.url, {
+              method,
+              headers,
+              body: cidInfo.bytes
+            });
+            if (!res.ok)
+              throw new Error(res.statusText);
+          }
+          ;
+        }
+        ;
+      } else if (endpoints == null ? void 0 : endpoints[cidInfo.cid]) {
+        let url = endpoints[cidInfo.cid];
+        if (!(url == null ? void 0 : url.exists)) {
+          let method = (url == null ? void 0 : url.method) || "PUT";
+          let headers = (url == null ? void 0 : url.headers) || {};
+          headers["Content-Type"] = headers["Content-Type"] || "application/octet-stream";
+          headers["Content-Length"] = cidInfo.size.toString();
+          let body;
+          if (node.fileContent)
+            body = node.fileContent;
+          else if (node.file) {
+            body = node.file;
+          }
+          ;
+          let res = await fetch(url.url, {
+            method,
+            headers,
+            body
+          });
+          if (!res.ok)
+            throw new Error(res.statusText);
+        }
+        ;
+      }
+      ;
+      this.updated[cidInfo.cid] = true;
+    }
+    ;
+    if (node.isRoot) {
+      let signature;
+      if (this.options.signer) {
+        signature = await this.options.signer.sign({
+          action: "UPDATE_ROOT",
+          timestamp: new Date().getTime(),
+          data: {
+            cid: node.cid
+          }
+        }, {
+          action: "string",
+          timestamp: "number",
+          data: "object"
+        });
+      }
+      ;
+      let result = await fetch(`${this.options.endpoint}/api/ipfs/v0`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "UPDATE_ROOT",
+          signature,
+          data: {
+            cid: node.cid
+          }
+        })
+      });
+      return await result.json();
+    }
+    ;
+    return {
+      success: true
+    };
+  }
+  async getCidInfo(cid) {
+    let cidInfo = parse(cid);
+    if (cidInfo.code == CidCode.DAG_PB) {
+      let data = await fetch(`${this.options.endpoint}/stat/${cid}`);
+      if (data.status == 200) {
+        return await data.json();
+      }
+    } else
+      return cidInfo;
+  }
+  async getRoot() {
+    let signature;
+    if (this.options.signer)
+      signature = await this.options.signer.sign({
+        action: "GET_ROOT",
+        timestamp: new Date().getTime()
+      }, {
+        action: "string",
+        timestamp: "number"
+      });
+    let result = await fetch(`${this.options.endpoint}/api/ipfs/v0`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "GET_ROOT",
+        signature
+      })
+    });
+    return await result.json();
+  }
+  async getUploadUrl(cidInfo, isRoot) {
+    var _a;
+    let req = {
+      cid: cidInfo.cid,
+      name: cidInfo.name,
+      size: cidInfo.size,
+      type: cidInfo.type,
+      links: []
+    };
+    let signature;
+    if (cidInfo.links) {
+      for (let link of cidInfo.links) {
+        (_a = req.links) == null ? void 0 : _a.push({
+          cid: link.cid,
+          name: link.name,
+          size: link.size
+        });
+      }
+      ;
+    }
+    ;
+    if (this.options.signer) {
+      let timestamp = new Date().getTime();
+      signature = await this.options.signer.sign({
+        action: "GET_UPLOAD_URL",
+        timestamp,
+        data: req
+      }, {
+        action: "string",
+        timestamp: "number",
+        data: "object"
+      });
+      let result = await fetch(`${this.options.endpoint}/api/ipfs/v0`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "GET_UPLOAD_URL",
+          signature,
+          data: req
+        })
+      });
+      return await result.json();
+    } else {
+      let result = await fetch(`${this.options.endpoint}/api/ipfs/v0`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          data: req
+        })
+      });
+      return await result.json();
+    }
+  }
+};
+var FileNode = class {
+  constructor(owner, name, parent, cidInfo) {
+    var _a, _b;
+    this._owner = owner;
+    this._name = name;
+    if (parent) {
+      this._parent = parent;
+      if (!cidInfo)
+        this._parent.addItem(this);
+    }
+    ;
+    this._items = [];
+    this._cidInfo = cidInfo;
+    this._isFile = (cidInfo == null ? void 0 : cidInfo.type) == "file" || false;
+    this._isFolder = (cidInfo == null ? void 0 : cidInfo.type) == "dir" || true;
+    if (((_a = this._cidInfo) == null ? void 0 : _a.type) == "dir") {
+      (_b = this._cidInfo.links) == null ? void 0 : _b.forEach((link) => {
+        this._items.push(new FileNode(this._owner, link.name || "", this, link));
+      });
+    }
+    ;
+  }
+  get cid() {
+    var _a;
+    return ((_a = this._cidInfo) == null ? void 0 : _a.cid) || "";
+  }
+  async checkCid() {
+    var _a;
+    if (this._cidInfo && this._cidInfo.type == void 0) {
+      this._cidInfo = await this._owner.getCidInfo(this._cidInfo.cid);
+      if (((_a = this._cidInfo) == null ? void 0 : _a.type) == "dir") {
+        this._isFolder = true;
+        this._isFile = false;
+        this._items = [];
+        if (this._cidInfo.links) {
+          for (let i = 0; i < this._cidInfo.links.length; i++) {
+            let link = this._cidInfo.links[i];
+            if (link == null ? void 0 : link.name) {
+              let node = new FileNode(this._owner, link.name, this, link);
+              this._items.push(node);
+            }
+            ;
+          }
+          ;
+        }
+        ;
+      } else {
+        this._isFolder = false;
+        this._isFile = true;
+      }
+    }
+    ;
+  }
+  get fullPath() {
+    let path = this._name;
+    let parent = this._parent;
+    while (parent) {
+      path = parent.name + "/" + path;
+      parent = parent.parent;
+    }
+    ;
+    return path;
+  }
+  get isModified() {
+    return this._isModified;
+  }
+  modified(value) {
+    if (value === false)
+      return this._isModified = false;
+    this._isModified = true;
+    this._cidInfo = void 0;
+    if (this._parent)
+      this._parent.modified();
+  }
+  get name() {
+    return this._name;
+  }
+  set name(value) {
+    if (this._name != value) {
+      this._name = value;
+      this.modified();
+    }
+    ;
+  }
+  get parent() {
+    return this._parent;
+  }
+  set parent(value) {
+    if (this._parent != value) {
+      if (this._parent) {
+        let idx = this._parent._items.indexOf(this);
+        if (idx >= 0) {
+          this._parent._items.splice(idx, 1);
+          this._parent.modified();
+        }
+        ;
+      }
+      ;
+      this._parent = value;
+      this._parent._items.push(this);
+      this.modified();
+    }
+    ;
+  }
+  async itemCount() {
+    await this.checkCid();
+    return this._items.length;
+  }
+  async items(index) {
+    await this.checkCid();
+    let item = this._items[index];
+    return item;
+  }
+  async addFile(name, file) {
+    await this.checkCid();
+    return this._owner.addFileTo(this, name, file);
+  }
+  async addFileContent(name, content) {
+    await this.checkCid();
+    if (typeof content == "string")
+      content = new TextEncoder().encode(content);
+    return this._owner.addFileTo(this, name, content);
+  }
+  async addItem(item) {
+    if (this._items.indexOf(item) < 0) {
+      this._items.push(item);
+      this.modified();
+    }
+    ;
+  }
+  removeItem(item) {
+    let idx = this._items.indexOf(item);
+    if (idx >= 0) {
+      this._items.splice(idx, 1);
+      this.modified();
+    }
+    ;
+  }
+  async findItem(name) {
+    let item = this._items.find((item2) => item2.name == name);
+    return item;
+  }
+  get cidInfo() {
+    return this._cidInfo;
+  }
+  async isFile() {
+    await this.checkCid();
+    return this._isFile;
+  }
+  async isFolder() {
+    await this.checkCid();
+    return this._isFolder;
+  }
+  get file() {
+    return this._file;
+  }
+  set file(value) {
+    this._isFile = true;
+    this._isFolder = false;
+    this._file = value;
+    this._fileContent = void 0;
+    this.modified();
+  }
+  get fileContent() {
+    return this._fileContent;
+  }
+  set fileContent(value) {
+    this._isFile = true;
+    this._isFolder = false;
+    this._file = void 0;
+    this._fileContent = value;
+    this.modified();
+  }
+  async hash() {
+    if (!this._cidInfo) {
+      if (this._isFile) {
+        if (this._fileContent)
+          this._cidInfo = await hashContent(this._fileContent);
+        else if (this._file)
+          this._cidInfo = await hashFile(this._file);
+      } else if (this._isFolder) {
+        let items = [];
+        for (let i = 0; i < this._items.length; i++) {
+          let item = this._items[i];
+          let cidInfo = await item.hash();
+          if (cidInfo) {
+            cidInfo.name = item.name;
+            items.push(cidInfo);
+          }
+        }
+        ;
+        this._cidInfo = await hashItems(items);
+      }
+      ;
+    }
+    ;
+    return this._cidInfo;
+  }
+};
+var FileManager = class {
+  constructor(options) {
+    var _a;
+    this.options = options || {};
+    if ((_a = this.options) == null ? void 0 : _a.transport)
+      this.transporter = this.options.transport;
+    else
+      this.transporter = new FileManagerHttpTransport(this.options);
+  }
+  async addFileTo(folder, filePath, file) {
+    if (filePath.startsWith("/"))
+      filePath = filePath.substr(1);
+    let paths = filePath.split("/");
+    let node = folder;
+    for (let path of paths) {
+      let item = await folder.findItem(path);
+      if (!item)
+        item = new FileNode(this, path, node);
+      else
+        await item.checkCid();
+      node = item;
+    }
+    ;
+    if (file instanceof Uint8Array) {
+      node.fileContent = file;
+    } else {
+      node.file = file;
+    }
+    ;
+    return node;
+  }
+  async addFile(filePath, file) {
+    if (!filePath.startsWith("/"))
+      filePath = "/" + filePath;
+    let fileNode = await this.getFileNode(filePath);
+    if (fileNode) {
+      fileNode.file = file;
+      return fileNode;
+    }
+  }
+  async addFileContent(filePath, content) {
+    if (!filePath.startsWith("/"))
+      filePath = "/" + filePath;
+    let fileNode = await this.getFileNode(filePath);
+    if (fileNode) {
+      if (typeof content == "string")
+        fileNode.fileContent = new TextEncoder().encode(content);
+      else
+        fileNode.fileContent = content;
+      return fileNode;
+    }
+    ;
+  }
+  async getCidInfo(cid) {
+    var _a;
+    return await ((_a = this.transporter) == null ? void 0 : _a.getCidInfo(cid));
+  }
+  async updateNode(fileNode) {
+    if (fileNode.isModified) {
+      await fileNode.hash();
+      if (await fileNode.isFolder()) {
+        let count = await fileNode.itemCount();
+        for (let i = 0; i < count; i++) {
+          let item = await fileNode.items(i);
+          await this.updateNode(item);
+        }
+        ;
+      }
+      ;
+      await this.transporter.applyUpdate(fileNode);
+      fileNode.modified(false);
+    }
+    ;
+  }
+  async applyUpdates() {
+    if (this.rootNode) {
+      await this.updateNode(this.rootNode);
+      return this.rootNode;
+    }
+    ;
+  }
+  delete(fileNode) {
+    if (fileNode.parent)
+      fileNode.parent.removeItem(fileNode);
+  }
+  async addFolder(folder, name) {
+    let node = folder;
+    if (name.startsWith("/"))
+      name = name.substr(1);
+    let paths = name.split("/");
+    for (let path of paths) {
+      let item = await folder.findItem(path);
+      if (!item)
+        item = new FileNode(this, path, node);
+      else
+        await item.checkCid();
+      node = item;
+    }
+    ;
+    node.modified(true);
+    await this.updateNode(node);
+    return node;
+  }
+  async updateFolderName(fileNode, newName) {
+    fileNode.name = newName;
+    fileNode.modified(true);
+    await this.updateNode(fileNode);
+  }
+  async getFileNode(path) {
+    if (!path.startsWith("/"))
+      path = "/" + path;
+    let paths = path.split("/");
+    let node = await this.getRootNode();
+    for (let i = 1; i < paths.length; i++) {
+      let path2 = paths[i];
+      if (node) {
+        let item = await node.findItem(path2);
+        if (!item) {
+          item = new FileNode(this, path2, node);
+        } else
+          await item.checkCid();
+        node = item;
+      } else
+        break;
+    }
+    ;
+    return node;
+  }
+  async getRootNode() {
+    if (!this.rootNode) {
+      if (this.options.rootCid)
+        this.rootNode = await this.setRootCid(this.options.rootCid);
+      else {
+        let result = await this.transporter.getRoot();
+        let data = result.data;
+        if (data.cid)
+          this.rootNode = await this.setRootCid(data.cid);
+        else
+          this.rootNode = new FileNode(this, "/", void 0);
+        this.quota = data.quota;
+        this.used = data.used;
+      }
+      ;
+      if (this.rootNode)
+        this.rootNode.isRoot = true;
+    }
+    ;
+    return this.rootNode;
+  }
+  reset() {
+    this.rootNode = void 0;
+  }
+  async setRootCid(cid) {
+    this.options.rootCid = cid;
+    try {
+      let cidInfo = await this.transporter.getCidInfo(cid);
+      if (cidInfo) {
+        this.rootNode = new FileNode(this, "/", void 0, cidInfo);
+        this.rootNode.isRoot = true;
+        await this.rootNode.checkCid();
+        return this.rootNode;
+      } else
+        this.options.rootCid = void 0;
+    } catch (err) {
+      this.options.rootCid = void 0;
+    }
+  }
+  move(fileNode, newParent) {
+    if (fileNode.parent)
+      fileNode.parent.removeItem(fileNode);
+    fileNode.parent = newParent;
+  }
+};
+
+// packages/ipfs/src/index.ts
 function convertToTree(items) {
   const root = {
     $idx: {},
@@ -20200,7 +19233,7 @@ async function hashFiles(files, version) {
   });
 }
 async function cidToSri(cid) {
-  return await import_ipfs_utils.default.cidToSri(cid);
+  return await cidToSri(cid);
 }
 
 // packages/image/src/style/image.css.ts
@@ -20733,45 +19766,46 @@ var getStackDirectionStyleClass = (direction) => {
 var getStackMediaQueriesStyleClass = (mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
+    let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
       styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
-      if (mediaQuery.properties.direction) {
-        styleObj["$nest"][mediaQueryRule]["flexDirection"] = mediaQuery.properties.direction == "vertical" ? "column" : "row";
+      const {
+        direction,
+        justifyContent,
+        alignItems,
+        alignSelf,
+        width,
+        height,
+        gap,
+        position,
+        top
+      } = mediaQuery.properties || {};
+      if (direction) {
+        styleObj["$nest"][mediaQueryRule]["flexDirection"] = direction == "vertical" ? "column" : "row";
       }
-      if (mediaQuery.properties.justifyContent) {
-        styleObj["$nest"][mediaQueryRule]["justifyContent"] = mediaQuery.properties.justifyContent;
+      if (justifyContent) {
+        styleObj["$nest"][mediaQueryRule]["justifyContent"] = justifyContent;
       }
-      if (mediaQuery.properties.alignItems) {
-        styleObj["$nest"][mediaQueryRule]["alignItems"] = mediaQuery.properties.alignItems;
+      if (alignItems) {
+        styleObj["$nest"][mediaQueryRule]["alignItems"] = alignItems;
       }
-      if (mediaQuery.properties.alignSelf) {
-        styleObj["$nest"][mediaQueryRule]["alignSelf"] = mediaQuery.properties.alignSelf;
+      if (alignSelf) {
+        styleObj["$nest"][mediaQueryRule]["alignSelf"] = alignSelf;
       }
-      if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
-        const width = mediaQuery.properties.width;
+      if (width !== void 0 && width !== null) {
         styleObj["$nest"][mediaQueryRule]["width"] = typeof width === "string" ? `${width} !important` : `${width}px !important`;
       }
-      if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
-        const height = mediaQuery.properties.height;
+      if (height !== void 0 && height !== null) {
         styleObj["$nest"][mediaQueryRule]["height"] = typeof height === "string" ? `${height} !important` : `${height}px !important`;
       }
-      if (mediaQuery.properties.gap !== void 0 && mediaQuery.properties.gap !== null) {
-        const gap = mediaQuery.properties.gap;
+      if (gap !== void 0 && gap !== null) {
         styleObj["$nest"][mediaQueryRule]["gap"] = typeof gap === "string" ? `${gap} !important` : `${gap}px !important`;
       }
-      if (mediaQuery.properties.position) {
-        styleObj["$nest"][mediaQueryRule]["position"] = `${mediaQuery.properties.position} !important`;
+      if (position) {
+        styleObj["$nest"][mediaQueryRule]["position"] = `${position} !important`;
       }
-      if (mediaQuery.properties.top !== null && mediaQuery.properties.top !== void 0) {
-        styleObj["$nest"][mediaQueryRule]["top"] = `${mediaQuery.properties.top} !important`;
+      if (top !== null && top !== void 0) {
+        styleObj["$nest"][mediaQueryRule]["top"] = typeof top === "string" ? `${top} !important` : `${top}px !important`;
       }
     }
   }
@@ -20838,33 +19872,31 @@ var getTemplateAreasStyleClass = (templateAreas) => {
 var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
+    let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
       styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
-      if (mediaQuery.properties.templateColumns) {
-        const templateColumnsStr = mediaQuery.properties.templateColumns.join(" ");
+      const {
+        templateColumns,
+        templateRows,
+        templateAreas,
+        gap
+      } = mediaQuery.properties || {};
+      if (templateColumns) {
+        const templateColumnsStr = templateColumns.join(" ");
         styleObj["$nest"][mediaQueryRule]["gridTemplateColumns"] = `${templateColumnsStr} !important`;
       }
-      if (mediaQuery.properties.templateRows) {
-        const templateRowsStr = mediaQuery.properties.templateRows.join(" ");
+      if (templateRows) {
+        const templateRowsStr = templateRows.join(" ");
         styleObj["$nest"][mediaQueryRule]["gridTemplateRows"] = `${templateRowsStr} !important`;
       }
-      if (mediaQuery.properties.templateAreas) {
+      if (templateAreas) {
         let templateAreasStr = "";
-        for (let i = 0; i < mediaQuery.properties.templateAreas.length; i++) {
-          templateAreasStr += '"' + mediaQuery.properties.templateAreas[i].join(" ") + '" ';
+        for (let i = 0; i < templateAreas.length; i++) {
+          templateAreasStr += '"' + templateAreas[i].join(" ") + '" ';
         }
         styleObj["$nest"][mediaQueryRule]["gridTemplateAreas"] = `${templateAreasStr} !important`;
       }
-      if (mediaQuery.properties.gap !== void 0 && mediaQuery.properties.gap !== null) {
-        const gap = mediaQuery.properties.gap;
+      if (gap !== void 0 && gap !== null) {
         if (gap.row) {
           styleObj["$nest"][mediaQueryRule]["rowGap"] = typeof gap.row === "string" ? gap.row : `${gap.row}px`;
         }
@@ -22283,6 +21315,12 @@ var getAbsoluteWrapperStyle = (left, top) => {
     height: "inherit"
   });
 };
+var getModalStyle = (left, top) => {
+  return style({
+    left,
+    top
+  });
+};
 var modalStyle = style({
   fontFamily: "Helvetica",
   fontSize: "14px",
@@ -22314,14 +21352,7 @@ var getStringValue = (value) => {
 var getModalMediaQueriesStyleClass = (mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
+    let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
       const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
       const ruleObj = styleObj["$nest"][mediaQueryRule];
@@ -22334,8 +21365,20 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
           ".modal": {}
         }
       };
-      if (mediaQuery.properties.showBackdrop) {
-        const showBackdrop = mediaQuery.properties.showBackdrop;
+      const {
+        showBackdrop,
+        padding,
+        position,
+        maxWidth: maxWidthValue,
+        maxHeight: maxHeightValue,
+        minWidth: minWidthValue,
+        width: widthValue,
+        height: heightValue,
+        popupPlacement,
+        overflow,
+        border
+      } = mediaQuery.properties || {};
+      if (showBackdrop) {
         if (showBackdrop) {
           styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["visibility"] = "visible !important";
           styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["opacity"] = "1 !important";
@@ -22344,35 +21387,34 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
           styleObj["$nest"][mediaQueryRule]["$nest"]["&.show > .modal-overlay"]["opacity"] = "0 !important";
         }
       }
-      if (mediaQuery.properties.position) {
-        const position = mediaQuery.properties.position;
+      if (position) {
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["position"] = `${position} !important`;
       }
-      if (mediaQuery.properties.maxWidth !== void 0 && mediaQuery.properties.maxWidth !== null) {
-        const maxWidth = getStringValue(mediaQuery.properties.maxWidth);
+      if (maxWidthValue !== void 0 && maxWidthValue !== null) {
+        const maxWidth = getStringValue(maxWidthValue);
         styleObj["$nest"][mediaQueryRule]["maxWidth"] = maxWidth;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxWidth"] = maxWidth;
       }
-      if (mediaQuery.properties.maxHeight !== void 0 && mediaQuery.properties.maxHeight !== null) {
-        const maxHeight = getStringValue(mediaQuery.properties.maxHeight);
+      if (maxHeightValue !== void 0 && maxHeightValue !== null) {
+        const maxHeight = getStringValue(maxHeightValue);
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxHeight"] = maxHeight;
       }
-      if (mediaQuery.properties.height !== void 0 && mediaQuery.properties.height !== null) {
-        const height = getStringValue(mediaQuery.properties.height);
+      if (heightValue !== void 0 && heightValue !== null) {
+        const height = getStringValue(heightValue);
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["height"] = height;
       }
-      if (mediaQuery.properties.width !== void 0 && mediaQuery.properties.width !== null) {
-        const width = getStringValue(mediaQuery.properties.width);
+      if (widthValue !== void 0 && widthValue !== null) {
+        const width = getStringValue(widthValue);
         styleObj["$nest"][mediaQueryRule]["width"] = width;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["width"] = width;
       }
-      if (mediaQuery.properties.minWidth !== void 0 && mediaQuery.properties.minWidth !== null) {
-        const minWidth = getStringValue(mediaQuery.properties.minWidth);
+      if (minWidthValue !== void 0 && minWidthValue !== null) {
+        const minWidth = getStringValue(minWidthValue);
         styleObj["$nest"][mediaQueryRule]["minWidth"] = minWidth;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["minWidth"] = minWidth;
       }
-      if (mediaQuery.properties.popupPlacement) {
-        const placement = mediaQuery.properties.popupPlacement;
+      if (popupPlacement) {
+        const placement = popupPlacement;
         let positionObj = {
           top: "unset",
           left: "unset",
@@ -22394,8 +21436,8 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
           styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"][pos] = positionObj[pos];
         }
       }
-      if (mediaQuery.properties.border) {
-        const { radius, width, style: style2, color, bottom, top, left, right } = mediaQuery.properties.border;
+      if (border) {
+        const { radius, width, style: style2, color, bottom, top, left, right } = border;
         if (width !== void 0 && width !== null)
           styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["border"] = `${width || ""} ${style2 || ""} ${color || ""}!important`;
         if (radius) {
@@ -22411,12 +21453,11 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
         if (right)
           styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["borderRight"] = `${getSpacingValue(right.width || "")} ${right.style || ""} ${right.color || ""}!important`;
       }
-      if (mediaQuery.properties.padding) {
-        const { top = 0, right = 0, bottom = 0, left = 0 } = mediaQuery.properties.padding;
+      if (padding) {
+        const { top = 0, right = 0, bottom = 0, left = 0 } = padding;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["padding"] = `${getSpacingValue(top)} ${getSpacingValue(right)} ${getSpacingValue(bottom)} ${getSpacingValue(left)} !important`;
       }
-      if (mediaQuery.properties.overflow) {
-        const overflow = mediaQuery.properties.overflow;
+      if (overflow) {
         if (typeof overflow === "string") {
           styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["overflow"] = `${overflow} !important`;
         } else {
@@ -22548,11 +21589,19 @@ var Modal = class extends Container {
       this.setTargetStyle(this.wrapperDiv, "showBackdrop", wrapperStyle);
       this.style.position = "unset";
     } else {
-      this.style.position = "absolute";
-      this.style.left = "0px";
-      this.style.top = `${window.scrollY}px`;
+      this.updateNoBackdropMd();
       const noBackdropStyle = getNoBackdropStyle();
       this.setTargetStyle(this.wrapperDiv, "showBackdrop", noBackdropStyle);
+    }
+  }
+  updateNoBackdropMd() {
+    if (!this.showBackdrop) {
+      this.style.position = "absolute";
+      let left = "0px";
+      let parent = this._parent || this.linkTo || this.parentElement || document.body;
+      const isOutside = !(parent instanceof Range) && !(parent == null ? void 0 : parent.contains(this));
+      let top = `${isOutside ? window.scrollY : 0}px`;
+      this.setTargetStyle(this, "modal", getModalStyle(left, top));
     }
   }
   get item() {
@@ -22663,17 +21712,20 @@ var Modal = class extends Container {
         }
         const parent = this.getWrapperParent(this.parentElement);
         const newY = parent ? 0 : y;
+        let left = "";
+        let top = "";
         if (y + elmHeight > innerHeight) {
           const elmTop = newY - elmHeight + totalScrollY;
-          this.style.top = `${elmTop < 0 ? 0 : elmTop}px`;
+          top = `${elmTop < 0 ? 0 : elmTop}px`;
         } else {
-          this.style.top = `${newY + totalScrollY}px`;
+          top = `${newY + totalScrollY}px`;
         }
         if (x + elmWidth > innerWidth) {
-          this.style.left = `${innerWidth - elmWidth}px`;
+          left = `${innerWidth - elmWidth}px`;
         } else {
-          this.style.left = `${x}px`;
+          left = `${x}px`;
         }
+        this.setTargetStyle(this, "modal", getModalStyle(left, top));
       }
     }
   }
@@ -22693,6 +21745,7 @@ var Modal = class extends Container {
     if (this.showBackdrop) {
       this.positionAtFix(placement);
     } else {
+      this.updateNoBackdropMd();
       this.positionAtAbsolute(placement);
     }
   }
@@ -22723,6 +21776,8 @@ var Modal = class extends Container {
     let parentLeft = parentCoords.left + wrapperLeft;
     let parentWidth = parent.offsetWidth || parentCoords.width;
     let parentRight = parentLeft + parentWidth;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
     switch (placement) {
       case "center":
         top = parentHeight / 2 - this.modalDiv.offsetHeight / 2;
@@ -22761,11 +21816,11 @@ var Modal = class extends Container {
       case "rightTop":
         top = parentTop;
         left = this.showBackdrop ? parentCoords.right : parentRight;
-        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
-          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
+        if (left + this.modalDiv.offsetWidth > viewportWidth) {
+          left = viewportWidth - this.modalDiv.offsetWidth;
         }
-        if (top + this.modalDiv.offsetHeight > document.documentElement.clientHeight) {
-          top = document.documentElement.clientHeight - this.modalDiv.offsetHeight;
+        if (top + this.modalDiv.offsetHeight > viewportHeight) {
+          top = viewportHeight - this.modalDiv.offsetHeight;
         }
         break;
       case "left":
@@ -22773,8 +21828,14 @@ var Modal = class extends Container {
         top = this.showBackdrop ? 0 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
         break;
       case "right":
-        top = this.showBackdrop ? parentHeight / 2 - this.modalDiv.offsetHeight / 2 : parentTop - parentHeight - this.modalDiv.offsetHeight / 2;
-        left = parentLeft + parentWidth - this.modalDiv.offsetWidth - 1;
+        top = (this.showBackdrop ? 0 : parentTop) + parentHeight / 2 - this.modalDiv.offsetHeight / 2;
+        left = this.showBackdrop ? parentLeft + parentWidth - this.modalDiv.offsetWidth : parentLeft + parentWidth + this.modalDiv.offsetWidth / 2;
+        if (left + this.modalDiv.offsetWidth > viewportWidth) {
+          left = viewportWidth - this.modalDiv.offsetWidth;
+        }
+        if (top + this.modalDiv.offsetHeight > viewportHeight) {
+          top = viewportHeight - this.modalDiv.offsetHeight;
+        }
         break;
     }
     left = left < 0 ? parentLeft : left;
@@ -22797,123 +21858,111 @@ var Modal = class extends Container {
   }
   getWrapperAbsoluteCoords(parent, placement) {
     const parentCoords = parent.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const isOutside = !(parent == null ? void 0 : parent.contains(this));
     let left = 0;
     let top = 0;
-    let max;
-    const isOutside = !(parent == null ? void 0 : parent.contains(this));
+    const constrainToViewport = (value, dimension) => {
+      const lowercasePlacement = placement.toLowerCase();
+      if (dimension === "width") {
+        if (isOutside) {
+          if (value + this.modalDiv.offsetWidth > viewportWidth) {
+            value = viewportWidth - this.modalDiv.offsetWidth;
+          } else if (value < 0) {
+            value = 0;
+          }
+        } else {
+          if (lowercasePlacement.includes("right")) {
+            if (lowercasePlacement === "righttop") {
+              if (parentCoords.right + this.wrapperDiv.offsetWidth > viewportWidth) {
+                value = viewportWidth - parentCoords.left - this.wrapperDiv.offsetWidth;
+              }
+            } else {
+              if (parentCoords.right - this.wrapperDiv.offsetWidth < 0) {
+                value = -parentCoords.left;
+              }
+            }
+          } else {
+            if (lowercasePlacement === "left") {
+              if (parentCoords.left - this.wrapperDiv.offsetWidth < 0) {
+                value = 0;
+              }
+            } else {
+              if (value + parentCoords.left < 0) {
+                value = -parentCoords.left;
+              }
+            }
+          }
+          if (value + parentCoords.left + this.modalDiv.offsetWidth > viewportWidth) {
+            value = Math.max(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
+          }
+        }
+      }
+      if (dimension === "height") {
+        if (isOutside) {
+          if (value + this.modalDiv.offsetHeight > viewportHeight) {
+            value = viewportHeight - this.modalDiv.offsetHeight;
+          } else if (value < 0) {
+            value = 0;
+          }
+        } else {
+          if (lowercasePlacement.includes("bottom")) {
+            if (parentCoords.bottom + this.wrapperDiv.offsetHeight > viewportHeight) {
+              value = viewportHeight - parentCoords.top - this.wrapperDiv.offsetHeight;
+            }
+          } else {
+            if (parentCoords.top - this.wrapperDiv.offsetHeight < 0) {
+              value = 0;
+            }
+          }
+        }
+      }
+      return value;
+    };
+    let parentLeft = isOutside ? parentCoords.left : 0;
+    let parentTop = isOutside ? parentCoords.top : 0;
+    let parentRight = isOutside ? parentCoords.right : parentCoords.width;
     switch (placement) {
       case "center":
-        left = (parentCoords.width - this.wrapperDiv.offsetWidth) / 2;
-        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
+        left = (parentCoords.width - this.wrapperDiv.offsetWidth) / 2 + parentLeft;
+        top = (parentCoords.height - this.modalDiv.offsetHeight) / 2 + parentTop;
         break;
       case "top":
       case "topLeft":
-        if (this.isChildFixed) {
-          top = this.getParentOccupiedTop();
-          left = this.getParentOccupiedLeft();
-          break;
-        }
       case "topRight":
-        if (this.isChildFixed) {
-          top = this.getParentOccupiedTop();
-          left = parentCoords.width - this.getParentOccupiedRight() - this.wrapperDiv.offsetWidth;
-          break;
-        }
-        if (parentCoords.top - this.modalDiv.offsetHeight >= 0) {
-          top = -this.modalDiv.offsetHeight;
-        } else {
-          if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
-            max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-            top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-          } else {
-            top = parentCoords.height;
-          }
+        top = parentTop - this.modalDiv.offsetHeight;
+        left = placement === "topRight" ? parentCoords.width - this.wrapperDiv.offsetWidth : parentLeft;
+        if (placement === "top") {
+          left += (parentCoords.width - this.wrapperDiv.offsetWidth) / 2;
         }
         break;
       case "bottom":
       case "bottomLeft":
-        if (this.isChildFixed) {
-          left = 0;
-          top = parentCoords.height;
-          break;
-        }
       case "bottomRight":
-        if (this.isChildFixed) {
-          top = parentCoords.height;
-          left = parentCoords.width - this.wrapperDiv.offsetWidth;
-          break;
-        }
-        if (window.innerHeight < this.modalDiv.offsetHeight + parentCoords.bottom) {
-          if (parentCoords.y - this.modalDiv.offsetHeight < 0) {
-            max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-            top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-            top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-          } else {
-            top = -this.modalDiv.offsetHeight;
-          }
-        } else {
-          top = isOutside ? parentCoords.top - this.modalDiv.offsetHeight : parentCoords.height;
+        top = parentTop + parentCoords.height;
+        left = placement === "bottomRight" ? parentRight - this.wrapperDiv.offsetWidth : parentLeft;
+        if (placement === "bottom") {
+          left += (parentCoords.width - this.wrapperDiv.offsetWidth) / 2;
         }
         break;
       case "rightTop":
-        top = isOutside ? parentCoords.top - this.modalDiv.offsetHeight : 0;
-        left = isOutside ? parentCoords.left + parentCoords.width : parentCoords.width;
-        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
-          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
-        }
-        if (top + this.modalDiv.offsetHeight > document.documentElement.clientHeight || top < 0) {
-          top = document.documentElement.clientHeight - this.modalDiv.offsetHeight;
-        }
+        top = parentTop - this.modalDiv.offsetHeight;
+        left = parentRight;
         break;
       case "left":
-        max = window.innerHeight - this.modalDiv.offsetHeight - parentCoords.y;
-        if (isOutside) {
-          top = parentCoords.top + parentCoords.height / 2 - this.modalDiv.offsetHeight / 2;
-          left = Math.max(parentCoords.left - this.modalDiv.offsetWidth, 0);
-        } else {
-          top = (parentCoords.height - this.modalDiv.offsetHeight) / 2;
-          top = top < -parentCoords.y ? -parentCoords.y : top > max ? max : top;
-          left = -this.wrapperDiv.offsetWidth - 8;
-        }
+        top = parentTop + parentCoords.height / 2 - this.modalDiv.offsetHeight / 2;
+        left = parentLeft - this.modalDiv.offsetWidth;
         break;
     }
+    left = constrainToViewport(left, "width");
+    top = constrainToViewport(top, "height");
     if (this.isChildFixed) {
-      if (placement !== "bottomRight" && placement !== "left")
-        left = left < 0 ? parentCoords.left : left;
-      if (placement !== "left")
-        top = top < 0 ? parentCoords.top : top;
-      return { top, left };
-    }
-    if (placement === "topRight" || placement === "bottomRight") {
-      if (isOutside) {
-        left = parentCoords.left + parentCoords.width - this.wrapperDiv.offsetWidth;
-        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
-          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
-        }
-      } else {
-        if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
-          left = parentCoords.width - this.wrapperDiv.offsetWidth;
-        } else {
-          left = -parentCoords.left;
-        }
+      if (["bottomRight", "left"].indexOf(placement) === -1) {
+        left = Math.max(left, parentCoords.left);
       }
-    } else if (["top", "topLeft", "bottom", "bottomLeft"].includes(placement)) {
-      if (isOutside) {
-        left = parentCoords.left;
-        if (left + this.modalDiv.offsetWidth > document.documentElement.clientWidth) {
-          left = document.documentElement.clientWidth - this.modalDiv.offsetWidth;
-        }
-      } else {
-        if (window.innerWidth >= parentCoords.left + this.wrapperDiv.offsetWidth) {
-          left = 0;
-        } else {
-          if (parentCoords.right - this.wrapperDiv.offsetWidth >= 0) {
-            left = Math.min(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
-          } else {
-            left = Math.max(parentCoords.width - this.wrapperDiv.offsetWidth, window.innerWidth - parentCoords.left - this.wrapperDiv.offsetWidth);
-          }
-        }
+      if (placement !== "left") {
+        top = Math.max(top, parentCoords.top);
       }
     }
     return { top, left };
@@ -23129,83 +22178,485 @@ Modal = __decorateClass([
   customElements2("i-modal")
 ], Modal);
 
-// packages/upload/src/style/upload-modal.css.ts
+// packages/progress/src/style/progress.css.ts
 var Theme13 = theme_exports.ThemeVars;
+var loading = keyframes({
+  "0%": {
+    left: "-100%"
+  },
+  "100%": {
+    left: "100%"
+  }
+});
+cssRule("i-progress", {
+  display: "block",
+  maxWidth: "100%",
+  verticalAlign: "baseline",
+  fontFamily: Theme13.typography.fontFamily,
+  fontSize: Theme13.typography.fontSize,
+  color: Theme13.text.primary,
+  position: "relative",
+  $nest: {
+    "&.is-loading .i-progress_overlay": {
+      transform: "translateZ(0)",
+      animation: `${loading} 3s infinite`
+    },
+    ".i-progress": {
+      boxSizing: "border-box",
+      margin: 0,
+      minWidth: 0,
+      width: "100%",
+      display: "block"
+    },
+    ".i-progress--grid": {
+      display: "grid",
+      gap: 20,
+      gridTemplateColumns: "auto 1fr 80px",
+      alignItems: "center"
+    },
+    ".i-progress--exception": {
+      $nest: {
+        "> .i-progress_wrapbar > .i-progress_overlay": {
+          backgroundColor: Theme13.colors.error.light
+        },
+        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
+          backgroundColor: Theme13.colors.error.light
+        },
+        ".i-progress_item.i-progress_item-start": {
+          borderColor: Theme13.colors.error.light
+        },
+        ".i-progress_item.i-progress_item-end": {}
+      }
+    },
+    ".i-progress--success": {
+      $nest: {
+        "> .i-progress_wrapbar > .i-progress_overlay": {
+          backgroundColor: Theme13.colors.success.light
+        },
+        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
+          backgroundColor: Theme13.colors.success.light
+        },
+        ".i-progress_item.i-progress_item-start": {
+          borderColor: Theme13.colors.success.light
+        },
+        ".i-progress_item.i-progress_item-end": {}
+      }
+    },
+    ".i-progress--warning": {
+      $nest: {
+        "> .i-progress_wrapbar > .i-progress_overlay": {
+          backgroundColor: Theme13.colors.warning.light
+        },
+        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
+          backgroundColor: Theme13.colors.warning.light
+        },
+        ".i-progress_item.i-progress_item-start": {
+          borderColor: Theme13.colors.warning.light
+        },
+        ".i-progress_item.i-progress_item-end": {}
+      }
+    },
+    ".i-progress--active": {
+      $nest: {
+        "> .i-progress_wrapbar > .i-progress_overlay": {
+          backgroundColor: Theme13.colors.primary.light
+        },
+        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
+          backgroundColor: Theme13.colors.primary.light
+        },
+        ".i-progress_item.i-progress_item-start": {
+          backgroundColor: "transparent",
+          borderColor: Theme13.colors.primary.light
+        }
+      }
+    },
+    ".i-progress_wrapbar": {
+      position: "relative",
+      overflow: "hidden",
+      boxSizing: "border-box",
+      minWidth: 0,
+      order: 2,
+      minHeight: 2,
+      borderRadius: "inherit",
+      $nest: {
+        ".i-progress_bar": {
+          boxSizing: "border-box",
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          display: "flex",
+          alignItems: "center",
+          gap: "1px",
+          $nest: {
+            "&.has-bg": {
+              backgroundColor: Theme13.divider
+            },
+            ".i-progress_bar-item": {
+              flex: "auto",
+              backgroundColor: Theme13.divider
+            }
+          }
+        },
+        ".i-progress_overlay": {
+          position: "absolute",
+          minWidth: 0,
+          height: "100%"
+        }
+      }
+    },
+    ".i-progress_item": {
+      boxSizing: "border-box",
+      margin: "0px -1.2px 0px 0px",
+      minWidth: 0,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      position: "relative",
+      $nest: {
+        "&.i-progress_item-start": {
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderImage: "initial",
+          borderRadius: 14,
+          borderColor: Theme13.divider,
+          padding: "4px 12px",
+          order: 1
+        },
+        "&.i-progress_item-end": {
+          boxSizing: "border-box",
+          margin: 0,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          cursor: "default",
+          position: "relative",
+          order: 3,
+          alignItems: "flex-start"
+        }
+      }
+    },
+    "&.i-progress--stretch": {
+      $nest: {
+        "@media only screen and (max-width: 768px)": {
+          $nest: {
+            ".i-progress_wrapbar": {
+              display: "none !important"
+            },
+            ".i-progress_item-end": {
+              display: "none !important"
+            },
+            ".is-mobile": {
+              display: "inline-block"
+            },
+            ".i-progress--grid": {
+              gridTemplateColumns: "auto",
+              justifyContent: "center"
+            }
+          }
+        }
+      }
+    },
+    ".i-progress--circle ~ .i-progress_text": {
+      position: "absolute",
+      top: "50%",
+      left: 0,
+      width: "100%",
+      textAlign: "center",
+      transform: "translateY(-50%)"
+    },
+    ".i-progress--line ~ .i-progress_text": {
+      display: "inline-block",
+      position: "absolute",
+      left: "50%",
+      transform: "translateX(-50%)"
+    },
+    ".i-progress--line": {
+      borderRadius: "inherit"
+    }
+  }
+});
+
+// packages/progress/src/progress.ts
+var Theme14 = theme_exports.ThemeVars;
+var defaultVals = {
+  percent: 0,
+  height: 20,
+  loading: false,
+  steps: 1,
+  type: "line"
+};
+var Progress = class extends Control {
+  constructor(parent, options) {
+    super(parent, options, {
+      ...defaultVals
+    });
+    if (options == null ? void 0 : options.onRenderStart)
+      this.onRenderStart = options.onRenderStart;
+    if (options == null ? void 0 : options.onRenderEnd)
+      this.onRenderEnd = options.onRenderEnd;
+  }
+  get percent() {
+    return this._percent;
+  }
+  set percent(value) {
+    this._percent = +value < 0 ? 0 : +value > 100 ? 100 : +value;
+    const overlayElm = this.querySelector(".i-progress_overlay");
+    if (overlayElm)
+      overlayElm.style.width = `${this._percent}%`;
+    if (this._percent > 0 && this._percent < 100)
+      this._wrapperElm.classList.add("i-progress--active");
+    else if (this._percent === 100)
+      this._wrapperElm.classList.add("i-progress--success");
+    if (this.format) {
+      if (!this._textElm) {
+        this._textElm = this.createElement("span", this);
+        this._textElm.classList.add("i-progress_text");
+        this._textElm.style.fontSize = this.progressTextSize + "px";
+        this._textElm.style.color = this.strokeColor;
+      }
+      this._textElm.innerHTML = this.format(this._percent);
+    }
+    if (this.type === "circle") {
+      this.updateCircleInner();
+    }
+  }
+  get strokeColor() {
+    return this._strokeColor || Theme14.colors.primary.main;
+  }
+  set strokeColor(value) {
+    this._strokeColor = value;
+  }
+  get loading() {
+    return this._loading;
+  }
+  set loading(value) {
+    this._loading = value;
+    if (value)
+      this.classList.add("is-loading");
+    else
+      this.classList.remove("is-loading");
+  }
+  get steps() {
+    return this._steps;
+  }
+  set steps(value) {
+    this._steps = +value;
+    const wrapbarElm = this.querySelector(".i-progress_bar");
+    const overlayElm = this.querySelector(".i-progress_overlay");
+    wrapbarElm.innerHTML = "";
+    if (this._steps > 1) {
+      const unitStep = 100 / this._steps;
+      const percentStep = Math.ceil(this.percent / unitStep);
+      const remainder = this.percent % unitStep;
+      for (let i = 0; i < this._steps; i++) {
+        const barItem = this.createElement("div");
+        barItem.style.width = unitStep + "%";
+        barItem.style.height = `${i + 1}px`;
+        if (i === percentStep - 1 && remainder !== 0) {
+          const childElm = this.createElement("div");
+          childElm.classList.add("i-progress_bar-item");
+          childElm.style.width = remainder * 100 / unitStep + "%";
+          childElm.style.height = `${i + 1}px`;
+          barItem.appendChild(childElm);
+        } else if (i < percentStep) {
+          barItem.classList.add("i-progress_bar-item");
+        }
+        wrapbarElm.appendChild(barItem);
+      }
+      wrapbarElm.classList.remove("has-bg");
+      overlayElm && (overlayElm.style.display = "none");
+    } else {
+      wrapbarElm.classList.add("has-bg");
+      overlayElm && (overlayElm.style.display = "block");
+    }
+  }
+  get type() {
+    return this._type;
+  }
+  set type(value) {
+    this._type = value;
+    if (value === "circle") {
+      this.renderCircle();
+    } else {
+      this.renderLine();
+    }
+  }
+  get strokeWidth() {
+    return this._strokeWidth;
+  }
+  set strokeWidth(value) {
+    this._strokeWidth = value || 2;
+    const overlayElm = this.querySelector(".i-progress_wrapbar");
+    if (overlayElm)
+      overlayElm.style.height = `${this._strokeWidth}px`;
+  }
+  get font() {
+    return {
+      color: this._textElm.style.color,
+      name: this._textElm.style.fontFamily,
+      size: this._textElm.style.fontSize,
+      bold: this._textElm.style.fontStyle.indexOf("bold") >= 0,
+      style: this._textElm.style.fontStyle,
+      transform: this._textElm.style.textTransform,
+      weight: this._textElm.style.fontWeight
+    };
+  }
+  set font(value) {
+    if (this._textElm) {
+      this._textElm.style.color = value.color || "";
+      this._textElm.style.fontSize = value.size || "";
+      this._textElm.style.fontWeight = value.bold ? "bold" : "";
+      this._textElm.style.fontFamily = value.name || "";
+      this._textElm.style.fontStyle = value.style || "";
+      this._textElm.style.textTransform = value.transform || "none";
+      this._textElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
+    }
+  }
+  get relativeStrokeWidth() {
+    return (this.strokeWidth / +this.width * 100).toFixed(1);
+  }
+  get radius() {
+    if (this.type === "circle") {
+      const value = 50 - parseFloat(this.relativeStrokeWidth) / 2;
+      return parseInt(value.toFixed(1), 10);
+    } else {
+      return 0;
+    }
+  }
+  get trackPath() {
+    const radius = this.radius;
+    return `
+          M 50 50
+          m 0 -${radius}
+          a ${radius} ${radius} 0 1 1 0 ${radius * 2}
+          a ${radius} ${radius} 0 1 1 0 -${radius * 2}
+          `;
+  }
+  get perimeter() {
+    return 2 * Math.PI * this.radius;
+  }
+  get rate() {
+    return 1;
+  }
+  get strokeDashoffset() {
+    const offset = -1 * this.perimeter * (1 - this.rate) / 2;
+    return `${offset}px`;
+  }
+  get trailPathStyle() {
+    const strokeDasharray = `${this.perimeter * this.rate}px, ${this.perimeter}px`;
+    const strokeDashoffset = this.strokeDashoffset;
+    return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset};`;
+  }
+  get circlePathStyle() {
+    const strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
+    const strokeDashoffset = this.strokeDashoffset;
+    const transition = "stroke-dasharray 0.6s ease 0s, stroke 0.6s ease";
+    return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset}; transition: ${transition};`;
+  }
+  get stroke() {
+    let ret = this.strokeColor;
+    if (this.percent === 100)
+      ret = Theme14.colors.success.main;
+    return ret;
+  }
+  get trackColor() {
+    return Theme14.divider;
+  }
+  get progressTextSize() {
+    return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
+  }
+  renderLine() {
+    this._wrapperElm.classList.add("i-progress--line");
+    this._barElm = this.createElement("div", this._wrapperElm);
+    this._barElm.classList.add("i-progress_wrapbar");
+    this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.strokeColor}"></div>`;
+  }
+  renderCircle() {
+    this._wrapperElm.classList.add("i-progress--circle");
+    if (this.width)
+      this.height = this.width;
+  }
+  renderCircleInner() {
+    const templateHtml = `<svg viewBox="0 0 100 100">
+            <path class="i-progress-circle__track"
+            d="${this.trackPath}"
+            stroke="${this.trackColor}"
+            stroke-width="${this.relativeStrokeWidth}"
+            fill="none"
+            style="${this.trailPathStyle}"></path>
+            <path
+            class="i-progress-circle__path"
+            d="${this.trackPath}"
+            stroke="${this.stroke}"
+            fill="none"
+            stroke-linecap="round"
+            stroke-width="${this.percent ? this.relativeStrokeWidth : 0}"
+            style="${this.circlePathStyle}"></path>
+        </svg>`;
+    this._wrapperElm.innerHTML = "";
+    this._wrapperElm.innerHTML = templateHtml;
+  }
+  updateCircleInner() {
+    const svgPath = this._wrapperElm.querySelector(".i-progress-circle__path");
+    if (svgPath) {
+      svgPath.style.strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
+      svgPath.setAttribute("stroke-width", `${this.percent ? this.relativeStrokeWidth : 0}`);
+    }
+  }
+  init() {
+    var _a, _b;
+    if (!this.initialized) {
+      super.init();
+      if ((_a = this.options) == null ? void 0 : _a.onRenderStart)
+        this.onRenderStart = this.options.onRenderStart;
+      if ((_b = this.options) == null ? void 0 : _b.onRenderEnd)
+        this.onRenderEnd = this.options.onRenderEnd;
+      this.loading = this.getAttribute("loading", true);
+      this.strokeColor = this.getAttribute("strokeColor", true);
+      this._wrapperElm = this.createElement("div", this);
+      this._wrapperElm.classList.add("i-progress");
+      this.type = this.getAttribute("type", true);
+      this.percent = this.getAttribute("percent", true);
+      this.strokeWidth = this.getAttribute("strokeWidth", true);
+      if (this.type === "line") {
+        this.steps = this.getAttribute("steps", true);
+        if (this.onRenderStart && typeof this.onRenderStart === "function") {
+          this._wrapperElm.classList.add("i-progress--grid");
+          this._startElm = this.createElement("div", this._wrapperElm);
+          this._startElm.classList.add("i-progress_item", "i-progress_item-start");
+          this.onRenderStart(this._startElm);
+        }
+        if (this.onRenderEnd && typeof this.onRenderEnd === "function") {
+          this._wrapperElm.classList.add("i-progress--grid");
+          this._endElm = this.createElement("div", this._wrapperElm);
+          this._endElm.classList.add("i-progress_item", "i-progress_item-end");
+          this.onRenderEnd(this._endElm);
+        }
+      }
+      if (this.type === "circle")
+        this.renderCircleInner();
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Progress = __decorateClass([
+  customElements2("i-progress")
+], Progress);
+
+// packages/upload/src/style/upload-modal.css.ts
+var Theme15 = theme_exports.ThemeVars;
 cssRule("i-upload-modal", {
   $nest: {
     "i-modal": {
       position: "fixed!important",
-      zIndex: 16,
-      $nest: {
-        "> div": {
-          left: "50%!important",
-          top: "50%!important",
-          transform: "translate(-50%,-50%)!important"
-        },
-        ".modal": {
-          padding: 0,
-          height: "auto",
-          backgroundColor: Theme13.background.modal,
-          borderRadius: "10px",
-          boxShadow: "0 1px 5px 0 rgb(0 0 0 / 12%), 0 2px 10px 0 rgb(0 0 0 / 8%), 0 1px 20px 0 rgb(0 0 0 / 8%)",
-          overflow: "auto",
-          maxHeight: "90vh"
-        }
-      }
-    },
-    ".modal-close": {
-      position: "absolute",
-      top: "1rem",
-      right: "1rem",
-      maxHeight: "10%",
-      zIndex: 2,
-      cursor: "pointer",
-      gap: 0,
-      backgroundColor: "transparent",
-      border: 0,
-      padding: "0!important",
-      boxShadow: "none"
-    },
-    ".upload-box": {
-      borderRadius: "0.375rem",
-      padding: "3.125rem 8.5rem 3.125rem 8.125rem"
-    },
-    ".heading": {
-      display: "block",
-      fontSize: "1.625rem",
-      color: Theme13.colors.primary.dark,
-      marginBottom: "0.5rem",
-      fontWeight: 700,
-      lineHeight: 1.2,
-      textAlign: "center"
-    },
-    ".label": {
-      display: "block",
-      marginBottom: "0.5rem",
-      color: Theme13.text.primary,
-      textAlign: "center"
+      zIndex: 1e3
     },
     ".file-uploader-dropzone": {
-      display: "flex",
-      flexDirection: "column",
-      gridRowGap: "2rem",
-      rowGap: "1.5rem",
-      marginBottom: "2.5rem",
-      marginTop: "2rem",
       $nest: {
-        ".droparea": {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          gridRowGap: "1rem",
-          rowGap: "1rem",
-          padding: "1.875rem 0",
-          background: "rgba(255,255,255,.1)",
-          border: `1px dashed ${Theme13.colors.primary.light}`,
-          borderRadius: "0.625rem",
-          cursor: "pointer"
-        },
         "i-upload": {
           position: "absolute",
           top: 0,
@@ -23221,157 +22672,21 @@ cssRule("i-upload-modal", {
           }
         },
         ".filelist": {
-          fontSize: "0.8rem",
-          fontWeight: 400,
-          borderBottom: "0.0625rem solid rgba(105,196,205,.25)",
-          marginBottom: "0.5rem",
           $nest: {
+            "@media screen and (max-width: 767px)": {
+              flex: "1",
+              overflowY: "auto"
+            },
             ".file": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderTop: "0.0625rem solid rgba(105,196,205,.25)",
-              padding: "0.25rem 0",
-              minHeight: "44px",
-              gap: "5px"
-            },
-            ".status-2": {
+              border: `1px solid ${Theme15.divider}`,
+              borderRadius: "0.5rem",
               $nest: {
-                "i-label": {
-                  color: "red"
-                }
-              }
-            },
-            "i-label": {
-              fontSize: "14px",
-              color: Theme13.colors.primary.dark,
-              maxWidth: "80%",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis"
-            },
-            ".filename": {
-              fontWeight: 600
-            },
-            ".status": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              $nest: {
-                "i-label": {
-                  fontStyle: "italic"
-                },
-                "i-button": {
-                  background: "transparent",
-                  boxShadow: "none",
-                  gap: 0,
-                  marginLeft: "5px",
-                  $nest: {
-                    "i-icon": {
-                      fill: `${Theme13.colors.primary.dark}!important`
-                    }
-                  }
+                "&:hover": {
+                  border: `1px solid ${Theme15.colors.primary.main}`
                 }
               }
             }
           }
-        },
-        ".pagination": {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "5px",
-          $nest: {
-            "i-button": {
-              width: "24px",
-              height: "24px",
-              borderRadius: "50%",
-              fontSize: "11px",
-              fontWeight: 700,
-              color: Theme13.colors.primary.dark,
-              backgroundColor: "transparent",
-              border: `1px solid ${Theme13.colors.primary.dark}`,
-              boxShadow: "none",
-              gap: "unset",
-              userSelect: "none",
-              $nest: {
-                "&.active": {
-                  color: Theme13.colors.primary.contrastText,
-                  backgroundColor: Theme13.colors.primary.dark
-                },
-                "&.dots": {
-                  borderColor: "transparent"
-                },
-                "i-icon": {
-                  height: "10px!important",
-                  width: "12px!important",
-                  fill: `${Theme13.colors.primary.dark}!important`
-                }
-              }
-            }
-          }
-        },
-        ".upload-btn": {
-          background: Theme13.colors.primary.light,
-          color: Theme13.colors.primary.contrastText,
-          padding: "8px",
-          boxShadow: "none"
-        }
-      }
-    },
-    ".status-filter": {
-      display: "flex",
-      justifyContent: "space-between",
-      $nest: {
-        ".filter-bar": {
-          display: "flex",
-          gap: "10px",
-          $nest: {
-            ".filter-btn": {
-              fontSize: "14px",
-              background: "transparent",
-              color: Theme13.text.secondary,
-              boxShadow: "none"
-            },
-            ".filter-btn.filter-btn-active": {
-              fontWeight: "bold",
-              color: Theme13.colors.primary.dark
-            }
-          }
-        },
-        ".filter-actions": {
-          $nest: {
-            "i-button": {
-              background: Theme13.colors.primary.light,
-              color: Theme13.colors.primary.contrastText,
-              padding: "5px 10px",
-              fontSize: "14px",
-              boxShadow: "none"
-            }
-          }
-        }
-      }
-    },
-    ".note": {
-      display: "flex",
-      flexDirection: "column",
-      lineHeight: "1.4375rem",
-      paddingLeft: "1.25rem",
-      paddingRight: "0.25rem",
-      $nest: {
-        "&:not(:last-child)": {
-          marginBottom: "1.5rem"
-        },
-        ".head": {
-          fontSize: "14px",
-          fontWeight: 700,
-          color: Theme13.text.primary
-        },
-        ".desc": {
-          fontSize: "12px",
-          fontWeight: 400,
-          letterSpacing: 0,
-          color: Theme13.text.secondary
         }
       }
     }
@@ -23379,7 +22694,7 @@ cssRule("i-upload-modal", {
 });
 
 // packages/upload/src/upload-modal.ts
-var Theme14 = theme_exports.ThemeVars;
+var Theme16 = theme_exports.ThemeVars;
 var FILE_STATUS;
 (function(FILE_STATUS2) {
   FILE_STATUS2[FILE_STATUS2["LISTED"] = 0] = "LISTED";
@@ -23415,7 +22730,11 @@ var UploadModal = class extends Control {
     await this.init();
     if (!this.parentElement)
       document.body.appendChild(this);
+    this.updateBtnCaption();
     this._uploadModalElm.visible = true;
+    this._uploadModalElm.refresh();
+  }
+  updateUI() {
   }
   hide() {
     this._uploadModalElm.visible = false;
@@ -23444,64 +22763,190 @@ var UploadModal = class extends Control {
     this.renderFileList();
     this.renderPagination();
   }
+  get isSmallWidth() {
+    return !!window.matchMedia("(max-width: 767px)").matches;
+  }
   async renderFilterBar() {
     this._filterBarElm.clearInnerHTML();
+    const isListed = this.currentFilterStatus === 0;
     const listedBtnElm = new Button(this._filterBarElm, {
       caption: `All (${this.fileListData.length})`,
-      class: `filter-btn ${this.currentFilterStatus === 0 ? "filter-btn-active" : ""}`
+      boxShadow: "none",
+      background: { color: "transparent" },
+      font: { color: isListed ? Theme16.colors.primary.dark : Theme16.text.secondary, size: "0.875rem", weight: isListed ? "bold" : "normal" }
     });
     listedBtnElm.onClick = () => this.onChangeCurrentFilterStatus(0);
+    const isSuccess = this.currentFilterStatus === 1;
     const successBtnElm = new Button(this._filterBarElm, {
       caption: `Success (${this.fileListData.filter((i) => i.status === 1).length})`,
-      class: `filter-btn ${this.currentFilterStatus === 1 ? "filter-btn-active" : ""}`
+      boxShadow: "none",
+      background: { color: "transparent" },
+      font: { color: isSuccess ? Theme16.colors.primary.dark : Theme16.text.secondary, size: "0.875rem", weight: isSuccess ? "bold" : "normal" }
     });
     successBtnElm.onClick = () => this.onChangeCurrentFilterStatus(1);
+    const isFailed = this.currentFilterStatus === 2;
     const failedBtnElm = new Button(this._filterBarElm, {
       caption: `Fail (${this.fileListData.filter((i) => i.status === 2).length})`,
-      class: `filter-btn ${this.currentFilterStatus === 2 ? "filter-btn-active" : ""}`
+      boxShadow: "none",
+      background: { color: "transparent" },
+      font: { color: isFailed ? Theme16.colors.primary.dark : Theme16.text.secondary, size: "0.875rem", weight: isFailed ? "bold" : "normal" }
     });
     failedBtnElm.onClick = () => this.onChangeCurrentFilterStatus(2);
+    const isUploading = this.currentFilterStatus === 3;
     const uploadingBtnElm = new Button(this._filterBarElm, {
       caption: `Uploading (${this.fileListData.filter((i) => i.status === 3).length})`,
-      class: `filter-btn ${this.currentFilterStatus === 3 ? "filter-btn-active" : ""}`
+      boxShadow: "none",
+      background: { color: "transparent" },
+      font: { color: isUploading ? Theme16.colors.primary.dark : Theme16.text.secondary, size: "0.875rem", weight: isUploading ? "bold" : "normal" }
     });
     uploadingBtnElm.onClick = () => this.onChangeCurrentFilterStatus(3);
     this._filterActionsElm.clearInnerHTML();
     if (this.currentFilterStatus === 3) {
       const cancelBtnElm = new Button(this._filterActionsElm, {
-        caption: "Cancel"
+        caption: "Cancel",
+        boxShadow: "none",
+        background: { color: Theme16.colors.primary.light },
+        font: { color: Theme16.colors.primary.contrastText, size: "0.875rem" },
+        padding: { top: "0.313rem", left: "0.675rem", right: "0.675rem", bottom: "0.313rem" }
       });
       cancelBtnElm.onClick = () => this.onCancel();
     } else {
       const clearBtnElm = new Button(this._filterActionsElm, {
-        caption: "Clear"
+        caption: "Clear",
+        boxShadow: "none",
+        background: { color: Theme16.colors.primary.light },
+        font: { color: Theme16.colors.primary.contrastText, size: "0.875rem" },
+        padding: { top: "0.313rem", left: "0.675rem", right: "0.675rem", bottom: "0.313rem" }
       });
       clearBtnElm.onClick = () => this.onClear();
     }
   }
   async renderFileList() {
-    const fileUIData = [];
     this._fileListElm.clearInnerHTML();
     const filteredFileListData = this.filteredFileListData();
-    const paginatedFilteredFileListData = filteredFileListData.slice((this.currentPage - 1) * ITEMS_PER_PAGE, ITEMS_PER_PAGE * this.currentPage);
+    const paginatedFilteredFileListData = this.isSmallWidth ? this.fileListData : [...filteredFileListData].slice((this.currentPage - 1) * ITEMS_PER_PAGE, ITEMS_PER_PAGE * this.currentPage);
     for (let i = 0; i < paginatedFilteredFileListData.length; i++) {
       const fileData = paginatedFilteredFileListData[i];
-      const fileElm = new Panel(this._fileListElm, {
-        class: `file file-${i} status-${fileData.status}`
+      const fileElm = new HStack(this._fileListElm, {
+        class: `file file-${i} status-${fileData.status}`,
+        overflow: "hidden",
+        gap: "1rem",
+        padding: {
+          left: "0.75rem",
+          right: "0.75rem",
+          top: "0.5rem",
+          bottom: "0.5rem"
+        },
+        stack: { shrink: "0", grow: "1" }
       });
-      const fileNameElm = new Label(fileElm, {
-        caption: fileData.file.path || fileData.file.name
+      const fileIcon = new Icon(fileElm, {
+        border: { radius: "0.5rem", width: "1px", color: Theme16.divider, style: "solid" },
+        padding: {
+          left: "0.35rem",
+          right: "0.35rem",
+          top: "0.35rem",
+          bottom: "0.35rem"
+        },
+        name: "file",
+        width: "1.75rem",
+        height: "1.75rem",
+        fill: Theme16.colors.primary.main,
+        stack: { shrink: "0" }
       });
-      const statusElm = new Panel(fileElm, { class: "status" });
-      const percentageElm = new Label(statusElm, {
-        caption: `${fileData.percentage}%`
+      const wrapper = new VStack(fileElm, {
+        gap: "0.25rem",
+        stack: { shrink: "1", grow: "1" },
+        maxWidth: "100%",
+        overflow: "hidden"
       });
-      const removeBtnElm = new Button(statusElm, {
-        class: "remove-btn",
-        icon: { name: "times-circle" }
+      const row1 = new HStack(wrapper, {
+        gap: "1rem",
+        horizontalAlignment: "space-between",
+        verticalAlignment: "center"
+      });
+      const fileNameElm = new Label(row1, {
+        caption: fileData.file.path || fileData.file.name,
+        font: { weight: 600, size: "0.875rem" },
+        maxWidth: "100%",
+        textOverflow: "ellipsis"
+      });
+      const removeBtnElm = new Icon(row1, {
+        name: "times",
+        width: "0.875rem",
+        height: "0.875rem",
+        fill: Theme16.text.primary,
+        cursor: "pointer"
       });
       removeBtnElm.onClick = () => this.onRemoveFile(i);
+      const row2 = new HStack(wrapper, {
+        gap: "0.5rem",
+        verticalAlignment: "center"
+      });
+      const sizeElm = new Label(row2, {
+        caption: this.formatBytes(fileData.file.size || 0),
+        font: { size: "0.75rem" },
+        maxWidth: "100%",
+        textOverflow: "ellipsis",
+        opacity: 0.75
+      });
+      const statusElm = this.getStatus(fileData.status, row2);
+      const row3 = new HStack(wrapper, {
+        gap: "0.75rem",
+        verticalAlignment: "center"
+      });
+      const progressElm = new Progress(row3, {
+        percent: fileData.percentage,
+        stack: { grow: "1", shrink: "1", basis: "60%" },
+        height: "auto",
+        border: { radius: "0.5rem" },
+        strokeWidth: 10
+      });
+      const percentageElm = new Label(row3, {
+        caption: `${fileData.percentage}%`,
+        stack: { grow: "1", shrink: "0" },
+        font: { size: "0.75rem" }
+      });
     }
+  }
+  formatBytes(bytes, decimals = 2) {
+    if (bytes === 0)
+      return "0 Bytes";
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  }
+  getStatus(status, parent) {
+    const iconEl = new Icon(parent, {
+      name: "times",
+      width: "0.875rem",
+      height: "0.875rem",
+      padding: { top: "0.125rem", bottom: "0.125rem", left: "0.125rem", right: "0.125rem" },
+      border: { radius: "50%" },
+      background: { color: Theme16.text.primary },
+      fill: Theme16.colors.primary.contrastText,
+      visible: false
+    });
+    const statusElm = new Label(parent, {
+      caption: ""
+    });
+    switch (status) {
+      case 1:
+        iconEl.name = "check";
+        iconEl.background.color = Theme16.colors.success.main;
+        iconEl.visible = true;
+        statusElm.caption = "Completed";
+        break;
+      case 2:
+        iconEl.name = "times";
+        iconEl.background.color = Theme16.colors.error.main;
+        iconEl.visible = true;
+        statusElm.caption = "Failed";
+      case 3:
+        statusElm.caption = "Uploading";
+    }
+    return statusElm;
   }
   getPagination(currentIndex, totalPages) {
     let current = currentIndex, last = totalPages, delta = 2, left = current - delta, right = current + delta + 1, range = [], rangeWithDots = [], l;
@@ -23532,18 +22977,30 @@ var UploadModal = class extends Control {
       } else {
         this._paginationElm.clearInnerHTML();
         const prevBtn = new Button(this._paginationElm, {
-          icon: { name: "chevron-left" }
+          icon: { name: "chevron-left", fill: Theme16.colors.primary.dark, width: "0.75rem", height: "0.675rem" },
+          width: "1.5rem",
+          height: "1.5rem",
+          border: { radius: "50%", width: "1px", style: "solid", color: Theme16.colors.primary.dark },
+          font: { size: "0.688rem", weight: 700, color: Theme16.colors.primary.dark },
+          background: { color: "transparent" },
+          boxShadow: "none"
         });
         prevBtn.onClick = () => {
           this.setCurrentPage(this.currentPage - 1);
         };
         for (let i = 0; i < rangeWithDots.length; i++) {
+          const isActived = this.currentPage === rangeWithDots[i];
           const pageBtn = new Button(this._paginationElm, {
-            class: this.currentPage === rangeWithDots[i] ? "active" : "",
-            caption: rangeWithDots[i].toString()
+            caption: rangeWithDots[i].toString(),
+            width: "1.5rem",
+            height: "1.5rem",
+            border: { radius: "50%", width: "1px", style: "solid", color: Theme16.colors.primary.dark },
+            font: { size: "0.688rem", weight: 700, color: isActived ? Theme16.colors.primary.contrastText : Theme16.colors.primary.dark },
+            background: { color: isActived ? Theme16.colors.primary.dark : "transparent" },
+            boxShadow: "none"
           });
           if (rangeWithDots[i] === "...") {
-            pageBtn.classList.add("dots");
+            pageBtn.border.color = "transparent";
           } else {
             pageBtn.onClick = () => {
               this.setCurrentPage(rangeWithDots[i]);
@@ -23551,7 +23008,13 @@ var UploadModal = class extends Control {
           }
         }
         const nexBtn = new Button(this._paginationElm, {
-          icon: { name: "chevron-right" }
+          icon: { name: "chevron-right", fill: Theme16.colors.primary.dark, width: "0.75rem", height: "0.675rem" },
+          width: "1.5rem",
+          height: "1.5rem",
+          border: { radius: "50%", width: "1px", style: "solid", color: Theme16.colors.primary.dark },
+          font: { size: "0.688rem", weight: 700, color: Theme16.colors.primary.dark },
+          background: { color: "transparent" },
+          boxShadow: "none"
         });
         nexBtn.onClick = () => {
           this.setCurrentPage(this.currentPage + 1);
@@ -23598,7 +23061,7 @@ var UploadModal = class extends Control {
         reject();
       this._fileUploader.enabled = true;
       this._fileIcon.url = `${LibPath}assets/img/file-icon.png`;
-      this._dragLabelElm.caption = "Drag and drop your files here";
+      this.updateBtnCaption();
       for (let i = 0; i < files.length; i++) {
         this.fileListData.push({ file: files[i], status: 0, percentage: 0 });
         this.files.push(files[i]);
@@ -23609,6 +23072,9 @@ var UploadModal = class extends Control {
       this.toggle(true);
       this._fileUploader.clear();
     });
+  }
+  updateBtnCaption() {
+    this._dragLabelElm.caption = this.isSmallWidth ? "Select Files" : "Drag and drop your files here";
   }
   onRemove(source, file) {
   }
@@ -23783,29 +23249,94 @@ var UploadModal = class extends Control {
       this._uploadModalElm = await Modal.create({
         showBackdrop: true,
         closeOnBackdropClick: false,
+        popupPlacement: "center",
         width: "800px",
+        maxWidth: "100%",
+        height: "auto",
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        border: { radius: "0.675rem" },
+        boxShadow: "0 1px 5px 0 rgb(0 0 0 / 12%), 0 2px 10px 0 rgb(0 0 0 / 8%), 0 1px 20px 0 rgb(0 0 0 / 8%)",
+        maxHeight: "90vh",
+        overflow: { y: "auto" },
+        zIndex: 1e3,
+        mediaQueries: [
+          {
+            maxWidth: "767px",
+            properties: {
+              maxHeight: "100%",
+              height: "100vh",
+              width: "100vw"
+            }
+          }
+        ],
         onClose: () => this.reset()
       });
       this.appendChild(this._uploadModalElm);
-      this._uploadBoxElm = new Panel(this);
-      this._uploadBoxElm.classList.add("upload-box");
+      this._uploadBoxElm = new Panel(this, {
+        height: "100%",
+        overflow: "hidden",
+        border: { radius: "0.375rem" },
+        padding: {
+          top: "3.125rem",
+          right: "8.5rem",
+          bottom: "3.125rem",
+          left: "8.125rem"
+        },
+        mediaQueries: [
+          {
+            maxWidth: "767px",
+            properties: {
+              padding: {
+                top: "1.5rem",
+                right: "1.5rem",
+                bottom: "1.5rem",
+                left: "1.5rem"
+              }
+            }
+          }
+        ]
+      });
       this._closeBtnElm = new Button(this._uploadBoxElm, {
         icon: { name: "times" },
-        class: "modal-close",
+        position: "absolute",
+        top: "1rem",
+        right: "1rem",
+        maxHeight: "10%",
+        zIndex: 2,
+        background: { color: "transparent" },
+        boxShadow: "none",
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
         onClick: () => this.hide()
       });
       const headingElm = new Label(this._uploadBoxElm, {
-        caption: "Upload more files"
+        caption: "Upload more files",
+        font: { size: "clamp(1rem, 1rem + 0.625vw, 1.625rem)", color: Theme16.colors.primary.dark, weight: 700 },
+        lineHeight: 1.5,
+        display: "block",
+        class: "text-center"
       });
-      headingElm.classList.add("heading");
       const labelElm = new Label(this._uploadBoxElm, {
-        caption: "Choose file to upload to IPFS network"
+        caption: "Choose file to upload to IPFS network",
+        margin: { bottom: "0.5rem" },
+        display: "block",
+        class: "text-center"
       });
-      labelElm.classList.add("label");
-      const fileUploaderDropzone = new Panel(this._uploadBoxElm);
+      const fileUploaderDropzone = new VStack(this._uploadBoxElm, {
+        maxHeight: "calc(100% - 4.5rem)",
+        margin: { top: "2rem", bottom: "2.5rem" },
+        gap: "1.5rem"
+      });
       fileUploaderDropzone.classList.add("file-uploader-dropzone");
-      const droparea = new Panel(fileUploaderDropzone);
-      droparea.classList.add("droparea");
+      const droparea = new VStack(fileUploaderDropzone, {
+        horizontalAlignment: "center",
+        verticalAlignment: "center",
+        padding: { top: "1.875rem", bottom: "1.875rem" },
+        background: { color: "rgba(255,255,255,.1)" },
+        border: { radius: "0.625rem", width: "2px", style: "dashed", color: Theme16.colors.primary.light },
+        cursor: "pointer",
+        gap: "1rem",
+        position: "relative"
+      });
       this._fileUploader = new Upload(droparea, {
         multiple: true,
         draggable: true
@@ -23820,41 +23351,81 @@ var UploadModal = class extends Control {
       this._dragLabelElm = new Label(droparea, {
         caption: "Drag and drop your files here"
       });
-      this._statusFilterElm = new Panel(fileUploaderDropzone);
+      this._statusFilterElm = new HStack(fileUploaderDropzone, {
+        horizontalAlignment: "space-between"
+      });
       this._statusFilterElm.classList.add("status-filter");
       this._statusFilterElm.visible = false;
-      this._filterBarElm = new Panel(this._statusFilterElm);
+      this._filterBarElm = new HStack(this._statusFilterElm, {
+        gap: "0.675rem",
+        mediaQueries: [
+          {
+            maxWidth: "767px",
+            properties: { visible: false }
+          }
+        ]
+      });
       this._filterBarElm.classList.add("filter-bar");
-      this._filterActionsElm = new Panel(this._statusFilterElm);
-      this._filterActionsElm.classList.add("filter-actions");
-      this._fileListElm = new Panel(fileUploaderDropzone);
+      this._filterActionsElm = new Panel(this._statusFilterElm, {
+        margin: { left: "auto" }
+      });
+      this._fileListElm = new VStack(fileUploaderDropzone, { gap: "0.5rem", margin: { bottom: "0.5rem" } });
       this._fileListElm.classList.add("filelist");
-      this._paginationElm = new Panel(fileUploaderDropzone);
+      this._paginationElm = new HStack(fileUploaderDropzone, {
+        gap: "0.313rem",
+        horizontalAlignment: "center",
+        verticalAlignment: "center",
+        mediaQueries: [
+          {
+            maxWidth: "767px",
+            properties: { visible: false }
+          }
+        ]
+      });
       this._paginationElm.classList.add("pagination");
       this._uploadBtnElm = new Button(fileUploaderDropzone, {
         caption: "Upload files to IPFS",
         class: "upload-btn",
+        boxShadow: "none",
+        background: { color: Theme16.colors.primary.main },
+        font: { color: Theme16.colors.primary.contrastText },
+        padding: { top: "0.5rem", bottom: "0.5rem", left: "0.5rem", right: "0.5rem" },
         visible: false
       });
       this._uploadBtnElm.onClick = () => this.onUpload();
       this._notePnlElm = new Panel(this._uploadBoxElm);
-      const note1Elm = new Panel(this._notePnlElm, { class: "note" });
+      const note1Elm = new VStack(this._notePnlElm, {
+        class: "note",
+        lineHeight: "1.4375rem",
+        padding: { left: "1.25rem", right: "0.25rem" },
+        gap: "1.5rem"
+      });
       const head1Elm = new Label(note1Elm, {
         caption: "Public Data",
-        class: "head"
+        class: "head",
+        font: { weight: 700, size: "0.875rem" }
       });
       const desc1Elm = new Label(note1Elm, {
         caption: "All data uploaded to IPFS Explorer is available to anyone who requests it using the correct CID. Do not store any private or sensitive information in an unencrypted form using IPFS Explorer.",
-        class: "desc"
+        class: "desc",
+        font: { size: "0.75rem", weight: 400, color: Theme16.text.secondary },
+        letterSpacing: 0
       });
-      const note2Elm = new Panel(this._notePnlElm, { class: "note" });
+      const note2Elm = new VStack(this._notePnlElm, {
+        class: "note",
+        lineHeight: "1.4375rem",
+        padding: { left: "1.25rem", right: "0.25rem" }
+      });
       const head2Elm = new Label(note2Elm, {
         caption: "Permanent Data",
-        class: "head"
+        class: "head",
+        font: { weight: 700, size: "0.875rem" }
       });
       const des2cElm = new Label(note2Elm, {
         caption: "Deleting files from the IPFS Explorer site\u2019s Files page will remove them from the file listing for your account, but that doesn\u2019t prevent nodes on the decentralized storage network from retaining copies of the data indefinitely. Do not use IPFS Explorer for data that may need to be permanently deleted in the future.",
-        class: "desc"
+        class: "desc",
+        font: { size: "0.75rem", weight: 400, color: Theme16.text.secondary },
+        letterSpacing: 0
       });
       this._uploadModalElm.item = this._uploadBoxElm;
     }
@@ -23870,7 +23441,7 @@ UploadModal = __decorateClass([
 ], UploadModal);
 
 // packages/tab/src/style/tab.css.ts
-var Theme15 = theme_exports.ThemeVars;
+var Theme17 = theme_exports.ThemeVars;
 cssRule("i-tabs", {
   display: "block",
   $nest: {
@@ -23917,7 +23488,7 @@ cssRule("i-tabs", {
               color: "#fff"
             },
             "&:not(.disabled).active.border": {
-              borderColor: `${Theme15.divider} ${Theme15.divider} #fff`,
+              borderColor: `${Theme17.divider} ${Theme17.divider} #fff`,
               borderBottomWidth: "1.5px"
             },
             ".tab-item": {
@@ -24019,14 +23590,7 @@ cssRule("i-tabs", {
 var getTabMediaQueriesStyleClass = (mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
+    let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
       const nestObj = styleObj["$nest"][mediaQueryRule]["$nest"] || {};
       const ruleObj = styleObj["$nest"][mediaQueryRule];
@@ -24037,8 +23601,11 @@ var getTabMediaQueriesStyleClass = (mediaQueries) => {
           "> .tabs-nav-wrap .tabs-nav": {}
         }
       };
-      if (mediaQuery.properties.mode) {
-        const mode = mediaQuery.properties.mode;
+      const {
+        mode,
+        visible
+      } = mediaQuery.properties || {};
+      if (mode) {
         styleObj["$nest"][mediaQueryRule]["display"] = mode === "vertical" ? "flex !important" : "block !important";
         if (mode === "horizontal") {
           styleObj["$nest"][mediaQueryRule]["$nest"]["> .tabs-nav-wrap .tabs-nav"]["flexDirection"] = "row !important";
@@ -24050,8 +23617,7 @@ var getTabMediaQueriesStyleClass = (mediaQueries) => {
           styleObj["$nest"][mediaQueryRule]["$nest"]["> .tabs-nav-wrap .tabs-nav"]["justifyContent"] = "start";
         }
       }
-      if (typeof mediaQuery.properties.visible === "boolean") {
-        const visible = mediaQuery.properties.visible;
+      if (typeof visible === "boolean") {
         styleObj["$nest"][mediaQueryRule]["display"] = visible ? "block !important" : "none !important";
       }
     }
@@ -24269,10 +23835,10 @@ var Tabs = class extends Container {
       const tabsNavWrapElm = this.createElement("div", this);
       tabsNavWrapElm.classList.add("tabs-nav-wrap");
       tabsNavWrapElm.addEventListener("wheel", (event) => {
-        if (this.mode !== "horizontal")
-          return;
-        event.preventDefault();
-        tabsNavWrapElm.scrollLeft += event.deltaY;
+        if (tabsNavWrapElm.scrollWidth > tabsNavWrapElm.clientWidth) {
+          event.preventDefault();
+          tabsNavWrapElm.scrollLeft += event.deltaY;
+        }
       });
       this.tabsNavElm = this.createElement("div", tabsNavWrapElm);
       this.tabsNavElm.classList.add("tabs-nav");
@@ -24426,7 +23992,7 @@ Tab = __decorateClass([
 ], Tab);
 
 // packages/combo-box/src/style/combo-box.css.ts
-var Theme16 = theme_exports.ThemeVars;
+var Theme18 = theme_exports.ThemeVars;
 var ItemListStyle = style({
   display: "none",
   position: "absolute",
@@ -24455,20 +24021,20 @@ var ItemListStyle = style({
       borderRadius: "inherit"
     },
     "> ul > li .highlight": {
-      backgroundColor: Theme16.colors.warning.light
+      backgroundColor: Theme18.colors.warning.light
     },
     "> ul > li.matched": {
-      backgroundColor: Theme16.colors.primary.light
+      backgroundColor: Theme18.colors.primary.light
     },
     "> ul > li:hover": {
-      backgroundColor: Theme16.colors.primary.light
+      backgroundColor: Theme18.colors.primary.light
     },
     ".selection-item": {
       display: "grid",
       gridTemplateColumns: "25px 1fr",
       gap: 5,
       alignItems: "center",
-      fontFamily: Theme16.typography.fontFamily
+      fontFamily: Theme18.typography.fontFamily
     },
     ".selection-icon": {
       height: 20,
@@ -24476,22 +24042,22 @@ var ItemListStyle = style({
     },
     ".selection-title": {
       display: "block",
-      color: Theme16.combobox.fontColor,
+      color: Theme18.combobox.fontColor,
       fontWeight: "bold"
     },
     ".selection-description": {
       display: "block",
-      color: Theme16.combobox.fontColor,
-      fontSize: Theme16.typography.fontSize
+      color: Theme18.combobox.fontColor,
+      fontSize: Theme18.typography.fontSize
     }
   }
 });
 cssRule("i-combo-box", {
   position: "relative",
   display: "flex",
-  fontFamily: Theme16.typography.fontFamily,
-  fontSize: Theme16.typography.fontSize,
-  color: Theme16.text.primary,
+  fontFamily: Theme18.typography.fontFamily,
+  fontSize: Theme18.typography.fontSize,
+  color: Theme18.text.primary,
   alignItems: "center",
   $nest: {
     "&.i-combo-box-multi": {
@@ -24509,14 +24075,14 @@ cssRule("i-combo-box", {
       alignItems: "center",
       position: "absolute",
       right: 0,
-      border: `0.5px solid ${Theme16.divider}`,
+      border: `0.5px solid ${Theme18.divider}`,
       borderLeft: "none",
       borderRadius: "inherit",
       borderTopLeftRadius: "0px !important",
       borderBottomLeftRadius: "0px !important"
     },
     "> .icon-btn:hover": {
-      backgroundColor: Theme16.action.hover
+      backgroundColor: Theme18.action.hover
     },
     "> .icon-btn i-icon": {
       display: "inline-block",
@@ -24529,9 +24095,9 @@ cssRule("i-combo-box", {
       flexWrap: "wrap",
       maxWidth: "calc(100% - 32px)",
       height: "100%",
-      border: `0.5px solid ${Theme16.divider}`,
+      border: `0.5px solid ${Theme18.divider}`,
       borderRight: "none !important",
-      background: Theme16.combobox.background,
+      background: Theme18.combobox.background,
       borderRadius: "inherit",
       borderTopRightRadius: "0px !important",
       borderBottomRightRadius: "0px !important",
@@ -24542,7 +24108,7 @@ cssRule("i-combo-box", {
       maxHeight: "100%",
       $nest: {
         ".selection-item": {
-          border: `1px solid ${Theme16.divider}`,
+          border: `1px solid ${Theme18.divider}`,
           backgroundColor: "rgba(0, 0, 0, 0.12)",
           color: "#000",
           borderRadius: 3,
@@ -24576,8 +24142,8 @@ cssRule("i-combo-box", {
           width: "auto !important",
           maxWidth: "100%",
           flex: 1,
-          background: Theme16.combobox.background,
-          color: Theme16.combobox.fontColor,
+          background: Theme18.combobox.background,
+          color: Theme18.combobox.fontColor,
           fontSize: "inherit"
         }
       }
@@ -25004,11 +24570,11 @@ ComboBox = __decorateClass([
 ], ComboBox);
 
 // packages/datepicker/src/style/datepicker.css.ts
-var Theme17 = theme_exports.ThemeVars;
+var Theme19 = theme_exports.ThemeVars;
 cssRule("i-datepicker", {
   display: "inline-block",
-  fontFamily: Theme17.typography.fontFamily,
-  fontSize: Theme17.typography.fontSize,
+  fontFamily: Theme19.typography.fontFamily,
+  fontSize: Theme19.typography.fontSize,
   "$nest": {
     "*": {
       boxSizing: "border-box"
@@ -25018,7 +24584,7 @@ cssRule("i-datepicker", {
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme17.text.primary,
+      color: Theme19.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -25030,11 +24596,11 @@ cssRule("i-datepicker", {
     "> input": {
       borderRadius: "inherit",
       padding: "1px 0.5rem",
-      border: `0.5px solid ${Theme17.divider}`,
+      border: `0.5px solid ${Theme19.divider}`,
       boxSizing: "border-box",
       outline: "none",
       fontSize: "inherit",
-      color: Theme17.input.fontColor,
+      color: Theme19.input.fontColor,
       background: "transparent",
       verticalAlign: "top",
       borderTopRightRadius: "0px !important",
@@ -25042,16 +24608,16 @@ cssRule("i-datepicker", {
       borderRight: "none !important"
     },
     "> input[type=text]:focus": {
-      borderColor: Theme17.colors.info.main
+      borderColor: Theme19.colors.info.main
     },
     "i-icon": {
-      fill: Theme17.colors.primary.contrastText
+      fill: Theme19.colors.primary.contrastText
     },
     ".datepicker-toggle": {
       display: "inline-flex",
       position: "relative",
       backgroundColor: "transparent",
-      border: `0.5px solid ${Theme17.divider}`,
+      border: `0.5px solid ${Theme19.divider}`,
       padding: "7px",
       marginLeft: "-1px",
       cursor: "pointer",
@@ -25337,12 +24903,12 @@ Datepicker = __decorateClass([
 ], Datepicker);
 
 // packages/range/src/style/range.css.ts
-var Theme18 = theme_exports.ThemeVars;
+var Theme20 = theme_exports.ThemeVars;
 cssRule("i-range", {
   position: "relative",
   display: "inline-block",
-  fontFamily: Theme18.typography.fontFamily,
-  fontSize: Theme18.typography.fontSize,
+  fontFamily: Theme20.typography.fontFamily,
+  fontSize: Theme20.typography.fontSize,
   "$nest": {
     "*": {
       boxSizing: "border-box"
@@ -25352,7 +24918,7 @@ cssRule("i-range", {
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme18.text.primary,
+      color: Theme20.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -25369,7 +24935,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       background: "#d3d3d3",
-      backgroundImage: `linear-gradient(var(--track-color, ${Theme18.colors.info.main}), var(--track-color, ${Theme18.colors.info.main}))`,
+      backgroundImage: `linear-gradient(var(--track-color, ${Theme20.colors.info.main}), var(--track-color, ${Theme20.colors.info.main}))`,
       backgroundSize: "0% 100%",
       backgroundRepeat: "no-repeat !important",
       borderRadius: "0.5rem",
@@ -25404,7 +24970,7 @@ cssRule("i-range", {
       "-webkit-appearance": "none",
       appearance: "none",
       marginTop: "-5px",
-      backgroundColor: `var(--track-color, ${Theme18.colors.info.main})`,
+      backgroundColor: `var(--track-color, ${Theme20.colors.info.main})`,
       borderRadius: "0.5rem",
       height: "1rem",
       width: "1rem"
@@ -25664,7 +25230,7 @@ Range2 = __decorateClass([
 ], Range2);
 
 // packages/radio/src/radio.css.ts
-var Theme19 = theme_exports.ThemeVars;
+var Theme21 = theme_exports.ThemeVars;
 cssRule("i-radio-group", {
   display: "inline-flex",
   alignItems: "start",
@@ -25680,11 +25246,11 @@ cssRule("i-radio-group", {
   }
 });
 var captionStyle = style({
-  fontFamily: Theme19.typography.fontFamily,
-  fontSize: Theme19.typography.fontSize,
+  fontFamily: Theme21.typography.fontFamily,
+  fontSize: Theme21.typography.fontSize,
   "$nest": {
     "span": {
-      color: Theme19.text.primary
+      color: Theme21.text.primary
     }
   }
 });
@@ -26125,7 +25691,7 @@ function hslToHsv(h, s, l) {
 }
 
 // packages/color/src/style/color.css.ts
-var Theme20 = theme_exports.ThemeVars;
+var Theme22 = theme_exports.ThemeVars;
 var gradient = "linear-gradient(to right, rgb(255, 0, 0) 0%, rgb(255, 255, 0) 17%, rgb(0, 255, 0) 33%, rgb(0, 255, 255) 50%, rgb(0, 0, 255) 67%, rgb(255, 0, 255) 83%, rgb(255, 0, 0) 100%)";
 var opacity = `var(--opacity-color, linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 100%))`;
 cssRule("i-color", {
@@ -26142,7 +25708,7 @@ cssRule("i-color", {
       minWidth: 100,
       display: "inline-flex",
       alignItems: "center",
-      border: `1px solid ${Theme20.divider}`,
+      border: `1px solid ${Theme22.divider}`,
       padding: 4,
       $nest: {
         "span": {
@@ -26305,7 +25871,7 @@ cssRule("i-color", {
 });
 
 // packages/color/src/color.ts
-var Theme21 = theme_exports.ThemeVars;
+var Theme23 = theme_exports.ThemeVars;
 var rgb = ["r", "g", "b", "a"];
 var hsl = ["h", "s", "l", "a"];
 var hex = ["hex"];
@@ -26576,7 +26142,7 @@ var ColorPicker = class extends Control {
     this.pnlWrap.append(picker, this.pnlInput);
   }
   activeEyeDropper(pickerIcon) {
-    pickerIcon.fill = Theme21.colors.primary.main;
+    pickerIcon.fill = Theme23.colors.primary.main;
     const hasSupport = () => Boolean("EyeDropper" in window);
     if (hasSupport()) {
       const eyeDropper = new window.EyeDropper();
@@ -26778,19 +26344,19 @@ ColorPicker = __decorateClass([
 ], ColorPicker);
 
 // packages/input/src/style/input.css.ts
-var Theme22 = theme_exports.ThemeVars;
+var Theme24 = theme_exports.ThemeVars;
 cssRule("i-input", {
   display: "inline-block",
-  fontFamily: Theme22.typography.fontFamily,
-  fontSize: Theme22.typography.fontSize,
-  background: Theme22.input.background,
+  fontFamily: Theme24.typography.fontFamily,
+  fontSize: Theme24.typography.fontSize,
+  background: Theme24.input.background,
   "$nest": {
     "> span": {
       overflow: "hidden"
     },
     "> span > label": {
       boxSizing: "border-box",
-      color: Theme22.text.primary,
+      color: Theme24.text.primary,
       display: "inline-block",
       overflow: "hidden",
       whiteSpace: "nowrap",
@@ -26800,11 +26366,11 @@ cssRule("i-input", {
       height: "100%"
     },
     "> input": {
-      border: `0.5px solid ${Theme22.divider}`,
+      border: `0.5px solid ${Theme24.divider}`,
       boxSizing: "border-box",
       outline: "none",
-      color: Theme22.input.fontColor,
-      background: Theme22.input.background,
+      color: Theme24.input.fontColor,
+      background: Theme24.input.background,
       borderRadius: "inherit",
       fontSize: "inherit",
       maxHeight: "100%",
@@ -26814,7 +26380,7 @@ cssRule("i-input", {
       display: "none",
       verticalAlign: "middle",
       padding: "6px",
-      backgroundColor: Theme22.action.focus,
+      backgroundColor: Theme24.action.focus,
       $nest: {
         "&.active": {
           display: "inline-flex",
@@ -26827,10 +26393,10 @@ cssRule("i-input", {
     "textarea": {
       width: "100%",
       lineHeight: 1.5,
-      color: Theme22.input.fontColor,
-      background: Theme22.input.background,
-      fontSize: Theme22.typography.fontSize,
-      fontFamily: Theme22.typography.fontFamily,
+      color: Theme24.input.fontColor,
+      background: Theme24.input.background,
+      fontSize: Theme24.typography.fontSize,
+      fontFamily: Theme24.typography.fontFamily,
       outline: "none"
     }
   }
@@ -27293,7 +26859,7 @@ Input = __decorateClass([
 ], Input);
 
 // packages/application/src/styles/jsonUI.css.ts
-var Theme23 = theme_exports.ThemeVars;
+var Theme25 = theme_exports.ThemeVars;
 var jsonUICheckboxStyle = style({
   display: "flex",
   alignItems: "center",
@@ -27308,7 +26874,7 @@ var jsonUICheckboxStyle = style({
 var jsonUIComboboxStyle = style({
   $nest: {
     ".selection": {
-      border: `1px solid ${Theme23.divider}`
+      border: `1px solid ${Theme25.divider}`
     },
     ".selection input": {
       paddingInline: 0
@@ -30693,7 +30259,7 @@ CodeDiffEditor = __decorateClass([
 var import_moment3 = __toModule(require_moment());
 
 // packages/data-grid/src/style/dataGrid.css.ts
-var Theme24 = theme_exports.ThemeVars;
+var Theme26 = theme_exports.ThemeVars;
 cssRule("i-data-grid", {
   border: "0.5px solid #dadada",
   $nest: {
@@ -33903,11 +33469,11 @@ DataGrid = __decorateClass([
 ], DataGrid);
 
 // packages/markdown/src/styles/index.css.ts
-var Theme25 = theme_exports.ThemeVars;
+var Theme27 = theme_exports.ThemeVars;
 cssRule("i-markdown", {
-  fontFamily: Theme25.typography.fontFamily,
-  fontSize: Theme25.typography.fontSize,
-  color: `var(--custom-text-color, ${Theme25.text.primary})`
+  fontFamily: Theme27.typography.fontFamily,
+  fontSize: Theme27.typography.fontSize,
+  color: `var(--custom-text-color, ${Theme27.text.primary})`
 });
 
 // packages/markdown/src/markdown.ts
@@ -33956,9 +33522,9 @@ var Markdown = class extends Control {
       renderer
     });
     if (text) {
-      const rows = text.split(/\n{2}/);
+      const rows = text.split(/\n{2}|(?:\r\n){2}/);
       for (let i = 0; i < rows.length; i++) {
-        rows[i] = await this.preParse(rows[i]);
+        rows[i] = rows[i] ? await this.preParse(rows[i]) : "";
       }
       text = rows.join("\n\n");
       text = await this.marked.parse(text, {
@@ -34034,7 +33600,7 @@ Markdown = __decorateClass([
 ], Markdown);
 
 // packages/markdown-editor/src/styles/index.css.ts
-var Theme26 = theme_exports.ThemeVars;
+var Theme28 = theme_exports.ThemeVars;
 cssRule("i-markdown-editor", {
   $nest: {
     ".ProseMirror .placeholder": {
@@ -34447,7 +34013,7 @@ MarkdownEditor = __decorateClass([
 ], MarkdownEditor);
 
 // packages/menu/src/style/menu.css.ts
-var Theme27 = theme_exports.ThemeVars;
+var Theme29 = theme_exports.ThemeVars;
 cssRule("i-context-menu", {
   display: "none"
 });
@@ -34465,8 +34031,8 @@ var fadeInRight = keyframes({
   }
 });
 var menuStyle = style({
-  fontFamily: Theme27.typography.fontFamily,
-  fontSize: Theme27.typography.fontSize,
+  fontFamily: Theme29.typography.fontFamily,
+  fontSize: Theme29.typography.fontSize,
   position: "relative",
   overflow: "hidden",
   $nest: {
@@ -34496,7 +34062,7 @@ var menuStyle = style({
         ".menu-item-arrow-active": {
           transform: "rotate(180deg)",
           transition: "transform 0.25s",
-          fill: `${Theme27.text.primary} !important`
+          fill: `${Theme29.text.primary} !important`
         },
         "li": {
           position: "relative",
@@ -34504,7 +34070,7 @@ var menuStyle = style({
             "&:hover": {
               $nest: {
                 ".menu-item": {
-                  color: Theme27.colors.primary.main
+                  color: Theme29.colors.primary.main
                 },
                 ".menu-item-arrow-active": {
                   fill: "currentColor !important"
@@ -34540,8 +34106,8 @@ var meunItemStyle = style({
       paddingRight: "2.25rem"
     },
     ".menu-item.menu-active, .menu-item.menu-selected, .menu-item:hover": {
-      background: Theme27.action.hoverBackground,
-      color: Theme27.action.hover
+      background: Theme29.action.hoverBackground,
+      color: Theme29.action.hover
     },
     ".menu-item.menu-active > .menu-item-arrow": {
       transform: "rotate(180deg)",
@@ -35332,18 +34898,18 @@ var Module = class extends Container {
     super.disconnectedCallback();
   }
   openModal(options) {
-    var _a;
+    var _a, _b, _c;
     let modal = Module._modalMap[this.uuid];
     if (modal) {
       modal.title = (options == null ? void 0 : options.title) || "";
       modal.zIndex = (options == null ? void 0 : options.zIndex) || 10;
       if (options == null ? void 0 : options.linkTo)
         modal.linkTo = options.linkTo;
-      modal.refresh();
+      modal.showBackdrop = (_a = options == null ? void 0 : options.showBackdrop) != null ? _a : true;
       modal.visible = true;
       return modal;
     }
-    const showBackdrop = (_a = options == null ? void 0 : options.showBackdrop) != null ? _a : true;
+    const showBackdrop = (_b = options == null ? void 0 : options.showBackdrop) != null ? _b : true;
     const modalOptions = {
       border: { radius: 10 },
       closeIcon: showBackdrop ? { name: "times" } : null,
@@ -35358,7 +34924,7 @@ var Module = class extends Container {
     modal.zIndex = (options == null ? void 0 : options.zIndex) || 10;
     if (options == null ? void 0 : options.linkTo)
       modal.linkTo = options.linkTo;
-    modal.refresh();
+    modal.showBackdrop = (_c = options == null ? void 0 : options.showBackdrop) != null ? _c : true;
     modal.visible = true;
     return modal;
   }
@@ -35375,13 +34941,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme28 = theme_exports.ThemeVars;
+var Theme30 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme28.typography.fontFamily,
-  fontSize: Theme28.typography.fontSize,
+  fontFamily: Theme30.typography.fontFamily,
+  fontSize: Theme30.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -35415,7 +34981,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme28.text.primary,
+      color: Theme30.text.primary,
       cursor: "pointer",
       fontSize: 14
     },
@@ -35449,7 +35015,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme28.divider}`,
+          borderLeft: `1px solid ${Theme30.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -35458,17 +35024,17 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme28.action.selectedBackground,
-          color: Theme28.action.selected,
+          backgroundColor: Theme30.action.selectedBackground,
+          color: Theme30.action.selected,
           $nest: {
             "> .i-tree-node_label": {
-              color: Theme28.action.selected
+              color: Theme30.action.selected
             }
           }
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme28.action.hoverBackground,
-          color: Theme28.action.hover,
+          backgroundColor: Theme30.action.hoverBackground,
+          color: Theme30.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -35496,8 +35062,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme28.colors.primary.main,
-          color: Theme28.colors.primary.contrastText,
+          background: Theme30.colors.primary.main,
+          color: Theme30.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -35538,7 +35104,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme28.divider}`,
+          borderLeft: `1px solid ${Theme30.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -35554,15 +35120,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme28.divider}`,
-          borderLeft: `1px solid ${Theme28.divider}`,
+          borderBottom: `1px solid ${Theme30.divider}`,
+          borderLeft: `1px solid ${Theme30.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme28.divider}`,
-          borderRight: `0.5px solid ${Theme28.divider}`,
+          borderTop: `1px solid ${Theme30.divider}`,
+          borderRight: `0.5px solid ${Theme30.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -35581,7 +35147,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme28.colors.primary.main}`
+          borderBottom: `2px solid ${Theme30.colors.primary.main}`
         }
       }
     },
@@ -35608,11 +35174,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme29 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon3 = {
   name: "caret-right",
-  fill: Theme29.text.secondary,
+  fill: Theme31.text.secondary,
   width: 12,
   height: 12
 };
@@ -36092,11 +35658,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme30.typography.fontFamily,
-  fontSize: Theme30.typography.fontSize,
+  fontFamily: Theme32.typography.fontFamily,
+  fontSize: Theme32.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -36384,7 +35950,7 @@ Switch = __decorateClass([
 ], Switch);
 
 // packages/popover/src/style/popover.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 var getOverlayStyle2 = () => {
   return style({
     backgroundColor: "rgba(12, 18, 52, 0.7)",
@@ -36442,7 +36008,7 @@ var popoverMainContentStyle = style({
   fontFamily: "Helvetica",
   fontSize: "14px",
   padding: "10px 10px 5px 10px",
-  backgroundColor: Theme31.background.modal,
+  backgroundColor: Theme33.background.modal,
   position: "relative",
   borderRadius: "2px",
   width: "inherit",
@@ -36455,7 +36021,7 @@ cssRule("i-popover", {
 });
 
 // packages/popover/src/popover.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 var showEvent2 = new Event("show");
 var Popover = class extends Container {
   constructor(parent, options) {
@@ -36985,16 +36551,16 @@ Iframe = __decorateClass([
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme33.typography.fontFamily,
-  fontSize: Theme33.typography.fontSize,
+  fontFamily: Theme35.typography.fontFamily,
+  fontSize: Theme35.typography.fontSize,
   lineHeight: "25px",
-  color: Theme33.text.primary,
+  color: Theme35.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -37002,7 +36568,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme33.text.primary,
+      color: Theme35.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -37018,7 +36584,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme33.text.disabled,
+      color: Theme35.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -37264,471 +36830,6 @@ Pagination = __decorateClass([
   customElements2("i-pagination")
 ], Pagination);
 
-// packages/progress/src/style/progress.css.ts
-var Theme34 = theme_exports.ThemeVars;
-var loading = keyframes({
-  "0%": {
-    left: "-100%"
-  },
-  "100%": {
-    left: "100%"
-  }
-});
-cssRule("i-progress", {
-  display: "block",
-  maxWidth: "100%",
-  verticalAlign: "baseline",
-  fontFamily: Theme34.typography.fontFamily,
-  fontSize: Theme34.typography.fontSize,
-  color: Theme34.text.primary,
-  position: "relative",
-  $nest: {
-    "&.is-loading .i-progress_overlay": {
-      transform: "translateZ(0)",
-      animation: `${loading} 3s infinite`
-    },
-    ".i-progress": {
-      boxSizing: "border-box",
-      margin: 0,
-      minWidth: 0,
-      width: "100%",
-      display: "block"
-    },
-    ".i-progress--grid": {
-      display: "grid",
-      gap: 20,
-      gridTemplateColumns: "auto 1fr 80px",
-      alignItems: "center"
-    },
-    ".i-progress--exception": {
-      $nest: {
-        "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme34.colors.error.light
-        },
-        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme34.colors.error.light
-        },
-        ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme34.colors.error.light
-        },
-        ".i-progress_item.i-progress_item-end": {}
-      }
-    },
-    ".i-progress--success": {
-      $nest: {
-        "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme34.colors.success.light
-        },
-        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme34.colors.success.light
-        },
-        ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme34.colors.success.light
-        },
-        ".i-progress_item.i-progress_item-end": {}
-      }
-    },
-    ".i-progress--warning": {
-      $nest: {
-        "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme34.colors.warning.light
-        },
-        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme34.colors.warning.light
-        },
-        ".i-progress_item.i-progress_item-start": {
-          borderColor: Theme34.colors.warning.light
-        },
-        ".i-progress_item.i-progress_item-end": {}
-      }
-    },
-    ".i-progress--active": {
-      $nest: {
-        "> .i-progress_wrapbar > .i-progress_overlay": {
-          backgroundColor: Theme34.colors.primary.light
-        },
-        "> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item": {
-          backgroundColor: Theme34.colors.primary.light
-        },
-        ".i-progress_item.i-progress_item-start": {
-          backgroundColor: "transparent",
-          borderColor: Theme34.colors.primary.light
-        }
-      }
-    },
-    ".i-progress_wrapbar": {
-      position: "relative",
-      overflow: "hidden",
-      boxSizing: "border-box",
-      minWidth: 0,
-      order: 2,
-      minHeight: 2,
-      $nest: {
-        ".i-progress_bar": {
-          boxSizing: "border-box",
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          display: "flex",
-          alignItems: "center",
-          gap: "1px",
-          $nest: {
-            "&.has-bg": {
-              backgroundColor: Theme34.divider
-            },
-            ".i-progress_bar-item": {
-              flex: "auto",
-              backgroundColor: Theme34.divider
-            }
-          }
-        },
-        ".i-progress_overlay": {
-          position: "absolute",
-          minWidth: 0,
-          height: "100%"
-        }
-      }
-    },
-    ".i-progress_item": {
-      boxSizing: "border-box",
-      margin: "0px -1.2px 0px 0px",
-      minWidth: 0,
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      position: "relative",
-      $nest: {
-        "&.i-progress_item-start": {
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderImage: "initial",
-          borderRadius: 14,
-          borderColor: Theme34.divider,
-          padding: "4px 12px",
-          order: 1
-        },
-        "&.i-progress_item-end": {
-          boxSizing: "border-box",
-          margin: 0,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          cursor: "default",
-          position: "relative",
-          order: 3,
-          alignItems: "flex-start"
-        }
-      }
-    },
-    "&.i-progress--stretch": {
-      $nest: {
-        "@media only screen and (max-width: 768px)": {
-          $nest: {
-            ".i-progress_wrapbar": {
-              display: "none !important"
-            },
-            ".i-progress_item-end": {
-              display: "none !important"
-            },
-            ".is-mobile": {
-              display: "inline-block"
-            },
-            ".i-progress--grid": {
-              gridTemplateColumns: "auto",
-              justifyContent: "center"
-            }
-          }
-        }
-      }
-    },
-    ".i-progress--circle ~ .i-progress_text": {
-      position: "absolute",
-      top: "50%",
-      left: 0,
-      width: "100%",
-      textAlign: "center",
-      transform: "translateY(-50%)"
-    },
-    ".i-progress--line ~ .i-progress_text": {
-      display: "inline-block",
-      position: "absolute",
-      left: "50%",
-      transform: "translateX(-50%)"
-    }
-  }
-});
-
-// packages/progress/src/progress.ts
-var Theme35 = theme_exports.ThemeVars;
-var defaultVals = {
-  percent: 0,
-  height: 20,
-  loading: false,
-  steps: 1,
-  type: "line"
-};
-var Progress = class extends Control {
-  constructor(parent, options) {
-    super(parent, options, {
-      ...defaultVals
-    });
-    if (options == null ? void 0 : options.onRenderStart)
-      this.onRenderStart = options.onRenderStart;
-    if (options == null ? void 0 : options.onRenderEnd)
-      this.onRenderEnd = options.onRenderEnd;
-  }
-  get percent() {
-    return this._percent;
-  }
-  set percent(value) {
-    this._percent = +value < 0 ? 0 : +value > 100 ? 100 : +value;
-    const overlayElm = this.querySelector(".i-progress_overlay");
-    if (overlayElm)
-      overlayElm.style.width = `${this._percent}%`;
-    if (this._percent > 0 && this._percent < 100)
-      this._wrapperElm.classList.add("i-progress--active");
-    else if (this._percent === 100)
-      this._wrapperElm.classList.add("i-progress--success");
-    if (this.format) {
-      if (!this._textElm) {
-        this._textElm = this.createElement("span", this);
-        this._textElm.classList.add("i-progress_text");
-        this._textElm.style.fontSize = this.progressTextSize + "px";
-        this._textElm.style.color = this.strokeColor;
-      }
-      this._textElm.innerHTML = this.format(this._percent);
-    }
-    if (this.type === "circle") {
-      this.updateCircleInner();
-    }
-  }
-  get strokeColor() {
-    return this._strokeColor || Theme35.colors.primary.main;
-  }
-  set strokeColor(value) {
-    this._strokeColor = value;
-  }
-  get loading() {
-    return this._loading;
-  }
-  set loading(value) {
-    this._loading = value;
-    if (value)
-      this.classList.add("is-loading");
-    else
-      this.classList.remove("is-loading");
-  }
-  get steps() {
-    return this._steps;
-  }
-  set steps(value) {
-    this._steps = +value;
-    const wrapbarElm = this.querySelector(".i-progress_bar");
-    const overlayElm = this.querySelector(".i-progress_overlay");
-    wrapbarElm.innerHTML = "";
-    if (this._steps > 1) {
-      const unitStep = 100 / this._steps;
-      const percentStep = Math.ceil(this.percent / unitStep);
-      const remainder = this.percent % unitStep;
-      for (let i = 0; i < this._steps; i++) {
-        const barItem = this.createElement("div");
-        barItem.style.width = unitStep + "%";
-        barItem.style.height = `${i + 1}px`;
-        if (i === percentStep - 1 && remainder !== 0) {
-          const childElm = this.createElement("div");
-          childElm.classList.add("i-progress_bar-item");
-          childElm.style.width = remainder * 100 / unitStep + "%";
-          childElm.style.height = `${i + 1}px`;
-          barItem.appendChild(childElm);
-        } else if (i < percentStep) {
-          barItem.classList.add("i-progress_bar-item");
-        }
-        wrapbarElm.appendChild(barItem);
-      }
-      wrapbarElm.classList.remove("has-bg");
-      overlayElm && (overlayElm.style.display = "none");
-    } else {
-      wrapbarElm.classList.add("has-bg");
-      overlayElm && (overlayElm.style.display = "block");
-    }
-  }
-  get type() {
-    return this._type;
-  }
-  set type(value) {
-    this._type = value;
-    if (value === "circle") {
-      this.renderCircle();
-    } else {
-      this.renderLine();
-    }
-  }
-  get strokeWidth() {
-    return this._strokeWidth;
-  }
-  set strokeWidth(value) {
-    this._strokeWidth = value || 2;
-    const overlayElm = this.querySelector(".i-progress_wrapbar");
-    if (overlayElm)
-      overlayElm.style.height = `${this._strokeWidth}px`;
-  }
-  get font() {
-    return {
-      color: this._textElm.style.color,
-      name: this._textElm.style.fontFamily,
-      size: this._textElm.style.fontSize,
-      bold: this._textElm.style.fontStyle.indexOf("bold") >= 0,
-      style: this._textElm.style.fontStyle,
-      transform: this._textElm.style.textTransform,
-      weight: this._textElm.style.fontWeight
-    };
-  }
-  set font(value) {
-    if (this._textElm) {
-      this._textElm.style.color = value.color || "";
-      this._textElm.style.fontSize = value.size || "";
-      this._textElm.style.fontWeight = value.bold ? "bold" : "";
-      this._textElm.style.fontFamily = value.name || "";
-      this._textElm.style.fontStyle = value.style || "";
-      this._textElm.style.textTransform = value.transform || "none";
-      this._textElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
-    }
-  }
-  get relativeStrokeWidth() {
-    return (this.strokeWidth / +this.width * 100).toFixed(1);
-  }
-  get radius() {
-    if (this.type === "circle") {
-      const value = 50 - parseFloat(this.relativeStrokeWidth) / 2;
-      return parseInt(value.toFixed(1), 10);
-    } else {
-      return 0;
-    }
-  }
-  get trackPath() {
-    const radius = this.radius;
-    return `
-          M 50 50
-          m 0 -${radius}
-          a ${radius} ${radius} 0 1 1 0 ${radius * 2}
-          a ${radius} ${radius} 0 1 1 0 -${radius * 2}
-          `;
-  }
-  get perimeter() {
-    return 2 * Math.PI * this.radius;
-  }
-  get rate() {
-    return 1;
-  }
-  get strokeDashoffset() {
-    const offset = -1 * this.perimeter * (1 - this.rate) / 2;
-    return `${offset}px`;
-  }
-  get trailPathStyle() {
-    const strokeDasharray = `${this.perimeter * this.rate}px, ${this.perimeter}px`;
-    const strokeDashoffset = this.strokeDashoffset;
-    return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset};`;
-  }
-  get circlePathStyle() {
-    const strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
-    const strokeDashoffset = this.strokeDashoffset;
-    const transition = "stroke-dasharray 0.6s ease 0s, stroke 0.6s ease";
-    return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset}; transition: ${transition};`;
-  }
-  get stroke() {
-    let ret = this.strokeColor;
-    if (this.percent === 100)
-      ret = Theme35.colors.success.main;
-    return ret;
-  }
-  get trackColor() {
-    return Theme35.divider;
-  }
-  get progressTextSize() {
-    return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
-  }
-  renderLine() {
-    this._wrapperElm.classList.add("i-progress--line");
-    this._barElm = this.createElement("div", this._wrapperElm);
-    this._barElm.classList.add("i-progress_wrapbar");
-    this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.strokeColor}"></div>`;
-  }
-  renderCircle() {
-    this._wrapperElm.classList.add("i-progress--circle");
-    if (this.width)
-      this.height = this.width;
-  }
-  renderCircleInner() {
-    const templateHtml = `<svg viewBox="0 0 100 100">
-            <path class="i-progress-circle__track"
-            d="${this.trackPath}"
-            stroke="${this.trackColor}"
-            stroke-width="${this.relativeStrokeWidth}"
-            fill="none"
-            style="${this.trailPathStyle}"></path>
-            <path
-            class="i-progress-circle__path"
-            d="${this.trackPath}"
-            stroke="${this.stroke}"
-            fill="none"
-            stroke-linecap="round"
-            stroke-width="${this.percent ? this.relativeStrokeWidth : 0}"
-            style="${this.circlePathStyle}"></path>
-        </svg>`;
-    this._wrapperElm.innerHTML = "";
-    this._wrapperElm.innerHTML = templateHtml;
-  }
-  updateCircleInner() {
-    const svgPath = this._wrapperElm.querySelector(".i-progress-circle__path");
-    if (svgPath) {
-      svgPath.style.strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
-      svgPath.setAttribute("stroke-width", `${this.percent ? this.relativeStrokeWidth : 0}`);
-    }
-  }
-  init() {
-    var _a, _b;
-    if (!this.initialized) {
-      super.init();
-      if ((_a = this.options) == null ? void 0 : _a.onRenderStart)
-        this.onRenderStart = this.options.onRenderStart;
-      if ((_b = this.options) == null ? void 0 : _b.onRenderEnd)
-        this.onRenderEnd = this.options.onRenderEnd;
-      this.loading = this.getAttribute("loading", true);
-      this.strokeColor = this.getAttribute("strokeColor", true);
-      this._wrapperElm = this.createElement("div", this);
-      this._wrapperElm.classList.add("i-progress");
-      this.type = this.getAttribute("type", true);
-      this.percent = this.getAttribute("percent", true);
-      this.strokeWidth = this.getAttribute("strokeWidth", true);
-      if (this.type === "line") {
-        this.steps = this.getAttribute("steps", true);
-        if (this.onRenderStart && typeof this.onRenderStart === "function") {
-          this._wrapperElm.classList.add("i-progress--grid");
-          this._startElm = this.createElement("div", this._wrapperElm);
-          this._startElm.classList.add("i-progress_item", "i-progress_item-start");
-          this.onRenderStart(this._startElm);
-        }
-        if (this.onRenderEnd && typeof this.onRenderEnd === "function") {
-          this._wrapperElm.classList.add("i-progress--grid");
-          this._endElm = this.createElement("div", this._wrapperElm);
-          this._endElm.classList.add("i-progress_item", "i-progress_item-end");
-          this.onRenderEnd(this._endElm);
-        }
-      }
-      if (this.type === "circle")
-        this.renderCircleInner();
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Progress = __decorateClass([
-  customElements2("i-progress")
-], Progress);
-
 // packages/table/src/style/table.css.ts
 var Theme36 = theme_exports.ThemeVars;
 var tableStyle = style({
@@ -37874,22 +36975,18 @@ var getCustomStylesClass = (styles) => {
 var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
+    let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
       const ruleObj = styleObj["$nest"][mediaQueryRule];
       styleObj["$nest"][mediaQueryRule] = {
         ...ruleObj,
         $nest: {}
       };
-      if (mediaQuery.properties.fieldNames) {
-        const fieldNames = mediaQuery.properties.fieldNames;
+      const {
+        fieldNames,
+        expandable
+      } = mediaQuery.properties || {};
+      if (fieldNames) {
         for (let column of columns) {
           const fieldName = column.fieldName || "action";
           if (!fieldNames.includes(column.fieldName)) {
@@ -37911,8 +37008,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
           }
         }
       }
-      if (mediaQuery.properties.expandable) {
-        const expandable = mediaQuery.properties.expandable;
+      if (expandable) {
         styleObj["$nest"][mediaQueryRule]["$nest"][".i-table-row--child"] = {
           display: expandable.rowExpandable ? "none" : "none !important"
         };
@@ -38567,14 +37663,7 @@ var sliderStyle = style({
 var getCarouselMediaQueriesStyleClass = (mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
-    let mediaQueryRule;
-    if (mediaQuery.minWidth && mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth}) and (max-width: ${mediaQuery.maxWidth})`;
-    } else if (mediaQuery.minWidth) {
-      mediaQueryRule = `@media (min-width: ${mediaQuery.minWidth})`;
-    } else if (mediaQuery.maxWidth) {
-      mediaQueryRule = `@media (max-width: ${mediaQuery.maxWidth})`;
-    }
+    let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
       styleObj["$nest"][mediaQueryRule] = styleObj["$nest"][mediaQueryRule] || {};
       const ruleObj = styleObj["$nest"][mediaQueryRule];
@@ -38586,9 +37675,11 @@ var getCarouselMediaQueriesStyleClass = (mediaQueries) => {
           ".dots-pagination": {}
         }
       };
-      if (mediaQuery.properties.indicators !== void 0) {
-        const visible = mediaQuery.properties.indicators;
-        styleObj["$nest"][mediaQueryRule]["$nest"][".dots-pagination"]["display"] = visible ? `flex !important` : "none !important";
+      const {
+        indicators
+      } = mediaQuery.properties || {};
+      if (indicators !== void 0 && indicators !== null) {
+        styleObj["$nest"][mediaQueryRule]["$nest"][".dots-pagination"]["display"] = indicators ? `flex !important` : "none !important";
       }
     }
   }
@@ -39056,11 +38147,28 @@ CarouselItem = __decorateClass([
 
 // packages/video/src/style/video.css.ts
 cssRule("i-video", {
+  position: "relative",
   $nest: {
     ".video-js  .vjs-big-play-button": {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)"
+    },
+    ".overlay": {
+      position: "absolute",
+      top: "0px",
+      left: "0px",
+      width: "100%",
+      height: "calc(100% - 3rem)",
+      zIndex: 9999,
+      display: "none"
+    },
+    "@media screen and (max-width: 767px)": {
+      $nest: {
+        ".overlay": {
+          display: "block"
+        }
+      }
     }
   }
 });
@@ -39087,20 +38195,32 @@ function loadCss() {
   }
 }
 var Video = class extends Container {
+  constructor() {
+    super(...arguments);
+    this._isPlayed = false;
+  }
   get url() {
     return this._url;
   }
   set url(value) {
     this._url = value;
-    if (value && !this.sourceElm)
+    if (!this.sourceElm)
       this.sourceElm = this.createElement("source", this.videoElm);
-    if (this.sourceElm)
-      this.sourceElm.src = value;
+    this.sourceElm.src = value;
     if (this.player) {
-      this.player.src({
-        src: value,
-        type: "application/x-mpegURL"
-      });
+      if (value) {
+        this.sourceElm.type = "application/x-mpegURL";
+        this.player.src({
+          src: value,
+          type: "application/x-mpegURL"
+        });
+      } else {
+        this.player.reset();
+      }
+    } else {
+      const videoEl = this.videoElm;
+      if (videoEl == null ? void 0 : videoEl.load)
+        videoEl.load();
     }
   }
   get border() {
@@ -39123,13 +38243,6 @@ var Video = class extends Container {
           resolve(this.player);
         }
       }, 100);
-    });
-  }
-  async loadLib() {
-    return new Promise((resolve, reject) => {
-      RequireJS.require(reqs, function(videoJs) {
-        resolve(videoJs);
-      });
     });
   }
   getVideoTypeFromExtension(url) {
@@ -39157,6 +38270,8 @@ var Video = class extends Container {
     if (!this.initialized) {
       super.init();
       loadCss();
+      this.overlayElm = this.createElement("div", this);
+      this.overlayElm.classList.add("overlay");
       const self = this;
       const isStreaming = this.getAttribute("isStreaming", true);
       if (isStreaming) {
@@ -39166,9 +38281,16 @@ var Video = class extends Container {
         this.videoElm.setAttribute("controls", "true");
         this.videoElm.setAttribute("preload", "auto");
         this.videoElm.classList.add("vjs-default-skin");
-        this.sourceElm = this.createElement("source", this.videoElm);
-        this.sourceElm.type = "application/x-mpegURL";
-        this.url = this.getAttribute("url", true);
+        this.overlayElm.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (this.player.paused()) {
+            this.player.play();
+          } else {
+            this.player.pause();
+          }
+        });
+        const src = this.getAttribute("url", true);
         const border = this.getAttribute("border", true);
         RequireJS.require(reqs, function(videojs) {
           self.player = videojs(id, {
@@ -39184,14 +38306,42 @@ var Video = class extends Container {
             height: "100%",
             width: "100%"
           });
+          if (src) {
+            self.sourceElm = self.createElement("source", self.videoElm);
+            self.sourceElm.type = "application/x-mpegURL";
+            self.sourceElm.src = src;
+            self.player.src({
+              src,
+              type: "application/x-mpegURL"
+            });
+          }
           const video = self.videoElm.querySelector("video");
-          if (video && border)
-            self._border = new Border(video, border);
+          if (video) {
+            self.videoElm.insertBefore(self.overlayElm, video);
+            if (border)
+              self._border = new Border(video, border);
+          }
         });
       } else {
         this.videoElm = this.createElement("video", this);
         this.videoElm.setAttribute("controls", "true");
         this.videoElm.setAttribute("width", "100%");
+        this.insertBefore(this.overlayElm, this.videoElm);
+        this.overlayElm.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (this._isPlayed) {
+            const video = this.videoElm;
+            if (video.paused) {
+              video.play();
+            } else {
+              video.pause();
+            }
+          }
+        });
+        this.videoElm.addEventListener("canplay", () => {
+          this._isPlayed = true;
+        });
         this.sourceElm = this.createElement("source", this.videoElm);
         this.url = this.getAttribute("url", true);
         let videoType = this.getVideoTypeFromExtension(this.url);

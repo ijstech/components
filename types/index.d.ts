@@ -796,7 +796,8 @@ declare module "moment"{
 
 export default moment;
 
-}declare module "packages/style/src/colors" {
+}/// <reference types="node" />
+declare module "packages/style/src/colors" {
     export interface IColor {
         50: string;
         100: string;
@@ -3820,7 +3821,7 @@ declare module "packages/base/src/component" {
     }
 }
 declare module "packages/base/src/style/base.css" {
-    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground, IControlMediaQuery, DisplayType } from "@ijstech/components/base";
+    import { BorderStylesSideType, IBorder, IBorderSideStyles, IOverflow, IBackground, IControlMediaQuery, DisplayType, IMediaQuery } from "@ijstech/components/base";
     export const disabledStyle: string;
     export const containerStyle: string;
     export const getBorderSideStyleClass: (side: BorderStylesSideType, value: IBorderSideStyles) => string;
@@ -3831,6 +3832,7 @@ declare module "packages/base/src/style/base.css" {
     };
     export const getBackgroundStyleClass: (value: IBackground) => string;
     export const getSpacingValue: (value: string | number) => string;
+    export const getMediaQueryRule: (mediaQuery: IMediaQuery<any>) => string | undefined;
     interface IProps {
         display?: DisplayType;
     }
@@ -4388,6 +4390,7 @@ declare module "packages/modal/src/style/modal.css" {
     export const getNoBackdropStyle: () => string;
     export const getFixedWrapperStyle: (paddingLeft: string, paddingTop: string) => string;
     export const getAbsoluteWrapperStyle: (left: string, top: string) => string;
+    export const getModalStyle: (left: string, top: string) => string;
     export const modalStyle: string;
     export const titleStyle: string;
     export const getModalMediaQueriesStyleClass: (mediaQueries: IModalMediaQuery[]) => string;
@@ -4466,6 +4469,7 @@ declare module "packages/modal/src/modal" {
         set closeOnBackdropClick(value: boolean);
         get showBackdrop(): boolean;
         set showBackdrop(value: boolean);
+        private updateNoBackdropMd;
         get item(): Control;
         set item(value: Control);
         get body(): Control;
@@ -4664,31 +4668,178 @@ declare module "packages/application/src/globalEvent" {
 declare module "packages/application/src/styles/index.css" {
     export const applicationStyle: string;
 }
-declare module "packages/ipfs/src/index" {
+declare module "packages/ipfs/src/types" {
+    export enum CidCode {
+        DAG_PB = 112,
+        RAW = 85
+    }
+    export interface ICidData {
+        cid: string;
+        links?: ICidInfo[];
+        name?: string;
+        size: number;
+        type?: 'dir' | 'file';
+        code?: CidCode;
+        multihash?: any;
+        bytes?: Uint8Array;
+    }
     export interface ICidInfo {
         cid: string;
         links?: ICidInfo[];
-        name: string;
+        name?: string;
         size: number;
         type?: 'dir' | 'file';
     }
-    export function parse(cid: string): {
-        code: number;
-        version: number;
-        multihash: {
-            code: number;
-            size: number;
-            digest: Uint8Array;
-            bytes: Uint8Array;
-        };
-        bytes: Uint8Array;
-    };
-    export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidInfo>;
-    export function hashContent(content: string, version?: number): Promise<ICidInfo>;
-    export function hashFile(file: File, version?: number): Promise<{
-        cid: string;
+}
+declare module "packages/ipfs/src/utils" {
+    import { ICidData, ICidInfo } from "packages/ipfs/src/types";
+    export function parse(cid: string, bytes?: Uint8Array): ICidData;
+    export interface IHashChunk {
         size: number;
-    }>;
+        dataSize: number;
+        cid: {
+            toString: () => string;
+        };
+    }
+    export function hashChunk(data: Buffer, version?: number): Promise<IHashChunk>;
+    export function hashChunks(chunks: IHashChunk[] | ICidInfo[], version?: number): Promise<ICidData>;
+    export function hashItems(items?: ICidInfo[], version?: number): Promise<ICidData>;
+    export function hashContent(content: string | Uint8Array, version?: number): Promise<ICidData>;
+    export function hashFile(file: File | Uint8Array, version?: number): Promise<ICidData>;
+    export function cidToHash(cid: string): string;
+}
+declare module "packages/ipfs/src/fileManager" {
+    import { ICidData, ICidInfo } from "packages/ipfs/src/types";
+    export interface ISignature {
+        pubKey: string;
+        timestamp: number;
+        sig: string;
+    }
+    export interface ISignerData {
+        action: string;
+        timestamp: number;
+        data?: any;
+    }
+    export interface ISigner {
+        sign(data: ISignerData, schema: object): Promise<ISignature>;
+    }
+    interface IFileManagerOptions {
+        transport?: IFileManagerTransport;
+        endpoint?: string;
+        signer?: ISigner;
+        rootCid?: string;
+    }
+    export interface IUploadEndpoints {
+        [cid: string]: {
+            exists?: boolean;
+            url: string;
+            method?: string;
+            headers?: {
+                [key: string]: string;
+            };
+        };
+    }
+    export type IGetUploadUrlResult = {
+        success: true;
+        data: IUploadEndpoints;
+    };
+    export interface IRootInfo {
+        success: boolean;
+        data: {
+            cid: string;
+            used: number;
+            quota: number;
+        };
+    }
+    export interface IResult {
+        success: boolean;
+        data?: any;
+    }
+    export interface IFileManagerTransport {
+        applyUpdate(node: FileNode): Promise<IResult>;
+        getCidInfo(cid: string): Promise<ICidInfo | undefined>;
+        getRoot(): Promise<IRootInfo>;
+        getUploadUrl(cidInfo: ICidInfo): Promise<IGetUploadUrlResult | undefined>;
+    }
+    export interface IFileManagerTransporterOptions {
+        endpoint?: string;
+        signer?: ISigner;
+    }
+    export class FileManagerHttpTransport implements IFileManagerTransport {
+        private options;
+        private updated;
+        constructor(options?: IFileManagerTransporterOptions);
+        applyUpdate(node: FileNode): Promise<IResult>;
+        getCidInfo(cid: string): Promise<ICidInfo | undefined>;
+        getRoot(): Promise<IRootInfo>;
+        getUploadUrl(cidInfo: ICidInfo, isRoot?: boolean): Promise<IGetUploadUrlResult | undefined>;
+    }
+    export class FileNode {
+        private _name;
+        private _parent;
+        protected _items: FileNode[];
+        private _cidInfo;
+        private _isFile;
+        private _isFolder;
+        private _file;
+        private _fileContent;
+        private _isModified;
+        private _owner;
+        isRoot: boolean;
+        constructor(owner: FileManager, name: string, parent?: FileNode, cidInfo?: ICidData);
+        get cid(): string;
+        checkCid(): Promise<void>;
+        get fullPath(): string;
+        get isModified(): boolean;
+        modified(value?: boolean): false | undefined;
+        get name(): string;
+        set name(value: string);
+        get parent(): FileNode;
+        set parent(value: FileNode);
+        itemCount(): Promise<number>;
+        items(index: number): Promise<FileNode>;
+        addFile(name: string, file: File): Promise<FileNode>;
+        addFileContent(name: string, content: Uint8Array | string): Promise<FileNode>;
+        addItem(item: FileNode): Promise<void>;
+        removeItem(item: FileNode): void;
+        findItem(name: string): Promise<FileNode | undefined>;
+        get cidInfo(): ICidData | undefined;
+        isFile(): Promise<boolean>;
+        isFolder(): Promise<boolean>;
+        get file(): File | undefined;
+        set file(value: File | undefined);
+        get fileContent(): string | Uint8Array | undefined;
+        set fileContent(value: string | Uint8Array | undefined);
+        hash(): Promise<ICidData | undefined>;
+    }
+    export class FileManager {
+        private transporter;
+        private rootNode;
+        private options;
+        quota: number;
+        used: number;
+        constructor(options?: IFileManagerOptions);
+        addFileTo(folder: FileNode, filePath: string, file: File | Uint8Array): Promise<FileNode>;
+        addFile(filePath: string, file: File): Promise<FileNode | undefined>;
+        addFileContent(filePath: string, content: Uint8Array | string): Promise<FileNode | undefined>;
+        getCidInfo(cid: string): Promise<ICidInfo | undefined>;
+        private updateNode;
+        applyUpdates(): Promise<FileNode | undefined>;
+        delete(fileNode: FileNode): void;
+        addFolder(folder: FileNode, name: string): Promise<FileNode>;
+        updateFolderName(fileNode: FileNode, newName: string): Promise<void>;
+        getFileNode(path: string): Promise<FileNode | undefined>;
+        getRootNode(): Promise<FileNode | undefined>;
+        reset(): void;
+        setRootCid(cid: string): Promise<FileNode | undefined>;
+        move(fileNode: FileNode, newParent: FileNode): void;
+    }
+}
+declare module "packages/ipfs/src/index" {
+    import { ICidInfo } from "packages/ipfs/src/types";
+    export { CidCode, ICidData, ICidInfo } from "packages/ipfs/src/types";
+    export { cidToHash, hashContent, hashFile, hashItems, parse } from "packages/ipfs/src/utils";
+    export { FileManager, FileManagerHttpTransport, IFileManagerTransport, IFileManagerTransporterOptions, ISigner, ISignerData, ISignature, FileNode, IGetUploadUrlResult } from "packages/ipfs/src/fileManager";
     export interface IFile extends File {
         path?: string;
         cid?: {
@@ -5245,6 +5396,84 @@ declare module "packages/upload/src/upload" {
         static create(options?: UploadElement, parent?: Control): Promise<Upload>;
     }
 }
+declare module "packages/progress/src/style/progress.css" { }
+declare module "packages/progress/src/progress" {
+    import { Control, ControlElement, Types, IFont } from "@ijstech/components/base";
+    import "packages/progress/src/style/progress.css";
+    export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
+    export type ProgressType = 'line' | 'circle';
+    type callbackType = (source: Control) => void;
+    export interface ProgressElement extends ControlElement {
+        percent?: number;
+        strokeWidth?: number;
+        strokeColor?: Types.Color;
+        loading?: boolean;
+        steps?: number;
+        type?: ProgressType;
+        format?: (percent: number) => string;
+        onRenderStart?: callbackType;
+        onRenderEnd?: callbackType;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-progress']: ProgressElement;
+            }
+        }
+    }
+    export class Progress extends Control {
+        private _percent;
+        private _status;
+        private _loading;
+        private _steps;
+        private _type;
+        private _strokeWidth;
+        private _strokeColor;
+        private _wrapperElm;
+        private _startElm;
+        private _barElm;
+        private _endElm;
+        private _textElm;
+        format: (percent: number) => string;
+        onRenderStart: callbackType;
+        onRenderEnd: callbackType;
+        constructor(parent?: Control, options?: any);
+        get percent(): number;
+        set percent(value: number);
+        get strokeColor(): Types.Color;
+        set strokeColor(value: Types.Color);
+        get loading(): boolean;
+        set loading(value: boolean);
+        get steps(): number;
+        set steps(value: number);
+        get type(): ProgressType;
+        set type(value: ProgressType);
+        get strokeWidth(): number;
+        set strokeWidth(value: number);
+        get font(): IFont;
+        set font(value: IFont);
+        private get relativeStrokeWidth();
+        private get radius();
+        private get trackPath();
+        private get perimeter();
+        private get rate();
+        private get strokeDashoffset();
+        private get trailPathStyle();
+        private get circlePathStyle();
+        private get stroke();
+        private get trackColor();
+        private get progressTextSize();
+        private renderLine;
+        private renderCircle;
+        private renderCircleInner;
+        private updateCircleInner;
+        protected init(): void;
+        static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
+    }
+}
+declare module "packages/progress/src/index" {
+    export { Progress } from "packages/progress/src/progress";
+}
 declare module "packages/upload/src/style/upload-modal.css" { }
 declare module "packages/upload/src/upload-modal" {
     import { Control, ControlElement } from "@ijstech/components/base";
@@ -5313,20 +5542,25 @@ declare module "packages/upload/src/upload-modal" {
         get parentDir(): Partial<ICidInfo>;
         set parentDir(value: Partial<ICidInfo>);
         show(): Promise<void>;
+        private updateUI;
         hide(): void;
         private onBeforeDrop;
         private onBeforeUpload;
         private filteredFileListData;
         private numPages;
         private setCurrentPage;
+        private get isSmallWidth();
         private renderFilterBar;
         private renderFileList;
+        private formatBytes;
+        private getStatus;
         private getPagination;
         private renderPagination;
         private onChangeCurrentFilterStatus;
         private onClear;
         private onCancel;
         private onChangeFile;
+        private updateBtnCaption;
         private onRemove;
         private onRemoveFile;
         private getDirItems;
@@ -10809,84 +11043,6 @@ declare module "packages/pagination/src/pagination" {
 declare module "packages/pagination/src/index" {
     export { Pagination, PaginationElement } from "packages/pagination/src/pagination";
 }
-declare module "packages/progress/src/style/progress.css" { }
-declare module "packages/progress/src/progress" {
-    import { Control, ControlElement, Types, IFont } from "@ijstech/components/base";
-    import "packages/progress/src/style/progress.css";
-    export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
-    export type ProgressType = 'line' | 'circle';
-    type callbackType = (source: Control) => void;
-    export interface ProgressElement extends ControlElement {
-        percent?: number;
-        strokeWidth?: number;
-        strokeColor?: Types.Color;
-        loading?: boolean;
-        steps?: number;
-        type?: ProgressType;
-        format?: (percent: number) => string;
-        onRenderStart?: callbackType;
-        onRenderEnd?: callbackType;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-progress']: ProgressElement;
-            }
-        }
-    }
-    export class Progress extends Control {
-        private _percent;
-        private _status;
-        private _loading;
-        private _steps;
-        private _type;
-        private _strokeWidth;
-        private _strokeColor;
-        private _wrapperElm;
-        private _startElm;
-        private _barElm;
-        private _endElm;
-        private _textElm;
-        format: (percent: number) => string;
-        onRenderStart: callbackType;
-        onRenderEnd: callbackType;
-        constructor(parent?: Control, options?: any);
-        get percent(): number;
-        set percent(value: number);
-        get strokeColor(): Types.Color;
-        set strokeColor(value: Types.Color);
-        get loading(): boolean;
-        set loading(value: boolean);
-        get steps(): number;
-        set steps(value: number);
-        get type(): ProgressType;
-        set type(value: ProgressType);
-        get strokeWidth(): number;
-        set strokeWidth(value: number);
-        get font(): IFont;
-        set font(value: IFont);
-        private get relativeStrokeWidth();
-        private get radius();
-        private get trackPath();
-        private get perimeter();
-        private get rate();
-        private get strokeDashoffset();
-        private get trailPathStyle();
-        private get circlePathStyle();
-        private get stroke();
-        private get trackColor();
-        private get progressTextSize();
-        private renderLine;
-        private renderCircle;
-        private renderCircleInner;
-        private updateCircleInner;
-        protected init(): void;
-        static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
-    }
-}
-declare module "packages/progress/src/index" {
-    export { Progress } from "packages/progress/src/progress";
-}
 declare module "packages/table/src/style/table.css" {
     import { TableColumnElement } from "packages/table/src/tableColumn";
     import { ITableMediaQuery } from "packages/table/src/table";
@@ -11219,14 +11375,15 @@ declare module "packages/video/src/video" {
     export class Video extends Container {
         private videoElm;
         private sourceElm;
+        private overlayElm;
         private player;
         private _url;
+        private _isPlayed;
         get url(): string;
         set url(value: string);
         get border(): Border;
         set border(value: IBorder);
         getPlayer(): any;
-        private loadLib;
         private getVideoTypeFromExtension;
         protected init(): void;
         static create(options?: VideoElement, parent?: Control): Promise<Video>;
