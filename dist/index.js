@@ -10153,9 +10153,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// ../../node_modules/moment/moment.js
+// node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "../../node_modules/moment/moment.js"(exports, module2) {
+  "node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -13854,6 +13854,8 @@ var require_moment = __commonJS({
 
 // src/index.ts
 __export(exports, {
+  Accordion: () => Accordion,
+  AccordionItem: () => AccordionItem,
   Alert: () => Alert,
   BarChart: () => BarChart,
   Breadcrumb: () => Breadcrumb,
@@ -13892,6 +13894,7 @@ __export(exports, {
   Markdown: () => Markdown,
   MarkdownEditor: () => MarkdownEditor,
   Menu: () => Menu,
+  MenuItem: () => MenuItem,
   Modal: () => Modal,
   Module: () => Module,
   Nav: () => Nav,
@@ -13904,6 +13907,7 @@ __export(exports, {
   Radio: () => Radio,
   RadioGroup: () => RadioGroup,
   Range: () => Range2,
+  Repeater: () => Repeater,
   RequireJS: () => RequireJS,
   ScatterChart: () => ScatterChart,
   ScatterLineChart: () => ScatterLineChart,
@@ -13929,6 +13933,7 @@ __export(exports, {
   customModule: () => customModule,
   getCustomElements: () => getCustomElements,
   isObservable: () => isObservable,
+  markdownToPlainText: () => markdownToPlainText,
   moment: () => moment,
   observable: () => observable,
   renderUI: () => renderUI
@@ -15702,6 +15707,12 @@ var ComponentPropertyType;
   ComponentPropertyType2[ComponentPropertyType2["event"] = 6] = "event";
 })(ComponentPropertyType || (ComponentPropertyType = {}));
 var notifyEventParams = [{ name: "target", type: "Control", isControl: true }, { name: "event", type: "Event" }];
+var GroupType;
+(function(GroupType2) {
+  GroupType2["BASIC"] = "Basic";
+  GroupType2["LAYOUT"] = "Layout";
+  GroupType2["FIELDS"] = "Fields";
+})(GroupType || (GroupType = {}));
 var ComponentProperty = {
   props: {
     "id": { type: "string" }
@@ -15747,24 +15758,35 @@ var Component = class extends HTMLElement {
   _getDesignPropValue(prop) {
     return this._designProps && this._designProps[prop];
   }
-  _setDesignPropValue(prop, value) {
+  _setDesignPropValue(prop, value, breakpointProp) {
     this._designProps = this._designProps || {};
     this._designProps[prop] = value;
-    if (ComponentProperty.props[prop]) {
-      this[prop] = this.parseDesignPropValue(value);
+    if (ComponentProperty.props[prop] && prop !== "mediaQueries") {
+      this[prop] = breakpointProp != null ? breakpointProp : value;
     } else {
       let propInfo = this._propInfo || getCustomElementProperties(this.tagName);
       this._propInfo = propInfo;
-      if (propInfo && propInfo.props[prop]) {
-        this[prop] = this.parseDesignPropValue(value);
+      if (propInfo && propInfo.props[prop] && prop !== "mediaQueries") {
+        if (!["link", "icon", "image", "rightIcon"].includes(prop)) {
+          this[prop] = breakpointProp != null ? breakpointProp : value;
+        }
       }
       ;
     }
     ;
   }
-  _setDesignProps(props) {
-    for (let prop in props)
-      this._setDesignPropValue(prop, props[prop]);
+  _setDesignProps(props, breakpoint = {}) {
+    var _a;
+    if (breakpoint) {
+      for (let prop in breakpoint) {
+        if (!Object.hasOwnProperty.call(props, prop))
+          props[prop] = (_a = this._designProps) == null ? void 0 : _a[prop];
+      }
+    }
+    for (let prop in props) {
+      const hasQuery = Object.hasOwnProperty.call(breakpoint, prop);
+      this._setDesignPropValue(prop, props[prop], hasQuery ? breakpoint[prop] : void 0);
+    }
   }
   _getDesignProps() {
     return this._designProps;
@@ -16043,35 +16065,72 @@ var containerStyle = style({
     }
   }
 });
-var getBorderSideStyleClass = (side, value) => {
+var getBorderSideObj = (side, value) => {
   let styleObj = {};
-  if (value.width) {
+  if (value.width !== void 0) {
     let borderWidthProp = `border-${side}-width`;
-    styleObj[borderWidthProp] = typeof value.width == "number" ? value.width + "px" : value.width;
+    styleObj[borderWidthProp] = getSpacingValue(value.width);
   }
-  if (value.style) {
+  if (value.style !== void 0) {
     let borderStyleProp = `border-${side}-style`;
     styleObj[borderStyleProp] = value.style;
   }
-  if (value.color) {
+  if (value.color !== void 0) {
     let borderColorProp = `border-${side}-color`;
-    styleObj[borderColorProp] = value.color;
+    styleObj[borderColorProp] = value.color || "transparent";
   }
+  return styleObj;
+};
+var getBorderSideStyleClass = (side, value) => {
+  const styleObj = getBorderSideObj(side, value);
   return style(styleObj);
 };
 var getBorderStyleClass = (value) => {
+  if (!value)
+    return "";
+  const { width, style: bdStyle, color, top, right, bottom, left } = value;
   let styleObj = {};
-  if (value.width) {
-    styleObj["borderWidth"] = typeof value.width == "number" ? value.width + "px" : value.width;
+  if (Object.hasOwnProperty.call(value, "radius")) {
+    styleObj["borderRadius"] = value.radius;
   }
-  if (value.style) {
-    styleObj["borderStyle"] = value.style;
+  let borderWidth = width || "1px";
+  let borderColor = color || "transparent";
+  let borderStyle = bdStyle || "solid";
+  styleObj.borderWidth = "";
+  styleObj.borderColor = "";
+  styleObj.borderStyle = "";
+  if (top) {
+    const { width: width2, color: color2, style: style2 } = top;
+    styleObj.borderWidth = `${getSpacingValue(width2 || borderWidth)}`;
+    styleObj.borderColor = `${color2 || borderColor}`;
+    styleObj.borderStyle = `${style2 || borderStyle}`;
   }
-  if (value.color) {
-    styleObj["borderColor"] = value.color;
+  if (right) {
+    const { width: width2, color: color2, style: style2 } = right;
+    styleObj.borderWidth += ` ${getSpacingValue(width2 || borderWidth)}`;
+    styleObj.borderColor += ` ${color2 || borderColor}`;
+    styleObj.borderStyle += ` ${style2 || borderStyle}`;
   }
-  if (value.radius) {
-    styleObj["borderRadius"] = typeof value.radius == "number" ? value.radius + "px" : value.radius;
+  if (bottom) {
+    const { width: width2, color: color2, style: style2 } = bottom;
+    styleObj.borderWidth += ` ${getSpacingValue(width2 || borderWidth)}`;
+    styleObj.borderColor += ` ${color2 || borderColor}`;
+    styleObj.borderStyle += ` ${style2 || borderStyle}`;
+  }
+  if (left) {
+    const { width: width2, color: color2, style: style2 } = left;
+    styleObj.borderWidth += ` ${getSpacingValue(width2 || borderWidth)}`;
+    styleObj.borderColor += ` ${color2 || borderColor}`;
+    styleObj.borderStyle += ` ${style2 || borderStyle}`;
+  }
+  if (!styleObj.borderWidth) {
+    styleObj.borderWidth = borderWidth;
+  }
+  if (!styleObj.borderColor) {
+    styleObj.borderColor = borderColor || "transparent";
+  }
+  if (!styleObj.borderStyle) {
+    styleObj.borderStyle = borderStyle || "solid";
   }
   return style(styleObj);
 };
@@ -16101,9 +16160,8 @@ var getBackgroundStyleClass = (value) => {
   return style(getBackground(value));
 };
 var getSpacingValue = (value) => {
-  if (typeof value === "number")
-    return value + "px";
-  return value;
+  const isNumber = typeof value === "number" || value !== "" && !Number.isNaN(Number(value));
+  return isNumber ? `${value}px` : value;
 };
 var getMediaQueryRule = (mediaQuery) => {
   let mediaQueryRule;
@@ -16144,7 +16202,14 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
           right,
           bottom,
           maxHeight,
-          maxWidth
+          maxWidth,
+          font,
+          width,
+          height,
+          minWidth,
+          minHeight,
+          opacity: opacity2,
+          stack
         } = mediaQuery.properties || {};
         if (display) {
           styleObj["$nest"][mediaQueryRule]["display"] = `${display} !important`;
@@ -16162,9 +16227,9 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
           styleObj["$nest"][mediaQueryRule]["margin"] = `${getSpacingValue(top2)} ${getSpacingValue(right2)} ${getSpacingValue(bottom2)} ${getSpacingValue(left2)} !important`;
         }
         if (border) {
-          const { radius, width, style: style2, color, bottom: bottom2, top: top2, left: left2, right: right2 } = border;
-          if (width !== void 0 && width !== null)
-            styleObj["$nest"][mediaQueryRule]["border"] = `${width || ""} ${style2 || ""} ${color || ""}!important`;
+          const { radius, width: width2, style: style2, color, bottom: bottom2, top: top2, left: left2, right: right2 } = border;
+          if (width2 !== void 0 && width2 !== null)
+            styleObj["$nest"][mediaQueryRule]["border"] = `${width2 || ""} ${style2 || ""} ${color || ""}!important`;
           if (radius)
             styleObj["$nest"][mediaQueryRule]["borderRadius"] = `${getSpacingValue(radius)} !important`;
           if (bottom2)
@@ -16233,6 +16298,18 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
         if (maxWidth !== void 0 && maxWidth !== null) {
           styleObj["$nest"][mediaQueryRule]["maxWidth"] = `${getSpacingValue(maxWidth)} !important`;
         }
+        if (width !== void 0 && width !== null) {
+          styleObj["$nest"][mediaQueryRule]["width"] = `${getSpacingValue(width)} !important`;
+        }
+        if (height !== void 0 && height !== null) {
+          styleObj["$nest"][mediaQueryRule]["height"] = `${getSpacingValue(height)} !important`;
+        }
+        if (minWidth !== void 0 && minWidth !== null) {
+          styleObj["$nest"][mediaQueryRule]["minWidth"] = `${getSpacingValue(minWidth)} !important`;
+        }
+        if (minHeight !== void 0 && minHeight !== null) {
+          styleObj["$nest"][mediaQueryRule]["minHeight"] = `${getSpacingValue(minHeight)} !important`;
+        }
         if (overflow) {
           if (typeof overflow === "string") {
             styleObj["$nest"][mediaQueryRule]["overflow"] = `${overflow} !important`;
@@ -16247,6 +16324,36 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
                 styleObj["$nest"][mediaQueryRule]["overflowY"] = `${y} !important`;
             }
           }
+        }
+        if (font) {
+          const { size, weight, style: style2, name, color, bold, transform } = font;
+          if (size)
+            styleObj["$nest"][mediaQueryRule]["fontSize"] = `${size}!important`;
+          if (typeof bold === "boolean") {
+            styleObj["$nest"][mediaQueryRule]["fontWeight"] = bold === true ? `bold !important` : `normal !important`;
+          }
+          if (weight)
+            styleObj["$nest"][mediaQueryRule]["fontWeight"] = `${weight}!important`;
+          if (style2)
+            styleObj["$nest"][mediaQueryRule]["fontStyle"] = `${style2}!important`;
+          if (name)
+            styleObj["$nest"][mediaQueryRule]["fontFamily"] = `${name}!important`;
+          if (color)
+            styleObj["$nest"][mediaQueryRule]["color"] = `${color}!important`;
+          if (transform)
+            styleObj["$nest"][mediaQueryRule]["textTransform"] = `${transform}!important`;
+        }
+        if (opacity2 !== void 0 && opacity2 !== null) {
+          styleObj["$nest"][mediaQueryRule]["opacity"] = `${opacity2}!important`;
+        }
+        if (stack) {
+          const { basis, grow, shrink } = stack;
+          if (basis !== void 0 && basis !== null)
+            styleObj["$nest"][mediaQueryRule]["flexBasis"] = `${basis}!important`;
+          if (grow !== void 0 && grow !== null)
+            styleObj["$nest"][mediaQueryRule]["flexGrow"] = `${grow}!important`;
+          if (shrink !== void 0 && shrink !== null)
+            styleObj["$nest"][mediaQueryRule]["flexShrink"] = `${shrink}!important`;
         }
       }
     }
@@ -16694,7 +16801,10 @@ var SpaceValue = class {
     this.update();
   }
   getSpacingValue(value) {
-    if (typeof value === "number")
+    if (value === "")
+      return "0px";
+    const isNumber = !Number.isNaN(Number(value));
+    if (typeof value === "number" || isNumber)
       return value + "px";
     if (value === "auto")
       return value;
@@ -16728,44 +16838,59 @@ var Border = class {
   constructor(target, options) {
     this._styleClassMap = {};
     this._target = target;
-    if (options) {
-      if (options.width || options.style || options.color || options.radius) {
-        this.updateAllSidesProps(options);
-      } else if (options.top || options.right || options.bottom || options.left) {
-        if (options.top)
-          this._top = options.top;
-        if (options.right)
-          this._right = options.right;
-        if (options.bottom)
-          this._bottom = options.bottom;
-        if (options.left)
-          this._left = options.left;
-        this.setSideBorderStyles("top", this.top);
-        this.setSideBorderStyles("right", this.right);
-        this.setSideBorderStyles("bottom", this.bottom);
-        this.setSideBorderStyles("left", this.left);
-      }
+    if (options)
+      this.updateValue(options);
+  }
+  updateValue(options) {
+    if (options && Object.keys(options).length) {
+      this.updateAllSidesProps(options);
+    } else {
+      this.removeStyles();
     }
   }
+  isNumber(value) {
+    if (value === void 0 || value === "")
+      return false;
+    return !Number.isNaN(Number(value));
+  }
   updateAllSidesProps(options) {
-    if (options.width)
-      this._width = typeof options.width == "number" ? options.width + "px" : options.width;
-    if (options.style)
-      this._style = options.style;
-    if (options.color)
-      this._color = options.color;
-    if (options.radius)
-      this._radius = typeof options.radius == "number" ? options.radius + "px" : options.radius;
-    this.setBorderStyles(options);
+    this._width = this.isNumber(options.width) ? options.width + "px" : options.width || "";
+    this._style = options.style || "solid";
+    this._color = options.color || "";
+    this._radius = this.isNumber(options.radius) ? options.radius + "px" : options.radius || "";
+    this._top = options.top || {};
+    this._right = options.right || {};
+    this._bottom = options.bottom || {};
+    this._left = options.left || {};
+    this.setBorderStyles({
+      width: this._width,
+      style: this._style,
+      color: this._color,
+      radius: this._radius,
+      top: this._top,
+      right: this._right,
+      bottom: this._bottom,
+      left: this._left
+    });
+  }
+  removeStyles() {
+    this.removeStyleClass("left");
+    this.removeStyleClass("bottom");
+    this.removeStyleClass("right");
+    this.removeStyleClass("top");
+    this.removeStyleClass("style");
+    this.removeStyleClass("color");
+    this.removeStyleClass("radius");
+    this.removeStyleClass("width");
   }
   get radius() {
     return this._radius;
   }
   set radius(value) {
-    if (typeof value == "number") {
+    if (this.isNumber(value)) {
       this._radius = value + "px";
       this._target.style.borderRadius = value + "px";
-    } else {
+    } else if (typeof value === "string") {
       this._radius = value;
       this._target.style.borderRadius = value;
     }
@@ -16774,32 +16899,26 @@ var Border = class {
     return this._width;
   }
   set width(value) {
-    if (typeof value == "number") {
+    if (this.isNumber(value)) {
       this._width = value + "px";
-    } else {
+    } else if (typeof value === "string") {
       this._width = value;
     }
-    this.setBorderStyles({
-      width: this._width
-    });
+    this.setBorderProp("width", this._width);
   }
   get style() {
     return this._style;
   }
   set style(value) {
     this._style = value;
-    this.setBorderStyles({
-      style: this._style
-    });
+    this.setBorderProp("style", this._style);
   }
   get color() {
     return this._color;
   }
   set color(value) {
     this._color = value;
-    this.setBorderStyles({
-      color: this._color
-    });
+    this.setBorderProp("color", this._color);
   }
   get top() {
     if (!this._top) {
@@ -16842,13 +16961,14 @@ var Border = class {
     this.setSideBorderStyles("left", value);
   }
   removeStyleClass(name) {
-    if (this._styleClassMap[name]) {
-      this._target.classList.remove(this._styleClassMap[name]);
+    const style2 = this._styleClassMap[name];
+    if (style2) {
+      this._target.classList.remove(style2);
       delete this._styleClassMap[name];
     }
   }
   setSideBorderStyles(side, value) {
-    if (value && (value.width || value.style || value.color)) {
+    if (value && (value.width !== void 0 || value.style || value.color !== void 0)) {
       let style2 = getBorderSideStyleClass(side, value);
       this.removeStyleClass(side);
       this._styleClassMap[side] = style2;
@@ -16856,30 +16976,23 @@ var Border = class {
     }
   }
   setBorderStyles(value) {
-    if (value.width || value.style || value.color || value.radius) {
-      let style2 = getBorderStyleClass(value);
-      this.removeStyleClass("left");
-      this.removeStyleClass("bottom");
-      this.removeStyleClass("right");
-      this.removeStyleClass("top");
-      if (value.width) {
-        this.removeStyleClass("width");
-        this._styleClassMap["width"] = style2;
-      }
-      if (value.style) {
-        this.removeStyleClass("style");
-        this._styleClassMap["style"] = style2;
-      }
-      if (value.color) {
-        this.removeStyleClass("color");
-        this._styleClassMap["color"] = style2;
-      }
-      if (value.radius) {
-        this.removeStyleClass("radius");
-        this._styleClassMap["radius"] = style2;
-      }
-      this._target.classList.add(style2);
-    }
+    let style2 = getBorderStyleClass(value);
+    this.removeStyles();
+    this._styleClassMap["width"] = style2;
+    this._styleClassMap["style"] = style2;
+    this._styleClassMap["color"] = style2;
+    this._styleClassMap["radius"] = style2;
+    this._target.classList.add(style2);
+  }
+  setBorderProp(prop, value) {
+    let style2 = getBorderStyleClass({ [prop]: value });
+    this.removeStyleClass("left");
+    this.removeStyleClass("bottom");
+    this.removeStyleClass("right");
+    this.removeStyleClass("top");
+    this.removeStyleClass(prop);
+    this._styleClassMap[prop] = style2;
+    this._target.classList.add(style2);
   }
 };
 var Overflow = class {
@@ -16891,8 +17004,8 @@ var Overflow = class {
     }
   }
   get x() {
-    var _a;
-    return (_a = this._value.x) != null ? _a : "visible";
+    var _a, _b;
+    return (_b = (_a = this._value) == null ? void 0 : _a.x) != null ? _b : "visible";
   }
   set x(value) {
     if (!this._value) {
@@ -16903,8 +17016,8 @@ var Overflow = class {
     this.setOverflowStyle();
   }
   get y() {
-    var _a;
-    return (_a = this._value.y) != null ? _a : "visible";
+    var _a, _b;
+    return (_b = (_a = this._value) == null ? void 0 : _a.y) != null ? _b : "visible";
   }
   set y(value) {
     if (!this._value) {
@@ -16976,12 +17089,33 @@ var Background = class {
 var ControlProperties = {
   props: {
     dock: { type: "string", default: "none", values: ["none", "fill", "left", "top", "right", "bottom"] },
-    top: { type: "number", default: "0" },
-    left: { type: "number", default: "0" },
-    width: { type: "number", default: "0" },
-    height: { type: "number", default: "0" },
-    visible: { type: "boolean", default: "true" },
-    enabled: { type: "boolean", default: "true" }
+    top: { type: "number", default: "auto" },
+    left: { type: "number", default: "auto" },
+    right: { type: "number", default: "auto" },
+    bottom: { type: "number", default: "auto" },
+    width: { type: "number", default: "auto" },
+    height: { type: "number", default: "auto" },
+    minWidth: { type: "number", default: "auto" },
+    minHeight: { type: "number", default: "auto" },
+    maxWidth: { type: "number", default: "auto" },
+    maxHeight: { type: "number", default: "auto" },
+    visible: { type: "boolean", default: true },
+    enabled: { type: "boolean", default: true },
+    background: { type: "object", default: { color: "", image: "" } },
+    margin: { type: "object", default: {} },
+    padding: { type: "object", default: {} },
+    opacity: { type: "string", default: "1" },
+    position: { type: "string", default: "" },
+    overflow: { type: "object", default: { x: "", y: "" } },
+    zIndex: { type: "string", default: "" },
+    border: { type: "object", default: {} },
+    display: { type: "string", default: "" },
+    mediaQueries: { type: "array", default: [] },
+    font: { type: "object", default: { color: "", size: "", name: "", shadow: "", style: "normal", transform: "none", weight: "", bold: false } },
+    stack: { type: "object", default: { basis: "", grow: "", shrink: "" } },
+    class: { type: "string" },
+    cursor: { type: "string", default: "auto" },
+    boxShadow: { type: "string", default: "" }
   },
   events: {
     onClick: notifyEventParams,
@@ -17001,6 +17135,7 @@ var Control = class extends Component {
     this._controls = [];
     this._enabled = true;
     this._visible = true;
+    this._designMode = false;
     this.propertyClassMap = {};
     this.parent = parent;
   }
@@ -17009,10 +17144,13 @@ var Control = class extends Component {
     await self.ready();
     return self;
   }
-  _setDesignPropValue(prop, value) {
-    super._setDesignPropValue(prop, value);
-    if (ControlProperties.props[prop]) {
-      this[prop] = this.parseDesignPropValue(value);
+  _setDesignPropValue(prop, value, breakpointProp) {
+    super._setDesignPropValue(prop, value, breakpointProp);
+    if (ControlProperties.props[prop] && prop !== "mediaQueries") {
+      if (typeof breakpointProp === "object" && typeof value === "object") {
+        this[prop] = { ...value, ...breakpointProp };
+      } else
+        this[prop] = breakpointProp != null ? breakpointProp : value;
     }
     ;
   }
@@ -17040,6 +17178,7 @@ var Control = class extends Component {
         result.events[n] = propInfo.events[n];
     }
     ;
+    result.dataSchema = JSON.parse(JSON.stringify((propInfo == null ? void 0 : propInfo.dataSchema) || {}));
     return result;
   }
   getMarginStyle() {
@@ -17263,7 +17402,7 @@ var Control = class extends Component {
     }
   }
   _handleClick(event, stopPropagation) {
-    if (this._onClick) {
+    if (this._onClick && typeof this._onClick === "function") {
       this._onClick(this, event);
       return true;
     } else if (!stopPropagation) {
@@ -17403,6 +17542,13 @@ var Control = class extends Component {
     } else {
       this.style.minWidth = value + "";
     }
+  }
+  get designMode() {
+    var _a;
+    return (_a = this._designMode) != null ? _a : false;
+  }
+  set designMode(value) {
+    this._designMode = value != null ? value : false;
   }
   observables(propName) {
     let self = this;
@@ -17564,6 +17710,7 @@ var Control = class extends Component {
     this.setAttributeToProperty("cursor");
     this.setAttributeToProperty("letterSpacing");
     this.setAttributeToProperty("boxShadow");
+    this.setAttributeToProperty("designMode");
   }
   setElementPosition(elm, prop, value) {
     if (value != null && !isNaN(value)) {
@@ -17630,7 +17777,7 @@ var Control = class extends Component {
     if (!this._visible)
       this.style.display = "none";
     else if (this._left != null || this._top != null)
-      this.style.display = "block";
+      this.style.display = "";
     else
       this.style.display = "";
     if (this._parent && !_refreshTimeout)
@@ -17747,7 +17894,11 @@ var Control = class extends Component {
     return this._border;
   }
   set border(value) {
-    this._border = new Border(this, value);
+    if (!this.border) {
+      this._border = new Border(this, value);
+    } else {
+      this._border.updateValue(value);
+    }
   }
   get overflow() {
     if (!this._overflow) {
@@ -17776,7 +17927,8 @@ var Control = class extends Component {
       bold: this.style.fontStyle.indexOf("bold") >= 0,
       style: this.style.fontStyle,
       transform: this.style.textTransform,
-      weight: this.style.fontWeight
+      weight: this.style.fontWeight,
+      shadow: this.style.textShadow
     };
   }
   set font(value) {
@@ -17786,6 +17938,7 @@ var Control = class extends Component {
     this.style.fontStyle = value.style || "";
     this.style.textTransform = value.transform || "none";
     this.style.fontWeight = value.bold ? "bold" : `${value.weight || ""}`;
+    this.style.textShadow = value.shadow || "none";
   }
   get display() {
     return this._display;
@@ -18172,6 +18325,13 @@ cssRule("i-checkbox", {
 });
 
 // packages/checkbox/src/checkbox.ts
+var DEFAULT_VALUES = {
+  indeterminate: false,
+  checked: false,
+  captionWidth: 0,
+  readOnly: false,
+  caption: ""
+};
 var Checkbox = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
@@ -18237,11 +18397,11 @@ var Checkbox = class extends Control {
     }
   }
   _handleChange(event) {
-    if (this.readOnly)
+    if (this.readOnly || this._designMode)
       return;
     this.checked = this.inputElm.checked || false;
     this.addClass(this.checked, "is-checked");
-    if (this.onChanged)
+    if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
   addClass(value, className) {
@@ -18262,7 +18422,7 @@ var Checkbox = class extends Control {
       this.inputElm.type = "checkbox";
       const disabled = this.getAttribute("enabled") === false;
       this.inputElm.disabled = disabled;
-      this.readOnly = this.getAttribute("readOnly", true, false);
+      this.readOnly = this.getAttribute("readOnly", true, DEFAULT_VALUES.readOnly);
       this.checkmarklElm = this.createElement("span");
       this.checkmarklElm.classList.add("checkmark");
       this.inputSpanElm.appendChild(this.checkmarklElm);
@@ -18272,7 +18432,7 @@ var Checkbox = class extends Control {
       this.captionWidth = this.getAttribute("captionWidth", true);
       this.caption = this.getAttribute("caption", true);
       this.value = this.caption;
-      this.checked = this.getAttribute("checked", true, false);
+      this.checked = this.getAttribute("checked", true, DEFAULT_VALUES.checked);
       this.indeterminate = this.getAttribute("indeterminate", true);
       this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
       super.init();
@@ -18285,7 +18445,59 @@ var Checkbox = class extends Control {
   }
 };
 Checkbox = __decorateClass([
-  customElements2("i-checkbox")
+  customElements2("i-checkbox", {
+    icon: "check-square",
+    group: GroupType.FIELDS,
+    className: "Checkbox",
+    props: {
+      checked: {
+        type: "boolean",
+        default: DEFAULT_VALUES.checked
+      },
+      indeterminate: {
+        type: "boolean",
+        default: DEFAULT_VALUES.indeterminate
+      },
+      caption: {
+        type: "string",
+        default: DEFAULT_VALUES.caption
+      },
+      captionWidth: {
+        type: "number",
+        default: DEFAULT_VALUES.captionWidth
+      },
+      readOnly: {
+        type: "boolean",
+        default: DEFAULT_VALUES.readOnly
+      }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        checked: {
+          type: "boolean",
+          default: DEFAULT_VALUES.checked
+        },
+        indeterminate: {
+          type: "boolean",
+          default: DEFAULT_VALUES.indeterminate
+        },
+        caption: {
+          type: "string"
+        },
+        readOnly: {
+          type: "boolean",
+          default: DEFAULT_VALUES.readOnly
+        }
+      }
+    }
+  })
 ], Checkbox);
 
 // packages/application/src/globalEvent.ts
@@ -19077,9 +19289,11 @@ var FileManager = class {
     let paths = name.split("/");
     for (let path of paths) {
       let item = await folder.findItem(path);
-      if (!item)
+      if (!item) {
         item = new FileNode(this, path, node);
-      else
+        item.modified(true);
+        await this.updateNode(item);
+      } else
         await item.checkCid();
       node = item;
     }
@@ -19104,6 +19318,8 @@ var FileManager = class {
         let item = await node.findItem(path2);
         if (!item) {
           item = new FileNode(this, path2, node);
+          item.modified(true);
+          await this.updateNode(item);
         } else
           await item.checkCid();
         node = item;
@@ -19233,7 +19449,7 @@ async function hashFiles(files, version) {
   });
 }
 async function cidToSri(cid) {
-  return await cidToSri(cid);
+  return await cidToHash(cid);
 }
 
 // packages/image/src/style/image.css.ts
@@ -19255,8 +19471,14 @@ cssRule("i-image", {
 // packages/image/src/image.ts
 var Image2 = class extends Control {
   constructor(parent, options) {
-    super(parent, options, {});
+    super(parent, options);
     this._rotate = 0;
+  }
+  get fallbackUrl() {
+    return this._fallbackUrl;
+  }
+  set fallbackUrl(value) {
+    this._fallbackUrl = value;
   }
   get rotate() {
     return this._rotate;
@@ -19317,14 +19539,11 @@ var Image2 = class extends Control {
   }
   init() {
     super.init();
-    this._fallbackUrl = this.getAttribute("fallbackUrl", true, "");
-    const urlAttr = this.getAttribute("url", true);
-    urlAttr && (this.url = urlAttr);
+    setAttributeToProperty(this, "fallbackUrl");
+    setAttributeToProperty(this, "url");
+    setAttributeToProperty(this, "objectFit", "contain");
     this.rotate = this.getAttribute("rotate", true);
-    const objectFit = this.getAttribute("objectFit", true);
-    if (objectFit)
-      this.objectFit = objectFit;
-    let border = this.getAttribute("border", true);
+    const border = this.getAttribute("border", true);
     if (border) {
       this._borderValue = border;
       if (this.imageElm) {
@@ -19340,7 +19559,48 @@ var Image2 = class extends Control {
   }
 };
 Image2 = __decorateClass([
-  customElements2("i-image")
+  customElements2("i-image", {
+    icon: "image",
+    group: GroupType.BASIC,
+    className: "Image",
+    props: {
+      rotate: {
+        type: "number"
+      },
+      url: {
+        type: "string",
+        default: ""
+      },
+      fallbackUrl: {
+        type: "string",
+        default: ""
+      },
+      objectFit: {
+        type: "string",
+        default: "contain"
+      }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        rotate: {
+          type: "number"
+        },
+        url: {
+          type: "string"
+        },
+        fallbackUrl: {
+          type: "string"
+        },
+        objectFit: {
+          type: "string",
+          enum: ["contain", "cover", "fill", "none", "scale-down"],
+          default: "contain"
+        }
+      }
+    }
+  })
 ], Image2);
 
 // packages/icon/src/style/icon.css.ts
@@ -19397,10 +19657,10 @@ var Icon = class extends Control {
       if (fill)
         this.fill = fill;
       this._size = this.getAttribute("size", true);
-      this._name = this.getAttribute("name", true);
+      this._name = this.getAttribute("name");
       this._updateIcon();
       const image = this.getAttribute("image", true);
-      if (image) {
+      if (image && image.url) {
         image.height = image.height || this.height || "16px";
         image.width = image.width || this.width || "16px";
         this.image = new Image2(this, image);
@@ -19464,7 +19724,55 @@ var Icon = class extends Control {
   }
 };
 Icon = __decorateClass([
-  customElements2("i-icon")
+  customElements2("i-icon", {
+    icon: "icons",
+    group: GroupType.BASIC,
+    className: "Icon",
+    props: {
+      name: {
+        type: "string",
+        default: ""
+      },
+      fill: {
+        type: "string",
+        default: ""
+      },
+      image: {
+        type: "object",
+        default: {}
+      },
+      spin: {
+        type: "boolean",
+        default: false
+      }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          title: "Name"
+        },
+        fill: {
+          type: "string",
+          format: "color"
+        },
+        image: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string"
+            }
+          }
+        },
+        spin: {
+          type: "boolean",
+          default: false
+        }
+      }
+    }
+  })
 ], Icon);
 
 // packages/link/src/style/link.css.ts
@@ -19521,6 +19829,8 @@ var Link = class extends Control {
   }
   _handleClick(event, stopPropagation) {
     event.preventDefault();
+    if (this._designMode)
+      return false;
     window.open(this._linkElm.href, this._linkElm.target);
     return super._handleClick(event);
   }
@@ -19644,6 +19954,10 @@ cssRule("i-label", {
 });
 
 // packages/label/src/label.ts
+var DEFAULT_VALUES2 = {
+  target: "_blank",
+  textDecoration: "none"
+};
 var Label = class extends Text {
   constructor(parent, options) {
     super(parent, options);
@@ -19659,7 +19973,8 @@ var Label = class extends Text {
       this._link = new Link(this, {
         href: "#",
         target: "_blank",
-        font: this.font
+        font: this.font,
+        designMode: this._designMode
       });
       this._link.append(this.captionSpan);
       this.appendChild(this._link);
@@ -19675,6 +19990,8 @@ var Label = class extends Text {
     if (this._link) {
       this._link.append(this.captionSpan);
       this.appendChild(this._link);
+    } else {
+      this.appendChild(this.captionSpan);
     }
   }
   set height(value) {
@@ -19707,10 +20024,12 @@ var Label = class extends Text {
         }
       }
       const linkAttr = this.getAttribute("link", true);
-      if (linkAttr) {
+      const designMode = this.getAttribute("designMode", true);
+      if (linkAttr == null ? void 0 : linkAttr.href) {
         const link = new Link(this, {
           ...linkAttr,
-          font: this.font
+          font: this.font,
+          designMode
         });
         this.link = link;
       }
@@ -19729,11 +20048,52 @@ var Label = class extends Text {
 Label = __decorateClass([
   customElements2("i-label", {
     icon: "heading",
+    group: GroupType.BASIC,
     className: "Label",
     props: {
-      caption: { type: "string" }
+      caption: {
+        type: "string",
+        default: ""
+      },
+      textDecoration: {
+        type: "string",
+        default: DEFAULT_VALUES2.textDecoration
+      },
+      link: {
+        type: "object",
+        default: {
+          target: DEFAULT_VALUES2.target
+        }
+      }
     },
-    events: {}
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        caption: {
+          type: "string",
+          required: true
+        },
+        textDecoration: {
+          type: "string",
+          enum: ["none", "underline", "overline", "line-through"],
+          default: DEFAULT_VALUES2.textDecoration
+        },
+        link: {
+          type: "object",
+          properties: {
+            href: {
+              type: "string"
+            },
+            target: {
+              type: "string",
+              enum: ["_blank", "_self", "_parent", "_top"],
+              default: DEFAULT_VALUES2.target
+            }
+          }
+        }
+      }
+    }
   })
 ], Label);
 
@@ -19757,13 +20117,14 @@ var hStackStyle = style({
 var gridStyle = style({
   display: "grid"
 });
-var getStackDirectionStyleClass = (direction) => {
+var getStackDirectionStyleClass = (direction, reverse) => {
+  const flexDirection = direction == "vertical" ? "column" : "row";
   return style({
     display: "flex",
-    flexDirection: direction == "vertical" ? "column" : "row"
+    flexDirection: reverse ? `${flexDirection}-reverse` : flexDirection
   });
 };
-var getStackMediaQueriesStyleClass = (mediaQueries) => {
+var getStackMediaQueriesStyleClass = (mediaQueries, currentDirection) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
     let mediaQueryRule = getMediaQueryRule(mediaQuery);
@@ -19774,38 +20135,27 @@ var getStackMediaQueriesStyleClass = (mediaQueries) => {
         justifyContent,
         alignItems,
         alignSelf,
-        width,
-        height,
         gap,
-        position,
-        top
+        reverse
       } = mediaQuery.properties || {};
       if (direction) {
-        styleObj["$nest"][mediaQueryRule]["flexDirection"] = direction == "vertical" ? "column" : "row";
+        styleObj["$nest"][mediaQueryRule]["flexDirection"] = `${direction == "vertical" ? "column" : "row"} !important`;
       }
       if (justifyContent) {
-        styleObj["$nest"][mediaQueryRule]["justifyContent"] = justifyContent;
+        styleObj["$nest"][mediaQueryRule]["justifyContent"] = `${justifyContent} !important`;
       }
       if (alignItems) {
-        styleObj["$nest"][mediaQueryRule]["alignItems"] = alignItems;
+        styleObj["$nest"][mediaQueryRule]["alignItems"] = `${alignItems} !important`;
       }
       if (alignSelf) {
-        styleObj["$nest"][mediaQueryRule]["alignSelf"] = alignSelf;
-      }
-      if (width !== void 0 && width !== null) {
-        styleObj["$nest"][mediaQueryRule]["width"] = typeof width === "string" ? `${width} !important` : `${width}px !important`;
-      }
-      if (height !== void 0 && height !== null) {
-        styleObj["$nest"][mediaQueryRule]["height"] = typeof height === "string" ? `${height} !important` : `${height}px !important`;
+        styleObj["$nest"][mediaQueryRule]["alignSelf"] = `${alignSelf} !important`;
       }
       if (gap !== void 0 && gap !== null) {
-        styleObj["$nest"][mediaQueryRule]["gap"] = typeof gap === "string" ? `${gap} !important` : `${gap}px !important`;
+        styleObj["$nest"][mediaQueryRule]["gap"] = `${getSpacingValue(gap)} !important`;
       }
-      if (position) {
-        styleObj["$nest"][mediaQueryRule]["position"] = `${position} !important`;
-      }
-      if (top !== null && top !== void 0) {
-        styleObj["$nest"][mediaQueryRule]["top"] = typeof top === "string" ? `${top} !important` : `${top}px !important`;
+      if (reverse !== void 0 && reverse !== null) {
+        const direct = direction || currentDirection || "horizontal";
+        styleObj["$nest"][mediaQueryRule]["flexDirection"] = `${direct === "vertical" ? "column" : "row"}${reverse ? "-reverse" : ""} !important`;
       }
     }
   }
@@ -19823,8 +20173,17 @@ var justifyContentEndStyle = style({
 var justifyContentSpaceBetweenStyle = style({
   justifyContent: "space-between"
 });
+var justifyContentSpaceAroundStyle = style({
+  justifyContent: "space-around"
+});
+var justifyContentSpaceEvenlyStyle = style({
+  justifyContent: "space-evenly"
+});
 var alignItemsStretchStyle = style({
   alignItems: "stretch"
+});
+var alignItemsBaselineStyle = style({
+  alignItems: "baseline"
 });
 var alignItemsStartStyle = style({
   alignItems: "flex-start"
@@ -19850,6 +20209,24 @@ var alignSelfCenterStyle = style({
 var alignSelfEndStyle = style({
   alignSelf: "flex-end"
 });
+var alignContentSpaceBetweenStyle = style({
+  alignContent: "space-between"
+});
+var alignContentSpaceAroundStyle = style({
+  alignContent: "space-around"
+});
+var alignContentStretchStyle = style({
+  alignContent: "stretch"
+});
+var alignContentStartStyle = style({
+  alignContent: "flex-start"
+});
+var alignContentCenterStyle = style({
+  alignContent: "center"
+});
+var alignContentEndStyle = style({
+  alignContent: "flex-end"
+});
 var getTemplateColumnsStyleClass = (columns) => {
   return style({
     gridTemplateColumns: columns.join(" ")
@@ -19870,7 +20247,7 @@ var getTemplateAreasStyleClass = (templateAreas) => {
   });
 };
 var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  let styleObj = getControlMediaQueriesStyle(mediaQueries, { display: "grid" });
   for (let mediaQuery of mediaQueries) {
     let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
@@ -19898,10 +20275,10 @@ var getGridLayoutMediaQueriesStyleClass = (mediaQueries) => {
       }
       if (gap !== void 0 && gap !== null) {
         if (gap.row) {
-          styleObj["$nest"][mediaQueryRule]["rowGap"] = typeof gap.row === "string" ? gap.row : `${gap.row}px`;
+          styleObj["$nest"][mediaQueryRule]["rowGap"] = `${getSpacingValue(gap.row)}!important`;
         }
         if (gap.column) {
-          styleObj["$nest"][mediaQueryRule]["columnGap"] = typeof gap.column === "string" ? gap.column : `${gap.column}px`;
+          styleObj["$nest"][mediaQueryRule]["columnGap"] = `${getSpacingValue(gap.column)}!important`;
         }
       }
     }
@@ -19921,9 +20298,19 @@ var getHoverStyleClass = (hover) => {
 };
 
 // packages/layout/src/stack.ts
+var DEFAULT_VALUES3 = {
+  wrap: "nowrap",
+  direction: "horizontal",
+  justifyContent: "start",
+  alignItems: "stretch",
+  alignSelf: "start",
+  alignContent: "start",
+  reverse: false
+};
 var StackLayout = class extends Container {
   constructor(parent, options) {
     super(parent, options);
+    this._reverse = false;
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -19936,9 +20323,18 @@ var StackLayout = class extends Container {
   set direction(value) {
     this._direction = value;
     if (value) {
-      let style2 = getStackDirectionStyleClass(value);
+      let style2 = getStackDirectionStyleClass(value, this.reverse);
       this.setStyle("direction", style2);
     }
+  }
+  get reverse() {
+    var _a;
+    return (_a = this._reverse) != null ? _a : false;
+  }
+  set reverse(value) {
+    this._reverse = value != null ? value : false;
+    let style2 = getStackDirectionStyleClass(this.direction, this.reverse);
+    this.setStyle("direction", style2);
   }
   get justifyContent() {
     return this._justifyContent;
@@ -19958,6 +20354,12 @@ var StackLayout = class extends Container {
       case "space-between":
         this.setStyle("justifyContent", justifyContentSpaceBetweenStyle);
         break;
+      case "space-around":
+        this.setStyle("justifyContent", justifyContentSpaceAroundStyle);
+        break;
+      case "space-evenly":
+        this.setStyle("justifyContent", justifyContentSpaceEvenlyStyle);
+        break;
     }
   }
   get alignItems() {
@@ -19968,6 +20370,9 @@ var StackLayout = class extends Container {
     switch (this._alignItems) {
       case "stretch":
         this.setStyle("alignItems", alignItemsStretchStyle);
+        break;
+      case "baseline":
+        this.setStyle("alignItems", alignItemsBaselineStyle);
         break;
       case "start":
         this.setStyle("alignItems", alignItemsStartStyle);
@@ -20003,15 +20408,42 @@ var StackLayout = class extends Container {
         break;
     }
   }
+  get alignContent() {
+    return this._alignContent;
+  }
+  set alignContent(value) {
+    this._alignContent = value || "auto";
+    switch (this._alignContent) {
+      case "space-between":
+        this.setStyle("alignContent", alignContentSpaceBetweenStyle);
+        break;
+      case "space-around":
+        this.setStyle("alignContent", alignContentSpaceAroundStyle);
+        break;
+      case "stretch":
+        this.setStyle("alignContent", alignContentStretchStyle);
+        break;
+      case "start":
+        this.setStyle("alignContent", alignContentStartStyle);
+        break;
+      case "center":
+        this.setStyle("alignContent", alignContentCenterStyle);
+        break;
+      case "end":
+        this.setStyle("alignContent", alignContentEndStyle);
+        break;
+    }
+  }
   get gap() {
     return this._gap;
   }
   set gap(value) {
     this._gap = value || "initial";
-    if (typeof this._gap === "number") {
+    const num = +this._gap;
+    if (!isNaN(num)) {
       this.style.gap = this._gap + "px";
     } else {
-      this.style.gap = this._gap;
+      this.style.gap = `${this._gap}`;
     }
   }
   get wrap() {
@@ -20028,7 +20460,7 @@ var StackLayout = class extends Container {
   }
   set mediaQueries(value) {
     this._mediaQueries = value;
-    let style2 = getStackMediaQueriesStyleClass(this._mediaQueries);
+    let style2 = getStackMediaQueriesStyleClass(this._mediaQueries, this.direction);
     this._mediaStyle && this.classList.remove(this._mediaStyle);
     this._mediaStyle = style2;
     this.classList.add(style2);
@@ -20059,10 +20491,12 @@ var StackLayout = class extends Container {
   }
   init() {
     super.init();
-    setAttributeToProperty(this, "direction");
+    setAttributeToProperty(this, "reverse");
+    setAttributeToProperty(this, "direction", "horizontal");
     setAttributeToProperty(this, "justifyContent");
     setAttributeToProperty(this, "alignItems");
     setAttributeToProperty(this, "alignSelf");
+    setAttributeToProperty(this, "alignContent");
     setAttributeToProperty(this, "gap");
     setAttributeToProperty(this, "wrap");
     setAttributeToProperty(this, "mediaQueries");
@@ -20070,7 +20504,30 @@ var StackLayout = class extends Container {
   }
 };
 StackLayout = __decorateClass([
-  customElements2("i-stack")
+  customElements2("i-stack", {
+    icon: "layer-group",
+    group: GroupType.LAYOUT,
+    className: "StackLayout",
+    props: {
+      gap: { type: "number" },
+      wrap: { type: "string", default: DEFAULT_VALUES3.wrap },
+      direction: { type: "string", default: DEFAULT_VALUES3.direction },
+      justifyContent: { type: "string", default: DEFAULT_VALUES3.justifyContent },
+      alignItems: { type: "string", default: DEFAULT_VALUES3.alignItems },
+      alignSelf: { type: "string", default: DEFAULT_VALUES3.alignSelf },
+      alignContent: { type: "string", default: DEFAULT_VALUES3.alignContent },
+      reverse: { type: "boolean", default: DEFAULT_VALUES3.reverse }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        gap: {
+          type: "number"
+        }
+      }
+    }
+  })
 ], StackLayout);
 var HStack = class extends StackLayout {
   constructor(parent, options) {
@@ -20103,7 +20560,29 @@ var HStack = class extends StackLayout {
   }
 };
 HStack = __decorateClass([
-  customElements2("i-hstack")
+  customElements2("i-hstack", {
+    icon: "square",
+    group: GroupType.LAYOUT,
+    className: "HStack",
+    props: {
+      gap: { type: "number" },
+      wrap: { type: "string", default: DEFAULT_VALUES3.wrap },
+      justifyContent: { type: "string", default: DEFAULT_VALUES3.justifyContent },
+      alignItems: { type: "string", default: DEFAULT_VALUES3.alignItems },
+      alignSelf: { type: "string", default: DEFAULT_VALUES3.alignSelf },
+      alignContent: { type: "string", default: DEFAULT_VALUES3.alignContent },
+      reverse: { type: "boolean", default: DEFAULT_VALUES3.reverse }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        gap: {
+          type: "number"
+        }
+      }
+    }
+  })
 ], HStack);
 var VStack = class extends StackLayout {
   constructor(parent, options) {
@@ -20136,7 +20615,29 @@ var VStack = class extends StackLayout {
   }
 };
 VStack = __decorateClass([
-  customElements2("i-vstack")
+  customElements2("i-vstack", {
+    icon: "square",
+    group: GroupType.LAYOUT,
+    className: "VStack",
+    props: {
+      gap: { type: "number" },
+      wrap: { type: "string", default: DEFAULT_VALUES3.wrap },
+      justifyContent: { type: "string", default: DEFAULT_VALUES3.justifyContent },
+      alignItems: { type: "string", default: DEFAULT_VALUES3.alignItems },
+      alignSelf: { type: "string", default: DEFAULT_VALUES3.alignSelf },
+      alignContent: { type: "string", default: DEFAULT_VALUES3.alignContent },
+      reverse: { type: "boolean", default: DEFAULT_VALUES3.reverse }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        gap: {
+          type: "number"
+        }
+      }
+    }
+  })
 ], VStack);
 
 // packages/layout/src/panel.ts
@@ -20191,6 +20692,7 @@ var Panel = class extends Container {
 Panel = __decorateClass([
   customElements2("i-panel", {
     icon: "stop",
+    group: GroupType.LAYOUT,
     className: "Panel",
     props: {},
     events: {}
@@ -20198,6 +20700,78 @@ Panel = __decorateClass([
 ], Panel);
 
 // packages/layout/src/grid.ts
+var DEFAULT_VALUES4 = {
+  autoFillInHoles: false,
+  columnsPerRow: 1,
+  horizontalAlignment: "start",
+  verticalAlignment: "start",
+  gap: {}
+};
+var gridSchemaProps = {
+  templateColumns: {
+    type: "array",
+    items: { type: "string" }
+  },
+  templateRows: {
+    type: "array",
+    items: { type: "string" }
+  },
+  templateAreas: {
+    type: "array",
+    items: { type: "string" }
+  },
+  autoColumnSize: {
+    type: "string",
+    default: ""
+  },
+  autoRowSize: {
+    type: "string",
+    default: ""
+  },
+  columnsPerRow: {
+    type: "number",
+    default: DEFAULT_VALUES4.columnsPerRow
+  },
+  gap: {
+    type: "object",
+    properties: {
+      row: {
+        type: "string",
+        default: ""
+      },
+      column: {
+        type: "string",
+        default: ""
+      }
+    }
+  },
+  autoFillInHoles: {
+    type: "boolean",
+    default: DEFAULT_VALUES4.autoFillInHoles
+  },
+  horizontalAlignment: {
+    type: "string",
+    enum: ["stretch", "start", "end", "center"],
+    default: DEFAULT_VALUES4.horizontalAlignment
+  },
+  verticalAlignment: {
+    type: "string",
+    enum: ["stretch", "start", "end", "center", "baseline"],
+    default: DEFAULT_VALUES4.verticalAlignment
+  }
+};
+var gridProps = {
+  templateColumns: { type: "array" },
+  templateRows: { type: "array" },
+  templateAreas: { type: "array" },
+  autoColumnSize: { type: "string", default: "" },
+  autoRowSize: { type: "string", default: "" },
+  columnsPerRow: { type: "number", default: DEFAULT_VALUES4.columnsPerRow },
+  gap: { type: "object" },
+  autoFillInHoles: { type: "boolean", default: DEFAULT_VALUES4.autoFillInHoles },
+  horizontalAlignment: { type: "string", default: DEFAULT_VALUES4.horizontalAlignment },
+  verticalAlignment: { type: "string", default: DEFAULT_VALUES4.verticalAlignment }
+};
 var GridLayout = class extends Container {
   constructor(parent, options) {
     super(parent, options);
@@ -20355,7 +20929,19 @@ var GridLayout = class extends Container {
   }
 };
 GridLayout = __decorateClass([
-  customElements2("i-grid-layout")
+  customElements2("i-grid-layout", {
+    icon: "th",
+    group: GroupType.LAYOUT,
+    className: "GridLayout",
+    props: {
+      ...gridProps
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: { ...gridSchemaProps }
+    }
+  })
 ], GridLayout);
 
 // packages/layout/src/card.ts
@@ -20412,7 +20998,29 @@ var CardLayout = class extends GridLayout {
   }
 };
 CardLayout = __decorateClass([
-  customElements2("i-card-layout")
+  customElements2("i-card-layout", {
+    icon: "th",
+    group: GroupType.LAYOUT,
+    className: "CardLayout",
+    props: {
+      ...gridProps,
+      cardMinWidth: { type: "number" },
+      cardHeight: { type: "number" }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        ...gridSchemaProps,
+        cardMinWidth: {
+          type: "number"
+        },
+        cardHeight: {
+          type: "number"
+        }
+      }
+    }
+  })
 ], CardLayout);
 
 // packages/upload/src/style/upload.css.ts
@@ -20667,7 +21275,7 @@ var UploadDrag = class extends Control {
     source.preventDefault();
     if (this.disabled)
       return;
-    if (this.onBeforeDrop)
+    if (typeof this.onBeforeDrop === "function")
       this.onBeforeDrop(this);
     this.counter = 0;
     (_a = this.parentElement) == null ? void 0 : _a.classList.remove("i-upload-dragger_active");
@@ -20727,10 +21335,16 @@ var UploadDrag = class extends Control {
 UploadDrag = __decorateClass([
   customElements2("i-upload-drag")
 ], UploadDrag);
+var DEFAULT_VALUES5 = {
+  draggable: false,
+  multiple: false,
+  showFileList: false,
+  fileList: []
+};
 var Upload = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
-      multiple: false
+      multiple: DEFAULT_VALUES5.multiple
     });
     this._dt = new DataTransfer();
     this._fileList = [];
@@ -20740,6 +21354,8 @@ var Upload = class extends Control {
   }
   set caption(value) {
     this._caption = value;
+    if (this.lblCaption)
+      this.lblCaption.caption = this.caption || (this.draggable ? "Drag a file or click to upload" : "Click to upload");
   }
   get accept() {
     return this._accept;
@@ -20787,7 +21403,7 @@ var Upload = class extends Control {
   set enabled(value) {
     super.enabled = value;
     if (this._uploadDragElm)
-      this._uploadDragElm.disabled = !value || !this.draggable;
+      this._uploadDragElm.disabled = !value || !this.draggable || this._designMode;
     if (!this._previewRemoveElm)
       return;
     if (value)
@@ -20798,7 +21414,7 @@ var Upload = class extends Control {
   addFile(file) {
     this._dt.items.add(file);
     this._fileList.push(file);
-    if (this.onAdded)
+    if (typeof this.onAdded === "function")
       this.onAdded(this, file);
   }
   previewFile(files) {
@@ -20835,22 +21451,21 @@ var Upload = class extends Control {
     }
     this.updateFileListUI(this._dt.files);
     this.previewFile(this._dt.files);
-    console.log(this._dt.files);
-    if (this.onChanged)
+    if (typeof this.onChanged === "function")
       this.onChanged(this, this.fileList);
   }
   async checkBeforeUpload(file) {
-    const before = this.onUploading(this, file);
+    const before = typeof this.onUploading === "function" && this.onUploading(this, file);
     if (before && before.then) {
       before.then((value) => {
         if (value)
           this.addFile(file);
       }, () => {
-        if (this.onRemoved)
+        if (typeof this.onRemoved === "function")
           this.onRemoved(this, file);
       });
     } else {
-      if (this.onRemoved)
+      if (typeof this.onRemoved === "function")
         this.onRemoved(this, file);
     }
   }
@@ -20909,7 +21524,7 @@ var Upload = class extends Control {
     event.stopPropagation();
     const file = this._dt.files.length ? this._dt.files[0] : void 0;
     this.clear();
-    if (this.onRemoved)
+    if (typeof this.onRemoved === "function")
       this.onRemoved(this, file);
   }
   handleRemove(file) {
@@ -20918,7 +21533,7 @@ var Upload = class extends Control {
       if (rawFile.uid === this._dt.files[i].uid) {
         this._dt.items.remove(i);
         this.fileList = this._fileList.filter((f) => f.uid !== rawFile.uid);
-        if (this.onRemoved)
+        if (typeof this.onRemoved === "function")
           this.onRemoved(this, file);
         break;
       }
@@ -20988,10 +21603,10 @@ var Upload = class extends Control {
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-upload-wrapper");
       this._wrapperFileElm = this.createElement("div", this._wrapperElm);
-      this.caption = this.getAttribute("caption", true);
-      this.draggable = this.getAttribute("draggable", true, false);
+      this._caption = this.getAttribute("caption", true, "");
+      this.draggable = this.getAttribute("draggable", true, DEFAULT_VALUES5.draggable);
       this._uploadDragElm = new UploadDrag(this, {
-        disabled: !this.enabled || !this.draggable,
+        disabled: !this.enabled || !this.draggable || this._designMode,
         onBeforeDrop: (source) => {
           if (this.onBeforeDrop)
             this.onBeforeDrop(source);
@@ -21003,14 +21618,14 @@ var Upload = class extends Control {
       this._wrapperElm.appendChild(this._uploadDragElm);
       this._fileElm = this.createElement("input", this._wrapperFileElm);
       this._fileElm.type = "file";
-      this.multiple = this.getAttribute("multiple", true);
+      this.multiple = this.getAttribute("multiple", true, DEFAULT_VALUES5.multiple);
       this.accept = this.getAttribute("accept");
-      if (!this.enabled)
-        this._fileElm.setAttribute("disabled", "");
+      this._fileElm.disabled = !this.enabled;
+      this._fileElm.readOnly = this._designMode;
       const panel = new VStack(void 0, {
         alignItems: "center"
       });
-      const icon = new Icon(panel, {
+      new Icon(panel, {
         name: "arrow-down",
         height: 32,
         width: 32,
@@ -21019,14 +21634,14 @@ var Upload = class extends Control {
         },
         fill: Theme9.divider
       });
-      new Label(panel, {
+      this.lblCaption = new Label(panel, {
         caption: this.caption || (this.draggable ? "Drag a file or click to upload" : "Click to upload"),
         font: {
           size: "18px"
         }
       });
       this._wrapperFileElm.appendChild(panel);
-      const fileListAttr = this.getAttribute("showFileList", true);
+      const fileListAttr = this.getAttribute("showFileList", true, DEFAULT_VALUES5.showFileList);
       if (fileListAttr && !this._fileListElm) {
         this._fileListElm = this.createElement("div", this);
         this._fileListElm.classList.add("i-upload_list");
@@ -21037,7 +21652,7 @@ var Upload = class extends Control {
       fileList && (this.fileList = fileList);
       this._wrapperElm.addEventListener("click", (event) => {
         event.stopPropagation();
-        if (!this.enabled)
+        if (!this.enabled || this._designMode)
           return;
         if (!this.isPreviewing)
           this._fileElm.click();
@@ -21052,7 +21667,63 @@ var Upload = class extends Control {
   }
 };
 Upload = __decorateClass([
-  customElements2("i-upload")
+  customElements2("i-upload", {
+    icon: "file",
+    group: GroupType.FIELDS,
+    className: "Upload",
+    props: {
+      caption: { type: "string", default: "" },
+      accept: { type: "string", default: "" },
+      draggable: { type: "boolean", default: DEFAULT_VALUES5.draggable },
+      multiple: { type: "boolean", default: DEFAULT_VALUES5.multiple },
+      fileList: { type: "array", default: DEFAULT_VALUES5.fileList },
+      showFileList: { type: "boolean", default: DEFAULT_VALUES5.showFileList }
+    },
+    events: {
+      onBeforeDrop: [
+        { name: "target", type: "Upload", isControl: true }
+      ],
+      onChanged: [
+        { name: "target", type: "Upload", isControl: true },
+        { name: "files", type: "UploadRawFile[]" }
+      ],
+      onRemoved: [
+        { name: "target", type: "Upload", isControl: true },
+        { name: "file", type: "File" }
+      ],
+      onAdded: [
+        { name: "target", type: "Upload", isControl: true },
+        { name: "file", type: "File" }
+      ],
+      onUploading: [
+        { name: "target", type: "Upload", isControl: true },
+        { name: "file", type: "File" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        caption: {
+          type: "string"
+        },
+        accept: {
+          type: "string"
+        },
+        draggable: {
+          type: "boolean",
+          default: DEFAULT_VALUES5.draggable
+        },
+        multiple: {
+          type: "boolean",
+          default: DEFAULT_VALUES5.multiple
+        },
+        showFileList: {
+          type: "boolean",
+          default: DEFAULT_VALUES5.showFileList
+        }
+      }
+    }
+  })
 ], Upload);
 
 // packages/button/src/style/button.css.ts
@@ -21188,7 +21859,7 @@ var Button = class extends Control {
     }
   }
   _handleClick(event) {
-    if (this.isSpinning || !this.enabled)
+    if (this.isSpinning || !this.enabled || this._designMode)
       return false;
     return super._handleClick(event);
   }
@@ -21197,6 +21868,7 @@ var Button = class extends Control {
     this.updateButton();
   }
   init() {
+    var _a, _b;
     if (!this.captionElm) {
       super.init();
       this.onClick = this.getAttribute("onClick", true) || this.onClick;
@@ -21204,13 +21876,13 @@ var Button = class extends Control {
       let caption = this.getAttribute("caption", true, "");
       this.caption = caption;
       let iconAttr = this.getAttribute("icon", true);
-      if (iconAttr) {
+      if ((iconAttr == null ? void 0 : iconAttr.name) || ((_a = iconAttr == null ? void 0 : iconAttr.image) == null ? void 0 : _a.url)) {
         iconAttr = { ...defaultIcon, ...iconAttr };
         const icon = new Icon(this, iconAttr);
         this.icon = icon;
       }
       let rightIconAttr = this.getAttribute("rightIcon", true);
-      if (rightIconAttr) {
+      if ((rightIconAttr == null ? void 0 : rightIconAttr.name) || ((_b = rightIconAttr == null ? void 0 : rightIconAttr.image) == null ? void 0 : _b.url)) {
         rightIconAttr = { ...defaultIcon, name: "spinner", ...rightIconAttr };
         const icon = new Icon(this, rightIconAttr);
         this.rightIcon = icon;
@@ -21223,9 +21895,84 @@ Button = __decorateClass([
     icon: "closed-captioning",
     className: "Button",
     props: {
-      caption: { type: "string" }
+      caption: {
+        type: "string",
+        default: ""
+      },
+      icon: {
+        type: "object",
+        default: {}
+      },
+      rightIcon: {
+        type: "object",
+        default: {}
+      }
     },
-    events: {}
+    events: {},
+    dataSchema: {
+      type: "object",
+      required: ["caption"],
+      properties: {
+        caption: {
+          required: true,
+          type: "string",
+          title: "Caption"
+        },
+        icon: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string"
+            },
+            fill: {
+              type: "string",
+              format: "color"
+            },
+            width: {
+              type: "number"
+            },
+            height: {
+              type: "number"
+            },
+            image: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string"
+                }
+              }
+            }
+          }
+        },
+        rightIcon: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string"
+            },
+            fill: {
+              type: "string",
+              format: "color"
+            },
+            width: {
+              type: "number"
+            },
+            height: {
+              type: "number"
+            },
+            image: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    group: GroupType.BASIC
   })
 ], Button);
 
@@ -21331,6 +22078,10 @@ var modalStyle = style({
   width: "inherit",
   maxWidth: "100%"
 });
+var getBodyStyle = style({
+  height: "100%",
+  overflow: "hidden"
+});
 var titleStyle = style({
   fontSize: "18px",
   display: "flex",
@@ -21346,9 +22097,6 @@ var titleStyle = style({
     }
   }
 });
-var getStringValue = (value) => {
-  return typeof value === "string" ? `${value} !important` : `${value}px !important`;
-};
 var getModalMediaQueriesStyleClass = (mediaQueries) => {
   let styleObj = getControlMediaQueriesStyle(mediaQueries);
   for (let mediaQuery of mediaQueries) {
@@ -21391,25 +22139,25 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal-wrapper"]["position"] = `${position} !important`;
       }
       if (maxWidthValue !== void 0 && maxWidthValue !== null) {
-        const maxWidth = getStringValue(maxWidthValue);
+        const maxWidth = `${getSpacingValue(maxWidthValue)} !important`;
         styleObj["$nest"][mediaQueryRule]["maxWidth"] = maxWidth;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxWidth"] = maxWidth;
       }
       if (maxHeightValue !== void 0 && maxHeightValue !== null) {
-        const maxHeight = getStringValue(maxHeightValue);
+        const maxHeight = `${getSpacingValue(maxHeightValue)} !important`;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["maxHeight"] = maxHeight;
       }
       if (heightValue !== void 0 && heightValue !== null) {
-        const height = getStringValue(heightValue);
+        const height = `${getSpacingValue(heightValue)} !important`;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["height"] = height;
       }
       if (widthValue !== void 0 && widthValue !== null) {
-        const width = getStringValue(widthValue);
+        const width = `${getSpacingValue(widthValue)} !important`;
         styleObj["$nest"][mediaQueryRule]["width"] = width;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["width"] = width;
       }
       if (minWidthValue !== void 0 && minWidthValue !== null) {
-        const minWidth = getStringValue(minWidthValue);
+        const minWidth = `${getSpacingValue(minWidthValue)} !important`;
         styleObj["$nest"][mediaQueryRule]["minWidth"] = minWidth;
         styleObj["$nest"][mediaQueryRule]["$nest"][".modal"]["minWidth"] = minWidth;
       }
@@ -21480,10 +22228,16 @@ var getModalMediaQueriesStyleClass = (mediaQueries) => {
 // packages/modal/src/modal.ts
 var Theme12 = theme_exports.ThemeVars;
 var showEvent = new Event("show");
+var DEFAULT_VALUES6 = {
+  showBackdrop: true,
+  popupPlacement: "center",
+  closeOnBackdropClick: true,
+  isChildFixed: false,
+  closeOnScrollChildFixed: false
+};
 var Modal = class extends Container {
   constructor(parent, options) {
     super(parent, options, {
-      showClose: true,
       showBackdrop: true,
       closeOnBackdropClick: true,
       popupPlacement: "center"
@@ -21535,7 +22289,8 @@ var Modal = class extends Container {
       if (this.isChildFixed) {
         this.wrapperDiv.style.display = "none";
       }
-      this.onClose && this.onClose(this);
+      if (typeof this.onClose === "function")
+        this.onClose(this);
       document.removeEventListener("mousedown", this.boundHandleModalMouseDown);
       document.removeEventListener("mouseup", this.boundHandleModalMouseUp);
     }
@@ -21874,7 +22629,7 @@ var Modal = class extends Container {
           }
         } else {
           if (lowercasePlacement.includes("right")) {
-            if (lowercasePlacement === "righttop") {
+            if (lowercasePlacement === "righttop" || lowercasePlacement === "right") {
               if (parentCoords.right + this.wrapperDiv.offsetWidth > viewportWidth) {
                 value = viewportWidth - parentCoords.left - this.wrapperDiv.offsetWidth;
               }
@@ -21948,6 +22703,10 @@ var Modal = class extends Container {
         break;
       case "rightTop":
         top = parentTop - this.modalDiv.offsetHeight;
+        left = parentRight;
+        break;
+      case "right":
+        top = parentTop + parentCoords.height / 2 - this.modalDiv.offsetHeight / 2;
         left = parentRight;
         break;
       case "left":
@@ -22089,11 +22848,11 @@ var Modal = class extends Container {
     if (!this.wrapperDiv) {
       if ((_a = this.options) == null ? void 0 : _a.onClose)
         this.onClose = this.options.onClose;
-      this.popupPlacement = this.getAttribute("popupPlacement", true);
-      this.closeOnBackdropClick = this.getAttribute("closeOnBackdropClick", true);
+      this.popupPlacement = this.getAttribute("popupPlacement", true, DEFAULT_VALUES6.popupPlacement);
+      this.closeOnBackdropClick = this.getAttribute("closeOnBackdropClick", true, DEFAULT_VALUES6.closeOnBackdropClick);
       this.wrapperDiv = this.createElement("div", this);
       this.wrapperDiv.classList.add("modal-wrapper");
-      this.showBackdrop = this.getAttribute("showBackdrop", true);
+      this.showBackdrop = this.getAttribute("showBackdrop", true, DEFAULT_VALUES6.showBackdrop);
       this.modalDiv = this.createElement("div", this.wrapperDiv);
       this.titleSpan = this.createElement("div", this.modalDiv);
       this.titleSpan.classList.add(titleStyle, "i-modal_header");
@@ -22107,6 +22866,7 @@ var Modal = class extends Container {
         this.closeIcon = new Icon(void 0, closeIconAttr);
       }
       this.bodyDiv = this.createElement("div", this.modalDiv);
+      this.bodyDiv.classList.add("i-modal_body");
       while (this.childNodes.length > 1) {
         this.bodyDiv.appendChild(this.childNodes[0]);
       }
@@ -22164,6 +22924,8 @@ var Modal = class extends Container {
       let overflow = this.getAttribute("overflow", true);
       if (overflow) {
         this._overflow = new Overflow(this.showBackdrop ? this.modalDiv : this.wrapperDiv, overflow);
+        if (overflow === "hidden")
+          this.bodyDiv.classList.add(getBodyStyle);
       }
       this.mediaQueries = this.getAttribute("mediaQueries", true, []);
     }
@@ -22175,7 +22937,94 @@ var Modal = class extends Container {
   }
 };
 Modal = __decorateClass([
-  customElements2("i-modal")
+  customElements2("i-modal", {
+    icon: "stop",
+    group: GroupType.BASIC,
+    className: "Modal",
+    props: {
+      title: { type: "string" },
+      showBackdrop: {
+        type: "boolean",
+        default: DEFAULT_VALUES6.showBackdrop
+      },
+      closeIcon: {
+        type: "object",
+        default: {}
+      },
+      popupPlacement: {
+        type: "string",
+        default: DEFAULT_VALUES6.popupPlacement
+      },
+      closeOnBackdropClick: {
+        type: "boolean",
+        default: DEFAULT_VALUES6.closeOnBackdropClick
+      },
+      isChildFixed: {
+        type: "boolean",
+        default: DEFAULT_VALUES6.isChildFixed
+      },
+      closeOnScrollChildFixed: {
+        type: "boolean",
+        default: DEFAULT_VALUES6.closeOnScrollChildFixed
+      }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string"
+        },
+        showBackdrop: {
+          type: "boolean",
+          default: DEFAULT_VALUES6.showBackdrop
+        },
+        closeIcon: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string"
+            },
+            fill: {
+              type: "string",
+              format: "color"
+            },
+            width: {
+              type: "number"
+            },
+            height: {
+              type: "number"
+            },
+            image: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string"
+                }
+              }
+            }
+          }
+        },
+        popupPlacement: {
+          type: "string",
+          enum: ["center", "bottom", "bottomLeft", "bottomRight", "top", "topLeft", "topRight", "rightTop", "left", "right"],
+          default: DEFAULT_VALUES6.popupPlacement
+        },
+        closeOnBackdropClick: {
+          type: "boolean",
+          default: DEFAULT_VALUES6.closeOnBackdropClick
+        },
+        isChildFixed: {
+          type: "boolean",
+          default: DEFAULT_VALUES6.isChildFixed
+        },
+        closeOnScrollChildFixed: {
+          type: "boolean",
+          default: DEFAULT_VALUES6.closeOnScrollChildFixed
+        }
+      }
+    }
+  })
 ], Modal);
 
 // packages/progress/src/style/progress.css.ts
@@ -22278,7 +23127,11 @@ cssRule("i-progress", {
       order: 2,
       minHeight: 2,
       borderRadius: "inherit",
+      backgroundColor: Theme13.divider,
       $nest: {
+        "&.has-steps": {
+          backgroundColor: "transparent"
+        },
         ".i-progress_bar": {
           boxSizing: "border-box",
           width: "100%",
@@ -22383,7 +23236,8 @@ var defaultVals = {
   height: 20,
   loading: false,
   steps: 1,
-  type: "line"
+  type: "line",
+  strokeWidth: 2
 };
 var Progress = class extends Control {
   constructor(parent, options) {
@@ -22401,13 +23255,15 @@ var Progress = class extends Control {
   set percent(value) {
     this._percent = +value < 0 ? 0 : +value > 100 ? 100 : +value;
     const overlayElm = this.querySelector(".i-progress_overlay");
-    if (overlayElm)
+    if (overlayElm) {
       overlayElm.style.width = `${this._percent}%`;
+      overlayElm.style.backgroundColor = this.stroke;
+    }
     if (this._percent > 0 && this._percent < 100)
       this._wrapperElm.classList.add("i-progress--active");
     else if (this._percent === 100)
       this._wrapperElm.classList.add("i-progress--success");
-    if (this.format) {
+    if (typeof this.format === "function") {
       if (!this._textElm) {
         this._textElm = this.createElement("span", this);
         this._textElm.classList.add("i-progress_text");
@@ -22425,6 +23281,13 @@ var Progress = class extends Control {
   }
   set strokeColor(value) {
     this._strokeColor = value;
+    if (this.type === "circle") {
+      this.renderCircleInner();
+    } else if (this.type === "line") {
+      const overlayElm = this.querySelector(".i-progress_overlay");
+      if (overlayElm)
+        overlayElm.style.backgroundColor = this.stroke;
+    }
   }
   get loading() {
     return this._loading;
@@ -22441,25 +23304,33 @@ var Progress = class extends Control {
   }
   set steps(value) {
     this._steps = +value;
+    if (this.type === "circle")
+      return;
     const wrapbarElm = this.querySelector(".i-progress_bar");
     const overlayElm = this.querySelector(".i-progress_overlay");
+    const wrapperElm = this.querySelector(".i-progress_wrapbar");
+    if (wrapperElm)
+      wrapperElm.classList.toggle("has-steps", this._steps > 1);
     wrapbarElm.innerHTML = "";
     if (this._steps > 1) {
       const unitStep = 100 / this._steps;
       const percentStep = Math.ceil(this.percent / unitStep);
       const remainder = this.percent % unitStep;
+      const initialH = Math.max(1, Math.floor(this.strokeWidth / 2));
       for (let i = 0; i < this._steps; i++) {
         const barItem = this.createElement("div");
         barItem.style.width = unitStep + "%";
-        barItem.style.height = `${i + 1}px`;
+        barItem.style.height = `${i + initialH}px`;
         if (i === percentStep - 1 && remainder !== 0) {
           const childElm = this.createElement("div");
           childElm.classList.add("i-progress_bar-item");
           childElm.style.width = remainder * 100 / unitStep + "%";
-          childElm.style.height = `${i + 1}px`;
+          childElm.style.height = `${i + initialH}px`;
+          childElm.style.backgroundColor = this.stroke;
           barItem.appendChild(childElm);
         } else if (i < percentStep) {
           barItem.classList.add("i-progress_bar-item");
+          barItem.style.backgroundColor = this.stroke;
         }
         wrapbarElm.appendChild(barItem);
       }
@@ -22498,7 +23369,8 @@ var Progress = class extends Control {
       bold: this._textElm.style.fontStyle.indexOf("bold") >= 0,
       style: this._textElm.style.fontStyle,
       transform: this._textElm.style.textTransform,
-      weight: this._textElm.style.fontWeight
+      weight: this._textElm.style.fontWeight,
+      shadow: this._textElm.style.textShadow
     };
   }
   set font(value) {
@@ -22510,6 +23382,7 @@ var Progress = class extends Control {
       this._textElm.style.fontStyle = value.style || "";
       this._textElm.style.textTransform = value.transform || "none";
       this._textElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
+      this._textElm.style.textShadow = value.shadow || "none";
     }
   }
   get relativeStrokeWidth() {
@@ -22566,15 +23439,18 @@ var Progress = class extends Control {
     return this.type === "line" ? 12 + this.strokeWidth * 0.4 : +this.width * 0.111111 + 2;
   }
   renderLine() {
+    this.height = "auto";
+    this._wrapperElm.innerHTML = "";
     this._wrapperElm.classList.add("i-progress--line");
     this._barElm = this.createElement("div", this._wrapperElm);
     this._barElm.classList.add("i-progress_wrapbar");
-    this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.strokeColor}"></div>`;
+    this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.stroke}"></div>`;
   }
   renderCircle() {
     this._wrapperElm.classList.add("i-progress--circle");
     if (this.width)
       this.height = this.width;
+    this.renderCircleInner();
   }
   renderCircleInner() {
     const templateHtml = `<svg viewBox="0 0 100 100">
@@ -22612,7 +23488,7 @@ var Progress = class extends Control {
       if ((_b = this.options) == null ? void 0 : _b.onRenderEnd)
         this.onRenderEnd = this.options.onRenderEnd;
       this.loading = this.getAttribute("loading", true);
-      this.strokeColor = this.getAttribute("strokeColor", true);
+      this._strokeColor = this.getAttribute("strokeColor", true);
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-progress");
       this.type = this.getAttribute("type", true);
@@ -22620,13 +23496,13 @@ var Progress = class extends Control {
       this.strokeWidth = this.getAttribute("strokeWidth", true);
       if (this.type === "line") {
         this.steps = this.getAttribute("steps", true);
-        if (this.onRenderStart && typeof this.onRenderStart === "function") {
+        if (typeof this.onRenderStart === "function") {
           this._wrapperElm.classList.add("i-progress--grid");
           this._startElm = this.createElement("div", this._wrapperElm);
           this._startElm.classList.add("i-progress_item", "i-progress_item-start");
           this.onRenderStart(this._startElm);
         }
-        if (this.onRenderEnd && typeof this.onRenderEnd === "function") {
+        if (typeof this.onRenderEnd === "function") {
           this._wrapperElm.classList.add("i-progress--grid");
           this._endElm = this.createElement("div", this._wrapperElm);
           this._endElm.classList.add("i-progress_item", "i-progress_item-end");
@@ -22644,7 +23520,78 @@ var Progress = class extends Control {
   }
 };
 Progress = __decorateClass([
-  customElements2("i-progress")
+  customElements2("i-progress", {
+    icon: "spinner",
+    group: GroupType.BASIC,
+    className: "Progress",
+    props: {
+      percent: {
+        type: "number",
+        default: defaultVals.percent
+      },
+      strokeWidth: {
+        type: "number",
+        default: defaultVals.strokeWidth
+      },
+      strokeColor: {
+        type: "string",
+        default: ""
+      },
+      loading: {
+        type: "boolean",
+        default: defaultVals.loading
+      },
+      steps: {
+        type: "number",
+        default: defaultVals.steps
+      },
+      type: {
+        type: "string",
+        default: defaultVals.type
+      }
+    },
+    events: {
+      format: [
+        { name: "percent", type: "number" }
+      ],
+      onRenderStart: [
+        { name: "target", type: "Progress", isControl: true }
+      ],
+      onRenderEnd: [
+        { name: "target", type: "Progress", isControl: true }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: ["line", "circle"],
+          default: defaultVals.type
+        },
+        percent: {
+          type: "number",
+          default: defaultVals.percent
+        },
+        strokeWidth: {
+          type: "number",
+          default: defaultVals.strokeWidth
+        },
+        strokeColor: {
+          type: "string",
+          format: "color"
+        },
+        loading: {
+          type: "boolean",
+          default: defaultVals.loading
+        },
+        steps: {
+          type: "number",
+          default: defaultVals.steps
+        }
+      }
+    }
+  })
 ], Progress);
 
 // packages/upload/src/style/upload-modal.css.ts
@@ -23462,9 +24409,16 @@ cssRule("i-tabs", {
         ".tabs-nav:not(.is-closable) span.close": {
           display: "none"
         },
+        ".tabs-nav .has-icon span.close": {
+          display: "none"
+        },
         ".tabs-nav.is-closable i-tab:not(.disabled):hover span.close": {
           visibility: "visible",
-          opacity: 1
+          opacity: 1,
+          display: "inline-block"
+        },
+        ".tabs-nav.is-closable i-tab:not(.disabled):hover .pnl-right i-icon": {
+          display: "none"
         },
         ".tabs-nav.is-closable i-tab:not(.disabled).active span.close": {
           visibility: "visible",
@@ -23475,7 +24429,6 @@ cssRule("i-tabs", {
           display: "inline-flex",
           overflow: "hidden",
           color: "rgba(255, 255, 255, 0.55)",
-          background: "#2e2e2e",
           marginBottom: "-1px",
           border: `1px solid #252525`,
           alignItems: "center",
@@ -23572,8 +24525,6 @@ cssRule("i-tabs", {
     "span.close": {
       width: "18px",
       height: "18px",
-      marginLeft: "5px",
-      marginRight: "-5px",
       borderRadius: "5px",
       lineHeight: "18px",
       fontSize: "18px",
@@ -23584,11 +24535,19 @@ cssRule("i-tabs", {
           background: "rgba(78, 78, 78, 0.48)"
         }
       }
+    },
+    ".pnl-right": {
+      display: "inline-flex",
+      justifyContent: "end",
+      width: 20,
+      overflow: "hidden",
+      marginLeft: 5,
+      marginRight: -5
     }
   }
 });
 var getTabMediaQueriesStyleClass = (mediaQueries) => {
-  let styleObj = getControlMediaQueriesStyle(mediaQueries);
+  let styleObj = getControlMediaQueriesStyle(mediaQueries, { display: "block" });
   for (let mediaQuery of mediaQueries) {
     let mediaQueryRule = getMediaQueryRule(mediaQuery);
     if (mediaQueryRule) {
@@ -23617,15 +24576,18 @@ var getTabMediaQueriesStyleClass = (mediaQueries) => {
           styleObj["$nest"][mediaQueryRule]["$nest"]["> .tabs-nav-wrap .tabs-nav"]["justifyContent"] = "start";
         }
       }
-      if (typeof visible === "boolean") {
-        styleObj["$nest"][mediaQueryRule]["display"] = visible ? "block !important" : "none !important";
-      }
     }
   }
   return style(styleObj);
 };
 
 // packages/tab/src/tab.ts
+var DEFAULT_VALUES7 = {
+  activeTabIndex: 0,
+  closable: false,
+  draggable: false,
+  mode: "horizontal"
+};
 var Tabs = class extends Container {
   constructor(parent, options) {
     super(parent, options);
@@ -23773,10 +24735,12 @@ var Tabs = class extends Container {
     });
   }
   _handleClick(event) {
+    if (this._designMode)
+      return false;
     return super._handleClick(event, true);
   }
   dragStartHandler(event) {
-    if (!(event.target instanceof Tab))
+    if (!(event.target instanceof Tab) || this._designMode)
       return;
     this.curDragTab = event.target;
   }
@@ -23785,7 +24749,7 @@ var Tabs = class extends Container {
   }
   dropHandler(event) {
     event.preventDefault();
-    if (!this.curDragTab)
+    if (!this.curDragTab || this._designMode)
       return;
     const target = event.target;
     const dropTab = target instanceof Tab ? target : target.closest("i-tab");
@@ -23803,7 +24767,7 @@ var Tabs = class extends Container {
         dropTab.after(this.curDragTab);
       }
       this.activeTabIndex = curActiveTab.index;
-      if (this.onChanged)
+      if (typeof this.onChanged === "function")
         this.onChanged(this, this.activeTab);
     }
     this.curDragTab = null;
@@ -23863,7 +24827,52 @@ var Tabs = class extends Container {
   }
 };
 Tabs = __decorateClass([
-  customElements2("i-tabs")
+  customElements2("i-tabs", {
+    icon: "window-minimize",
+    className: "Tabs",
+    group: GroupType.BASIC,
+    props: {
+      activeTabIndex: { type: "number" },
+      closable: { type: "boolean", default: DEFAULT_VALUES7.closable },
+      draggable: { type: "boolean", default: DEFAULT_VALUES7.draggable },
+      mode: { type: "string", default: DEFAULT_VALUES7.mode }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Tabs", isControl: true },
+        { name: "tab", type: "Tab", isControl: true }
+      ],
+      onCloseTab: [
+        { name: "target", type: "Tabs", isControl: true },
+        { name: "activeTab", type: "Tab", isControl: true }
+      ],
+      onBeforeClose: [
+        { name: "target", type: "Tabs", isControl: true },
+        { name: "activeTab", type: "Tab", isControl: true }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        activeTabIndex: {
+          type: "number"
+        },
+        closable: {
+          type: "boolean",
+          default: DEFAULT_VALUES7.closable
+        },
+        draggable: {
+          type: "boolean",
+          default: DEFAULT_VALUES7.draggable
+        },
+        mode: {
+          type: "string",
+          enum: ["horizontal", "vertical"],
+          default: DEFAULT_VALUES7.mode
+        }
+      }
+    }
+  })
 ], Tabs);
 var Tab = class extends Container {
   active() {
@@ -23884,7 +24893,7 @@ var Tab = class extends Container {
     this.captionElm.innerHTML = value;
   }
   close() {
-    this.handleCloseTab();
+    this.handleDefaultClose();
   }
   get index() {
     return this._parent.items.findIndex((t) => t.id === this.id);
@@ -23906,6 +24915,28 @@ var Tab = class extends Container {
     if (this._icon)
       this.tabContainer.prepend(this._icon);
   }
+  get rightIcon() {
+    if (!this._rightIcon) {
+      this._rightIcon = Icon.create({
+        width: 16,
+        height: 16
+      }, this);
+      this.rightElm.classList.add("has-icon");
+    }
+    ;
+    return this._rightIcon;
+  }
+  set rightIcon(elm) {
+    if (this._rightIcon && this.rightElm.contains(this._rightIcon))
+      this.rightElm.removeChild(this._rightIcon);
+    this._rightIcon = elm;
+    if (this._rightIcon) {
+      this.rightElm.prepend(this._rightIcon);
+      this.rightElm.classList.add("has-icon");
+    } else {
+      this.rightElm.classList.remove("has-icon");
+    }
+  }
   get innerHTML() {
     return this._contentElm.innerHTML;
   }
@@ -23920,7 +24951,8 @@ var Tab = class extends Container {
       bold: this.captionElm.style.fontStyle.indexOf("bold") >= 0,
       style: this.captionElm.style.fontStyle,
       transform: this.captionElm.style.textTransform,
-      weight: this.captionElm.style.fontWeight
+      weight: this.captionElm.style.fontWeight,
+      shadow: this.captionElm.style.textShadow
     };
   }
   set font(value) {
@@ -23931,34 +24963,45 @@ var Tab = class extends Container {
       this.captionElm.style.fontStyle = value.style || "";
       this.captionElm.style.textTransform = value.transform || "none";
       this.captionElm.style.fontWeight = value.bold ? "bold" : `${value.weight}` || "";
+      this.captionElm.style.textShadow = value.shadow || "none";
     }
   }
   _handleClick(event) {
-    if (!this._parent || !this.enabled || this._parent.activeTab.isSameNode(this))
+    if (!this._parent || !this.enabled || this._parent.activeTab.isSameNode(this) || this._designMode)
       return false;
     if (this._parent) {
       if (this._parent.activeTab != this)
         this._parent.activeTabIndex = this.index;
-      if (this._parent.onChanged)
+      if (typeof this._parent.onChanged === "function")
         this._parent.onChanged(this._parent, this._parent.activeTab);
     }
     return super._handleClick(event);
   }
   handleCloseTab(event) {
+    if (this._designMode)
+      return;
     if (event) {
       event.stopPropagation();
       event.preventDefault();
     }
     if (!this._parent || !this.enabled || event && !this._parent.closable)
       return;
+    if (typeof this._parent.onBeforeClose === "function") {
+      this._parent.onBeforeClose(this._parent, this);
+    } else {
+      this.handleDefaultClose();
+    }
+  }
+  handleDefaultClose() {
     const isActiveChange = this._parent.activeTab.isSameNode(this);
-    if (this._parent.onCloseTab)
+    if (typeof this._parent.onCloseTab === "function")
       this._parent.onCloseTab(this._parent, this);
     this._parent.delete(this);
-    if (isActiveChange && this._parent.onChanged)
+    if (isActiveChange && typeof this._parent.onChanged === "function")
       this._parent.onChanged(this._parent, this._parent.activeTab);
   }
   init() {
+    var _a, _b;
     if (!this.captionElm) {
       super.init();
       this.tabContainer = this.createElement("div", this);
@@ -23969,16 +25012,26 @@ var Tab = class extends Container {
       if (font)
         this.font = font;
       const icon = this.getAttribute("icon", true);
-      if (icon) {
-        icon.height = icon.height || "16px";
-        icon.width = icon.width || "16px";
+      if ((icon == null ? void 0 : icon.name) || ((_a = icon == null ? void 0 : icon.image) == null ? void 0 : _a.url)) {
+        icon.height = icon.height || "1rem";
+        icon.width = icon.width || "1rem";
         this.icon = new Icon(void 0, icon);
       }
       ;
-      const closeButton = this.createElement("span", this.tabContainer);
-      closeButton.classList.add("close");
-      closeButton.innerHTML = "&times;";
-      closeButton.onclick = this.handleCloseTab.bind(this);
+      this.rightElm = this.createElement("span", this.tabContainer);
+      this.rightElm.classList.add("pnl-right");
+      const rightIcon = this.getAttribute("rightIcon", true);
+      if ((rightIcon == null ? void 0 : rightIcon.name) || ((_b = rightIcon == null ? void 0 : rightIcon.image) == null ? void 0 : _b.url)) {
+        rightIcon.height = rightIcon.height || "1rem";
+        rightIcon.width = rightIcon.width || "1rem";
+        this.rightIcon = new Icon(void 0, rightIcon);
+        this.rightElm.classList.add("has-icon");
+      }
+      ;
+      this._closeBtn = this.createElement("span", this.rightElm);
+      this._closeBtn.classList.add("close");
+      this._closeBtn.innerHTML = "&times;";
+      this._closeBtn.onclick = this.handleCloseTab.bind(this);
     }
   }
   static async create(options, parent) {
@@ -23988,7 +25041,47 @@ var Tab = class extends Container {
   }
 };
 Tab = __decorateClass([
-  customElements2("i-tab")
+  customElements2("i-tab", {
+    icon: "window-minimize",
+    group: GroupType.BASIC,
+    className: "Tab",
+    props: {
+      caption: {
+        type: "string"
+      },
+      icon: {
+        type: "object",
+        default: {}
+      }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        caption: { type: "string" },
+        icon: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string"
+            },
+            fill: {
+              type: "string",
+              format: "color"
+            },
+            image: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
 ], Tab);
 
 // packages/combo-box/src/style/combo-box.css.ts
@@ -24152,16 +25245,20 @@ cssRule("i-combo-box", {
 });
 
 // packages/combo-box/src/combo-box.ts
-var defaultIcon2 = {
-  width: 16,
-  height: 16,
-  fill: theme_exports.ThemeVars.text.primary,
-  name: "angle-down"
+var DEFAULT_VALUES8 = {
+  mode: "single",
+  readOnly: false,
+  icon: {
+    width: 16,
+    height: 16,
+    fill: theme_exports.ThemeVars.text.primary,
+    name: "angle-down"
+  }
 };
 var ComboBox = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
-      mode: "single"
+      mode: DEFAULT_VALUES8.mode
     });
     this.newItem = null;
     this.isListShown = false;
@@ -24175,6 +25272,11 @@ var ComboBox = class extends Control {
     return this._selectedItem;
   }
   set selectedItem(value) {
+    if (value === void 0) {
+      this._selectedItem = void 0;
+      this.inputElm.value = "";
+      return;
+    }
     let isValueValid = false;
     let validValue;
     if (this.isMulti) {
@@ -24239,10 +25341,14 @@ var ComboBox = class extends Control {
   }
   set items(items) {
     this._items = items;
+    if (this.listElm) {
+      this.listElm.innerHTML = "";
+      this.renderItems();
+    }
   }
   get icon() {
     if (!this._icon) {
-      this._icon = new Icon(void 0, defaultIcon2);
+      this._icon = new Icon(void 0, DEFAULT_VALUES8.icon);
       if (this.iconElm)
         this.iconElm.appendChild(this._icon);
     }
@@ -24302,6 +25408,28 @@ var ComboBox = class extends Control {
     this._readOnly = value;
     if (this.inputElm) {
       this.inputElm.readOnly = value;
+    }
+  }
+  get background() {
+    return this._background;
+  }
+  set background(value) {
+    super.background = value;
+    if (value && value.color !== void 0) {
+      this.style.setProperty("--combobox-background", value.color);
+    } else {
+      this.style.removeProperty("--combobox-background");
+    }
+  }
+  get font() {
+    return this._font;
+  }
+  set font(value) {
+    super.font = value;
+    if (value && value.color !== void 0) {
+      this.style.setProperty("--combobox-font_color", value.color);
+    } else {
+      this.style.removeProperty("--combobox-font_color");
     }
   }
   isValueValid(value) {
@@ -24500,6 +25628,7 @@ var ComboBox = class extends Control {
     this.inputElm.value = "";
   }
   init() {
+    var _a;
     if (!this.inputElm) {
       this.calculatePositon = this.calculatePositon.bind(this);
       this.callback = this.getAttribute("parentCallback", true);
@@ -24515,14 +25644,14 @@ var ComboBox = class extends Control {
       this.inputElm.disabled = disabled;
       this.readOnly = this.getAttribute("readOnly", true, false);
       this.inputElm.addEventListener("click", (e) => {
-        if (this._readOnly)
+        if (this._readOnly || this._designMode)
           return false;
         this.openList();
         if (this.onClick)
           this.onClick(this, e);
       });
       this.inputElm.addEventListener("keyup", () => {
-        if (this._readOnly)
+        if (this._readOnly || this._designMode)
           return false;
         this.searchStr = this.inputElm.value;
         this.renderItems();
@@ -24532,12 +25661,15 @@ var ComboBox = class extends Control {
       this.iconElm = this.createElement("span", this);
       this.iconElm.classList.add("icon-btn");
       this.iconElm.addEventListener("click", () => {
-        if (!this._enabled || this._readOnly)
+        if (!this._enabled || this._readOnly || this._designMode)
           return false;
         this.toggleList();
       });
       let iconAttr = this.getAttribute("icon", true, {});
-      iconAttr = { ...defaultIcon2, ...iconAttr };
+      iconAttr = { ...DEFAULT_VALUES8.icon, ...iconAttr };
+      if ((_a = iconAttr == null ? void 0 : iconAttr.image) == null ? void 0 : _a.url) {
+        iconAttr.name = "";
+      }
       const icon = new Icon(void 0, iconAttr);
       this.icon = icon;
       this.selectedItem = this.getAttribute("selectedItem", true);
@@ -24566,7 +25698,98 @@ var ComboBox = class extends Control {
   }
 };
 ComboBox = __decorateClass([
-  customElements2("i-combo-box")
+  customElements2("i-combo-box", {
+    icon: "tasks",
+    group: GroupType.FIELDS,
+    className: "ComboBox",
+    props: {
+      selectedItem: { type: "object" },
+      items: {
+        type: "array",
+        default: []
+      },
+      icon: {
+        type: "object",
+        default: { name: "angle-down" }
+      },
+      mode: {
+        type: "string",
+        default: DEFAULT_VALUES8.mode
+      },
+      readOnly: {
+        type: "boolean",
+        default: DEFAULT_VALUES8.readOnly
+      },
+      placeholder: {
+        type: "string",
+        default: ""
+      }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["value", "label"],
+            properties: {
+              value: {
+                type: "string"
+              },
+              label: {
+                type: "string"
+              }
+            }
+          }
+        },
+        placeholder: {
+          type: "string"
+        },
+        readOnly: {
+          type: "boolean",
+          default: DEFAULT_VALUES8.readOnly
+        },
+        mode: {
+          type: "string",
+          enum: ["single", "multiple", "tags"],
+          default: DEFAULT_VALUES8.mode
+        },
+        icon: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              default: "angle-down"
+            },
+            fill: {
+              type: "string"
+            },
+            width: {
+              type: "number"
+            },
+            height: {
+              type: "number"
+            },
+            image: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
 ], ComboBox);
 
 // packages/datepicker/src/style/datepicker.css.ts
@@ -24605,7 +25828,8 @@ cssRule("i-datepicker", {
       verticalAlign: "top",
       borderTopRightRadius: "0px !important",
       borderBottomRightRadius: "0px !important",
-      borderRight: "none !important"
+      borderRight: "none !important",
+      height: "100%"
     },
     "> input[type=text]:focus": {
       borderColor: Theme19.colors.info.main
@@ -24658,10 +25882,13 @@ cssRule("i-datepicker", {
 
 // packages/datepicker/src/datepicker.ts
 var defaultCaptionWidth = 40;
+var DEFAULT_VALUES9 = {
+  type: "date",
+  captionWidth: 0
+};
 var Datepicker = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
-      captionWidth: defaultCaptionWidth,
       height: 25,
       width: 100
     });
@@ -24729,7 +25956,6 @@ var Datepicker = class extends Control {
   }
   set height(value) {
     this.setPosition("height", value);
-    this.inputElm.style.height = typeof value === "string" ? value : `${value}px`;
   }
   get width() {
     return this.offsetWidth;
@@ -24776,10 +26002,11 @@ var Datepicker = class extends Control {
     }
   }
   get dateTimeFormat() {
-    return this._dateTimeFormat;
+    var _a;
+    return (_a = this._dateTimeFormat) != null ? _a : "";
   }
   set dateTimeFormat(format) {
-    this._dateTimeFormat = format;
+    this._dateTimeFormat = format != null ? format : "";
   }
   get datepickerFormat() {
     switch (this._type) {
@@ -24810,12 +26037,35 @@ var Datepicker = class extends Control {
     this.datepickerElm.disabled = !value;
   }
   get placeholder() {
-    return this._placeholder;
+    var _a;
+    return (_a = this._placeholder) != null ? _a : "";
   }
   set placeholder(value) {
-    this._placeholder = value;
+    this._placeholder = value != null ? value : "";
     if (this.inputElm)
       this.inputElm.placeholder = this._placeholder;
+  }
+  get type() {
+    return this._type;
+  }
+  set type(value) {
+    this._type = value;
+    if (this.toggleIconElm) {
+      this.toggleIconElm.name = this._type === "time" ? "clock" : "calendar";
+    }
+    if (this.datepickerElm) {
+      const inputType = this._type === "dateTime" ? "datetime-local" : this._type;
+      this.datepickerElm.setAttribute("type", inputType);
+    }
+  }
+  set designMode(value) {
+    this._designMode = value;
+    if (this.inputElm) {
+      this.inputElm.readOnly = value;
+    }
+    if (this.datepickerElm) {
+      this.datepickerElm.readOnly = value;
+    }
   }
   get formatString() {
     return this.dateTimeFormat || this.defaultDateTimeFormat;
@@ -24851,17 +26101,17 @@ var Datepicker = class extends Control {
         }
       });
       this.callback = this.getAttribute("parentCallback", true);
-      this.dateTimeFormat = this.getAttribute("dateTimeFormat", true, "");
-      this._type = this.getAttribute("type", true, "date");
-      this._iconWidth = this.getAttribute("height", true);
+      this.dateTimeFormat = this.getAttribute("dateTimeFormat", true);
+      this._type = this.getAttribute("type", true, DEFAULT_VALUES9.type);
+      const height = this.getAttribute("height", true);
+      this._iconWidth = typeof height === "number" ? height : +height.replace("px", "");
       this.captionSpanElm = this.createElement("span", this);
       this.labelElm = this.createElement("label", this.captionSpanElm);
       this.inputElm = this.createElement("input", this);
       this.inputElm.setAttribute("type", "text");
       this.inputElm.setAttribute("autocomplete", "disabled");
-      this.inputElm.style.height = this.height + "px";
       this.inputElm.pattern = this.formatString;
-      this.placeholder = this.getAttribute("placeholder", true, "");
+      this.placeholder = this.getAttribute("placeholder", true);
       this.toggleElm = this.createElement("span", this);
       this.toggleElm.classList.add("datepicker-toggle");
       this.toggleElm.style.width = this._iconWidth + "px";
@@ -24899,7 +26149,44 @@ var Datepicker = class extends Control {
   }
 };
 Datepicker = __decorateClass([
-  customElements2("i-datepicker")
+  customElements2("i-datepicker", {
+    icon: "calendar",
+    group: GroupType.FIELDS,
+    className: "Datepicker",
+    props: {
+      caption: { type: "string", default: "" },
+      captionWidth: { type: "number", default: DEFAULT_VALUES9.captionWidth },
+      value: { type: "object" },
+      placeholder: { type: "string", default: "" },
+      type: { type: "string", default: DEFAULT_VALUES9.type },
+      dateTimeFormat: { type: "string", default: "" }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: ["date", "dateTime", "time"],
+          default: DEFAULT_VALUES9.type
+        },
+        placeholder: {
+          type: "string"
+        },
+        caption: {
+          type: "string"
+        },
+        dateTimeFormat: {
+          type: "string"
+        }
+      }
+    }
+  })
 ], Datepicker);
 
 // packages/range/src/style/range.css.ts
@@ -25055,6 +26342,15 @@ cssRule("i-range", {
 });
 
 // packages/range/src/range.ts
+var DEFAULT_VALUES10 = {
+  captionWidth: 40,
+  value: 0,
+  min: 0,
+  max: 100,
+  step: 1,
+  stepDots: false,
+  tooltipVisible: false
+};
 var Range2 = class extends Control {
   constructor(parent, options) {
     super(parent, options, {
@@ -25116,6 +26412,12 @@ var Range2 = class extends Control {
     super.enabled = value;
     this.inputElm.disabled = !value;
   }
+  set designMode(value) {
+    this._designMode = value;
+    if (this.inputElm) {
+      this.inputElm.disabled = value || this.enabled === false;
+    }
+  }
   get tooltipVisible() {
     return this._tooltipVisible;
   }
@@ -25134,11 +26436,15 @@ var Range2 = class extends Control {
       this.style.removeProperty("--track-color");
   }
   onSliderChange(event) {
+    if (this._designMode) {
+      event.preventDefault();
+      return false;
+    }
     this.value = +this.inputElm.value;
     const min = Number(this.inputElm.min);
     const max = Number(this.inputElm.max);
     this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
-    if (this.onChanged)
+    if (typeof this.onChanged === "function")
       this.onChanged(this, event);
     this.onUpdateTooltip(false);
   }
@@ -25156,11 +26462,11 @@ var Range2 = class extends Control {
   init() {
     if (!this.captionSpanElm) {
       this.callback = this.getAttribute("parentCallback", true);
-      const min = this.getAttribute("min", true, 0);
-      const max = this.getAttribute("max", true, 100);
-      const step = this.getAttribute("step", true, 0);
-      const stepDots = this.getAttribute("stepDots", true);
-      const tooltipVisible = this.getAttribute("tooltipVisible", true, false);
+      const min = this.getAttribute("min", true, DEFAULT_VALUES10.min);
+      const max = this.getAttribute("max", true, DEFAULT_VALUES10.max);
+      const step = this.getAttribute("step", true, DEFAULT_VALUES10.step);
+      const stepDots = this.getAttribute("stepDots", true, DEFAULT_VALUES10.stepDots);
+      const tooltipVisible = this.getAttribute("tooltipVisible", true, DEFAULT_VALUES10.tooltipVisible);
       const formatter = this.getAttribute("tooltipFormatter", true) || this.tooltipFormatter;
       this.tooltipFormatter = formatter;
       this.captionSpanElm = this.createElement("span", this);
@@ -25172,16 +26478,25 @@ var Range2 = class extends Control {
       this.inputElm.type = "range";
       this.inputElm.min = min;
       this.inputElm.max = max;
+      this.inputElm.disabled = this._designMode || this.enabled === false;
       if (step !== 0) {
         this.inputElm.step = step;
       }
       this.inputElm.addEventListener("input", this.onSliderChange.bind(this));
       if (this.onMouseUp)
         this.inputElm.addEventListener("mouseup", (e) => {
+          if (this._designMode) {
+            e.preventDefault();
+            return false;
+          }
           this.onMouseUp(this, e);
         });
       if (this.onKeyUp)
         this.inputElm.addEventListener("keyup", (e) => {
+          if (this._designMode) {
+            e.preventDefault();
+            return false;
+          }
           const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "PageUp", "PageDown"];
           if (keys.includes(e.key))
             this.onKeyUp(this, e);
@@ -25189,7 +26504,7 @@ var Range2 = class extends Control {
       this.tooltipElm = this.createElement("span", this.inputContainerElm);
       this.tooltipElm.classList.add("tooltip");
       this.tooltipVisible = tooltipVisible || this.tooltipFormatter || false;
-      this.captionWidth = this.getAttribute("captionWidth", true, 40);
+      this.captionWidth = this.getAttribute("captionWidth", true, DEFAULT_VALUES10.captionWidth);
       this.caption = this.getAttribute("caption", true);
       if (stepDots) {
         this.classList.add("--step");
@@ -25205,7 +26520,7 @@ var Range2 = class extends Control {
           dotElm.classList.add("step-dot");
         }
       }
-      this.value = this.getAttribute("value", true, 0);
+      this.value = this.getAttribute("value", true, DEFAULT_VALUES10.value);
       if (this._value > 0) {
         this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
       }
@@ -25226,7 +26541,41 @@ __decorateClass([
   observable("value")
 ], Range2.prototype, "_value", 2);
 Range2 = __decorateClass([
-  customElements2("i-range")
+  customElements2("i-range", {
+    icon: "sliders-h",
+    group: GroupType.FIELDS,
+    className: "Range",
+    props: {
+      caption: { type: "string", default: "" },
+      captionWidth: { type: "number", default: DEFAULT_VALUES10.captionWidth },
+      value: { type: "number", default: DEFAULT_VALUES10.value },
+      min: { type: "number", default: DEFAULT_VALUES10.min },
+      max: { type: "number", default: DEFAULT_VALUES10.max },
+      step: { type: "number", default: DEFAULT_VALUES10.step },
+      stepDots: { type: "boolean", default: DEFAULT_VALUES10.stepDots },
+      tooltipVisible: { type: "boolean", default: DEFAULT_VALUES10.tooltipVisible },
+      trackColor: { type: "string", default: "" }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        caption: { type: "string" },
+        value: { type: "number", default: DEFAULT_VALUES10.value },
+        min: { type: "number", default: DEFAULT_VALUES10.min },
+        max: { type: "number", default: DEFAULT_VALUES10.max },
+        step: { type: "number", default: DEFAULT_VALUES10.step },
+        stepDots: { type: "boolean", default: DEFAULT_VALUES10.stepDots },
+        tooltipVisible: { type: "boolean", default: DEFAULT_VALUES10.tooltipVisible },
+        trackColor: { type: "string", format: "color" }
+      }
+    }
+  })
 ], Range2);
 
 // packages/radio/src/radio.css.ts
@@ -25234,6 +26583,7 @@ var Theme21 = theme_exports.ThemeVars;
 cssRule("i-radio-group", {
   display: "inline-flex",
   alignItems: "start",
+  gap: "5px",
   "$nest": {
     ".radio-wrapper": {
       display: "inline-flex",
@@ -25247,7 +26597,7 @@ cssRule("i-radio-group", {
 });
 var captionStyle = style({
   fontFamily: Theme21.typography.fontFamily,
-  fontSize: Theme21.typography.fontSize,
+  fontSize: "inherit",
   "$nest": {
     "span": {
       color: Theme21.text.primary
@@ -25285,7 +26635,36 @@ var Radio = class extends Control {
     this._captionWidth = value;
     this.setElementPosition(this.captionSpanElm, "width", value);
   }
+  set font(value) {
+    if (!this.captionSpanElm)
+      return;
+    this.captionSpanElm.style.color = value.color || "";
+    this.captionSpanElm.style.fontSize = value.size || "";
+    this.captionSpanElm.style.fontFamily = value.name || "";
+    this.captionSpanElm.style.fontStyle = value.style || "";
+    this.captionSpanElm.style.textTransform = value.transform || "none";
+    this.captionSpanElm.style.fontWeight = value.bold ? "bold" : `${value.weight || ""}`;
+    this.captionSpanElm.style.textShadow = value.shadow || "none";
+  }
+  get font() {
+    if (!this.captionSpanElm)
+      return {};
+    return {
+      color: this.captionSpanElm.style.color,
+      name: this.captionSpanElm.style.fontFamily,
+      size: this.captionSpanElm.style.fontSize,
+      bold: this.captionSpanElm.style.fontStyle.indexOf("bold") >= 0,
+      style: this.captionSpanElm.style.fontStyle,
+      transform: this.captionSpanElm.style.textTransform,
+      weight: this.captionSpanElm.style.fontWeight,
+      shadow: this.captionSpanElm.style.textShadow
+    };
+  }
   _handleClick(event) {
+    if (this._designMode) {
+      event.preventDefault();
+      return false;
+    }
     if (event.target !== this.inputElm)
       return true;
     const checked = this.inputElm.checked || false;
@@ -25310,7 +26689,11 @@ var Radio = class extends Control {
       this.captionSpanElm.classList.add("i-radio_label");
       this.caption = this.getAttribute("caption", true, "");
       this.captionWidth = this.getAttribute("captionWidth", true);
-      this.labelElm.style.color = theme_exports.ThemeVars.text.primary;
+      const font = this.getAttribute("font", true);
+      if (font)
+        this.font = font;
+      else
+        this.labelElm.style.color = theme_exports.ThemeVars.text.primary;
     }
   }
   static async create(options, parent) {
@@ -25328,6 +26711,7 @@ Radio = __decorateClass([
 var RadioGroup = class extends Control {
   constructor(parent, options) {
     super(parent, options);
+    this._radioItems = [];
     this._group = [];
   }
   get selectedValue() {
@@ -25383,17 +26767,21 @@ var RadioGroup = class extends Control {
     this._group.push(elm);
   }
   _handleChange(source, event) {
+    if (this._designMode) {
+      event.preventDefault();
+      return true;
+    }
     event.stopPropagation();
     const selectedValue = this.selectedValue;
     const value = source.value;
     this._selectedValue = value;
     this._group.forEach((item) => item.classList.remove("is-checked"));
     source.classList.add("is-checked");
-    if (this.onChanged && selectedValue !== value)
+    if (typeof this.onChanged === "function" && selectedValue !== value)
       this.onChanged(this, event);
   }
-  async add(options) {
-    const elm = await Radio.create(options);
+  add(options) {
+    const elm = new Radio(this, options);
     this.appendItem(elm);
     this._radioItems.push(options);
     return elm;
@@ -25430,7 +26818,45 @@ __decorateClass([
   observable("selectedValue")
 ], RadioGroup.prototype, "_selectedValue", 2);
 RadioGroup = __decorateClass([
-  customElements2("i-radio-group")
+  customElements2("i-radio-group", {
+    icon: "check-circle",
+    className: "RadioGroup",
+    group: GroupType.FIELDS,
+    props: {
+      layout: {
+        type: "string",
+        default: "vertical"
+      },
+      selectedValue: { type: "string", default: "" },
+      radioItems: { type: "array", default: [] }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        layout: {
+          type: "string",
+          enum: ["vertical", "horizontal"],
+          default: "vertical"
+        },
+        radioItems: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              caption: { type: "string" },
+              value: { type: "string" }
+            }
+          }
+        }
+      }
+    }
+  })
 ], RadioGroup);
 
 // packages/color/src/utils.ts
@@ -25937,6 +27363,8 @@ var ColorPicker = class extends Control {
   async init() {
     if (!this.wrapperElm) {
       super.init();
+      this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
+      this.onClosed = this.getAttribute("onClosed", true) || this.onClosed;
       this.handleMouseUp = this.handleMouseUp.bind(this);
       this.handleMouseMove = this.handleMouseMove.bind(this);
       this.wrapperElm = this.createElement("div", this);
@@ -25950,7 +27378,6 @@ var ColorPicker = class extends Control {
         width: "auto",
         minWidth: 230,
         showBackdrop: false,
-        isChildFixed: true,
         onClose: this.onClosePicker.bind(this)
       });
       this.mdColorPicker.onOpen = this.onOpenPicker.bind(this);
@@ -25971,7 +27398,7 @@ var ColorPicker = class extends Control {
       const valueElm = this.createElement("span", this.wrapperElm);
       valueElm.classList.add("input-span");
       valueElm.addEventListener("click", () => {
-        if (!this.enabled)
+        if (!this.enabled || this._designMode)
           return;
         const isVisible = this.mdColorPicker.visible;
         if (!isVisible) {
@@ -25981,7 +27408,6 @@ var ColorPicker = class extends Control {
       });
       this.inputSpanElm = this.createElement("span", valueElm);
       this.inputSpanElm.style.background = this.value || DEFAULT_BG_COLOR;
-      this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
       const value = this.getAttribute("value", true);
       if (value !== void 0)
         this.value = value;
@@ -25992,7 +27418,7 @@ var ColorPicker = class extends Control {
     document.addEventListener("mousemove", this.handleMouseMove);
   }
   onClosePicker() {
-    if (this.onClosed)
+    if (typeof this.onClosed === "function")
       this.onClosed();
     if (this.inputSpanElm)
       this.inputSpanElm.style.background = this.value || DEFAULT_BG_COLOR;
@@ -26150,7 +27576,6 @@ var ColorPicker = class extends Control {
         this.value = result.sRGBHex;
         pickerIcon.fill = "#222";
       }).catch((e) => {
-        console.log(e);
         pickerIcon.fill = "#222";
       });
     } else {
@@ -26225,7 +27650,7 @@ var ColorPicker = class extends Control {
     if (data)
       this.currentColor = { ...data };
     this.updateUI(init);
-    if (this.onChanged)
+    if (typeof this.onChanged === "function")
       this.onChanged(this, this.value);
   }
   updateHex() {
@@ -26340,7 +27765,43 @@ var ColorPicker = class extends Control {
   }
 };
 ColorPicker = __decorateClass([
-  customElements2("i-color")
+  customElements2("i-color", {
+    icon: "palette",
+    group: GroupType.FIELDS,
+    className: "ColorPicker",
+    props: {
+      value: {
+        type: "string",
+        default: ""
+      },
+      caption: {
+        type: "string",
+        default: ""
+      },
+      captionWidth: {
+        type: "number",
+        default: 0
+      }
+    },
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ],
+      onClosed: []
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        value: {
+          type: "string"
+        },
+        caption: {
+          type: "string"
+        }
+      }
+    }
+  })
 ], ColorPicker);
 
 // packages/input/src/style/input.css.ts
@@ -26352,7 +27813,8 @@ cssRule("i-input", {
   background: Theme24.input.background,
   "$nest": {
     "> span": {
-      overflow: "hidden"
+      overflow: "hidden",
+      display: "none"
     },
     "> span > label": {
       boxSizing: "border-box",
@@ -26362,8 +27824,7 @@ cssRule("i-input", {
       whiteSpace: "nowrap",
       verticalAlign: "middle",
       textAlign: "right",
-      paddingRight: 4,
-      height: "100%"
+      paddingRight: 4
     },
     "> input": {
       border: `0.5px solid ${Theme24.divider}`,
@@ -26395,9 +27856,10 @@ cssRule("i-input", {
       lineHeight: 1.5,
       color: Theme24.input.fontColor,
       background: Theme24.input.background,
-      fontSize: Theme24.typography.fontSize,
       fontFamily: Theme24.typography.fontFamily,
-      outline: "none"
+      outline: "none",
+      borderRadius: "inherit",
+      fontSize: "inherit"
     }
   }
 });
@@ -26405,6 +27867,14 @@ cssRule("i-input", {
 // packages/input/src/input.ts
 var defaultRows = 4;
 var CLEAR_BTN_WIDTH = 16;
+var DEFAULT_VALUES11 = {
+  captionWidth: 0,
+  inputType: "text",
+  readOnly: false,
+  showClearButton: false,
+  multiline: false,
+  resize: "none"
+};
 var Input = class extends Control {
   constructor(parent, options) {
     super(parent, options, {});
@@ -26422,12 +27892,9 @@ var Input = class extends Control {
     if (this._inputControl) {
       this._inputControl.caption = value;
     } else {
-      this._caption = value;
-      this.labelElm.textContent = this._caption || "";
-      if (!value)
-        this.labelElm.style.display = "none";
-      else
-        this.labelElm.style.display = "";
+      this._caption = value || "";
+      this.labelElm.innerHTML = this._caption;
+      this.captionSpanElm.style.display = value ? "inline-block" : "none";
     }
   }
   get captionWidth() {
@@ -26505,13 +27972,16 @@ var Input = class extends Control {
   set readOnly(value) {
     this._readOnly = value;
     if (this.inputElm)
-      this.inputElm.readOnly = value;
+      this.inputElm.readOnly = value || this._designMode;
   }
   get inputType() {
     return this._inputType;
   }
   set inputType(type) {
+    const isChanged = this._inputType !== type;
     this._inputType = type;
+    if (isChanged)
+      this._createInputElement(type);
   }
   get inputControl() {
     return this._inputControl;
@@ -26544,10 +28014,8 @@ var Input = class extends Control {
   }
   set multiline(value) {
     this._multiline = value;
-    if (value) {
+    if (value && this.inputType !== "textarea") {
       this.inputType = "textarea";
-      this.clearInnerHTML();
-      this._createInputElement(this.inputType);
     }
   }
   get resize() {
@@ -26592,6 +28060,28 @@ var Input = class extends Control {
   get maxLength() {
     return this._maxLength;
   }
+  get background() {
+    return this._background;
+  }
+  set background(value) {
+    super.background = value;
+    if (value && value.color !== void 0) {
+      this.style.setProperty("--input-background", value.color);
+    } else {
+      this.style.removeProperty("--input-background");
+    }
+  }
+  get font() {
+    return this._font;
+  }
+  set font(value) {
+    super.font = value;
+    if (value && value.color !== void 0) {
+      this.style.setProperty("--input-font_color", value.color);
+    } else {
+      this.style.removeProperty("--input-font_color");
+    }
+  }
   set onClosed(callback) {
     this._onClosed = callback;
     if (!this._inputControl || this.inputType !== "color")
@@ -26602,13 +28092,15 @@ var Input = class extends Control {
     return this._onClosed;
   }
   _createInputElement(type) {
+    this.clearInnerHTML();
     const value = this.getAttribute("value");
-    const caption = this.getAttribute("caption");
     const width = this.getAttribute("width", true);
     const height = this.getAttribute("height", true);
     const checked = this.getAttribute("checked", true);
     const enabled = this.getAttribute("enabled", true);
     const background = this.getAttribute("background", true);
+    const designMode = this.getAttribute("designMode", true);
+    const caption = this._caption;
     this._clearBtnWidth = height - 2 || CLEAR_BTN_WIDTH;
     switch (type) {
       case "checkbox":
@@ -26617,9 +28109,10 @@ var Input = class extends Control {
           checked,
           enabled,
           caption,
+          designMode,
           indeterminate: this.getAttribute("indeterminate", true)
         });
-        if (this.onChanged)
+        if (typeof this.onChanged === "function")
           this._inputControl.onChanged = this.onChanged;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="checkbox"]');
@@ -26631,12 +28124,13 @@ var Input = class extends Control {
           width,
           height,
           enabled,
+          designMode,
           icon: this.getAttribute("icon", true),
           mode: this.getAttribute("mode", true),
           placeholder: this.getAttribute("placeholder", true),
           parentCallback: this._inputCallback
         });
-        if (this.onChanged)
+        if (typeof this.onChanged === "function")
           this._inputControl.onChanged = this.onChanged;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector("input");
@@ -26652,10 +28146,11 @@ var Input = class extends Control {
           dateTimeFormat: this.getAttribute("dateTimeFormat", true),
           width,
           height,
+          designMode,
           enabled,
           parentCallback: this._inputCallback
         });
-        if (this.onChanged)
+        if (typeof this.onChanged === "function")
           this._inputControl.onChanged = this.onChanged;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="text"]');
@@ -26667,6 +28162,7 @@ var Input = class extends Control {
           width,
           height,
           enabled,
+          designMode,
           min: this.getAttribute("min", true),
           max: this.getAttribute("max", true),
           step: this.getAttribute("step", true),
@@ -26689,6 +28185,7 @@ var Input = class extends Control {
           checked,
           enabled,
           caption,
+          designMode,
           id: id + "_radio"
         });
         this.appendChild(this._inputControl);
@@ -26710,6 +28207,8 @@ var Input = class extends Control {
         this.inputElm.addEventListener("keydown", this._handleInputKeyDown.bind(this));
         this.inputElm.addEventListener("keyup", this._handleInputKeyUp.bind(this));
         this.inputElm.addEventListener("focus", this._handleOnFocus.bind(this));
+        if (caption)
+          this.caption = caption;
         break;
       case "color":
         this._inputControl = new ColorPicker(this, {
@@ -26719,7 +28218,7 @@ var Input = class extends Control {
           width,
           height
         });
-        if (this.onChanged)
+        if (typeof this.onChanged === "function")
           this._inputControl.onChanged = this.onChanged;
         if (!this.onClosed) {
           const onClosed = this.getAttribute("onClosed", true);
@@ -26759,7 +28258,13 @@ var Input = class extends Control {
           const clearIcon = new Icon(this, { name: "times", width: 12, height: 12, fill: theme_exports.ThemeVars.text.primary });
           this.clearIconElm.appendChild(clearIcon);
         }
+        if (caption)
+          this.caption = caption;
         break;
+    }
+    if (this.inputElm) {
+      this.inputElm.readOnly = designMode || this.readOnly;
+      this.inputElm.style.cursor = designMode ? "pointer" : "default";
     }
     if (background && this._inputControl)
       this._inputControl.background = background;
@@ -26774,15 +28279,15 @@ var Input = class extends Control {
       this.inputElm.style.height = this.inputElm.scrollHeight + 2 + "px";
     }
     this._value = this.inputElm.value;
-    if (this.onChanged)
+    if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
   _handleInputKeyDown(event) {
-    if (this.onKeyDown)
+    if (typeof this.onKeyDown === "function")
       this.onKeyDown(this, event);
   }
   _handleInputKeyUp(event) {
-    if (this.onKeyUp)
+    if (typeof this.onKeyUp === "function")
       this.onKeyUp(this, event);
     if (this.clearIconElm) {
       if (this.value) {
@@ -26793,14 +28298,14 @@ var Input = class extends Control {
     }
   }
   _handleBlur(event, stopPropagation) {
-    if (this.onBlur) {
+    if (typeof this.onBlur === "function") {
       event.preventDefault();
       this.onBlur(this);
     }
     return true;
   }
   _handleOnFocus(event) {
-    if (this.onFocus) {
+    if (typeof this.onFocus === "function") {
       event.preventDefault();
       this.onFocus(this);
     }
@@ -26808,7 +28313,7 @@ var Input = class extends Control {
   _clearValue() {
     this.value = "";
     this.clearIconElm.classList.remove("active");
-    if (this.onClearClick)
+    if (typeof this.onClearClick === "function")
       this.onClearClick(this);
   }
   focus() {
@@ -26817,14 +28322,14 @@ var Input = class extends Control {
   init() {
     if (!this.inputType) {
       this._placeholder = this.getAttribute("placeholder", true);
-      this.inputType = this.getAttribute("inputType", true);
-      this._createInputElement(this.inputType);
+      this._caption = this.getAttribute("caption", true);
+      this.inputType = this.getAttribute("inputType", true, DEFAULT_VALUES11.inputType);
       this.multiline = this.getAttribute("multiline", true);
-      this.caption = this.getAttribute("caption", true);
       this.captionWidth = this.getAttribute("captionWidth", true);
       this.value = this.getAttribute("value", true);
-      this.readOnly = this.getAttribute("readOnly", true, false);
-      this.resize = this.getAttribute("resize", true, "none");
+      this._designMode = this.getAttribute("designMode", true, false);
+      this.readOnly = this.getAttribute("readOnly", true, DEFAULT_VALUES11.readOnly);
+      this.resize = this.getAttribute("resize", true, DEFAULT_VALUES11.resize);
       this.maxLength = this.getAttribute("maxLength", true);
       if (this.value && this.clearIconElm)
         this.clearIconElm.classList.add("active");
@@ -26850,11 +28355,107 @@ __decorateClass([
 Input = __decorateClass([
   customElements2("i-input", {
     icon: "edit",
+    group: GroupType.FIELDS,
     className: "Input",
     props: {
-      caption: { type: "string" }
+      caption: {
+        type: "string",
+        default: ""
+      },
+      captionWidth: {
+        type: "number",
+        default: DEFAULT_VALUES11.captionWidth
+      },
+      inputType: {
+        type: "string",
+        default: DEFAULT_VALUES11.inputType
+      },
+      value: {
+        type: "string",
+        default: ""
+      },
+      placeholder: {
+        type: "string",
+        default: ""
+      },
+      readOnly: {
+        type: "boolean",
+        default: DEFAULT_VALUES11.readOnly
+      },
+      showClearButton: {
+        type: "boolean",
+        default: DEFAULT_VALUES11.showClearButton
+      },
+      rows: {
+        type: "number"
+      },
+      multiline: {
+        type: "boolean",
+        default: DEFAULT_VALUES11.multiline
+      },
+      resize: {
+        type: "string",
+        default: DEFAULT_VALUES11.resize
+      },
+      maxLength: {
+        type: "number"
+      }
     },
-    events: {}
+    events: {
+      onChanged: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ],
+      onClosed: [],
+      onBlur: [
+        { name: "target", type: "Input", isControl: true }
+      ],
+      onFocus: [
+        { name: "target", type: "Input", isControl: true }
+      ],
+      onClearClick: [
+        { name: "target", type: "Input", isControl: true }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        caption: {
+          type: "string"
+        },
+        inputType: {
+          type: "string",
+          enum: ["password", "number", "textarea", "text"],
+          default: DEFAULT_VALUES11.inputType
+        },
+        value: {
+          type: "string"
+        },
+        placeholder: {
+          type: "string"
+        },
+        readOnly: {
+          type: "boolean",
+          default: DEFAULT_VALUES11.readOnly
+        },
+        showClearButton: {
+          type: "boolean",
+          default: DEFAULT_VALUES11.showClearButton
+        },
+        rows: {
+          type: "number"
+        },
+        multiline: {
+          type: "boolean",
+          default: DEFAULT_VALUES11.multiline
+        },
+        resize: {
+          type: "string",
+          enum: ["none", "auto", "both", "horizontal", "vertical", "initial", "inherit", "auto-grow"],
+          default: DEFAULT_VALUES11.resize
+        }
+      }
+    }
   })
 ], Input);
 
@@ -28775,15 +30376,29 @@ var Application = class {
     let path = rootDir + libDir + packageName + "/scconfig.json";
     return path;
   }
+  async calculatePackageModuleDir(packageName, modulePath) {
+    let packageModulePath = await this.calculatePackageModulePath(packageName, modulePath || "*") || "";
+    let currentModuleDir;
+    if (packageModulePath.indexOf("://") > 0)
+      currentModuleDir = packageModulePath.split("/").slice(0, -1).join("/");
+    else if (!packageModulePath.startsWith("/"))
+      currentModuleDir = this.LibHost + this.rootDir + packageModulePath.split("/").slice(0, -1).join("/");
+    else
+      currentModuleDir = this.LibHost + packageModulePath.split("/").slice(0, -1).join("/");
+    return currentModuleDir;
+  }
   async createElement(name, lazyLoad, attributes, modulePath) {
     name = name.split("/").pop() || name;
     let elementName = `i-${name}`;
     let result;
+    let packageName = `@scom/${name}`;
     try {
       if (window.customElements.get(elementName)) {
+        let currentModuleDir = await this.calculatePackageModuleDir(packageName, modulePath || "*");
         result = document.createElement(elementName);
+        result.currentModuleDir = currentModuleDir;
+        ;
       } else {
-        let packageName = `@scom/${name}`;
         let scconfigPath = this.calculateElementScconfigPath(packageName);
         if (scconfigPath) {
           let scconfigResponse = await fetch(scconfigPath);
@@ -28832,7 +30447,9 @@ var Application = class {
         ;
         let loaded = await this.loadPackage(packageName, modulePath || "*");
         if (loaded) {
+          let currentModuleDir = await this.calculatePackageModuleDir(packageName, modulePath || "*");
           result = document.createElement(elementName);
+          result.currentModuleDir = currentModuleDir;
         }
       }
       ;
@@ -29575,6 +31192,9 @@ cssRule("i-alert", {
 });
 
 // packages/alert/src/alert.ts
+var DEFAULT_VALUES12 = {
+  target: "_blank"
+};
 var Alert = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -29772,7 +31392,49 @@ var Alert = class extends Control {
   }
 };
 Alert = __decorateClass([
-  customElements2("i-alert")
+  customElements2("i-alert", {
+    icon: "exclamation-circle",
+    group: GroupType.BASIC,
+    className: "Alert",
+    props: {
+      status: { type: "string" },
+      title: { type: "string" },
+      content: { type: "string" },
+      link: {
+        type: "object",
+        default: { target: DEFAULT_VALUES12.target }
+      }
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          enum: ["warning", "success", "error", "loading", "confirm"]
+        },
+        title: {
+          type: "string"
+        },
+        content: {
+          type: "string"
+        },
+        link: {
+          type: "object",
+          properties: {
+            href: {
+              type: "string"
+            },
+            target: {
+              type: "string",
+              enum: ["_blank", "_self", "_parent", "_top"],
+              default: DEFAULT_VALUES12.target
+            }
+          }
+        }
+      }
+    },
+    events: {}
+  })
 ], Alert);
 
 // packages/code-editor/src/monaco.ts
@@ -29799,6 +31461,8 @@ function getLanguageType(fileName) {
       return "html";
     case "xml":
       return "xml";
+    case "sh":
+      return "shell";
   }
 }
 async function addFile(fileName, content) {
@@ -29986,7 +31650,9 @@ var CodeEditor = class extends Control {
   init() {
     if (!this.editor) {
       super.init();
-      this.language = this.getAttribute("language", true);
+      let language = this.getAttribute("language", true);
+      if (language)
+        this.language = language;
       this.style.display = "inline-block";
       if (this.language)
         this.loadContent(void 0, this.language);
@@ -29999,8 +31665,8 @@ var CodeEditor = class extends Control {
   focus() {
     this._editor.focus();
   }
-  setCursor(line, column) {
-    this.editor.setPosition({ lineNumber: line, column });
+  setCursor(line2, column) {
+    this.editor.setPosition({ lineNumber: line2, column });
   }
   get language() {
     return this._language;
@@ -30016,6 +31682,14 @@ var CodeEditor = class extends Control {
         monaco.editor.setModelLanguage(model, value);
       }
     }
+  }
+  get designMode() {
+    return this._designMode;
+  }
+  set designMode(value) {
+    this._designMode = value;
+    if (this.editor)
+      this.editor.updateOptions({ readOnly: value });
   }
   async loadContent(content, language, fileName) {
     let monaco = await initMonaco();
@@ -30037,6 +31711,7 @@ var CodeEditor = class extends Control {
         formatOnType: true,
         renderWhitespace: "none",
         automaticLayout: true,
+        readOnly: this._designMode,
         minimap: {
           enabled: false
         },
@@ -30084,6 +31759,32 @@ var CodeEditor = class extends Control {
     this._fileName = fileName || "";
     this._editor.setScrollTop(0);
   }
+  async updateFileName(oldValue, newValue) {
+    let oldModel = await getFileModel(oldValue);
+    if (oldModel) {
+      if (!oldModel) {
+        console.error("Model not found");
+        return;
+      }
+      let newModel = await getFileModel(newValue);
+      const newUri = this.monaco.Uri.parse(newValue);
+      if (!newModel)
+        newModel = this.monaco.editor.createModel(oldModel.getValue(), oldModel.getLanguageId(), newUri);
+      newModel.setValue(oldModel.getValue());
+      this.editor.setModel(newModel);
+      oldModel.dispose();
+    }
+  }
+  dispose() {
+    var _a;
+    if (this._editor) {
+      (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
+    }
+  }
+  scrollToLine(line2, column) {
+    const topOffset = this._editor.getTopForPosition(line2, column);
+    this._editor.setScrollTop(topOffset);
+  }
   async loadFile(fileName) {
     var _a;
     let model = await getFileModel(fileName);
@@ -30120,7 +31821,31 @@ CodeEditor.addFile = addFile;
 CodeEditor.getFileModel = getFileModel;
 CodeEditor.updateFile = updateFile;
 CodeEditor = __decorateClass([
-  customElements2("i-code-editor")
+  customElements2("i-code-editor", {
+    icon: "code",
+    group: GroupType.FIELDS,
+    className: "CodeEditor",
+    props: {
+      language: {
+        type: "string",
+        default: ""
+      }
+    },
+    events: {
+      onchange: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        language: {
+          type: "string"
+        }
+      }
+    }
+  })
 ], CodeEditor);
 
 // packages/code-editor/src/diff-editor.ts
@@ -30163,6 +31888,20 @@ var CodeDiffEditor = class extends Control {
       monaco.editor.setModelLanguage(model, value);
     }
   }
+  dispose() {
+    if (this._editor) {
+      const originalModel = this.getModel(1);
+      const modifiedModel = this.getModel(0);
+      if (originalModel) {
+        originalModel.dispose();
+      }
+      if (modifiedModel) {
+        modifiedModel.dispose();
+      }
+    }
+  }
+  updateFileName() {
+  }
   getEditor(type) {
     if (type === 1)
       return this.editor.getOriginalEditor();
@@ -30173,8 +31912,12 @@ var CodeDiffEditor = class extends Control {
     return this.getEditor(type).getModel();
   }
   async loadContent(type, content, language, fileName) {
+    var _a;
     let monaco = await initMonaco();
+    let initialSetup = true;
+    const funcName = type === 0 ? "getModifiedEditor" : "getOriginalEditor";
     const value = type === 0 ? this._modifiedValue : this._originalValue;
+    const newFileName = `${type}` + fileName;
     if (content == void 0)
       content = content || value || "";
     type === 0 ? this._modifiedValue = content : this._originalValue = content;
@@ -30191,30 +31934,52 @@ var CodeDiffEditor = class extends Control {
         automaticLayout: true
       };
       this._editor = monaco.editor.createDiffEditor(captionDiv, options);
-      this._editor.onDidUpdateDiff(() => {
+      (_a = this._editor.getModifiedEditor()) == null ? void 0 : _a.onDidChangeModelContent((event) => {
         if (typeof this.onChange === "function")
-          this.onChange(this);
+          this.onChange(this, event);
       });
-    }
-    if (!this._modifiedModel || !this._originalModel) {
-      let model;
-      if (fileName == null ? void 0 : fileName.endsWith(".tsx")) {
-        model = monaco.editor.createModel(content || value || "", "typescript");
-      } else
-        model = monaco.editor.createModel(content || value || "", language || this._language || "typescript");
-      type === 0 ? this._modifiedModel = model : this._originalModel = model;
-      if (this._originalModel && this._modifiedModel) {
-        this._editor.setModel({
-          original: this._originalModel,
-          modified: this._modifiedModel
-        });
+      if (fileName) {
+        let model2 = await getFileModel(newFileName);
+        if (model2) {
+          this.editor[funcName]().setModel(model2);
+          model2.setValue(content);
+          return;
+        }
       }
-    } else {
-      let model = this.getModel(type);
-      if (model)
-        monaco.editor.setModelLanguage(model, language);
-      this.getEditor(type).setValue(content);
+      ;
     }
+    let model = this.getModel(type);
+    if (model && model.getValue() === content && this._fileName === fileName) {
+      return;
+    }
+    if (model) {
+      if (fileName && this._fileName !== fileName) {
+        initialSetup = true;
+        model.dispose();
+        model = await getFileModel(newFileName);
+        if (!model)
+          model = monaco.editor.createModel(content || value || "", language || this._language || "typescript", monaco.Uri.file(newFileName));
+        this._editor[funcName]().setModel(model);
+        this._editor[funcName]().setValue(content);
+      } else {
+        this.getEditor(type).setValue(content);
+        if (language && model)
+          monaco.editor.setModelLanguage(model, language);
+      }
+      ;
+    } else {
+      let model2 = await getFileModel(newFileName);
+      if (!model2) {
+        const file = fileName ? monaco.Uri.file(newFileName) : void 0;
+        if (language == "typescript" || (fileName == null ? void 0 : fileName.endsWith(".tsx")) || (fileName == null ? void 0 : fileName.endsWith(".ts"))) {
+          model2 = monaco.editor.createModel(content || value || "", "typescript", file);
+        } else
+          model2 = monaco.editor.createModel(content || value || "", language || this._language || "typescript", file);
+      }
+      initialSetup = true;
+      this._editor[funcName]().setModel(model2);
+    }
+    this._fileName = fileName || "";
   }
   updateOptions(options) {
     this.editor.updateOptions(options);
@@ -30263,6 +32028,12 @@ var Theme26 = theme_exports.ThemeVars;
 cssRule("i-data-grid", {
   border: "0.5px solid #dadada",
   $nest: {
+    ".container": {
+      position: "absolute",
+      overflow: "hidden",
+      height: "100%",
+      width: "100%"
+    },
     ".scrollBox": {
       overflow: "auto",
       position: "absolute",
@@ -30277,8 +32048,7 @@ cssRule("i-data-grid", {
       fontFamily: '"Segoe UI", Tahoma, Arial, Helvetica, sans-serif',
       color: "#5A5757",
       borderSpacing: 0,
-      tableLayout: "fixed",
-      backgroundColor: "white"
+      tableLayout: "fixed"
     },
     ".grid tr": {
       overflow: "hidden"
@@ -30315,7 +32085,8 @@ cssRule("i-data-grid", {
     ".grid_cell_value": {
       textOverflow: "ellipsis",
       wordWrap: "break-word",
-      whiteSpace: "pre"
+      whiteSpace: "pre",
+      width: "100%"
     },
     ".grid_cell_value.image img": {
       maxHeight: "100%",
@@ -31176,25 +32947,10 @@ var DataGrid = class extends Control {
     this._init();
   }
   _init() {
-    this._mode = this.getAttribute("mode", true);
-    if (!this.mode)
-      this._mode = "vertical";
-    if (this._mode == "vertical") {
-      this._fixedCol = 0;
-      this._fixedRow = 1;
-      this._leftCol = 0;
-      this._topRow = 1;
-    } else if (this._mode == "horizontal") {
-      this._fixedCol = 1;
-      this._fixedRow = 0;
-      this._leftCol = 1;
-      this._topRow = 0;
-    } else {
-      this._fixedCol = 0;
-      this._fixedRow = 0;
-      this._leftCol = 0;
-      this._topRow = 0;
-    }
+    this._fixedCol = 0;
+    this._fixedRow = 1;
+    this._leftCol = 0;
+    this._topRow = 1;
     this.options = new TGridOptions(this);
     this.placeHolder = this.createElement("div", this);
     this._table = this.createElement("table", this);
@@ -31217,9 +32973,6 @@ var DataGrid = class extends Control {
     this._table.style.position = "relative";
     this.tableContainer = this.createElement("div", this);
     this.tableContainer.className = "container";
-    this.tableContainer.style.overflow = "hidden";
-    this.tableContainer.style.width = "100%";
-    this.tableContainer.style.height = "100%";
     this.tableContainer.appendChild(this._table);
     this._scrollBox = this.createElement("div", this);
     this._scrollBox.className = "scrollBox";
@@ -31303,9 +33056,6 @@ var DataGrid = class extends Control {
     this._colCount = value;
     this.enableUpdateTimer(false, true);
   }
-  get mode() {
-    return this._mode;
-  }
   get readOnly() {
     return this._readOnly;
   }
@@ -31377,8 +33127,8 @@ var DataGrid = class extends Control {
       if (!editor || editor._isModified === false)
         return;
       let cell = this.data.getCell(this._col, this._row);
-      let rowOrColDataType = this.mode == "vertical" ? this.cols(this._col).dataType : this.rows(this._row).dataType;
-      let rowOrColType = this.mode == "vertical" ? this.cols(this._col).type : this.rows(this._row).type;
+      let rowOrColDataType = this.cols(this._col).dataType;
+      let rowOrColType = this.cols(this._col).type;
       if (rowOrColDataType == "boolean" && rowOrColType == "checkBox") {
         cell._value = editor.checked;
       } else if (rowOrColDataType == "date" && rowOrColType == "datePicker") {
@@ -32001,10 +33751,14 @@ var DataGrid = class extends Control {
     let r = 0;
     for (let i = 0; i < this._fixedCol; i++) {
       r = r + this.getColWidth(i);
+      if (i == aCol)
+        return r;
     }
+    ;
     for (let i = this._leftCol; i < aCol; i++) {
       r = r + this.getColWidth(i);
     }
+    ;
     return r + this.getColWidth(aCol);
   }
   getColWidth(col) {
@@ -32084,17 +33838,10 @@ var DataGrid = class extends Control {
       let div = this.createElement("div");
       tableCell.div = div;
       div.owner = this;
-      if (this.mode == "vertical") {
-        if (row < this._fixedRow)
-          tableCell.className = "header grid_fixed_cell";
-        else if (col < this._fixedCol)
-          tableCell.className = "grid_fixed_cell";
-      } else {
-        if (col < this._fixedCol)
-          tableCell.className = "header grid_fixed_cell";
-        else if (row < this._fixedRow)
-          tableCell.className = "grid_fixed_cell";
-      }
+      if (row < this._fixedRow)
+        tableCell.className = "header grid_fixed_cell";
+      else if (col < this._fixedCol)
+        tableCell.className = "grid_fixed_cell";
       let actCol = this.getActualColIdx(col);
       let actRow = this.getActualRowIdx(row);
       let cell = this.data.cells(actCol, actRow);
@@ -32248,8 +33995,7 @@ var DataGrid = class extends Control {
     this.enableUpdateTimer();
   }
   getEditor(col, row, cell, inputValue) {
-    let colOrRowType;
-    colOrRowType = this.mode == "vertical" ? this.columns.getColumn(col).type : this.gridRows.getRow(row).type;
+    let colOrRowType = this.columns.getColumn(col).type;
     if (colOrRowType == "checkBox") {
       let editor = new Checkbox(void 0, {
         checked: cell.value != void 0 ? cell.value : false
@@ -32316,8 +34062,7 @@ var DataGrid = class extends Control {
       btn.style.backgroundColor = "white";
       return editor;
     } else if (colOrRowType == "comboBox") {
-      let colOrRowComboItems;
-      colOrRowComboItems = this.mode == "vertical" ? this.cols(col).comboItems : this.rows(row).comboItems;
+      let colOrRowComboItems = this.cols(col).comboItems;
       let _selectedItem = colOrRowComboItems[0];
       for (let i = 0; i < colOrRowComboItems.length; i++) {
         if (cell.value === colOrRowComboItems[i].value) {
@@ -32726,6 +34471,7 @@ var DataGrid = class extends Control {
       setTimeout(() => {
         if (editor) {
           editor.style.zIndex = "9999";
+          editor.focus();
         }
         ;
       }, 10);
@@ -32841,7 +34587,7 @@ var DataGrid = class extends Control {
     let withDispValue = false;
     let disp;
     if (!tableCell.classList.contains("header")) {
-      let colOrRowType = this.mode == "vertical" ? this.cols(cell.col).type : this.rows(cell.row).type;
+      let colOrRowType = this.cols(cell.col).type;
       switch (colOrRowType) {
         case "string":
           if (cell.value == void 0)
@@ -32864,7 +34610,7 @@ var DataGrid = class extends Control {
             cell._value = import_moment3.default.unix(import_moment3.default.now() / 1e3);
           break;
         case "comboBox":
-          let colOrRowComboItems = this.mode == "vertical" ? this.cols(cell.col).comboItems : this.rows(cell.row).comboItems;
+          let colOrRowComboItems = this.cols(cell.col).comboItems;
           if (cell.value == void 0 || cell.value == "")
             cell._value = colOrRowComboItems ? colOrRowComboItems[0].value : void 0;
           break;
@@ -32968,13 +34714,8 @@ var DataGrid = class extends Control {
         let colOrRowType;
         let colOrRowDataType;
         if (_column && _row) {
-          if (this.mode == "vertical") {
-            colOrRowType = _column._type;
-            colOrRowDataType = _column._dataType;
-          } else {
-            colOrRowType = _row._type;
-            colOrRowDataType = _row._dataType;
-          }
+          colOrRowType = _column._type;
+          colOrRowDataType = _column._dataType;
         } else if (_column) {
           colOrRowType = _column._type;
           colOrRowDataType = _column._dataType;
@@ -33476,8 +35217,61 @@ cssRule("i-markdown", {
   color: `var(--custom-text-color, ${Theme27.text.primary})`
 });
 
+// packages/markdown/src/plaintify.ts
+function escape2(html) {
+  const escapeMap = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  };
+  return html.replace(/[&<>"']/g, (match) => escapeMap[match]);
+}
+var block = (text) => text + "\n\n";
+var escapeBlock = (text) => escape2(text) + "\n\n";
+var line = (text) => text + "\n";
+var inline = (text) => text;
+var newline = () => "\n";
+var empty = () => "";
+var TxtRenderer = {
+  code: escapeBlock,
+  blockquote: block,
+  html: empty,
+  heading: block,
+  hr: newline,
+  list: (text) => block(text.trim()),
+  listitem: line,
+  checkbox: empty,
+  paragraph: block,
+  table: (header, body) => line(header + body),
+  tablerow: (text) => line(text.trim()),
+  tablecell: (text) => text + " ",
+  strong: inline,
+  em: inline,
+  codespan: inline,
+  br: newline,
+  del: inline,
+  link: (_0, _1, text) => text,
+  image: (_0, _1, text) => text,
+  text: inline,
+  options: {}
+};
+
 // packages/markdown/src/markdown.ts
 var libs = [`${LibPath}lib/marked/marked.umd.js`];
+async function markdownToPlainText(text) {
+  return new Promise((resolve, reject) => {
+    RequireJS.require(libs, async (marked) => {
+      marked.use({
+        gfm: true,
+        renderer: TxtRenderer
+      });
+      const plainText = await marked.parse(text);
+      resolve(plainText);
+    });
+  });
+}
 var Markdown = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -33513,6 +35307,28 @@ var Markdown = class extends Control {
       }
     };
     return renderer;
+  }
+  async getTokens(text) {
+    if (!this.marked)
+      this.marked = await this.loadLib();
+    let tokens;
+    try {
+      tokens = this.marked.lexer(text, {
+        breaks: true
+      });
+    } catch (e) {
+    }
+    return tokens;
+  }
+  async toPlainText(text) {
+    if (!this.marked)
+      this.marked = await this.loadLib();
+    this.marked.use({
+      gfm: true,
+      renderer: TxtRenderer
+    });
+    const plainText = await this.marked.parse(text);
+    return plainText;
   }
   async load(text) {
     if (!this.marked)
@@ -33596,7 +35412,24 @@ var Markdown = class extends Control {
   }
 };
 Markdown = __decorateClass([
-  customElements2("i-markdown")
+  customElements2("i-markdown", {
+    icon: "spell-check",
+    className: "Markdown",
+    props: {
+      theme: { type: "string" }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        theme: {
+          type: "string",
+          enum: ["light", "dark"],
+          default: "light"
+        }
+      }
+    }
+  })
 ], Markdown);
 
 // packages/markdown-editor/src/styles/index.css.ts
@@ -33606,6 +35439,17 @@ cssRule("i-markdown-editor", {
     ".ProseMirror .placeholder": {
       userSelect: "none",
       pointerEvents: "none"
+    },
+    ".overlay": {
+      width: "100%",
+      height: "100%",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      zIndex: 999,
+      display: "none",
+      backgroundColor: "transparent",
+      cursor: "pointer"
     }
   }
 });
@@ -33650,10 +35494,10 @@ var MarkdownEditor = class extends Text {
     this._widgetRules = [];
     this._hideModeSwitch = false;
     this._placeholder = "";
+    this._autoFocus = false;
   }
   setFocus() {
     var _a;
-    this.autoFocus = true;
     if (this.editorObj) {
       (_a = this.editorObj.getCurrentModeEditor().el.querySelector(".toastui-editor-contents")) == null ? void 0 : _a.click();
       this.editorObj.getCurrentModeEditor().moveCursorToStart(true);
@@ -33705,6 +35549,9 @@ var MarkdownEditor = class extends Text {
       return;
     this.renderEditor(true);
   }
+  set designMode(value) {
+    this._designMode = value;
+  }
   get value() {
     return this._value;
   }
@@ -33728,11 +35575,11 @@ var MarkdownEditor = class extends Text {
     return this._heightValue;
   }
   set height(value) {
-    this._heightValue = value;
+    this._heightValue = getSpacingValue(value);
     if (this.viewer)
       return;
     if (this.editorObj) {
-      this.editorObj.setHeight(value);
+      this.editorObj.setHeight(this._heightValue);
     }
   }
   get toolbarItems() {
@@ -33772,6 +35619,12 @@ var MarkdownEditor = class extends Text {
   }
   set hideModeSwitch(value) {
     this._hideModeSwitch = value != null ? value : false;
+  }
+  get autoFocus() {
+    return this._autoFocus;
+  }
+  set autoFocus(value) {
+    this._autoFocus = value != null ? value : false;
   }
   get placeholder() {
     var _a;
@@ -33891,6 +35744,7 @@ var MarkdownEditor = class extends Text {
       } else {
         this.elm.innerHTML = "";
       }
+      this.overlayElm.style.display = this._designMode ? "block" : "none";
       const currentValue = valueChanged && this.editorObj ? this.editorObj.getMarkdown() : this.value;
       this.editorObj = new this.editor({
         el: this.elm,
@@ -33905,19 +35759,35 @@ var MarkdownEditor = class extends Text {
         hideModeSwitch: this.hideModeSwitch,
         minHeight: (_a = this.minHeight) != null ? _a : "300px",
         placeholder: this.placeholder,
-        autofocus: true,
+        autofocus: this._designMode ? false : this.autoFocus,
         events: {
           change: (event) => {
+            if (this._designMode)
+              return;
             if (this.onChanged)
               this.onChanged(this, event);
           },
-          focus: (event) => {
+          focus: (event, data) => {
+            if (this._designMode)
+              return;
             if (this.onFocus)
               this.onFocus(this, event);
           },
           blur: (event) => {
             if (this.onBlur)
               this.onBlur(this, event);
+          },
+          keydown: (target, event) => {
+            if (this._designMode) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          },
+          keyup: (target, event) => {
+            if (this._designMode) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
           }
         }
       });
@@ -33930,7 +35800,7 @@ var MarkdownEditor = class extends Text {
       const toolbar = this.querySelector(".toastui-editor-toolbar");
       if (toolbar && !((_c = this.toolbarItems) == null ? void 0 : _c.length))
         toolbar.style.display = "none";
-      if (!this._padding)
+      if (!this._padding && padding)
         this.padding = padding;
     }
     this.elm.style.background = "inherit";
@@ -33963,6 +35833,8 @@ var MarkdownEditor = class extends Text {
     this.onChanged = this.getAttribute("onChanged", true) || this.onChanged;
     this.onFocus = this.getAttribute("onFocus", true) || this.onFocus;
     this.onBlur = this.getAttribute("onBlur", true) || this.onBlur;
+    this.overlayElm = this.createElement("div", this);
+    this.overlayElm.classList.add("overlay");
     const mode = this.getAttribute("mode", true, "");
     if (mode) {
       this._mode = mode;
@@ -34005,11 +35877,56 @@ var MarkdownEditor = class extends Text {
     }
     this._placeholder = this.getAttribute("placeholder", true, "");
     this._hideModeSwitch = this.getAttribute("hideModeSwitch", true, false);
+    this.autoFocus = this.getAttribute("autoFocus", true, false);
     this.initEditor();
   }
 };
 MarkdownEditor = __decorateClass([
-  customElements2("i-markdown-editor")
+  customElements2("i-markdown-editor", {
+    icon: "pen-square",
+    group: GroupType.FIELDS,
+    className: "MarkdownEditor",
+    props: {
+      mode: { type: "string", default: "" },
+      theme: { type: "string" },
+      previewStyle: { type: "string" },
+      hideModeSwitch: { type: "boolean", default: false },
+      value: { type: "string" },
+      viewer: { type: "boolean", default: false },
+      toolbarItems: { type: "array" },
+      plugins: { type: "array" },
+      widgetRules: { type: "array" },
+      placeholder: { type: "string", default: "" }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        value: {
+          type: "string"
+        },
+        mode: {
+          type: "string",
+          enum: ["wysiwyg", "markdown"]
+        },
+        previewStyle: {
+          type: "string",
+          enum: ["tab", "vertical"]
+        },
+        hideModeSwitch: {
+          type: "boolean",
+          format: "boolean"
+        },
+        viewer: {
+          type: "boolean",
+          format: "boolean"
+        },
+        placeholder: {
+          type: "string"
+        }
+      }
+    }
+  })
 ], MarkdownEditor);
 
 // packages/menu/src/style/menu.css.ts
@@ -34033,8 +35950,8 @@ var fadeInRight = keyframes({
 var menuStyle = style({
   fontFamily: Theme29.typography.fontFamily,
   fontSize: Theme29.typography.fontSize,
+  color: Theme29.text.primary,
   position: "relative",
-  overflow: "hidden",
   $nest: {
     "*": {
       boxSizing: "border-box"
@@ -34126,6 +36043,7 @@ var meunItemStyle = style({
       marginRight: "8px",
       textAlign: "center",
       fill: "currentColor",
+      flexShrink: "0",
       $nest: {
         "> i-image": {
           display: "flex"
@@ -34170,17 +36088,23 @@ var modalStyle2 = style({
 });
 
 // packages/menu/src/menu.ts
+var Theme30 = theme_exports.ThemeVars;
 var menuPopupTimeout = 150;
+var DEFAULT_VALUES13 = {
+  mode: "horizontal"
+};
 var Menu = class extends Control {
   constructor() {
     super(...arguments);
     this._oldWidth = 0;
   }
   add(options) {
-    const newItem = new MenuItem(this, options);
+    const newItem = new MenuItem(this, { ...options || {}, linkTo: this, level: 0 });
     this.menuElm.appendChild(newItem);
     this._items.push(newItem);
     this._data.push(options || {});
+    if (this._mode === "horizontal")
+      this.handleResize();
     return newItem;
   }
   delete(item) {
@@ -34190,6 +36114,8 @@ var Menu = class extends Control {
       this._items.splice(index, 1);
       this._data.splice(index, 1);
       item.remove();
+      if (this._mode === "horizontal")
+        this.handleResize();
     }
   }
   get mode() {
@@ -34219,10 +36145,51 @@ var Menu = class extends Control {
   set items(items) {
     this.clear();
     this._items = items;
+    this.menuElm.innerHTML = "";
+    if (items && items.length) {
+      this.updateItemOptions(items);
+      this.menuElm.append(...items);
+      if (this._mode === "horizontal")
+        this.handleResize();
+    }
+  }
+  get selectedItem() {
+    return this._selectedItem;
+  }
+  set selectedItem(item) {
+    if (item == null) {
+      if (this._selectedItem) {
+        this._selectedItem.selected = false;
+      }
+      this._selectedItem = void 0;
+    } else {
+      this._selectedItem = item;
+      this._selectedItem.selected = true;
+    }
+  }
+  updateItemOptions(items, level = 0) {
+    var _a;
+    if (!items || !(items == null ? void 0 : items.length))
+      return;
+    for (let item of items) {
+      item.linkTo = this;
+      item.level = level;
+      if ((_a = item.children) == null ? void 0 : _a.length) {
+        let items2 = [];
+        for (let child2 of item.children) {
+          if (child2 instanceof MenuItem) {
+            items2.push(child2);
+          }
+        }
+        this.updateItemOptions(items2, level + 1);
+        item.items = items2;
+      }
+    }
   }
   get menuItems() {
+    var _a;
     if (this.moreItem) {
-      return [...this.items, ...this.moreItem.items];
+      return [...this.items, ...((_a = this.moreItem) == null ? void 0 : _a.items) || []];
     }
     return this.items;
   }
@@ -34242,6 +36209,7 @@ var Menu = class extends Control {
       _items.push(menuItem);
     }
     this.menuElm.innerHTML = "";
+    ``;
     this.menuElm.append(...menuItemElm);
     this._items = _items;
     if (this._mode === "horizontal")
@@ -34256,11 +36224,24 @@ var Menu = class extends Control {
       window.addEventListener("resize", this.handleResize);
     } else {
       window.removeEventListener("resize", this.handleResize);
-      if (this.moreItem)
+      if (this.moreItem && this.menuElm.contains(this.moreItem))
         this.menuElm.removeChild(this.moreItem);
+    }
+    this.rerenderItems(this._items);
+  }
+  rerenderItems(items) {
+    var _a;
+    if (items == null ? void 0 : items.length) {
+      for (let item of items) {
+        if ((_a = item.items) == null ? void 0 : _a.length) {
+          item.items = [...item.items];
+          this.rerenderItems(item.items);
+        }
+      }
     }
   }
   onResize() {
+    var _a, _b, _c;
     const newWidth = Math.ceil(window.innerWidth);
     let offsetWidth = Math.ceil(this.menuElm.offsetWidth);
     let scrollWidth = Math.ceil(this.menuElm.scrollWidth);
@@ -34281,10 +36262,10 @@ var Menu = class extends Control {
         i--;
       }
       if (tmpItems.length) {
-        const moreItems = this.moreItem.items;
+        const moreItems = ((_a = this.moreItem) == null ? void 0 : _a.items) || [];
         this.moreItem.items = [...moreItems, ...tmpItems];
       }
-    } else if (this._oldWidth <= newWidth && this.moreItem.items.length) {
+    } else if (this._oldWidth <= newWidth && ((_c = (_b = this.moreItem) == null ? void 0 : _b.items) == null ? void 0 : _c.length)) {
       let i = this.moreItem.items.length - 1 || 0;
       let totalItemsWidth = this._items.reduce((prev, curr) => prev + Math.ceil(curr.offsetWidth), 0) + this.moreItem.offsetWidth + this.itemsWidth[0];
       let index = -1;
@@ -34315,6 +36296,15 @@ var Menu = class extends Control {
   }
   init() {
     if (!this.initialized) {
+      let menuItems = [];
+      for (let i = 0; i < this.children.length; i++) {
+        const child2 = this.children[i];
+        if (child2 instanceof MenuItem) {
+          menuItems.push(child2);
+        } else {
+          child2.remove();
+        }
+      }
       super.init();
       this.classList.add(menuStyle);
       this.itemsWidth = [];
@@ -34322,10 +36312,12 @@ var Menu = class extends Control {
       this.onResize = this.onResize.bind(this);
       this.menuElm = this.createElement("ul", this);
       this.menuElm.classList.add("menu");
-      this.mode = this.getAttribute("mode", true, "horizontal");
+      this.mode = this.getAttribute("mode", true, DEFAULT_VALUES13.mode);
       this.data = this.getAttribute("data", true, []);
       const items = this.getAttribute("items", true, []);
-      if (items && items.length)
+      if (menuItems == null ? void 0 : menuItems.length)
+        this.items = menuItems;
+      else if (items == null ? void 0 : items.length)
         this.items = items;
     }
   }
@@ -34340,32 +36332,82 @@ var Menu = class extends Control {
   }
 };
 Menu = __decorateClass([
-  customElements2("i-menu")
+  customElements2("i-menu", {
+    icon: "bars",
+    group: GroupType.BASIC,
+    className: "Menu",
+    props: {
+      mode: {
+        type: "string",
+        default: DEFAULT_VALUES13.mode
+      },
+      data: { type: "array", default: [] }
+    },
+    events: {
+      onItemClick: [
+        { name: "target", type: "Menu", isControl: true },
+        { name: "item", type: "MenuItem", isControl: true }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        mode: {
+          type: "string",
+          enum: ["horizontal", "vertical", "inline"],
+          default: DEFAULT_VALUES13.mode
+        }
+      }
+    }
+  })
 ], Menu);
 var ContextMenu = class extends Menu {
   show(pos) {
     const { x, y } = pos;
     this.handleModalOpen(x, y);
   }
+  hide() {
+    clearTimeout(this.openTimeout);
+    if (this.modal) {
+      this.modal.visible = false;
+    }
+  }
   async renderItemModal(x, y) {
+    const background = this.getAttribute("background", true);
+    const font = this.getAttribute("font", true);
+    const minWidth = this.getAttribute("minWidth", true);
     if (!this.modal) {
       this.modal = await Modal.create({
         showBackdrop: false,
         height: "auto",
         width: "auto",
-        popupPlacement: "rightTop"
+        popupPlacement: "right",
+        font: font || { color: Theme30.text.primary },
+        minWidth: minWidth || "auto"
       });
       this.modal.classList.add(modalStyle2);
       this.modal.visible = false;
       this.getModalContainer().appendChild(this.modal);
       this.getModalContainer().style.position = "fixed";
     }
+    if (background == null ? void 0 : background.color) {
+      this.modal.background = background;
+    }
+    if (font) {
+      this.modal.font = font;
+    }
     this.getModalContainer().style.left = `${x}px`;
     this.getModalContainer().style.top = `${y}px`;
+    this.getModalContainer().style.zIndex = `9999`;
     if (!this.itemPanel)
       this.itemPanel = await Panel.create();
     this.itemPanel.innerHTML = "";
     if (this.items && this.items.length) {
+      if (font) {
+        for (let item of this.items) {
+          item.font = font;
+        }
+      }
       this.itemPanel.append(...this.items);
     }
     this.modal.item = this.itemPanel;
@@ -34390,18 +36432,24 @@ var ContextMenu = class extends Menu {
 ContextMenu = __decorateClass([
   customElements2("i-context-menu")
 ], ContextMenu);
+var DEFAULT_ITEM = {
+  target: "_blank",
+  textAlign: "left"
+};
 var MenuItem = class extends Control {
   constructor(parent, options) {
     super(parent, options);
-    this._textAlign = "left";
+    this._level = 0;
+    this._textAlign = DEFAULT_ITEM.textAlign;
   }
   add(options) {
     const newItem = new MenuItem(this, options);
+    if (!this._items)
+      this._items = [];
     this._items.push(newItem);
-    let mode = this.menuMode();
-    if (mode === "inline") {
-      this.subMenu.appendChild(newItem);
-    }
+    newItem.level = this._level + 1;
+    newItem.linkTo = this._linkTo;
+    this.items = this._items;
     return newItem;
   }
   delete(item) {
@@ -34421,25 +36469,56 @@ var MenuItem = class extends Control {
   set title(value) {
     this.captionElm.innerHTML = value || "";
   }
+  set font(value) {
+    if (!this.itemWrapperElm)
+      return;
+    this.itemWrapperElm.style.color = value.color || "";
+    this.itemWrapperElm.style.fontSize = value.size || "";
+    this.itemWrapperElm.style.fontFamily = value.name || "";
+    this.itemWrapperElm.style.fontStyle = value.style || "";
+    this.itemWrapperElm.style.textTransform = value.transform || "none";
+    this.itemWrapperElm.style.fontWeight = value.bold ? "bold" : `${value.weight || ""}`;
+    this.itemWrapperElm.style.textShadow = value.shadow || "none";
+  }
+  get font() {
+    if (!this.itemWrapperElm)
+      return {};
+    return {
+      color: this.itemWrapperElm.style.color,
+      name: this.itemWrapperElm.style.fontFamily,
+      size: this.itemWrapperElm.style.fontSize,
+      bold: this.itemWrapperElm.style.fontStyle.indexOf("bold") >= 0,
+      style: this.itemWrapperElm.style.fontStyle,
+      transform: this.itemWrapperElm.style.textTransform,
+      weight: this.itemWrapperElm.style.fontWeight,
+      shadow: this.itemWrapperElm.style.textShadow
+    };
+  }
   get link() {
+    var _a;
     if (!this._link) {
       this._link = Link.create({
         href: "#",
         target: "_self",
-        font: this.font
+        font: this.font,
+        designMode: (_a = this.linkTo) == null ? void 0 : _a.designMode
       }, this);
     }
     return this._link;
   }
   set link(value) {
+    var _a;
     if (this._link) {
       this._link.prepend(this.itemWrapperElm);
       this._link.remove();
     }
     this._link = value;
     if (this._link) {
+      this._link.designMode = (_a = this.linkTo) == null ? void 0 : _a.designMode;
       this._link.append(this.itemWrapperElm);
       this.itemElm.appendChild(this._link);
+    } else {
+      this.itemElm.appendChild(this.itemWrapperElm);
     }
   }
   get icon() {
@@ -34456,15 +36535,23 @@ var MenuItem = class extends Control {
     if (this._icon)
       this.itemWrapperElm.removeChild(this._icon);
     this._icon = elm;
-    this.icon.classList.add("menu-item-icon");
-    if (this._icon)
+    if (this._icon) {
+      this.icon.classList.add("menu-item-icon");
       this.itemWrapperElm.prepend(this._icon);
+    }
   }
   get items() {
     return this._items;
   }
   set items(items) {
     this._items = items;
+    for (let item of this._items) {
+      item.remove();
+      if (!item.linkTo)
+        item.linkTo = this._linkTo;
+      if (item._level == 0)
+        item.level = (this._level || 0) + 1;
+    }
     this.renderArrowIcon();
     this.renderSubMenuItem();
   }
@@ -34489,14 +36576,24 @@ var MenuItem = class extends Control {
     else
       this._padding.update(value);
   }
-  get selected() {
+  set selected(value) {
+    if (value) {
+      this.setSelectedItem();
+    } else {
+      this.isSelected = false;
+      if (this.subMenu) {
+        this.subMenu.style.display = "none";
+      }
+    }
+  }
+  get isSelected() {
     return this.itemWrapperElm.classList.contains("menu-selected");
   }
-  set selected(isSelected) {
+  set isSelected(value) {
     if (!this.itemWrapperElm)
       return;
     const isInline = this.menuMode() === "inline";
-    if (isSelected) {
+    if (value) {
       this.itemWrapperElm.classList.add("menu-selected");
       if (this.arrowIcon && isInline) {
         this.arrowIcon.classList.add("menu-item-arrow-active");
@@ -34524,7 +36621,7 @@ var MenuItem = class extends Control {
     }
   }
   menuMode() {
-    let mode = "horizontal";
+    let mode = DEFAULT_VALUES13.mode;
     if (this._linkTo) {
       mode = this._linkTo.mode;
     }
@@ -34534,13 +36631,13 @@ var MenuItem = class extends Control {
     const isInline = this.menuMode() === "inline";
     if (!this.arrowIcon) {
       this.arrowIcon = await Icon.create({
-        width: isInline ? 30 : 12,
-        height: isInline ? 30 : 12,
         name: "chevron-down",
         fill: "currentColor"
       });
       this.arrowIcon.classList.add("menu-item-arrow");
     }
+    this.arrowIcon.width = isInline ? 30 : 12;
+    this.arrowIcon.height = isInline ? 30 : 12;
     if (this._items && this._items.length) {
       if (!isInline && !this.itemWrapperElm.contains(this.arrowIcon)) {
         this.itemWrapperElm.appendChild(this.arrowIcon);
@@ -34591,6 +36688,7 @@ var MenuItem = class extends Control {
     }
   }
   async renderItemModal() {
+    var _a;
     if (!this.modal) {
       const placement = this.getModalPlacement();
       this.modal = await Modal.create({
@@ -34618,8 +36716,8 @@ var MenuItem = class extends Control {
       }
     }
     this.itemPanel.innerHTML = "";
-    if (this._items && this._items.length) {
-      this.itemPanel.append(...this.items);
+    if ((_a = this._items) == null ? void 0 : _a.length) {
+      this.itemPanel.append(...this._items);
     }
     this.modal.item = this.itemPanel;
   }
@@ -34628,10 +36726,10 @@ var MenuItem = class extends Control {
     let placement = "bottomLeft";
     switch (mode) {
       case "vertical":
-        placement = "rightTop";
+        placement = "right";
         break;
       case "horizontal":
-        placement = this._level > 0 ? "rightTop" : "bottomLeft";
+        placement = this._level > 0 ? "right" : "bottomLeft";
     }
     return placement;
   }
@@ -34646,13 +36744,13 @@ var MenuItem = class extends Control {
   setSelectedItem() {
     if (this._linkTo) {
       let mode = this._linkTo.mode;
-      this.selected = this.items && this.items.length ? !this.selected : true;
+      this.isSelected = this.items && this.items.length ? !this.isSelected : true;
       if (this.subMenu) {
-        this.subMenu.style.display = this.selected ? "block" : "none";
+        this.subMenu.style.display = this.isSelected ? "block" : "none";
       }
       this.handleSelectItem(this._linkTo.menuItems, mode);
     } else {
-      this.selected = true;
+      this.isSelected = true;
     }
   }
   handleSelectItem(items, mode) {
@@ -34662,7 +36760,7 @@ var MenuItem = class extends Control {
         return;
       const containsItem = item.contains(this);
       if (!isCurrItem)
-        item.selected = containsItem ? this.selected : false;
+        item.isSelected = containsItem ? this.isSelected : false;
       if (mode === "inline" && item.subMenu && !containsItem) {
         item.subMenu.style.display = "none";
       }
@@ -34671,12 +36769,21 @@ var MenuItem = class extends Control {
     });
   }
   _handleClick(event) {
-    this.setSelectedItem();
-    if (this._linkTo.onItemClick)
+    var _a;
+    if (this._designMode)
+      return false;
+    if (this._linkTo) {
+      this._linkTo.selectedItem = this;
+    } else {
+      this.setSelectedItem();
+    }
+    if (((_a = this._linkTo) == null ? void 0 : _a.onItemClick) && typeof this._linkTo.onItemClick === "function")
       this._linkTo.onItemClick(this._linkTo, this);
     return super._handleClick(event, true);
   }
   async handleModalOpen(event) {
+    if (this._designMode)
+      return false;
     await this.renderItemModal();
     clearTimeout(this.closeTimeout);
     this.itemWrapperElm.classList.add("menu-active");
@@ -34686,6 +36793,8 @@ var MenuItem = class extends Control {
     }, menuPopupTimeout);
   }
   handleModalClose(event) {
+    if (this._designMode)
+      return false;
     clearTimeout(this.openTimeout);
     this.itemWrapperElm.classList.remove("menu-active");
     this.closeTimeout = setTimeout(() => {
@@ -34694,6 +36803,7 @@ var MenuItem = class extends Control {
     }, menuPopupTimeout);
   }
   init() {
+    var _a, _b, _c;
     if (!this.initialized) {
       super.init();
       this.classList.add(meunItemStyle);
@@ -34702,7 +36812,7 @@ var MenuItem = class extends Control {
       this.itemElm = this.createElement("li", this);
       this.itemWrapperElm = this.createElement("div", this.itemElm);
       this.itemWrapperElm.classList.add("menu-item");
-      if (this._linkTo.padding) {
+      if ((_a = this._linkTo) == null ? void 0 : _a.padding) {
         const padding = this._linkTo.padding;
         this._padding = new SpaceValue(this.itemWrapperElm, padding, "padding");
         this._linkTo.style.padding = "";
@@ -34714,24 +36824,29 @@ var MenuItem = class extends Control {
       if (textAlign)
         this.textAlign = textAlign;
       const link = this.getAttribute("link", true);
-      if (link) {
+      if (link == null ? void 0 : link.href) {
         link.target = link.target || "_self";
-        this.link = new Link(this, link);
+        this.link = new Link(this, { ...link, designMode: (_b = this.linkTo) == null ? void 0 : _b.designMode });
       }
       const icon = this.getAttribute("icon", true);
-      if (icon) {
+      if ((icon == null ? void 0 : icon.name) || ((_c = icon == null ? void 0 : icon.image) == null ? void 0 : _c.url)) {
         icon.height = icon.height || "16px";
         icon.width = icon.width || "16px";
         this.icon = new Icon(this, icon);
       }
       ;
       const _items = this.getAttribute("items", true, []);
-      const menuItems = [];
-      for (const item of _items) {
-        const menuItem = new MenuItem(void 0, { ...item, linkTo: this._linkTo, level: this._level + 1 });
-        menuItems.push(menuItem);
+      if (_items == null ? void 0 : _items.length) {
+        let menuItems = [];
+        for (const item of _items) {
+          const menuItem = new MenuItem(void 0, { ...item, linkTo: this._linkTo, level: this._level + 1 });
+          menuItems.push(menuItem);
+        }
+        this.items = menuItems;
       }
-      this.items = menuItems;
+      const font = this.getAttribute("font", true);
+      if (font)
+        this.font = font;
     }
   }
   static async create(options, parent) {
@@ -34741,7 +36856,73 @@ var MenuItem = class extends Control {
   }
 };
 MenuItem = __decorateClass([
-  customElements2("i-menu-item")
+  customElements2("i-menu-item", {
+    icon: "bars",
+    className: "MenuItem",
+    props: {
+      title: { type: "string", default: "" },
+      link: {
+        type: "object",
+        default: { target: DEFAULT_ITEM.target }
+      },
+      items: { type: "array", default: [] },
+      icon: { type: "object", default: {} },
+      textAlign: { type: "string", default: DEFAULT_ITEM.textAlign }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string"
+        },
+        icon: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string"
+            },
+            width: {
+              type: "number"
+            },
+            height: {
+              type: "number"
+            },
+            fill: {
+              type: "string",
+              format: "color"
+            },
+            image: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string"
+                }
+              }
+            }
+          }
+        },
+        link: {
+          type: "object",
+          properties: {
+            href: {
+              type: "string"
+            },
+            target: {
+              type: "string",
+              enum: ["_blank", "_self", "_parent", "_top"],
+              default: DEFAULT_ITEM.target
+            }
+          }
+        },
+        textAlign: {
+          type: "string",
+          enum: ["left", "right", "center"],
+          default: DEFAULT_ITEM.textAlign
+        }
+      }
+    }
+  })
 ], MenuItem);
 
 // packages/module/src/module.ts
@@ -34941,13 +37122,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme30 = theme_exports.ThemeVars;
+var Theme31 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme30.typography.fontFamily,
-  fontSize: Theme30.typography.fontSize,
+  fontFamily: Theme31.typography.fontFamily,
+  fontSize: Theme31.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -34981,9 +37162,9 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme30.text.primary,
+      color: Theme31.text.primary,
       cursor: "pointer",
-      fontSize: 14
+      fontSize: "inherit"
     },
     ".i-tree-node_icon": {
       display: "inline-block",
@@ -35015,7 +37196,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme30.divider}`,
+          borderLeft: `1px solid ${Theme31.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -35024,17 +37205,17 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme30.action.selectedBackground,
-          color: Theme30.action.selected,
+          backgroundColor: Theme31.action.selectedBackground,
+          color: Theme31.action.selected,
           $nest: {
             "> .i-tree-node_label": {
-              color: Theme30.action.selected
+              color: Theme31.action.selected
             }
           }
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme30.action.hoverBackground,
-          color: Theme30.action.hover,
+          backgroundColor: Theme31.action.hoverBackground,
+          color: Theme31.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -35062,8 +37243,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme30.colors.primary.main,
-          color: Theme30.colors.primary.contrastText,
+          background: Theme31.colors.primary.main,
+          color: Theme31.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -35104,7 +37285,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme30.divider}`,
+          borderLeft: `1px solid ${Theme31.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -35120,15 +37301,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme30.divider}`,
-          borderLeft: `1px solid ${Theme30.divider}`,
+          borderBottom: `1px solid ${Theme31.divider}`,
+          borderLeft: `1px solid ${Theme31.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme30.divider}`,
-          borderRight: `0.5px solid ${Theme30.divider}`,
+          borderTop: `1px solid ${Theme31.divider}`,
+          borderRight: `0.5px solid ${Theme31.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -35147,7 +37328,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme30.colors.primary.main}`
+          borderBottom: `2px solid ${Theme31.colors.primary.main}`
         }
       }
     },
@@ -35174,13 +37355,13 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
-var defaultIcon3 = {
+var defaultIcon2 = {
   name: "caret-right",
-  fill: Theme31.text.secondary,
-  width: 12,
-  height: 12
+  fill: Theme32.text.secondary,
+  width: "0.75rem",
+  height: "0.75rem"
 };
 var TreeView = class extends Control {
   constructor(parent, options) {
@@ -35224,10 +37405,11 @@ var TreeView = class extends Control {
     this._editable = value;
   }
   get actionButtons() {
-    return this._actionButtons;
+    var _a;
+    return (_a = this._actionButtons) != null ? _a : [];
   }
   set actionButtons(value) {
-    this._actionButtons = value;
+    this._actionButtons = value != null ? value : [];
     const groups = Array.from(this.querySelectorAll(".button-group"));
     if (groups && groups.length) {
       groups.forEach((group) => {
@@ -35241,7 +37423,7 @@ var TreeView = class extends Control {
     this.initNode(childNode);
     childNode.editable = this.editable;
     childNode.alwaysExpanded = this.alwaysExpanded;
-    if (this.onRenderNode)
+    if (typeof this.onRenderNode === "function")
       this.onRenderNode(this, childNode);
     if (parentNode) {
       parentNode.appendNode(childNode);
@@ -35255,6 +37437,22 @@ var TreeView = class extends Control {
       this.appendChild(childNode);
     }
     return childNode;
+  }
+  appendNode(childNode) {
+    var _a;
+    this.initNode(childNode);
+    childNode.editable = this.editable;
+    childNode.alwaysExpanded = this.alwaysExpanded;
+    if (typeof this.onRenderNode === "function")
+      this.onRenderNode(this, childNode);
+    this.appendChild(childNode);
+    if ((_a = childNode.children) == null ? void 0 : _a.length) {
+      for (let child2 of childNode.children) {
+        if (child2 instanceof TreeNode) {
+          childNode.appendNode(child2);
+        }
+      }
+    }
   }
   delete(node) {
     node.remove();
@@ -35296,7 +37494,8 @@ var TreeView = class extends Control {
     node.addEventListener("mouseenter", () => this.handleMouseEnter(node));
     node.addEventListener("mouseleave", () => this.handleMouseLeave(node));
     node.addEventListener("beforeExpand", (event) => this.handleLazyLoad(node));
-    this.onRenderNode && this.onRenderNode(this, node);
+    if (typeof this.onRenderNode === "function")
+      this.onRenderNode(this, node);
   }
   renderTreeNode(node, parent, paths = [], level) {
     const treeNode = new TreeNode(parent, node);
@@ -35362,9 +37561,18 @@ var TreeView = class extends Control {
   init() {
     var _a;
     if (!this.initialized) {
+      let treeNodes = [];
+      for (let i = 0; i < this.children.length; i++) {
+        const child2 = this.children[i];
+        if (child2 instanceof TreeNode) {
+          treeNodes.push(child2);
+        } else {
+          child2.remove();
+        }
+      }
       super.init();
       this.classList.add("i-tree-view");
-      if ((_a = this.options) == null ? void 0 : _a.onRenderNode)
+      if (typeof ((_a = this.options) == null ? void 0 : _a.onRenderNode) === "function")
         this.onRenderNode = this.options.onRenderNode;
       this.alwaysExpanded = this.getAttribute("alwaysExpanded", true, false);
       this.editable = this.getAttribute("editable", true, false);
@@ -35374,6 +37582,11 @@ var TreeView = class extends Control {
       console.log("_deleteNodeOnEmptyCaption", this._deleteNodeOnEmptyCaption);
       const activeAttr = this.getAttribute("activeItem", true);
       activeAttr && (this.activeItem = activeAttr);
+      if (treeNodes == null ? void 0 : treeNodes.length) {
+        for (let node of treeNodes) {
+          this.appendNode(node);
+        }
+      }
     }
   }
   static async create(options, parent) {
@@ -35383,7 +37596,70 @@ var TreeView = class extends Control {
   }
 };
 TreeView = __decorateClass([
-  customElements2("i-tree-view")
+  customElements2("i-tree-view", {
+    icon: "stream",
+    group: GroupType.BASIC,
+    className: "TreeView",
+    props: {
+      activeItem: { type: "object" },
+      data: { type: "array" },
+      editable: { type: "boolean" },
+      actionButtons: { type: "array" },
+      alwaysExpanded: { type: "boolean" },
+      deleteNodeOnEmptyCaption: { type: "boolean" }
+    },
+    events: {
+      onActiveChange: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "prevNode", type: "TreeNode", isControl: true },
+        { name: "event", type: "Event" }
+      ],
+      onChange: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "node", type: "TreeNode", isControl: true },
+        { name: "oldValue", type: "string" },
+        { name: "newValue", type: "string" }
+      ],
+      onRenderNode: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "node", type: "TreeNode", isControl: true }
+      ],
+      onMouseEnterNode: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "node", type: "TreeNode", isControl: true }
+      ],
+      onMouseLeaveNode: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "node", type: "TreeNode", isControl: true }
+      ],
+      onLazyLoad: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "node", type: "TreeNode", isControl: true }
+      ],
+      onActionButtonClick: [
+        { name: "target", type: "TreeView", isControl: true },
+        { name: "actionButton", type: "Button", isControl: true },
+        { name: "event", type: "Event" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        editable: {
+          type: "boolean"
+        },
+        actionButtons: {
+          type: "array"
+        },
+        alwaysExpanded: {
+          type: "boolean"
+        },
+        deleteNodeOnEmptyCaption: {
+          type: "boolean"
+        }
+      }
+    }
+  })
 ], TreeView);
 var TreeNode = class extends Control {
   constructor(parent, options) {
@@ -35471,14 +37747,14 @@ var TreeNode = class extends Control {
   }
   get icon() {
     if (!this._iconElm) {
-      this._iconElm = Icon.create(defaultIcon3);
+      this._iconElm = Icon.create(defaultIcon2);
     }
     ;
     return this._iconElm;
   }
   get rightIcon() {
     if (!this._iconRightElm)
-      this._iconRightElm = Icon.create(defaultIcon3);
+      this._iconRightElm = Icon.create(defaultIcon2);
     return this._iconRightElm;
   }
   get height() {
@@ -35503,6 +37779,7 @@ var TreeNode = class extends Control {
     captionInput.focus();
     this.click();
     let isUpdating = false;
+    let isValid = true;
     const updateCaption = () => {
       const newValue = captionInput.value;
       console.log("rootparent deleteNodeOnEmptyCaption", this.rootParent._deleteNodeOnEmptyCaption);
@@ -35510,14 +37787,25 @@ var TreeNode = class extends Control {
       if (this.rootParent._deleteNodeOnEmptyCaption && captionInput.value.replace(/\s+/g, "") === "") {
         return this.remove();
       }
-      if (newValue !== this.caption)
-        this.handleChange(this, this.caption, newValue);
-      this.caption = newValue;
+      if (newValue !== this.caption) {
+        const fn = this.rootParent.onBeforeChange;
+        if (fn && typeof fn === "function")
+          isValid = fn(this.rootParent, this, this.caption, newValue);
+        if (isValid) {
+          this.handleChange(this, this.caption, newValue);
+          this.caption = newValue;
+        }
+      } else {
+        this.caption = this._caption;
+      }
     };
     captionInput.addEventListener("blur", (event) => {
       event.preventDefault();
       if (isUpdating)
         return;
+      if (!isValid) {
+        captionInput.value = this._caption;
+      }
       updateCaption();
     });
     captionInput.addEventListener("keyup", (event) => {
@@ -35545,6 +37833,7 @@ var TreeNode = class extends Control {
     if (!this.data.children)
       this.data.children = [];
     this.data.children.push(childNode.data);
+    return childNode;
   }
   initChildNodeElm() {
     this.classList.add("has-children");
@@ -35619,9 +37908,9 @@ var TreeNode = class extends Control {
       this.isLazyLoad = isLazyLoad;
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-tree-node_content");
-      const iconData = icon || defaultIcon3;
-      iconData.height = iconData.height || "12px";
-      iconData.width = iconData.width || "12px";
+      const iconData = icon || defaultIcon2;
+      iconData.height = iconData.height || "0.75rem";
+      iconData.width = iconData.width || "0.75rem";
       this._iconElm = new Icon(void 0, iconData);
       this._iconElm.classList.add("i-tree-node_icon");
       icon && this._iconElm.classList.add("custom-icon");
@@ -35633,15 +37922,15 @@ var TreeNode = class extends Control {
       rightWrap.classList.add("is-right");
       const actionGroup = this.createElement("div", rightWrap);
       actionGroup.classList.add("button-group");
-      if (rightIcon) {
-        rightIcon.height = rightIcon.height || "12px";
-        rightIcon.width = rightIcon.width || "12px";
-        this._iconRightElm = new Icon(void 0, rightIcon);
-        this._iconRightElm.classList.add("i-tree-node_icon");
-        rightIcon && this._iconRightElm.classList.add("custom-icon");
-        rightWrap.appendChild(this._iconRightElm);
-        rightWrap.insertBefore(this._iconRightElm, actionGroup);
-      }
+      const rightIconData = rightIcon || defaultIcon2;
+      rightIconData.height = rightIconData.height || "0.75rem";
+      rightIconData.width = rightIconData.width || "0.75rem";
+      rightIconData.name = (rightIcon == null ? void 0 : rightIcon.name) || "";
+      this._iconRightElm = new Icon(void 0, rightIconData);
+      this._iconRightElm.classList.add("i-tree-node_icon");
+      this._iconRightElm.classList.add("custom-icon");
+      rightWrap.appendChild(this._iconRightElm);
+      rightWrap.insertBefore(this._iconRightElm, actionGroup);
       if ((_b = (_a = this.data) == null ? void 0 : _a.children) == null ? void 0 : _b.length)
         this.initChildNodeElm();
     }
@@ -35658,11 +37947,11 @@ TreeNode = __decorateClass([
 ], TreeNode);
 
 // packages/switch/src/style/switch.css.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 cssRule("i-switch", {
   display: "block",
-  fontFamily: Theme32.typography.fontFamily,
-  fontSize: Theme32.typography.fontSize,
+  fontFamily: Theme33.typography.fontFamily,
+  fontSize: Theme33.typography.fontSize,
   $nest: {
     ".wrapper": {
       width: "48px",
@@ -35901,9 +38190,11 @@ var Switch = class extends Control {
       this[propertyName] = prop;
   }
   _handleClick(event) {
+    if (this._designMode)
+      return false;
     if (!this.onClick) {
       this.checked = !this.checked;
-      if (this.onChanged)
+      if (typeof this.onChanged === "function")
         this.onChanged(this, event);
     }
     return super._handleClick(event, true);
@@ -35946,11 +38237,41 @@ var Switch = class extends Control {
   }
 };
 Switch = __decorateClass([
-  customElements2("i-switch")
+  customElements2("i-switch", {
+    icon: "toggle-on",
+    group: GroupType.FIELDS,
+    className: "Switch",
+    props: {
+      checkedThumbColor: { type: "string", default: "" },
+      uncheckedThumbColor: { type: "string", default: "" },
+      checkedThumbText: { type: "string", default: "" },
+      uncheckedThumbText: { type: "string", default: "" },
+      checkedTrackColor: { type: "string", default: "" },
+      uncheckedTrackColor: { type: "string", default: "" },
+      checkedText: { type: "string", default: "" },
+      uncheckedText: { type: "string", default: "" },
+      checked: { type: "boolean", default: false }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        checkedThumbColor: { type: "string", format: "color" },
+        uncheckedThumbColor: { type: "string", format: "color" },
+        checkedThumbText: { type: "string" },
+        uncheckedThumbText: { type: "string" },
+        checkedTrackColor: { type: "string", format: "color" },
+        uncheckedTrackColor: { type: "string", format: "color" },
+        checkedText: { type: "string" },
+        uncheckedText: { type: "string" },
+        checked: { type: "boolean", default: false }
+      }
+    }
+  })
 ], Switch);
 
 // packages/popover/src/style/popover.css.ts
-var Theme33 = theme_exports.ThemeVars;
+var Theme34 = theme_exports.ThemeVars;
 var getOverlayStyle2 = () => {
   return style({
     backgroundColor: "rgba(12, 18, 52, 0.7)",
@@ -36008,7 +38329,7 @@ var popoverMainContentStyle = style({
   fontFamily: "Helvetica",
   fontSize: "14px",
   padding: "10px 10px 5px 10px",
-  backgroundColor: Theme33.background.modal,
+  backgroundColor: Theme34.background.modal,
   position: "relative",
   borderRadius: "2px",
   width: "inherit",
@@ -36021,7 +38342,7 @@ cssRule("i-popover", {
 });
 
 // packages/popover/src/popover.ts
-var Theme34 = theme_exports.ThemeVars;
+var Theme35 = theme_exports.ThemeVars;
 var showEvent2 = new Event("show");
 var Popover = class extends Container {
   constructor(parent, options) {
@@ -36485,13 +38806,33 @@ ScatterLineChart = __decorateClass([
   customElements2("i-scatter-line-chart")
 ], ScatterLineChart);
 
+// packages/iframe/src/style/iframe.css.ts
+cssRule("i-iframe", {
+  position: "relative",
+  $nest: {
+    ".overlay": {
+      position: "absolute",
+      top: "0px",
+      left: "0px",
+      width: "100%",
+      height: "calc(100% - 3rem)",
+      zIndex: 9999,
+      display: "none"
+    },
+    "@media screen and (max-width: 767px)": {
+      $nest: {
+        ".overlay": {
+          display: "block"
+        }
+      }
+    }
+  }
+});
+
 // packages/iframe/src/iframe.ts
 var Iframe = class extends Control {
   constructor(parent, options) {
-    super(parent, options, {
-      width: 800,
-      height: 600
-    });
+    super(parent, options, {});
     window.addEventListener("mousedown", () => {
       if (this.iframeElm)
         this.iframeElm.style.pointerEvents = "none";
@@ -36533,8 +38874,19 @@ var Iframe = class extends Control {
       this.iframeElm.setAttribute("frameBorder", "0");
     }
   }
+  set designMode(value) {
+    this._designMode = value;
+    if (this.overlayElm) {
+      this.overlayElm.style.height = value ? "100%" : "0px";
+      this.overlayElm.style.display = value ? "block" : "none";
+    }
+  }
   init() {
     super.init();
+    this.overlayElm = this.createElement("div", this);
+    this.overlayElm.classList.add("overlay");
+    this.overlayElm.style.height = this._designMode ? "100%" : "0px";
+    this.overlayElm.style.display = this._designMode ? "block" : "none";
     this.allowFullscreen = this.getAttribute("allowFullscreen", true);
     const url = this.getAttribute("url", true);
     if (url !== void 0)
@@ -36547,20 +38899,41 @@ var Iframe = class extends Control {
   }
 };
 Iframe = __decorateClass([
-  customElements2("i-iframe")
+  customElements2("i-iframe", {
+    icon: "border-all",
+    group: GroupType.BASIC,
+    className: "Iframe",
+    props: {
+      url: { type: "string", default: "" },
+      allowFullscreen: { type: "boolean", default: false }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        url: {
+          type: "string"
+        },
+        allowFullscreen: {
+          type: "boolean",
+          default: false
+        }
+      }
+    }
+  })
 ], Iframe);
 
 // packages/pagination/src/style/pagination.css.ts
-var Theme35 = theme_exports.ThemeVars;
+var Theme36 = theme_exports.ThemeVars;
 cssRule("i-pagination", {
   display: "block",
   width: "100%",
   maxWidth: "100%",
   verticalAlign: "baseline",
-  fontFamily: Theme35.typography.fontFamily,
-  fontSize: Theme35.typography.fontSize,
+  fontFamily: Theme36.typography.fontFamily,
+  fontSize: Theme36.typography.fontSize,
   lineHeight: "25px",
-  color: Theme35.text.primary,
+  color: Theme36.text.primary,
   "$nest": {
     ".pagination": {
       display: "inline-flex",
@@ -36568,7 +38941,7 @@ cssRule("i-pagination", {
       justifyContent: "center"
     },
     ".pagination a": {
-      color: Theme35.text.primary,
+      color: Theme36.text.primary,
       float: "left",
       padding: "4px 8px",
       textAlign: "center",
@@ -36584,7 +38957,7 @@ cssRule("i-pagination", {
       cursor: "default"
     },
     ".pagination a.disabled": {
-      color: Theme35.text.disabled,
+      color: Theme36.text.disabled,
       pointerEvents: "none"
     }
   }
@@ -36595,11 +38968,13 @@ var pagerCount = 7;
 var pagerCountMobile = 5;
 var defaultCurrentPage = 1;
 var pageSize = 10;
+var defaultTotalPage = 0;
 var Pagination = class extends Control {
   constructor(parent, options) {
     super(parent, options, { pageSize });
     this._showPrevMore = false;
     this._showNextMore = false;
+    this.pageItems = [];
     this.pagerCount = pagerCount;
   }
   get totalPages() {
@@ -36620,7 +38995,7 @@ var Pagination = class extends Control {
     this._curPage = value || defaultCurrentPage;
     const index = value - 1;
     this.pageItems[index] && this.onActiveItem(this.pageItems[index]);
-    if (this.onPageChanged && oldData !== this._curPage)
+    if (typeof this.onPageChanged === "function" && oldData !== this._curPage)
       this.onPageChanged(this, oldData);
   }
   get pageSize() {
@@ -36693,14 +39068,20 @@ var Pagination = class extends Control {
     item.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (this._designMode)
+        return;
       this._handleOnClickMore(step, e);
     });
     item.addEventListener("mouseenter", (e) => {
       e.preventDefault();
+      if (this._designMode)
+        return;
       this.onMouseenter(step, e);
     });
     item.addEventListener("mouseout", (e) => {
       e.preventDefault();
+      if (this._designMode)
+        return;
       item.innerHTML = "...";
     });
   }
@@ -36713,6 +39094,8 @@ var Pagination = class extends Control {
     item.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (this._designMode)
+        return;
       this._handleOnClickIndex(index, e);
     });
     if (index === this.currentPage)
@@ -36757,6 +39140,8 @@ var Pagination = class extends Control {
     this._showNextMore = showNextMore;
   }
   renderPageItem(size) {
+    if (!this._paginationDiv)
+      return;
     this.visible = size > 0;
     this._paginationDiv.innerHTML = "";
     if (this._prevElm) {
@@ -36802,10 +39187,12 @@ var Pagination = class extends Control {
       this._prevElm.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (this._designMode)
+          return;
         this._handleOnPrev(e);
       });
       this.currentPage = +this.getAttribute("currentPage", true, defaultCurrentPage);
-      this.totalPages = +this.getAttribute("totalPages", true, 0);
+      this.totalPages = +this.getAttribute("totalPages", true, defaultTotalPage);
       this.pageSize = +this.getAttribute("pageSize", true, pageSize);
       this._nextElm = this.createElement("a", this._paginationDiv);
       this._nextElm.setAttribute("href", "#");
@@ -36814,6 +39201,8 @@ var Pagination = class extends Control {
       this._nextElm.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (this._designMode)
+          return;
         this._handleOnNext(e);
       });
       this.onDisablePrevNext();
@@ -36827,15 +39216,47 @@ var Pagination = class extends Control {
   }
 };
 Pagination = __decorateClass([
-  customElements2("i-pagination")
+  customElements2("i-pagination", {
+    icon: "ellipsis-h",
+    group: GroupType.BASIC,
+    className: "Pagination",
+    props: {
+      totalPages: { type: "number", default: defaultTotalPage },
+      currentPage: { type: "number", default: defaultCurrentPage },
+      pageSize: { type: "number", default: pageSize }
+    },
+    events: {
+      onPageChanged: [
+        { name: "target", type: "Pagination", isControl: true },
+        { name: "lastActivePage", type: "number" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        totalPages: {
+          type: "number",
+          default: defaultTotalPage
+        },
+        currentPage: {
+          type: "number",
+          default: defaultCurrentPage
+        },
+        pageSize: {
+          type: "number",
+          default: pageSize
+        }
+      }
+    }
+  })
 ], Pagination);
 
 // packages/table/src/style/table.css.ts
-var Theme36 = theme_exports.ThemeVars;
+var Theme37 = theme_exports.ThemeVars;
 var tableStyle = style({
-  fontFamily: Theme36.typography.fontFamily,
-  fontSize: Theme36.typography.fontSize,
-  color: Theme36.text.primary,
+  fontFamily: Theme37.typography.fontFamily,
+  fontSize: Theme37.typography.fontSize,
+  color: Theme37.text.primary,
   display: "block",
   $nest: {
     "> .i-table-container": {
@@ -36856,26 +39277,26 @@ var tableStyle = style({
     ".i-table-header>tr>th": {
       fontWeight: 600,
       transition: "background .3s ease",
-      borderBottom: `1px solid ${Theme36.divider}`
+      borderBottom: `1px solid ${Theme37.divider}`
     },
     ".i-table-body>tr>td": {
-      borderBottom: `1px solid ${Theme36.divider}`,
+      borderBottom: `1px solid ${Theme37.divider}`,
       transition: "background .3s ease"
     },
     "tr:hover td": {
-      background: Theme36.action.hoverBackground,
-      color: Theme36.action.hover
+      background: Theme37.action.hoverBackground,
+      color: Theme37.action.hover
     },
     "&.i-table--bordered": {
       $nest: {
         "> .i-table-container > table": {
-          borderTop: `1px solid ${Theme36.divider}`,
-          borderLeft: `1px solid ${Theme36.divider}`,
+          borderTop: `1px solid ${Theme37.divider}`,
+          borderLeft: `1px solid ${Theme37.divider}`,
           borderRadius: "2px"
         },
         "> .i-table-container > table .i-table-cell": {
-          borderRight: `1px solid ${Theme36.divider} !important`,
-          borderBottom: `1px solid ${Theme36.divider}`
+          borderRight: `1px solid ${Theme37.divider} !important`,
+          borderBottom: `1px solid ${Theme37.divider}`
         }
       }
     },
@@ -36896,7 +39317,7 @@ var tableStyle = style({
           cursor: "pointer"
         },
         ".sort-icon.sort-icon--active > svg": {
-          fill: Theme36.colors.primary.main
+          fill: Theme37.colors.primary.main
         },
         ".sort-icon.sort-icon--desc": {
           marginTop: -5
@@ -36925,12 +39346,12 @@ var tableStyle = style({
           display: "inline-block"
         },
         "i-icon svg": {
-          fill: Theme36.text.primary
+          fill: Theme37.text.primary
         }
       }
     },
     ".i-table-row--child > td": {
-      borderRight: `1px solid ${Theme36.divider}`
+      borderRight: `1px solid ${Theme37.divider}`
     },
     "@media (max-width: 767px)": {
       $nest: {
@@ -37019,7 +39440,7 @@ var getTableMediaQueriesStyleClass = (columns, mediaQueries) => {
 };
 
 // packages/table/src/tableColumn.ts
-var Theme37 = theme_exports.ThemeVars;
+var Theme38 = theme_exports.ThemeVars;
 var TableColumn = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -37074,7 +39495,7 @@ var TableColumn = class extends Control {
         name: "caret-up",
         width: 14,
         height: 14,
-        fill: Theme37.text.primary
+        fill: Theme38.text.primary
       });
       this.ascElm.classList.add("sort-icon", "sort-icon--asc");
       this.ascElm.onClick = () => this.sortOrder = this.sortOrder === "asc" ? "none" : "asc";
@@ -37082,7 +39503,7 @@ var TableColumn = class extends Control {
         name: "caret-down",
         width: 14,
         height: 14,
-        fill: Theme37.text.primary
+        fill: Theme38.text.primary
       });
       this.descElm.classList.add("sort-icon", "sort-icon--desc");
       this.descElm.onClick = () => this.sortOrder = this.sortOrder === "desc" ? "none" : "desc";
@@ -37460,6 +39881,8 @@ var Table = class extends Control {
   }
   renderBody() {
     var _a, _b;
+    if (!this.tBodyElm)
+      return;
     this._bodyStyle = getCustomStylesClass(this.bodyStyles);
     this.tBodyElm.innerHTML = "";
     if (this.hasData) {
@@ -37573,7 +39996,7 @@ Table = __decorateClass([
 ], Table);
 
 // packages/carousel/src/style/carousel.css.ts
-var Theme38 = theme_exports.ThemeVars;
+var Theme39 = theme_exports.ThemeVars;
 var sliderStyle = style({
   display: "flex",
   flexDirection: "column",
@@ -37605,7 +40028,7 @@ var sliderStyle = style({
     ".slider-arrow": {
       width: 28,
       height: 28,
-      fill: Theme38.colors.primary.main,
+      fill: Theme39.colors.primary.main,
       cursor: "pointer"
     },
     ".slider-arrow-hidden": {
@@ -37630,7 +40053,7 @@ var sliderStyle = style({
       listStyle: "none",
       gap: "0.4rem",
       position: "absolute",
-      bottom: "1rem",
+      bottom: "0px",
       left: "50%",
       transform: "translateX(-50%)",
       $nest: {
@@ -37643,7 +40066,7 @@ var sliderStyle = style({
           minWidth: "0.8rem",
           minHeight: "0.8rem",
           backgroundColor: "transparent",
-          border: `2px solid ${Theme38.colors.primary.main}`,
+          border: `2px solid ${Theme39.colors.primary.main}`,
           borderRadius: "50%",
           transition: "background-color 0.35s ease-in-out",
           textAlign: "center",
@@ -37654,7 +40077,7 @@ var sliderStyle = style({
           textOverflow: "ellipsis"
         },
         ".--active > span": {
-          backgroundColor: Theme38.colors.primary.main
+          backgroundColor: Theme39.colors.primary.main
         }
       }
     }
@@ -37687,10 +40110,22 @@ var getCarouselMediaQueriesStyleClass = (mediaQueries) => {
 };
 
 // packages/carousel/src/carousel.ts
+var DEFAULT_VALUES14 = {
+  slidesToShow: 1,
+  transitionSpeed: 500,
+  autoplay: false,
+  autoplaySpeed: 3e3,
+  activeSlide: 0,
+  type: "dot",
+  indicators: true,
+  swipe: false
+};
 var CarouselSlider = class extends Control {
   constructor(parent, options) {
-    super(parent, options, { activeSlide: 0 });
-    this._type = "dot";
+    super(parent, options, { activeSlide: DEFAULT_VALUES14.activeSlide });
+    this._type = DEFAULT_VALUES14.type;
+    this._items = [];
+    this._slider = [];
     this.pos1 = { x: 0, y: 0 };
     this.pos2 = { x: 0, y: 0 };
     this.threshold = 30;
@@ -37733,7 +40168,7 @@ var CarouselSlider = class extends Control {
     this.setAutoplay();
   }
   get activeSlide() {
-    return this._activeSlide || 0;
+    return this._activeSlide || DEFAULT_VALUES14.activeSlide;
   }
   set activeSlide(value) {
     var _a;
@@ -37772,6 +40207,20 @@ var CarouselSlider = class extends Control {
       this.renderDotPagination();
     }
     this.setAutoplay();
+  }
+  add(control) {
+    const options = { name: "", controls: [control] };
+    this.items.push(options);
+    const carouselItem = new CarouselItem(this, options);
+    carouselItem.style.width = 100 / this.slidesToShow + "%";
+    this._slider.push(carouselItem);
+    this.sliderListElm.appendChild(carouselItem);
+    if (this.isArrow) {
+      this.renderArrows();
+    } else {
+      this.renderDotPagination();
+    }
+    return control;
   }
   get type() {
     return this._type;
@@ -37909,18 +40358,18 @@ var CarouselSlider = class extends Control {
     let list = [];
     const min = this.slidesToShow * this.activeSlide;
     const max = this.slidesToShow * (this.activeSlide + 1);
-    items.forEach((item, index) => {
-      const carouselItem = new CarouselItem(this, item);
+    for (let index = 0; index < items.length; index++) {
+      const carouselItem = new CarouselItem(this, items[index]);
       carouselItem.style.width = 100 / this.slidesToShow + "%";
       if (index >= min && index < max)
         carouselItem.classList.add("is-actived");
       list.push(carouselItem);
       this._slider = list;
       this.sliderListElm.appendChild(carouselItem);
-    });
+    }
   }
   renderDotPagination() {
-    var _a;
+    var _a, _b;
     if (!this.dotPagination)
       return;
     this.dotPagination.innerHTML = "";
@@ -37931,8 +40380,8 @@ var CarouselSlider = class extends Control {
     }
     const isShownIndicators = this.indicators && ((_a = this.items) == null ? void 0 : _a.length) > 1;
     isShownIndicators ? this.dotPagination.classList.remove("hidden") : this.dotPagination.classList.add("hidden");
-    if (this.hasChildNodes() && this.sliderListElm.childNodes.length) {
-      const childLength = this.sliderListElm.childNodes.length;
+    if ((_b = this.items) == null ? void 0 : _b.length) {
+      const childLength = this.items.length;
       const totalDots = this.slidesToShow > 0 ? Math.ceil(childLength / this.slidesToShow) : childLength;
       for (let i = 0; i < totalDots; i++) {
         const dotElm = this.createElement("li", this.dotPagination);
@@ -37941,6 +40390,8 @@ var CarouselSlider = class extends Control {
           dotElm.classList.add("--active");
         this.createElement("span", dotElm);
         dotElm.addEventListener("click", () => {
+          if (this._designMode)
+            return;
           this.onDotClick(i);
           this.setAutoplay();
         });
@@ -37966,7 +40417,7 @@ var CarouselSlider = class extends Control {
   }
   onDotClick(index) {
     this.activeSlide = index;
-    if (this.onSlideChange)
+    if (typeof this.onSlideChange === "function")
       this.onSlideChange(index);
   }
   setAutoplay() {
@@ -37996,7 +40447,7 @@ var CarouselSlider = class extends Control {
     const index = this.activeSlide - 1 < 0 ? this.activeSlide : this.activeSlide - 1;
     this.activeSlide = index;
     this.setAutoplay();
-    if (this.onSlideChange)
+    if (typeof this.onSlideChange === "function")
       this.onSlideChange(index);
   }
   next() {
@@ -38009,7 +40460,7 @@ var CarouselSlider = class extends Control {
     }
     this.activeSlide = index;
     this.setAutoplay();
-    if (this.onSlideChange)
+    if (typeof this.onSlideChange === "function")
       this.onSlideChange(index);
   }
   refresh() {
@@ -38047,7 +40498,7 @@ var CarouselSlider = class extends Control {
     }
     this.isSwiping = false;
     this.isHorizontalSwiping = false;
-    if (this.onSwipeStart)
+    if (typeof this.onSwipeStart === "function")
       this.onSwipeStart();
   }
   dragHandler(event) {
@@ -38071,39 +40522,61 @@ var CarouselSlider = class extends Control {
         this.refresh();
       }
     }
-    if (this.onSwipeEnd)
+    if (typeof this.onSwipeEnd === "function")
       this.onSwipeEnd(this.isSwiping);
   }
   init() {
+    const children = [];
+    this.childNodes.forEach((node) => {
+      if (node instanceof Control) {
+        children.push(node);
+      } else {
+        node.remove();
+      }
+    });
     super.init();
     this.classList.add(sliderStyle);
-    this.type = this.getAttribute("type", true, "dot");
-    this.indicators = this.getAttribute("indicators", true, true);
+    this.type = this.getAttribute("type", true, DEFAULT_VALUES14.type);
+    this.indicators = this.getAttribute("indicators", true, DEFAULT_VALUES14.indicators);
     this.wrapperSliderElm = this.createElement("div", this);
     this.updateWrapperClass();
     const wrapper = this.createElement("div", this.wrapperSliderElm);
     wrapper.classList.add("wrapper-slider-list");
-    this.slidesToShow = this.getAttribute("slidesToShow", true, 1);
+    this.slidesToShow = this.getAttribute("slidesToShow", true, DEFAULT_VALUES14.slidesToShow);
     this.sliderListElm = this.createElement("div", wrapper);
     this.sliderListElm.classList.add("slider-list");
-    this.transitionSpeed = this.getAttribute("transitionSpeed", true, 500);
+    this.transitionSpeed = this.getAttribute("transitionSpeed", true, DEFAULT_VALUES14.transitionSpeed);
     this.arrowPrev = new Icon(void 0, { name: "angle-left", visible: this.isArrow });
     this.arrowNext = new Icon(void 0, { name: "angle-right", visible: this.isArrow });
     this.arrowPrev.classList.add("slider-arrow");
     this.arrowNext.classList.add("slider-arrow");
-    this.arrowPrev.onClick = () => this.prev();
-    this.arrowNext.onClick = () => this.next();
+    this.arrowPrev.onClick = () => {
+      if (this._designMode)
+        return;
+      this.prev();
+    };
+    this.arrowNext.onClick = () => {
+      if (this._designMode)
+        return;
+      this.next();
+    };
     this.wrapperSliderElm.prepend(this.arrowPrev);
     this.wrapperSliderElm.append(this.arrowNext);
     this.renderArrows();
     this.dotPagination = this.createElement("ul", this);
     this.dotPagination.classList.add("dots-pagination");
     this.renderDotPagination();
-    this.autoplaySpeed = this.getAttribute("autoplaySpeed", true, 3e3);
+    this.autoplaySpeed = this.getAttribute("autoplaySpeed", true, DEFAULT_VALUES14.autoplaySpeed);
     this.autoplay = this.getAttribute("autoplay", true);
-    this.items = this.getAttribute("items", true, []);
-    this.activeSlide = this.getAttribute("activeSlide", true, 0);
-    this.swipe = this.getAttribute("swipe", true, false);
+    if (children == null ? void 0 : children.length) {
+      children.forEach((child2) => {
+        this.add(child2);
+      });
+    } else {
+      this.items = this.getAttribute("items", true, []);
+    }
+    this.activeSlide = this.getAttribute("activeSlide", true, DEFAULT_VALUES14.activeSlide);
+    this.swipe = this.getAttribute("swipe", true, DEFAULT_VALUES14.swipe);
   }
   static async create(options, parent) {
     let self = new this(parent, options);
@@ -38112,7 +40585,69 @@ var CarouselSlider = class extends Control {
   }
 };
 CarouselSlider = __decorateClass([
-  customElements2("i-carousel-slider")
+  customElements2("i-carousel-slider", {
+    icon: "sliders-h",
+    group: GroupType.BASIC,
+    className: "CarouselSlider",
+    props: {
+      slidesToShow: { type: "number", default: DEFAULT_VALUES14.slidesToShow },
+      transitionSpeed: { type: "number", default: DEFAULT_VALUES14.transitionSpeed },
+      autoplay: { type: "boolean", default: DEFAULT_VALUES14.autoplay },
+      autoplaySpeed: { type: "number", default: DEFAULT_VALUES14.autoplaySpeed },
+      activeSlide: { type: "number", default: DEFAULT_VALUES14.activeSlide },
+      type: { type: "string", default: DEFAULT_VALUES14.type },
+      indicators: { type: "boolean", default: DEFAULT_VALUES14.indicators },
+      swipe: { type: "boolean", default: DEFAULT_VALUES14.swipe },
+      items: { type: "array", default: [] }
+    },
+    events: {
+      onSwipeStart: [],
+      onSwipeEnd: [
+        { name: "isSwiping", type: "boolean" }
+      ],
+      onSlideChange: [
+        { name: "index", type: "number" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: ["dot", "arrow"],
+          default: DEFAULT_VALUES14.type
+        },
+        slidesToShow: {
+          type: "number",
+          default: DEFAULT_VALUES14.slidesToShow
+        },
+        transitionSpeed: {
+          type: "number",
+          default: DEFAULT_VALUES14.transitionSpeed
+        },
+        autoplay: {
+          type: "boolean",
+          default: DEFAULT_VALUES14.autoplay
+        },
+        autoplaySpeed: {
+          type: "number",
+          default: DEFAULT_VALUES14.autoplaySpeed
+        },
+        activeSlide: {
+          type: "number",
+          default: DEFAULT_VALUES14.activeSlide
+        },
+        indicators: {
+          type: "boolean",
+          default: DEFAULT_VALUES14.indicators
+        },
+        swipe: {
+          type: "boolean",
+          default: DEFAULT_VALUES14.swipe
+        }
+      }
+    }
+  })
 ], CarouselSlider);
 var CarouselItem = class extends Container {
   constructor(parent, options) {
@@ -38126,6 +40661,10 @@ var CarouselItem = class extends Container {
   }
   addChildControl(control) {
     this.appendChild(control);
+  }
+  removeChildControl(control) {
+    if (this.contains(control))
+      this.removeChild(control);
   }
   init() {
     this.name = this.options.name;
@@ -38175,12 +40714,6 @@ cssRule("i-video", {
 
 // packages/video/src/video.ts
 var reqs = ["video-js"];
-RequireJS.config({
-  baseUrl: `${LibPath}lib/video-js`,
-  paths: {
-    "video-js": "video-js"
-  }
-});
 function loadCss() {
   const cssId = "videoCss";
   if (!document.getElementById(cssId)) {
@@ -38233,6 +40766,13 @@ var Video = class extends Container {
       return;
     this._border = new Border(video, value);
   }
+  set designMode(value) {
+    this._designMode = value;
+    if (this.overlayElm) {
+      this.overlayElm.style.height = value ? "100%" : "calc(100% - 3rem)";
+      this.overlayElm.style.display = value ? "block" : "none";
+    }
+  }
   getPlayer() {
     if (this.player)
       return this.player;
@@ -38272,6 +40812,8 @@ var Video = class extends Container {
       loadCss();
       this.overlayElm = this.createElement("div", this);
       this.overlayElm.classList.add("overlay");
+      this.overlayElm.style.height = this._designMode ? "100%" : "calc(100% - 3rem)";
+      this.overlayElm.style.display = this._designMode ? "block" : "none";
       const self = this;
       const isStreaming = this.getAttribute("isStreaming", true);
       if (isStreaming) {
@@ -38282,6 +40824,8 @@ var Video = class extends Container {
         this.videoElm.setAttribute("preload", "auto");
         this.videoElm.classList.add("vjs-default-skin");
         this.overlayElm.addEventListener("click", (event) => {
+          if (this._designMode)
+            return;
           event.preventDefault();
           event.stopPropagation();
           if (this.player.paused()) {
@@ -38292,6 +40836,12 @@ var Video = class extends Container {
         });
         const src = this.getAttribute("url", true);
         const border = this.getAttribute("border", true);
+        RequireJS.config({
+          baseUrl: `${LibPath}lib/video-js`,
+          paths: {
+            "video-js": "video-js"
+          }
+        });
         RequireJS.require(reqs, function(videojs) {
           self.player = videojs(id, {
             playsinline: true,
@@ -38328,6 +40878,8 @@ var Video = class extends Container {
         this.videoElm.setAttribute("width", "100%");
         this.insertBefore(this.overlayElm, this.videoElm);
         this.overlayElm.addEventListener("click", (event) => {
+          if (this._designMode)
+            return;
           event.preventDefault();
           event.stopPropagation();
           if (this._isPlayed) {
@@ -38358,11 +40910,27 @@ var Video = class extends Container {
   }
 };
 Video = __decorateClass([
-  customElements2("i-video")
+  customElements2("i-video", {
+    icon: "play-circle",
+    group: GroupType.BASIC,
+    className: "Video",
+    props: {
+      url: { type: "string", default: "" },
+      isStreaming: { type: "boolean", default: false }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string" },
+        isStreaming: { type: "boolean", default: false }
+      }
+    }
+  })
 ], Video);
 
 // packages/schema-designer/src/uiSchema.ts
-var Theme39 = theme_exports.ThemeVars;
+var Theme40 = theme_exports.ThemeVars;
 var dataUITypes = [
   { label: "VerticalLayout", value: "VerticalLayout" },
   { label: "HorizontalLayout", value: "HorizontalLayout" },
@@ -38616,7 +41184,7 @@ var SchemaDesignerUI = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme39.colors.primary.contrastText
+      fill: Theme40.colors.primary.contrastText
     }));
     btnAddElement.onClick = () => {
       this.createUISchema(pnlUIElements, currentLayout, true);
@@ -38705,7 +41273,7 @@ var SchemaDesignerUI = class extends Container {
           visible: false,
           width: 12,
           height: 12,
-          fill: Theme39.colors.secondary.main,
+          fill: Theme40.colors.secondary.main,
           tooltip: {
             content: "Remove this property",
             trigger: "hover"
@@ -38760,7 +41328,7 @@ var SchemaDesignerUI = class extends Container {
               visible: false,
               width: 12,
               height: 12,
-              fill: Theme39.colors.secondary.main,
+              fill: Theme40.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -38862,13 +41430,13 @@ var SchemaDesignerUI = class extends Container {
                   display: "flex",
                   padding: { top: 8, bottom: 8, left: 16, right: 16 },
                   border: { radius: 8 },
-                  background: { color: Theme39.action.selected }
+                  background: { color: Theme40.action.selected }
                 });
                 const iconTimesEnum = new Icon(pnlEnum, {
                   name: "times",
                   width: 14,
                   height: 14,
-                  fill: Theme39.colors.secondary.main,
+                  fill: Theme40.colors.secondary.main,
                   position: "absolute",
                   right: 2,
                   top: 2
@@ -38900,7 +41468,7 @@ var SchemaDesignerUI = class extends Container {
               position: "absolute",
               top: 5,
               right: 5,
-              fill: Theme39.colors.secondary.main,
+              fill: Theme40.colors.secondary.main,
               tooltip: {
                 content: "Remove this property",
                 trigger: "hover"
@@ -39108,7 +41676,7 @@ var SchemaDesignerUI = class extends Container {
         name: "plus",
         width: "1em",
         height: "1em",
-        fill: Theme39.colors.primary.contrastText
+        fill: Theme40.colors.primary.contrastText
       }));
       const pnlFormDetail = new Panel(void 0, {
         padding: { top: 10, bottom: 10, left: 10, right: 10 }
@@ -39319,7 +41887,7 @@ var SchemaDesignerUI = class extends Container {
         name: "times-circle",
         width: 12,
         height: 12,
-        fill: Theme39.colors.secondary.main,
+        fill: Theme40.colors.secondary.main,
         visible: false
       });
       iconClear.onClick = () => {
@@ -39413,7 +41981,7 @@ var SchemaDesignerUI = class extends Container {
     if (isChildren) {
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme39.colors.secondary.main} !important` },
+        background: { color: `${Theme40.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         height: 28,
@@ -39423,7 +41991,7 @@ var SchemaDesignerUI = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme39.colors.primary.contrastText
+        fill: Theme40.colors.primary.contrastText
       }));
       btnDelete.onClick = () => {
         deleteElement();
@@ -39437,7 +42005,7 @@ var SchemaDesignerUI = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme39.colors.primary.contrastText
+        fill: Theme40.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -39510,12 +42078,12 @@ SchemaDesignerUI = __decorateClass([
 ], SchemaDesignerUI);
 
 // packages/schema-designer/src/style/schema-designer.css.ts
-var Theme40 = theme_exports.ThemeVars;
+var Theme41 = theme_exports.ThemeVars;
 var scrollBar = {
   "&::-webkit-scrollbar-track": {
     borderRadius: "12px",
     border: "1px solid transparent",
-    background: Theme40.action.hover
+    background: Theme41.action.hover
   },
   "&::-webkit-scrollbar": {
     width: "8px",
@@ -39523,7 +42091,7 @@ var scrollBar = {
   },
   "&::-webkit-scrollbar-thumb": {
     borderRadius: "12px",
-    background: Theme40.action.active
+    background: Theme41.action.active
   }
 };
 cssRule("i-schema-designer", {
@@ -39549,12 +42117,12 @@ cssRule("i-schema-designer", {
           height: "30px !important",
           width: "100% !important",
           border: 0,
-          borderBottom: `0.5px solid ${Theme40.divider}`,
+          borderBottom: `0.5px solid ${Theme41.divider}`,
           background: "transparent"
         },
         "textarea": {
           height: "100% !important",
-          border: `0.5px solid ${Theme40.divider}`,
+          border: `0.5px solid ${Theme41.divider}`,
           borderRadius: "1em",
           background: "transparent",
           $nest: scrollBar
@@ -39572,7 +42140,7 @@ cssRule("i-schema-designer", {
           background: "transparent !important",
           height: "30px !important",
           border: "0 !important",
-          borderBottom: `0.5px solid ${Theme40.divider} !important`
+          borderBottom: `0.5px solid ${Theme41.divider} !important`
         },
         ".selection": {
           background: "transparent",
@@ -39581,7 +42149,7 @@ cssRule("i-schema-designer", {
         },
         "span.icon-btn": {
           border: "0",
-          borderBottom: `0.5px solid ${Theme40.divider}`,
+          borderBottom: `0.5px solid ${Theme41.divider}`,
           borderRadius: "0",
           height: "30px !important",
           width: "32px !important",
@@ -39608,8 +42176,8 @@ cssRule("i-schema-designer", {
       }
     },
     "i-button": {
-      background: Theme40.colors.primary.main,
-      color: Theme40.colors.primary.contrastText
+      background: Theme41.colors.primary.main,
+      color: Theme41.colors.primary.contrastText
     },
     ".cs-wrapper--header": {
       padding: "5px 10px",
@@ -39622,12 +42190,12 @@ cssRule("i-schema-designer", {
     ".cs-prefix--items": {
       $nest: {
         ".cs-box--shadow": {
-          boxShadow: Theme40.shadows[2]
+          boxShadow: Theme41.shadows[2]
         }
       }
     },
     ".cs-box--enum": {
-      boxShadow: Theme40.shadows[2],
+      boxShadow: Theme41.shadows[2],
       padding: "8px 16px",
       borderRadius: 8,
       minWidth: 100,
@@ -39662,7 +42230,7 @@ cssRule("i-schema-designer", {
 });
 
 // packages/schema-designer/src/schemaDesigner.ts
-var Theme41 = theme_exports.ThemeVars;
+var Theme42 = theme_exports.ThemeVars;
 var dataTypes = [
   { label: "string", value: "string" },
   { label: "number", value: "number" },
@@ -39897,7 +42465,7 @@ var SchemaDesigner = class extends Container {
       name: "plus",
       width: "1em",
       height: "1em",
-      fill: Theme41.colors.primary.contrastText
+      fill: Theme42.colors.primary.contrastText
     }));
     const hStackActions = new HStack(void 0, {
       verticalAlignment: "center",
@@ -39985,7 +42553,7 @@ var SchemaDesigner = class extends Container {
         name: "angle-down",
         width: "1.125em",
         height: "1.125em",
-        fill: Theme41.colors.primary.contrastText
+        fill: Theme42.colors.primary.contrastText
       });
       btnExpand.prepend(iconExpand);
       btnExpand.onClick = onExpand;
@@ -40000,7 +42568,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme41.colors.secondary.main,
+        fill: Theme42.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40020,7 +42588,7 @@ var SchemaDesigner = class extends Container {
         name: "exclamation-circle",
         width: 12,
         height: 12,
-        fill: Theme41.colors.secondary.main,
+        fill: Theme42.colors.secondary.main,
         tooltip: {
           content: "Invalid field",
           trigger: "hover"
@@ -40029,7 +42597,7 @@ var SchemaDesigner = class extends Container {
       });
       btnDelete = new Button(void 0, {
         caption: "Delete",
-        background: { color: `${Theme41.colors.secondary.main} !important` },
+        background: { color: `${Theme42.colors.secondary.main} !important` },
         display: "flex",
         width: "100%",
         padding: { top: 6, bottom: 6, left: 12, right: 12 }
@@ -40038,7 +42606,7 @@ var SchemaDesigner = class extends Container {
         name: "trash",
         width: "1em",
         height: "1em",
-        fill: Theme41.colors.primary.contrastText
+        fill: Theme42.colors.primary.contrastText
       }));
       btnDelete.setAttribute("action", "delete");
       btnDelete.onClick = async () => {
@@ -40284,13 +42852,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme41.action.selected }
+          background: { color: Theme42.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme41.colors.secondary.main,
+          fill: Theme42.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -40334,7 +42902,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme41.colors.secondary.main,
+        fill: Theme42.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40423,13 +42991,13 @@ var SchemaDesigner = class extends Container {
           display: "flex",
           padding: { top: 8, bottom: 8, left: 16, right: 16 },
           border: { radius: 8 },
-          background: { color: Theme41.action.selected }
+          background: { color: Theme42.action.selected }
         });
         const iconTimes = new Icon(pnlEnum, {
           name: "times",
           width: 14,
           height: 14,
-          fill: Theme41.colors.secondary.main,
+          fill: Theme42.colors.secondary.main,
           position: "absolute",
           right: 2,
           top: 2
@@ -40468,7 +43036,7 @@ var SchemaDesigner = class extends Container {
         position: "absolute",
         top: 5,
         right: 5,
-        fill: Theme41.colors.secondary.main,
+        fill: Theme42.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40567,7 +43135,7 @@ var SchemaDesigner = class extends Container {
         name: "times",
         width: 14,
         height: 14,
-        fill: Theme41.colors.secondary.main,
+        fill: Theme42.colors.secondary.main,
         position: "absolute",
         right: 4,
         top: 4
@@ -40653,7 +43221,7 @@ var SchemaDesigner = class extends Container {
     if (parentFields.length) {
       new Label(vStack, {
         caption: "Advanced options",
-        font: { size: "16px", color: Theme41.colors.primary.main }
+        font: { size: "16px", color: Theme42.colors.primary.main }
       });
     }
     const gridLayout = new GridLayout(vStack, {
@@ -40698,7 +43266,7 @@ var SchemaDesigner = class extends Container {
         width: 12,
         height: 12,
         position: notCheckbox ? "absolute" : "relative",
-        fill: Theme41.colors.secondary.main,
+        fill: Theme42.colors.secondary.main,
         tooltip: {
           content: "Remove this property",
           trigger: "hover"
@@ -40927,9 +43495,9 @@ SchemaDesigner = __decorateClass([
 ], SchemaDesigner);
 
 // packages/navigator/src/style/navigator.css.ts
-var Theme42 = theme_exports.ThemeVars;
+var Theme43 = theme_exports.ThemeVars;
 cssRule("i-nav", {
-  border: `1px solid ${Theme42.divider}`,
+  border: `1px solid ${Theme43.divider}`,
   $nest: {
     "> i-vstack": {
       alignItems: "center",
@@ -40938,7 +43506,7 @@ cssRule("i-nav", {
         ".search-container": {
           width: "100%",
           padding: 10,
-          borderBottom: `1px solid ${Theme42.divider}`,
+          borderBottom: `1px solid ${Theme43.divider}`,
           alignItems: "center",
           gap: 5,
           $nest: {
@@ -40950,7 +43518,7 @@ cssRule("i-nav", {
                 "input": {
                   background: "transparent",
                   border: "0",
-                  borderBottom: `1px solid ${Theme42.divider}`
+                  borderBottom: `1px solid ${Theme43.divider}`
                 }
               }
             }
@@ -40965,9 +43533,9 @@ cssRule("i-nav", {
     },
     "i-nav-item": {
       cursor: "pointer",
-      background: Theme42.background.main,
+      background: Theme43.background.main,
       borderLeft: "3px solid transparent",
-      borderBottom: `1px solid ${Theme42.divider}`,
+      borderBottom: `1px solid ${Theme43.divider}`,
       $nest: {
         "> i-grid-layout": {
           height: 50,
@@ -40976,14 +43544,14 @@ cssRule("i-nav", {
           alignItems: "center"
         },
         "i-icon": {
-          height: Theme42.typography.fontSize,
-          width: Theme42.typography.fontSize,
-          fill: Theme42.colors.primary.main
+          height: Theme43.typography.fontSize,
+          width: Theme43.typography.fontSize,
+          fill: Theme43.colors.primary.main
         },
         "&.active": {
-          color: Theme42.colors.primary.contrastText,
-          background: Theme42.colors.primary.main,
-          borderLeft: `3px solid ${Theme42.colors.primary.main}`
+          color: Theme43.colors.primary.contrastText,
+          background: Theme43.colors.primary.main,
+          borderLeft: `3px solid ${Theme43.colors.primary.main}`
         }
       }
     }
@@ -41292,19 +43860,19 @@ NavItem = __decorateClass([
 ], NavItem);
 
 // packages/breadcrumb/src/style/breadcrumb.css.ts
-var Theme43 = theme_exports.ThemeVars;
+var Theme44 = theme_exports.ThemeVars;
 cssRule("i-breadcrumb", {
   $nest: {
     "i-label": {
       padding: 5,
       margin: "0 5px",
-      color: Theme43.colors.primary.main
+      color: Theme44.colors.primary.main
     },
     "i-icon": {
       margin: "0 5px",
-      height: Theme43.typography.fontSize,
-      width: Theme43.typography.fontSize,
-      fill: Theme43.colors.primary.main
+      height: Theme44.typography.fontSize,
+      width: Theme44.typography.fontSize,
+      fill: Theme44.colors.primary.main
     }
   }
 });
@@ -41372,7 +43940,7 @@ Breadcrumb = __decorateClass([
 ], Breadcrumb);
 
 // packages/form/src/styles/index.css.ts
-var Theme44 = theme_exports.ThemeVars;
+var Theme45 = theme_exports.ThemeVars;
 var formStyle = style({
   $nest: {
     "i-vstack > .form-group": {
@@ -41387,7 +43955,7 @@ var formGroupStyle = style({
   justifyContent: "center"
 });
 var groupStyle = style({
-  border: `1px solid ${Theme44.divider}`,
+  border: `1px solid ${Theme45.divider}`,
   borderRadius: 5,
   width: "100%",
   marginBottom: 5
@@ -41404,8 +43972,8 @@ var groupBodyStyle = style({
 });
 var collapseBtnStyle = style({
   cursor: "pointer",
-  height: Theme44.typography.fontSize,
-  width: Theme44.typography.fontSize
+  height: Theme45.typography.fontSize,
+  width: Theme45.typography.fontSize
 });
 var inputStyle = style({
   width: "100% !important",
@@ -41414,9 +43982,9 @@ var inputStyle = style({
       width: "100% !important",
       maxWidth: "100%",
       padding: "0.5rem 1rem",
-      color: Theme44.input.fontColor,
-      backgroundColor: Theme44.input.background,
-      borderColor: Theme44.input.background,
+      color: Theme45.input.fontColor,
+      backgroundColor: Theme45.input.background,
+      borderColor: Theme45.input.background,
       borderRadius: "0.625rem",
       outline: "none"
     },
@@ -41439,16 +44007,16 @@ var datePickerStyle = style({
       width: "calc(100% - 24px) !important",
       maxWidth: "calc(100% - 24px)",
       padding: "0.5rem 1rem",
-      color: Theme44.input.fontColor,
-      backgroundColor: Theme44.input.background,
-      borderColor: Theme44.input.background,
+      color: Theme45.input.fontColor,
+      backgroundColor: Theme45.input.background,
+      borderColor: Theme45.input.background,
       outline: "none"
     },
     "> input:focus ~ .datepicker-toggle": {
-      borderColor: Theme44.colors.info.main
+      borderColor: Theme45.colors.info.main
     },
     ".datepicker-toggle": {
-      backgroundColor: Theme44.input.background,
+      backgroundColor: Theme45.input.background,
       width: "42px"
     }
   }
@@ -41460,9 +44028,9 @@ var comboBoxStyle = style({
       width: "100% !important",
       maxWidth: "100%",
       padding: "0.5rem 1rem",
-      color: Theme44.input.fontColor,
-      backgroundColor: Theme44.input.background,
-      borderColor: Theme44.input.background,
+      color: Theme45.input.fontColor,
+      backgroundColor: Theme45.input.background,
+      borderColor: Theme45.input.background,
       borderRadius: "0.625rem!important"
     },
     ".selection input": {
@@ -41472,7 +44040,7 @@ var comboBoxStyle = style({
     },
     "> .icon-btn": {
       justifyContent: "center",
-      borderColor: Theme44.input.background,
+      borderColor: Theme45.input.background,
       borderRadius: "0.625rem",
       width: "42px"
     }
@@ -41483,8 +44051,8 @@ var buttonStyle = style({
 });
 var iconButtonStyle = style({
   cursor: "pointer",
-  height: Theme44.typography.fontSize,
-  width: Theme44.typography.fontSize
+  height: Theme45.typography.fontSize,
+  width: Theme45.typography.fontSize
 });
 var checkboxStyle = style({
   $nest: {
@@ -41502,15 +44070,15 @@ var checkboxStyle = style({
 });
 var listHeaderStyle = style({
   padding: "10px 0px",
-  borderBottom: `1px solid ${Theme44.divider}`,
+  borderBottom: `1px solid ${Theme45.divider}`,
   marginBottom: 10,
   minHeight: "60px",
   alignItems: "center",
   fontWeight: 600
 });
 var listBtnAddStyle = style({
-  color: Theme44.colors.primary.contrastText,
-  backgroundColor: Theme44.colors.primary.main,
+  color: Theme45.colors.primary.contrastText,
+  backgroundColor: Theme45.colors.primary.main,
   padding: "0.5rem 1rem",
   borderRadius: 0,
   cursor: "pointer"
@@ -41594,8 +44162,8 @@ var listVerticalLayoutStyle = style({
 var listItemBtnDelete = style({
   cursor: "pointer",
   placeSelf: "center",
-  height: Theme44.typography.fontSize,
-  width: Theme44.typography.fontSize
+  height: Theme45.typography.fontSize,
+  width: Theme45.typography.fontSize
 });
 var tabsStyle = style({
   marginBottom: 41,
@@ -41608,12 +44176,12 @@ var tabsStyle = style({
         },
         "i-tab": {
           border: 0,
-          fontFamily: Theme44.typography.fontFamily,
-          fontSize: Theme44.typography.fontSize,
+          fontFamily: Theme45.typography.fontFamily,
+          fontSize: Theme45.typography.fontSize,
           fontWeight: 600,
           borderBottom: "1px solid transparent",
           background: "transparent",
-          color: Theme44.text.secondary,
+          color: Theme45.text.secondary,
           margin: "0 0.75rem",
           padding: "0.5rem 0",
           transition: "color .2s ease",
@@ -41622,12 +44190,12 @@ var tabsStyle = style({
               marginLeft: 0
             },
             "&:not(.disabled):hover": {
-              color: Theme44.text.primary
+              color: Theme45.text.primary
             },
             "&:not(.disabled).active": {
               background: "transparent",
-              color: Theme44.colors.info.main,
-              borderBottom: `1px solid ${Theme44.colors.info.main}`
+              color: Theme45.colors.info.main,
+              borderBottom: `1px solid ${Theme45.colors.info.main}`
             },
             ".tab-item": {
               padding: 0
@@ -41642,11 +44210,11 @@ var tabsStyle = style({
   }
 });
 var cardStyle = style({
-  border: `1px solid ${Theme44.divider}`
+  border: `1px solid ${Theme45.divider}`
 });
 var cardHeader = style({
   padding: 20,
-  borderBottom: `1px solid ${Theme44.divider}`,
+  borderBottom: `1px solid ${Theme45.divider}`,
   cursor: "pointer"
 });
 var cardBody = style({
@@ -41656,7 +44224,7 @@ var uploadStyle = style({
   height: "auto",
   width: "100%",
   margin: 0,
-  fontFamily: Theme44.typography.fontFamily,
+  fontFamily: Theme45.typography.fontFamily,
   $nest: {
     "> .i-upload-wrapper": {
       marginBottom: 0,
@@ -41673,7 +44241,7 @@ var tokenInputStyle = style({
       background: "transparent",
       $nest: {
         "&:hover": {
-          borderColor: `${Theme44.colors.primary.main} !important`
+          borderColor: `${Theme45.colors.primary.main} !important`
         }
       }
     },
@@ -41920,9 +44488,9 @@ var Form = class extends Control {
       const _control = control || this._formControls[newScope].input;
       if (_control) {
         if (_control.tagName === "I-SCOM-TOKEN-INPUT" && !value && customData) {
-          this._formOptions.customControls[newScope].setData(_control, customData.symbol);
+          this._formOptions.customControls[newScope].setData(_control, customData.symbol, customData);
         } else {
-          this._formOptions.customControls[newScope].setData(_control, value);
+          this._formOptions.customControls[newScope].setData(_control, value, customData);
         }
       }
     }
@@ -42448,7 +45016,7 @@ var Form = class extends Control {
         container = wrapper;
       }
       let form = new GridLayout(container, {
-        gap: 10,
+        gap: { column: 10, row: 10 },
         columnsPerRow: this._formOptions.columnsPerRow || DEFAULT_OPTIONS.columnsPerRow
       });
       form.setAttribute("role", "object");
@@ -43375,7 +45943,7 @@ var Form = class extends Control {
         const card = new Panel(parent);
         card.classList.add(cardStyle);
         card.setAttribute("role", "list-item");
-        const headerStack = new GridLayout(card, { gap: 5, templateColumns: ["1fr", "30px", "30px"] });
+        const headerStack = new GridLayout(card, { gap: { column: 5, row: 5 }, templateColumns: ["1fr", "30px", "30px"] });
         headerStack.classList.add(cardHeader);
         const bodyStack = new VStack(card);
         bodyStack.classList.add(cardBody);
@@ -43754,8 +46322,533 @@ var Form = class extends Control {
   }
 };
 Form = __decorateClass([
-  customElements2("i-form")
+  customElements2("i-form", {
+    props: {},
+    events: {}
+  })
 ], Form);
+
+// packages/repeater/src/style/repeater.css.ts
+var Theme46 = theme_exports.ThemeVars;
+cssRule("i-repeater", {
+  display: "block",
+  width: "100%",
+  $nest: {
+    ".repeater-container": {
+      display: "flex",
+      flexDirection: "column"
+    }
+  }
+});
+
+// packages/repeater/src/repeater.ts
+var DEFAULT_COUNT = 0;
+var Repeater = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get count() {
+    var _a;
+    return (_a = this._count) != null ? _a : DEFAULT_COUNT;
+  }
+  set count(value) {
+    this._count = value != null ? value : DEFAULT_COUNT;
+    this.cloneItems();
+  }
+  foreachNode(node, clonedNode) {
+    var _a;
+    if (!node)
+      return;
+    if (typeof (node == null ? void 0 : node._getCustomProperties) === "function") {
+      const props = node._getCustomProperties().props || {};
+      const keys = Object.keys(props);
+      for (let key2 of keys) {
+        const value = (_a = node._getDesignPropValue(key2)) != null ? _a : node.getAttribute(key2);
+        if (!this.isEmpty(key2, value)) {
+          if (clonedNode) {
+            clonedNode[key2] = value;
+          }
+        }
+      }
+    }
+    for (let i = 0; i < node.children.length; i++) {
+      const child2 = node.children[i];
+      const clonedChild = clonedNode == null ? void 0 : clonedNode.children[i];
+      if (child2.hasChildNodes()) {
+        this.foreachNode(child2, clonedChild);
+      }
+    }
+  }
+  isEmpty(key2, value) {
+    var _a;
+    return value === void 0 || value === null || typeof value === "object" && !Object.keys(value).length || (key2 === "link" || key2 === "image") && !(value == null ? void 0 : value.url) || (key2 === "icon" || key2 === "rightIcon") && (!(value == null ? void 0 : value.name) || !((_a = value == null ? void 0 : value.image) == null ? void 0 : _a.url)) || key2 === "caption";
+  }
+  cloneItems() {
+    if (this._designMode)
+      return;
+    this.wrapper.innerHTML = "";
+    if (!this.templateEl.content || !this.count)
+      return;
+    for (let i = 0; i < this.count; i++) {
+      const clone = document.importNode(this.templateEl.content, true);
+      this.wrapper.appendChild(clone);
+      const newControl = this.wrapper.lastElementChild;
+      this.foreachNode(this.templateEl.content.firstChild, newControl);
+      if (typeof this.onRender === "function")
+        this.onRender(this.wrapper, i);
+    }
+  }
+  add(item) {
+    if (!this.pnlPanel) {
+      this.pnlPanel = new Panel(void 0, {});
+    }
+    this.pnlPanel.appendChild(item);
+    if (this._designMode) {
+      this.wrapper.innerHTML = "";
+      this.wrapper.append(this.pnlPanel);
+    } else {
+      this.templateEl.innerHTML = "";
+      this.templateEl.content.append(this.pnlPanel);
+    }
+    this.cloneItems();
+    return item;
+  }
+  update() {
+    this.cloneItems();
+  }
+  clear() {
+    this.wrapper.innerHTML = "";
+  }
+  init() {
+    if (!this.initialized) {
+      let childNodes = [];
+      for (let i = 0; i < this.childNodes.length; i++) {
+        const el = this.childNodes[i];
+        childNodes.push(el);
+      }
+      this.onRender = this.getAttribute("onRender", true) || this.onRender;
+      const count = this.getAttribute("count", true, DEFAULT_COUNT);
+      super.init();
+      this.wrapper = this.createElement("div", this);
+      this.wrapper.classList.add("repeater-container");
+      this.templateEl = this.createElement("template", this);
+      this.pnlPanel = new Panel(void 0, {});
+      if (childNodes == null ? void 0 : childNodes.length) {
+        for (let i = 0; i < childNodes.length; i++) {
+          this.pnlPanel.appendChild(childNodes[i]);
+        }
+        if (this._designMode) {
+          this.wrapper.append(this.pnlPanel);
+        } else {
+          this.templateEl.content.append(this.pnlPanel);
+        }
+      }
+      this.count = count;
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Repeater = __decorateClass([
+  customElements2("i-repeater", {
+    icon: "clone",
+    group: GroupType.BASIC,
+    className: "Repeater",
+    props: {
+      count: {
+        type: "number",
+        default: DEFAULT_COUNT
+      }
+    },
+    events: {
+      onRender: [
+        { name: "parent", type: "Control", isControl: true },
+        { name: "index", type: "number" }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        count: {
+          type: "number",
+          default: DEFAULT_COUNT
+        }
+      }
+    }
+  })
+], Repeater);
+
+// packages/accordion/src/style/accordion.css.ts
+cssRule("i-accordion", {
+  display: "block",
+  $nest: {}
+});
+var customStyles = style({
+  $nest: {
+    ".accordion-body": {
+      transition: "height 0.4s ease-in",
+      height: 0,
+      overflow: "hidden"
+    },
+    "&.expanded > .accordion-body": {
+      height: "auto"
+    },
+    ".accordion-header": {
+      $nest: {
+        "i-label": {
+          fontSize: "inherit"
+        }
+      }
+    }
+  }
+});
+var expandablePanelStyle = style({
+  $nest: {
+    "i-panel": {
+      border: "none"
+    }
+  }
+});
+
+// packages/accordion/src/accordion-item.ts
+var AccordionItem = class extends Container {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  get name() {
+    var _a;
+    return (_a = this._name) != null ? _a : "";
+  }
+  set name(value) {
+    this._name = value != null ? value : "";
+    if (this.lbTitle) {
+      this.lbTitle.caption = value;
+    }
+  }
+  get defaultExpanded() {
+    var _a;
+    return (_a = this._defaultExpanded) != null ? _a : false;
+  }
+  set defaultExpanded(value) {
+    this._defaultExpanded = value != null ? value : false;
+    this._expanded = this._defaultExpanded;
+    this.updatePanel();
+  }
+  get expanded() {
+    var _a;
+    return (_a = this._expanded) != null ? _a : false;
+  }
+  set expanded(value) {
+    this._expanded = value != null ? value : false;
+    this.updatePanel();
+  }
+  get showRemove() {
+    var _a;
+    return (_a = this._showRemove) != null ? _a : false;
+  }
+  set showRemove(value) {
+    this._showRemove = value != null ? value : false;
+    if (this.iconRemove) {
+      this.iconRemove.visible = this._showRemove;
+    }
+  }
+  get contentControl() {
+    return this.pnlContent;
+  }
+  async renderUI() {
+    this.pnlAccordionItem = new VStack(void 0, {
+      padding: { top: "0.5rem", bottom: "0.5rem", left: "0.5rem", right: "0.5rem" },
+      class: `${customStyles}`
+    });
+    const hStack = new HStack(this.pnlAccordionItem, {
+      horizontalAlignment: "space-between",
+      verticalAlignment: "center",
+      padding: { top: "0.5rem", bottom: "0.5rem" },
+      cursor: "pointer",
+      class: "accordion-header"
+    });
+    hStack.onClick = this.onSelectClick.bind(this);
+    this.lbTitle = new Label(hStack, {
+      caption: this.name,
+      class: "accordion-title",
+      lineHeight: 1.3
+    });
+    const innerHStack = new HStack(hStack, {
+      verticalAlignment: "center",
+      gap: "0.5rem"
+    });
+    this.iconExpand = new Icon(innerHStack, {
+      name: "angle-right",
+      width: 20,
+      height: 28,
+      fill: theme_exports.ThemeVars.text.primary,
+      class: "icon-expand"
+    });
+    this.iconRemove = new Icon(innerHStack, {
+      name: "times",
+      width: 20,
+      height: 20,
+      fill: theme_exports.ThemeVars.text.primary,
+      visible: this.showRemove
+    });
+    this.iconRemove.onClick = this.onRemoveClick.bind(this);
+    this.pnlContent = new Panel(this.pnlAccordionItem, {
+      class: `accordion-body ${expandablePanelStyle}`
+    });
+    this.appendChild(this.pnlAccordionItem);
+    this.expanded = !this._expanded && this._defaultExpanded;
+  }
+  updatePanel() {
+    if (this._expanded) {
+      this.iconExpand.name = "angle-down";
+      this.pnlContent.visible = true;
+      this.pnlAccordionItem.classList.add("expanded");
+    } else {
+      this.iconExpand.name = "angle-right";
+      this.pnlContent.visible = false;
+      this.pnlAccordionItem.classList.remove("expanded");
+    }
+  }
+  onSelectClick(target, event) {
+    event.stopPropagation();
+    if (this.onSelected)
+      this.onSelected(this);
+  }
+  onRemoveClick() {
+    if (this.onRemoved)
+      this.onRemoved(this);
+  }
+  add(item) {
+    item.parent = this.pnlContent;
+    this.pnlContent.appendChild(item);
+    return item;
+  }
+  async init() {
+    if (!this.initialized) {
+      let childNodes = [];
+      this.childNodes.forEach((node) => {
+        childNodes.push(node);
+      });
+      this.onSelected = this.getAttribute("onSelected", true) || this.onSelected;
+      this.onRemoved = this.getAttribute("onRemoved", true) || this.onRemoved;
+      const name = this.getAttribute("name", true);
+      const defaultExpanded = this.getAttribute("defaultExpanded", true);
+      const showRemove = this.getAttribute("showRemove", true, false);
+      super.init();
+      this._name = name;
+      this._defaultExpanded = defaultExpanded;
+      this._showRemove = showRemove;
+      await this.renderUI();
+      if (!this.pnlContent.isConnected)
+        await this.pnlContent.ready();
+      if (childNodes == null ? void 0 : childNodes.length) {
+        for (let i = 0; i < childNodes.length; i++) {
+          const item = childNodes[i];
+          this.add(item);
+        }
+      }
+    }
+  }
+};
+AccordionItem = __decorateClass([
+  customElements2("i-accordion-item", {
+    icon: "angle-down",
+    group: GroupType.BASIC,
+    className: "AccordionItem",
+    props: {
+      name: { type: "string", default: "" },
+      defaultExpanded: { type: "boolean", default: false },
+      showRemove: { type: "boolean", default: false }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          title: "Name"
+        },
+        defaultExpanded: {
+          type: "boolean",
+          title: "Default Expanded",
+          default: false
+        },
+        showRemove: {
+          type: "boolean",
+          title: "Show Remove",
+          default: false
+        }
+      }
+    }
+  })
+], AccordionItem);
+
+// packages/accordion/src/accordion.ts
+var Accordion = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+    this._items = [];
+    this._isFlush = false;
+    this.accordionItemMapper = new Map();
+    this.onItemClick = this.onItemClick.bind(this);
+    this.onRemoveClick = this.onRemoveClick.bind(this);
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+  get isFlush() {
+    var _a;
+    return (_a = this._isFlush) != null ? _a : false;
+  }
+  set isFlush(value) {
+    this._isFlush = value != null ? value : false;
+  }
+  get items() {
+    var _a;
+    return (_a = this._items) != null ? _a : [];
+  }
+  set items(value) {
+    this._items = value != null ? value : [];
+    this.wrapper.clearInnerHTML();
+    this.accordionItemMapper = new Map();
+    for (let i = 0; i < this.items.length; i++) {
+      const item = { ...this.items[i] };
+      this.createAccordionItem(item);
+    }
+  }
+  createAccordionItem(item) {
+    var _a;
+    const itemElm = new AccordionItem(this.wrapper, {
+      ...item,
+      class: "accordion-item",
+      onSelected: this.onItemClick,
+      onRemoved: this.onRemoveClick
+    });
+    itemElm.id = (_a = item.id) != null ? _a : itemElm.uuid;
+    this.accordionItemMapper.set(itemElm.id, itemElm);
+    return itemElm;
+  }
+  onItemClick(target) {
+    if (this._designMode)
+      return;
+    const id = target.id;
+    const currentActive = this.accordionItemMapper.get(id);
+    if (this.isFlush) {
+      Array.from(this.accordionItemMapper).forEach((item) => {
+        if (item[0] !== id)
+          item[1].expanded = false;
+      });
+    }
+    if (currentActive)
+      currentActive.expanded = !currentActive.expanded;
+  }
+  async onRemoveClick(target) {
+    if (this._designMode)
+      return;
+    const id = target.id;
+    this.removeItem(id);
+    if (typeof this.onCustomItemRemoved === "function")
+      await this.onCustomItemRemoved(target);
+  }
+  add(item) {
+    const itemElm = this.createAccordionItem(item);
+    this.items.push(item);
+    return itemElm;
+  }
+  updateItemName(id, name) {
+    const item = this.accordionItemMapper.get(id);
+    if (item) {
+      const titleEl = item.querySelector(".accordion-title");
+      if (titleEl)
+        titleEl.caption = name;
+    }
+  }
+  removeItem(id) {
+    const item = this.accordionItemMapper.get(id);
+    if (item) {
+      item.remove();
+      this.accordionItemMapper.delete(id);
+      this._items = this._items.filter((item2) => item2.id !== id);
+    }
+  }
+  clear() {
+    this.wrapper.clearInnerHTML();
+    this.accordionItemMapper = new Map();
+    this.items = [];
+  }
+  appendItem(item) {
+    if (!item.id) {
+      item.id = item.uuid;
+    }
+    this.accordionItemMapper.set(item.id, item);
+    item.onSelected = this.onItemClick;
+    item.onRemoved = this.onRemoveClick;
+    this.wrapper.append(item);
+  }
+  async init() {
+    if (!this.initialized) {
+      let childNodes = [];
+      this.childNodes.forEach((node) => {
+        if (node instanceof AccordionItem) {
+          childNodes.push(node);
+        } else {
+          node.remove();
+        }
+      });
+      const items = this.getAttribute("items", true);
+      const isFlush = this.getAttribute("isFlush", true, false);
+      this.onCustomItemRemoved = this.getAttribute("onCustomItemRemoved", true) || this.onCustomItemRemoved;
+      super.init();
+      this.wrapper = new VStack();
+      this.append(this.wrapper);
+      this.isFlush = isFlush;
+      if (childNodes == null ? void 0 : childNodes.length) {
+        for (let i = 0; i < childNodes.length; i++) {
+          const item = childNodes[i];
+          this.appendItem(item);
+        }
+      }
+      if (items)
+        this.items = items;
+    }
+  }
+};
+Accordion = __decorateClass([
+  customElements2("i-accordion", {
+    icon: "angle-down",
+    group: GroupType.BASIC,
+    className: "Accordion",
+    props: {
+      items: { type: "array" },
+      isFlush: { type: "boolean", default: false }
+    },
+    events: {
+      onCustomItemRemoved: [
+        { name: "item", type: "Control", isControl: true }
+      ]
+    },
+    dataSchema: {
+      type: "object",
+      properties: {
+        isFlush: {
+          type: "boolean",
+          title: "Flush",
+          default: false
+        }
+      }
+    }
+  })
+], Accordion);
 /*!-----------------------------------------------------------
 * Copyright (c) IJS Technologies. All rights reserved.
 * Released under dual AGPLv3/commercial license
