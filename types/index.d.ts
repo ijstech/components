@@ -6368,6 +6368,7 @@ declare module "packages/application/src/jsonUI" {
         $schema?: IJSONSchema4Version | undefined;
         title?: string | undefined;
         description?: string | undefined;
+        tooltip?: string | undefined;
         default?: IJSONSchema4Type | undefined;
         multipleOf?: number | undefined;
         maximum?: number | undefined;
@@ -6461,6 +6462,7 @@ declare module "packages/application/src/jsonUI" {
         } | undefined;
         title?: string | undefined;
         description?: string | undefined;
+        tooltip?: string | undefined;
         default?: IJSONSchema6Type | undefined;
         examples?: IJSONSchema6Type[] | undefined;
         format?: string | undefined;
@@ -6528,6 +6530,7 @@ declare module "packages/application/src/jsonUI" {
         } | undefined;
         title?: string | undefined;
         description?: string | undefined;
+        tooltip?: string | undefined;
         default?: IJSONSchema7Type | undefined;
         readOnly?: boolean | undefined;
         writeOnly?: boolean | undefined;
@@ -9838,13 +9841,15 @@ declare module "packages/code-editor/src/monaco" {
 }
 declare module "packages/code-editor/src/style/code-editor.css" { }
 declare module "packages/code-editor/src/code-editor" {
-    import { Control, ControlElement, notifyEventCallback } from "@ijstech/components/base";
+    import { Control, ControlElement, notifyEventCallback, notifyKeyboardEventCallback } from "@ijstech/components/base";
     import { addLib, addFile, getFileModel, updateFile, LanguageType, Monaco } from "packages/code-editor/src/monaco";
     import * as IMonaco from "packages/code-editor/src/editor.api";
     import "packages/code-editor/src/style/code-editor.css";
     export interface CodeEditorElement extends ControlElement {
         language?: LanguageType;
         onChange?: notifyEventCallback;
+        onKeyDown?: notifyKeyboardEventCallback;
+        onKeyUp?: notifyKeyboardEventCallback;
     }
     global {
         namespace JSX {
@@ -9860,6 +9865,8 @@ declare module "packages/code-editor/src/code-editor" {
         private _value;
         private _options;
         onChange: notifyEventCallback;
+        onKeyDown: notifyKeyboardEventCallback;
+        onKeyUp: notifyKeyboardEventCallback;
         static addLib: typeof addLib;
         static addFile: typeof addFile;
         static getFileModel: typeof getFileModel;
@@ -11790,7 +11797,9 @@ declare module "packages/form/src/types/jsonSchema4" {
         $ref?: string | undefined;
         $schema?: IJSONSchema4Version | undefined;
         title?: string | undefined;
+        placeholder?: string | undefined;
         description?: string | undefined;
+        tooltip?: string | undefined;
         default?: IJSONSchema4Type | undefined;
         multipleOf?: number | undefined;
         maximum?: number | undefined;
@@ -11885,7 +11894,9 @@ declare module "packages/form/src/types/jsonSchema6" {
             [k: string]: IJSONSchema6Definition;
         } | undefined;
         title?: string | undefined;
+        placeholder?: string | undefined;
         description?: string | undefined;
+        tooltip?: string | undefined;
         default?: IJSONSchema6Type | undefined;
         examples?: IJSONSchema6Type[] | undefined;
         format?: string | undefined;
@@ -11954,7 +11965,9 @@ declare module "packages/form/src/types/jsonSchema7" {
             [key: string]: IJSONSchema7Definition;
         } | undefined;
         title?: string | undefined;
+        placeholder?: string | undefined;
         description?: string | undefined;
+        tooltip?: string | undefined;
         default?: IJSONSchema7Type | undefined;
         readOnly?: boolean | undefined;
         writeOnly?: boolean | undefined;
@@ -12078,6 +12091,7 @@ declare module "packages/form/src/form" {
         getFormData(isErrorShown?: boolean): Promise<any>;
         private getDataBySchema;
         private isNumber;
+        private findTabByElm;
         renderForm(): void;
         private renderFormByJSONSchema;
         private replacePhrase;

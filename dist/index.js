@@ -28830,6 +28830,7 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
     const labelName = schema.title || (scope != "#/" ? convertFieldNameToLabel(currentField) : "");
     const columnWidth = options.columnWidth ? options.columnWidth : "100px";
     const idxScope = idx !== void 0 ? `${scope}_${idx}` : scope;
+    const tooltip = schema.tooltip;
     let isRequired = false;
     let arrRequired = [];
     if (typeof schema.required === "boolean") {
@@ -28852,11 +28853,20 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         }
       }
       const groupPnl = new Panel();
-      const hStack = new HStack(groupPnl, { gap: 2 });
+      const hStack = new HStack(groupPnl, { alignItems: "center", gap: 2 });
       if (!isArray) {
         new Label(hStack, { caption: labelName });
         if (isRequired) {
           new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+        }
+        if (tooltip) {
+          new Icon(hStack, {
+            width: "1rem",
+            height: "1rem",
+            name: "info-circle",
+            margin: { left: 2 },
+            tooltip: { content: tooltip, placement: "bottom" }
+          });
         }
       }
       const controlPnl = new Panel(groupPnl);
@@ -28884,11 +28894,20 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         if (schema.format === "date-time")
           datePickerType = "dateTime";
         const groupPnl = new Panel();
-        const hStack = new HStack(groupPnl, { gap: 2 });
+        const hStack = new HStack(groupPnl, { alignItems: "center", gap: 2 });
         if (!isArray) {
           new Label(hStack, { caption: labelName });
           if (isRequired) {
             new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+          }
+          if (tooltip) {
+            new Icon(hStack, {
+              width: "1rem",
+              height: "1rem",
+              name: "info-circle",
+              margin: { left: 2 },
+              tooltip: { content: tooltip, placement: "bottom" }
+            });
           }
         }
         const controlPnl = new Panel(groupPnl);
@@ -28920,11 +28939,20 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         return groupPnl;
       } else if (schema.format === "data-url") {
         const groupPnl = new Panel();
-        const hStack = new HStack(groupPnl, { gap: 2 });
+        const hStack = new HStack(groupPnl, { alignItems: "center", gap: 2 });
         if (!isArray) {
           new Label(hStack, { caption: labelName });
           if (isRequired) {
             new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+          }
+          if (tooltip) {
+            new Icon(hStack, {
+              width: "1rem",
+              height: "1rem",
+              name: "info-circle",
+              margin: { left: 2 },
+              tooltip: { content: tooltip, placement: "bottom" }
+            });
           }
         }
         const controlPnl = new Panel(groupPnl);
@@ -28942,11 +28970,20 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         return groupPnl;
       } else {
         const groupPnl = new Panel();
-        const hStack = new HStack(groupPnl, { gap: 2 });
+        const hStack = new HStack(groupPnl, { alignItems: "center", gap: 2 });
         if (!isArray) {
           new Label(hStack, { caption: labelName });
           if (isRequired) {
             new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+          }
+          if (tooltip) {
+            new Icon(hStack, {
+              width: "1rem",
+              height: "1rem",
+              name: "info-circle",
+              margin: { left: 2 },
+              tooltip: { content: tooltip, placement: "bottom" }
+            });
           }
         }
         const controlPnl = new Panel(groupPnl);
@@ -28974,11 +29011,20 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
       }
     } else if (["integer", "number"].indexOf(((_a = schema.type) == null ? void 0 : _a.toString()) || "") >= 0) {
       const groupPnl = new Panel();
-      const hStack = new HStack(groupPnl, { gap: 2 });
+      const hStack = new HStack(groupPnl, { alignItems: "center", gap: 2 });
       if (!isArray) {
         new Label(hStack, { caption: labelName });
         if (isRequired) {
           new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+        }
+        if (tooltip) {
+          new Icon(hStack, {
+            width: "1rem",
+            height: "1rem",
+            name: "info-circle",
+            margin: { left: 2 },
+            tooltip: { content: tooltip, placement: "bottom" }
+          });
         }
       }
       const controlPnl = new Panel(groupPnl);
@@ -29005,11 +29051,20 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
     } else if (schema.type === "boolean") {
       const groupPnl = new Panel();
       groupPnl.classList.add(jsonUICheckboxStyle);
-      const hStack = new HStack(groupPnl, { gap: 2 });
+      const hStack = new HStack(groupPnl, { alignItems: "center", gap: 2 });
       if (!isArray) {
         new Label(hStack, { caption: labelName });
         if (isRequired) {
           new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+        }
+        if (tooltip) {
+          new Icon(hStack, {
+            width: "1rem",
+            height: "1rem",
+            name: "info-circle",
+            margin: { left: 2 },
+            tooltip: { content: tooltip, placement: "bottom" }
+          });
         }
       }
       const controlPnl = new Panel(groupPnl);
@@ -29076,10 +29131,19 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
             }
           }
         });
-        const hStack = new HStack(pnl, { gap: 2 });
+        const hStack = new HStack(pnl, { alignItems: "center", gap: 2 });
         new Label(hStack, { caption: labelName, font: { size: "1.6rem" } });
         if (isRequired) {
           new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+        }
+        if (tooltip) {
+          new Icon(hStack, {
+            width: "1rem",
+            height: "1rem",
+            name: "info-circle",
+            margin: { left: 2 },
+            tooltip: { content: tooltip, placement: "bottom" }
+          });
         }
       }
       for (const propertyName in properties) {
@@ -29136,10 +29200,19 @@ function renderUI(target, options, confirmCallback, valueChangedCallback) {
         alignItems: "center",
         backgroundColor: "transparent"
       });
-      const hStack = new HStack(pnlTitle, { gap: 2 });
+      const hStack = new HStack(pnlTitle, { alignItems: "center", gap: 2 });
       new Label(hStack, { caption: labelName, font: { size: "1rem" } });
       if (isRequired) {
         new Label(hStack, { caption: "*", font: { color: "#ff0000" } });
+      }
+      if (tooltip) {
+        new Icon(hStack, {
+          width: "1rem",
+          height: "1rem",
+          name: "info-circle",
+          margin: { left: 2 },
+          tooltip: { content: tooltip, placement: "bottom" }
+        });
       }
       const btnAdd = new Icon(new Panel(pnlTitle), {
         name: "plus",
@@ -31333,7 +31406,12 @@ var Alert = class extends Control {
         caption: "Cancel",
         font: { color: theme_exports.ThemeVars.colors.secondary.contrastText },
         background: { color: theme_exports.ThemeVars.colors.secondary.main },
-        onClick: () => this.closeModal()
+        onClick: () => {
+          if (typeof this.onClose === "function") {
+            this.onClose();
+          }
+          this.closeModal();
+        }
       });
       new Button(hStack, {
         padding: {
@@ -31345,7 +31423,7 @@ var Alert = class extends Control {
         caption: "Confirm",
         font: { color: theme_exports.ThemeVars.colors.primary.contrastText },
         onClick: () => {
-          if (this.onConfirm) {
+          if (typeof this.onConfirm === "function") {
             this.onConfirm();
           }
           this.closeModal();
@@ -31361,7 +31439,12 @@ var Alert = class extends Control {
         },
         caption: "Close",
         font: { color: theme_exports.ThemeVars.colors.primary.contrastText },
-        onClick: () => this.closeModal()
+        onClick: () => {
+          if (typeof this.onClose === "function") {
+            this.onClose();
+          }
+          this.closeModal();
+        }
       });
     }
   }
@@ -31722,6 +31805,16 @@ var CodeEditor = class extends Control {
         if (typeof this.onChange === "function")
           this.onChange(this, event);
       });
+      this._editor.onKeyDown((event) => {
+        if (typeof this.onKeyDown === "function") {
+          this.onKeyDown(this, event);
+        }
+      });
+      this._editor.onKeyUp((event) => {
+        if (typeof this.onKeyUp === "function") {
+          this.onKeyUp(this, event);
+        }
+      });
       if (fileName) {
         let model = await getFileModel(fileName);
         if (model) {
@@ -31832,9 +31925,17 @@ CodeEditor = __decorateClass([
       }
     },
     events: {
-      onchange: [
+      onChange: [
         { name: "target", type: "Control", isControl: true },
         { name: "event", type: "Event" }
+      ],
+      onKeyDown: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "KeyboardEvent" }
+      ],
+      onKeyUp: [
+        { name: "target", type: "Control", isControl: true },
+        { name: "event", type: "KeyboardEvent" }
       ]
     },
     dataSchema: {
@@ -37088,6 +37189,8 @@ var Module = class extends Container {
         modal.linkTo = options.linkTo;
       modal.showBackdrop = (_a = options == null ? void 0 : options.showBackdrop) != null ? _a : true;
       modal.visible = true;
+      document.body.appendChild(modal);
+      Module._modalMap[this.uuid] = modal;
       return modal;
     }
     const showBackdrop = (_b = options == null ? void 0 : options.showBackdrop) != null ? _b : true;
@@ -44357,9 +44460,11 @@ var Form = class extends Control {
         if (!lbError)
           return;
         if (err) {
+          lbError.setAttribute("is-visibile", "");
           lbError.caption = `${caption || ""} ${err.message}`;
           lbError.visible = true;
         } else {
+          lbError.removeAttribute("is-visibile");
           lbError.caption = "";
           lbError.visible = false;
         }
@@ -44395,6 +44500,7 @@ var Form = class extends Control {
             description.visible = false;
           }
           if (error) {
+            error.setAttribute("is-visibile", "");
             error.caption = `${isNonObject ? "Item" : caption || ""} ${errMsg}`;
             error.visible = true;
           }
@@ -44403,6 +44509,7 @@ var Form = class extends Control {
             description.visible = true;
           }
           if (error) {
+            error.removeAttribute("is-visibile");
             error.caption = "";
             error.visible = false;
           }
@@ -44444,6 +44551,7 @@ var Form = class extends Control {
       const { input, error } = control;
       if (input) {
         if (error) {
+          error.removeAttribute("is-visible");
           error.caption = "";
           error.visible = false;
         }
@@ -44510,12 +44618,7 @@ var Form = class extends Control {
           grid.clearInnerHTML();
           for (const data of value) {
             const schema = (_c = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _c.items;
-            this.renderCard({
-              parent: grid,
-              scope,
-              schema,
-              options: {}
-            });
+            this.renderCard({ parent: grid, scope, schema, options: {} });
           }
           const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
           if (listItems && listItems.length > 0) {
@@ -44815,6 +44918,28 @@ var Form = class extends Control {
     }
     return true;
   }
+  findTabByElm(elm) {
+    const wrapper = elm.closest(".content-pane");
+    if (wrapper && this.contains(wrapper)) {
+      const tabsContent = wrapper.closest(".tabs-content");
+      if (tabsContent) {
+        let wrapperIdx = -1;
+        for (let i = 0; i < tabsContent.childElementCount; i++) {
+          if (wrapper === tabsContent.childNodes[i]) {
+            wrapperIdx = i;
+            break;
+          }
+        }
+        if (wrapperIdx > -1) {
+          const tabs = tabsContent.closest("i-tabs");
+          if (tabs) {
+            tabs.activeTabIndex = wrapperIdx;
+            this.findTabByElm(tabs);
+          }
+        }
+      }
+    }
+  }
   renderForm() {
     var _a, _b, _c;
     this.clearInnerHTML();
@@ -44879,8 +45004,14 @@ var Form = class extends Control {
         this.validationData = await this.getFormData();
         this.validationResult = this.validate(this.validationData, this._jsonSchema, { changing: false });
         await this.getFormData(true);
-        if (((_a2 = this.validationResult) == null ? void 0 : _a2.valid) && ((_b2 = this._formOptions.confirmButtonOptions) == null ? void 0 : _b2.onClick))
+        if (this.validationResult && !this.validationResult.valid && this.uiSchema) {
+          const firstErrorElement = this.querySelector('i-label[role="error"][is-visibile]');
+          if (firstErrorElement) {
+            this.findTabByElm(firstErrorElement);
+          }
+        } else if (((_a2 = this.validationResult) == null ? void 0 : _a2.valid) && ((_b2 = this._formOptions.confirmButtonOptions) == null ? void 0 : _b2.onClick)) {
           this._formOptions.confirmButtonOptions.onClick(target, event);
+        }
         this.validationData = null;
         this.validationResult = null;
       };
@@ -44910,6 +45041,8 @@ var Form = class extends Control {
     const controlOptions = {
       caption: labelName,
       description: schema.description,
+      tooltip: schema.tooltip,
+      placeholder: schema.placeholder,
       columnWidth,
       readOnly: schema.readOnly,
       required: isRequired,
@@ -44935,6 +45068,9 @@ var Form = class extends Control {
         }
         control.onChanged = () => {
           this.validateOnValueChanged(control, parent, customControlScope, labelName);
+          if (this._formOptions.onChange) {
+            this._formOptions.onChange(control, customRenderer.getData(control));
+          }
         };
         let label;
         if (!hideLabel) {
@@ -45418,6 +45554,7 @@ var Form = class extends Control {
     let label;
     if (type === "caption") {
       const hstack = new HStack(parent, {
+        alignItems: "center",
         gap: 2,
         width: "100%"
       });
@@ -45428,6 +45565,15 @@ var Form = class extends Control {
         new Label(hstack, {
           caption: "*",
           font: { color: "#ff0000" }
+        });
+      }
+      if (options.tooltip) {
+        new Icon(hstack, {
+          width: "1rem",
+          height: "1rem",
+          name: "info-circle",
+          margin: { left: 2 },
+          tooltip: { content: options.tooltip, placement: "bottom" }
         });
       }
     } else if (type === "description") {
@@ -45478,6 +45624,9 @@ var Form = class extends Control {
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
     }
+    if (options.placeholder !== void 0) {
+      input.setAttribute("placeholder", options.placeholder);
+    }
     input.classList.add(inputStyle);
     const description = this.renderLabel({ parent: vstack, options, type: "description" });
     const error = this.renderLabel({ parent: vstack, options, type: "error" });
@@ -45522,6 +45671,9 @@ var Form = class extends Control {
     input.setAttribute("dataType", "number");
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
+    }
+    if (options.placeholder !== void 0) {
+      input.setAttribute("placeholder", options.placeholder);
     }
     input.classList.add(inputStyle);
     const description = this.renderLabel({ parent: vstack, options, type: "description" });
@@ -45569,6 +45721,9 @@ var Form = class extends Control {
     input.setAttribute("dataType", "string");
     if (options.readOnly !== void 0) {
       input.setAttribute("readOnly", options.readOnly.toString());
+    }
+    if (options.placeholder !== void 0) {
+      input.setAttribute("placeholder", options.placeholder);
     }
     input.classList.add(inputStyle);
     const description = this.renderLabel({ parent: vstack, options, type: "description" });
@@ -45860,6 +46015,7 @@ var Form = class extends Control {
       });
     }
     const btnAdd = new Button(header, { caption: "Add" });
+    btnAdd.setAttribute("action", "add");
     btnAdd.prepend(new Icon(void 0, {
       name: "plus",
       width: "1em",
@@ -45887,10 +46043,19 @@ var Form = class extends Control {
     };
   }
   renderCard(cardOption) {
-    const { parent, scope, schema, options, uiSchema, elementLabelProp } = cardOption;
+    const { parent, scope, schema, options, uiSchema, elementLabelProp, btnAdd } = cardOption;
     if (!schema.type)
       return;
     const isVertical = parent.getAttribute("layout") === "Vertical";
+    const setEnableBtnAdd = () => {
+      var _a;
+      if (schema.maxItems) {
+        let _btnAdd = btnAdd || ((_a = parent.parentElement) == null ? void 0 : _a.querySelector('[action="add"]'));
+        if (_btnAdd) {
+          _btnAdd.enabled = parent.childElementCount < schema.maxItems;
+        }
+      }
+    };
     if (schema.type === "object") {
       let hasSubLevel = !!Object.values(schema.properties).find((value) => value.type === "object");
       if (!hasSubLevel) {
@@ -45921,6 +46086,10 @@ var Form = class extends Control {
           btnDelete.classList.add(listItemBtnDelete);
           btnDelete.onClick = () => {
             row.remove();
+            setEnableBtnAdd();
+            if (this._formOptions.onChange) {
+              this._formOptions.onChange(parent);
+            }
           };
           for (const fieldName in schema.properties) {
             const property = schema.properties[fieldName];
@@ -45937,6 +46106,10 @@ var Form = class extends Control {
           btnDelete.classList.add(listItemBtnDelete);
           btnDelete.onClick = () => {
             row.remove();
+            if (this._formOptions.onChange) {
+              this._formOptions.onChange(parent);
+            }
+            setEnableBtnAdd();
           };
         }
       } else {
@@ -45958,6 +46131,10 @@ var Form = class extends Control {
         btnDelete.classList.add(listItemBtnDelete);
         btnDelete.onClick = () => {
           card.remove();
+          if (this._formOptions.onChange) {
+            this._formOptions.onChange(parent);
+          }
+          setEnableBtnAdd();
         };
         btnCollapse.classList.add(listItemBtnDelete);
         if (uiSchema) {
@@ -45987,8 +46164,13 @@ var Form = class extends Control {
       btnDelete.classList.add(listItemBtnDelete);
       btnDelete.onClick = () => {
         row.remove();
+        if (this._formOptions.onChange) {
+          this._formOptions.onChange(parent);
+        }
+        setEnableBtnAdd();
       };
     }
+    setEnableBtnAdd();
   }
   checkPropertyChange(value, schema, property) {
     return this.validate(value, schema, { changing: property || "property" });
