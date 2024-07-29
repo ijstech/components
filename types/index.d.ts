@@ -4351,6 +4351,7 @@ declare module "packages/image/src/image" {
         private _fallbackUrl;
         private _objectFit;
         private _borderValue;
+        private _usedFallback;
         constructor(parent?: Control, options?: any);
         get fallbackUrl(): string;
         set fallbackUrl(value: string);
@@ -5186,26 +5187,29 @@ declare module "packages/layout/src/grid" {
         templateColumns?: string[];
         templateRows?: string[];
         templateAreas?: string[][];
+        justifyContent?: GridLayoutJustifyContentType;
         display?: DisplayType;
         gap?: IGap;
         background?: IBackground;
     }
     export type IGridLayoutMediaQuery = IMediaQuery<IGridLayoutMediaQueryProps>;
     export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
+    export type GridLayoutJustifyContentType = "start" | "center" | "end" | "space-between" | "space-around" | "space-evenly";
     export type GridLayoutVerticalAlignmentType = "stretch" | "start" | "end" | "center" | "baseline";
     export interface GridLayoutElement extends ControlElement {
-        templateColumns?: string[];
-        templateRows?: string[];
-        templateAreas?: string[][];
-        display?: DisplayType;
         autoColumnSize?: string;
+        autoFillInHoles?: boolean;
         autoRowSize?: string;
         columnsPerRow?: number;
+        display?: DisplayType;
         gap?: IGap;
         horizontalAlignment?: GridLayoutHorizontalAlignmentType;
-        verticalAlignment?: GridLayoutVerticalAlignmentType;
-        autoFillInHoles?: boolean;
+        justifyContent?: GridLayoutJustifyContentType;
         mediaQueries?: IGridLayoutMediaQuery[];
+        templateAreas?: string[][];
+        templateColumns?: string[];
+        templateRows?: string[];
+        verticalAlignment?: GridLayoutVerticalAlignmentType;
     }
     export const gridSchemaProps: any;
     export const gridProps: any;
@@ -5222,6 +5226,7 @@ declare module "packages/layout/src/grid" {
         private _autoFillInHoles;
         private _mediaQueries;
         private _styleClassMap;
+        private _justifyContent;
         constructor(parent?: Control, options?: any);
         static create(options?: GridLayoutElement, parent?: Container): Promise<GridLayout>;
         get templateColumns(): string[];
@@ -5240,6 +5245,10 @@ declare module "packages/layout/src/grid" {
         set gap(value: IGap);
         get horizontalAlignment(): GridLayoutHorizontalAlignmentType;
         set horizontalAlignment(value: GridLayoutHorizontalAlignmentType);
+        protected removeStyle<P extends keyof GridLayout>(propertyName: P): void;
+        protected setStyle<P extends keyof GridLayout>(propertyName: P, value: string): void;
+        get justifyContent(): GridLayoutJustifyContentType;
+        set justifyContent(value: GridLayoutJustifyContentType);
         get verticalAlignment(): GridLayoutVerticalAlignmentType;
         set verticalAlignment(value: GridLayoutVerticalAlignmentType);
         get autoFillInHoles(): boolean;
@@ -9836,6 +9845,7 @@ declare module "packages/code-editor/src/monaco" {
     export function addFile(fileName: string, content: string): Promise<IMonaco.editor.ITextModel | null>;
     export function updateFile(fileName: string, content: string): Promise<IMonaco.editor.ITextModel | null>;
     export function getFileModel(fileName: string): Promise<IMonaco.editor.ITextModel | null>;
+    export function getModels(): Promise<IMonaco.editor.ITextModel[] | undefined>;
     export function addLib(lib: string, dts: string): Promise<void>;
     export function initMonaco(): Promise<Monaco>;
 }
@@ -9883,6 +9893,7 @@ declare module "packages/code-editor/src/code-editor" {
         loadContent(content?: string, language?: LanguageType, fileName?: string): Promise<void>;
         updateFileName(oldValue: string, newValue: string): Promise<void>;
         dispose(): void;
+        disposeEditor(): Promise<void>;
         scrollToLine(line: number, column: number): void;
         loadFile(fileName: string): Promise<void>;
         updateOptions(options: IMonaco.editor.IEditorOptions): void;
@@ -9927,6 +9938,8 @@ declare module "packages/code-editor/src/diff-editor" {
         get editor(): IMonaco.editor.IDiffEditor;
         get language(): LanguageType;
         set language(value: LanguageType);
+        get designMode(): boolean;
+        set designMode(value: boolean);
         setModelLanguage(value: LanguageType, functionName: 'getModifiedEditor' | 'getOriginalEditor'): void;
         dispose(): void;
         updateFileName(): void;
@@ -12061,7 +12074,7 @@ declare module "packages/form/src/form" {
         };
         customControls?: {
             [key: string]: {
-                render: () => Control;
+                render: (parent?: Control) => Control;
                 getData: (control: Control) => any;
                 setData: (control: Control, value: any, rowData?: any) => void;
             };

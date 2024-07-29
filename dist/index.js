@@ -19473,6 +19473,7 @@ var Image2 = class extends Control {
   constructor(parent, options) {
     super(parent, options);
     this._rotate = 0;
+    this._usedFallback = false;
   }
   get fallbackUrl() {
     return this._fallbackUrl;
@@ -19507,8 +19508,10 @@ var Image2 = class extends Control {
     this.imageElm.style.display = "none";
     const self = this;
     this.imageElm.onerror = function() {
-      if (self._fallbackUrl)
+      if (self._fallbackUrl && !self._usedFallback) {
         this.src = self._fallbackUrl;
+        self._usedFallback = true;
+      }
     };
     this.imageElm.onload = function() {
       self.imageElm.style.display = "";
@@ -19963,10 +19966,12 @@ var Label = class extends Text {
     super(parent, options);
   }
   get caption() {
-    return this.captionSpan.innerHTML;
+    var _a;
+    return ((_a = this.captionSpan) == null ? void 0 : _a.innerHTML) || "";
   }
   set caption(value) {
-    this.captionSpan.innerHTML = value || "";
+    if (this.captionSpan)
+      this.captionSpan.innerHTML = value || "";
   }
   get link() {
     if (!this._link) {
@@ -20873,6 +20878,44 @@ var GridLayout = class extends Container {
     this._horizontalAlignment = value;
     this.style.justifyItems = value;
   }
+  removeStyle(propertyName) {
+    let style2 = this.propertyClassMap[propertyName];
+    if (style2)
+      this.classList.remove(style2);
+  }
+  setStyle(propertyName, value) {
+    this.removeStyle(propertyName);
+    if (value) {
+      this.propertyClassMap[propertyName] = value;
+      this.classList.add(value);
+    }
+  }
+  get justifyContent() {
+    return this._justifyContent;
+  }
+  set justifyContent(value) {
+    this._justifyContent = value || "start";
+    switch (this._justifyContent) {
+      case "start":
+        this.setStyle("justifyContent", justifyContentStartStyle);
+        break;
+      case "center":
+        this.setStyle("justifyContent", justifyContentCenterStyle);
+        break;
+      case "end":
+        this.setStyle("justifyContent", justifyContentEndStyle);
+        break;
+      case "space-between":
+        this.setStyle("justifyContent", justifyContentSpaceBetweenStyle);
+        break;
+      case "space-around":
+        this.setStyle("justifyContent", justifyContentSpaceAroundStyle);
+        break;
+      case "space-evenly":
+        this.setStyle("justifyContent", justifyContentSpaceEvenlyStyle);
+        break;
+    }
+  }
   get verticalAlignment() {
     return this._verticalAlignment;
   }
@@ -20899,9 +20942,6 @@ var GridLayout = class extends Container {
   }
   setAttributeToProperty(propertyName) {
     const prop = this.getAttribute(propertyName, true);
-    if (this.id == "thisPnl") {
-      console.log(propertyName, prop);
-    }
     if (prop)
       this[propertyName] = prop;
   }
@@ -20926,6 +20966,7 @@ var GridLayout = class extends Container {
     this.setAttributeToProperty("autoColumnSize");
     this.setAttributeToProperty("autoRowSize");
     this.setAttributeToProperty("mediaQueries");
+    this.setAttributeToProperty("justifyContent");
   }
 };
 GridLayout = __decorateClass([
@@ -21782,9 +21823,12 @@ var Button = class extends Control {
     super(parent, options);
   }
   get caption() {
-    return this.captionElm.innerHTML;
+    var _a;
+    return ((_a = this.captionElm) == null ? void 0 : _a.innerHTML) || "";
   }
   set caption(value) {
+    if (!this.captionElm)
+      return;
     this.captionElm.innerHTML = value;
     this.captionElm.style.display = value ? "" : "none";
   }
@@ -24698,6 +24742,11 @@ var Tabs = class extends Container {
         }
       }
     }
+    tab.ondragstart = null;
+    tab.controls.forEach((c) => {
+      c.parent = void 0;
+      c.remove();
+    });
     tab.remove();
   }
   appendTab(tab) {
@@ -27936,7 +27985,8 @@ var Input = class extends Control {
       if (value == null)
         value = "";
       this._value = value;
-      this.inputElm.value = value;
+      if (this.inputElm)
+        this.inputElm.value = value;
       if (this.clearIconElm) {
         if (this._showClearButton && value) {
           this.clearIconElm.classList.add("active");
@@ -31589,6 +31639,12 @@ async function getFileModel(fileName) {
   ;
   return null;
 }
+async function getModels() {
+  let monaco = await initMonaco();
+  if (monaco) {
+    return monaco.editor.getModels();
+  }
+}
 async function addLib(lib, dts) {
   let monaco = await initMonaco();
   monaco.languages.typescript.typescriptDefaults.addExtraLib(dts, lib);
@@ -31838,8 +31894,9 @@ var CodeEditor = class extends Control {
         if (!this._fileName)
           model.dispose();
         model = await getFileModel(fileName);
-        if (!model)
+        if (!model) {
           model = monaco.editor.createModel(content || this._value || "", "typescript", monaco.Uri.file(fileName));
+        }
         this._editor.setModel(model);
       } else {
         this._editor.setValue(content);
@@ -31872,6 +31929,24 @@ var CodeEditor = class extends Control {
     var _a;
     if (this._editor) {
       (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
+    }
+  }
+  async disposeEditor() {
+    var _a;
+    if (this._editor) {
+      (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
+      const models = await getModels() || [];
+      for (let i = 0; i < models.length; i++) {
+        const model = models[i];
+        model.dispose();
+      }
+      this._editor.dispose();
+      const domNode = this._editor.getDomNode();
+      if (domNode) {
+        if (this.contains(domNode))
+          this.removeChild(domNode);
+        domNode.remove();
+      }
     }
   }
   scrollToLine(line2, column) {
@@ -31982,6 +32057,14 @@ var CodeDiffEditor = class extends Control {
       this.setModelLanguage(value, "getModifiedEditor");
     }
   }
+  get designMode() {
+    return this._designMode;
+  }
+  set designMode(value) {
+    this._designMode = value;
+    if (this.editor)
+      this.editor.updateOptions({ readOnly: value });
+  }
   setModelLanguage(value, functionName) {
     let monaco = window.monaco;
     let model = this.editor[functionName]().getModel();
@@ -32032,7 +32115,8 @@ var CodeDiffEditor = class extends Control {
       let options = {
         theme: "vs-dark",
         originalEditable: false,
-        automaticLayout: true
+        automaticLayout: true,
+        readOnly: this._designMode
       };
       this._editor = monaco.editor.createDiffEditor(captionDiv, options);
       (_a = this._editor.getModifiedEditor()) == null ? void 0 : _a.onDidChangeModelContent((event) => {
@@ -44438,15 +44522,24 @@ var Form = class extends Control {
           const matches = property.match(regex);
           return matches || [];
         };
+        let nestedScopeKeys = _scope.replace(/\/properties/g, "").split("/");
+        parentFields.forEach((field) => {
+          const idx = nestedScopeKeys.findIndex((v) => v === field.key);
+          if (idx > -1) {
+            nestedScopeKeys[idx + 1] = `${nestedScopeKeys[idx + 1]}_${field.idx + 1}`;
+          }
+        });
+        let nestedScope = nestedScopeKeys.join("/properties/");
         if (parentFields[0]) {
           _scope = `${_scope}_${parentFields[0].idx + 1}`;
         }
+        nestedScope = nestedScope.replace("#", "");
         _scope = _scope.replace("#", "");
         const parentControl = currentControl.parentElement;
-        const lbError = (parentControl == null ? void 0 : parentControl.querySelector('[role="error"]')) || parent.querySelector('[role="error"]');
+        const lbError = (parentControl == null ? void 0 : parentControl.querySelector('[role="error"]')) || parent.querySelector('[role="error"]') || parent;
         const err = validationResult.errors.find((f) => {
           const listFields = getListFields(f.property).reverse();
-          if (f.scope.endsWith(_scope) || f.scope.endsWith(scopeWithoutIdx)) {
+          if (f.scope.endsWith(_scope) || f.scope.endsWith(nestedScope) || f.scope.endsWith(scopeWithoutIdx)) {
             for (let idx = 0; idx < listFields.length; idx++) {
               const fld = listFields[idx];
               const parentFld = parentFields[idx];
@@ -44460,11 +44553,11 @@ var Form = class extends Control {
         if (!lbError)
           return;
         if (err) {
-          lbError.setAttribute("is-visibile", "");
+          lbError.setAttribute("is-visible", "");
           lbError.caption = `${caption || ""} ${err.message}`;
           lbError.visible = true;
         } else {
-          lbError.removeAttribute("is-visibile");
+          lbError.removeAttribute("is-visible");
           lbError.caption = "";
           lbError.visible = false;
         }
@@ -44500,7 +44593,7 @@ var Form = class extends Control {
             description.visible = false;
           }
           if (error) {
-            error.setAttribute("is-visibile", "");
+            error.setAttribute("is-visible", "");
             error.caption = `${isNonObject ? "Item" : caption || ""} ${errMsg}`;
             error.visible = true;
           }
@@ -44509,7 +44602,7 @@ var Form = class extends Control {
             description.visible = true;
           }
           if (error) {
-            error.removeAttribute("is-visibile");
+            error.removeAttribute("is-visible");
             error.caption = "";
             error.visible = false;
           }
@@ -45005,7 +45098,7 @@ var Form = class extends Control {
         this.validationResult = this.validate(this.validationData, this._jsonSchema, { changing: false });
         await this.getFormData(true);
         if (this.validationResult && !this.validationResult.valid && this.uiSchema) {
-          const firstErrorElement = this.querySelector('i-label[role="error"][is-visibile]');
+          const firstErrorElement = this.querySelector('i-label[role="error"][is-visible]');
           if (firstErrorElement) {
             this.findTabByElm(firstErrorElement);
           }
@@ -45059,7 +45152,7 @@ var Form = class extends Control {
           width: controlOptions.columnWidth
         });
         wrapper.classList.add(formGroupStyle);
-        const control = customRenderer.render();
+        const control = customRenderer.render(parent);
         control.setAttribute("custom-control", customControlScope);
         control.setAttribute("field", scope.substr(scope.lastIndexOf("/") + 1));
         control.setAttribute("role", "field");
@@ -45176,7 +45269,7 @@ var Form = class extends Control {
       if (typeof schema.items === "object" && !(schema.items instanceof Array)) {
         if (schema.items.type === "object") {
           const properties = schema.items.properties;
-          let hasSublevel = Object.values(properties).find((value) => value.type === "object");
+          let hasSublevel = Object.values(properties).find((value) => value.type === "object" || value.type === "array");
           if (!hasSublevel && !isVertical) {
             const templateColumns = [];
             for (let i = 0; i < Object.values(properties).length; i++)
@@ -46057,10 +46150,11 @@ var Form = class extends Control {
       }
     };
     if (schema.type === "object") {
-      let hasSubLevel = !!Object.values(schema.properties).find((value) => value.type === "object");
+      const properties = schema.properties;
+      let hasSubLevel = !!Object.values(properties).find((value) => value.type === "object" || value.type === "array");
       if (!hasSubLevel) {
         const templates = [];
-        for (let i = 0; i < Object.values(schema.properties).length; i++) {
+        for (let i = 0; i < Object.values(properties).length; i++) {
           templates.push("1fr");
         }
         if (!isVertical) {
@@ -46091,13 +46185,13 @@ var Form = class extends Control {
               this._formOptions.onChange(parent);
             }
           };
-          for (const fieldName in schema.properties) {
-            const property = schema.properties[fieldName];
+          for (const fieldName in properties) {
+            const property = properties[fieldName];
             this.renderFormByJSONSchema(row, property, `#/properties/${fieldName}`, false, false, { parentProp: scope });
           }
         } else {
-          for (const fieldName in schema.properties) {
-            const property = schema.properties[fieldName];
+          for (const fieldName in properties) {
+            const property = properties[fieldName];
             this.renderFormByJSONSchema(row, property, `#/properties/${fieldName}`, !hasSubLevel, false, { parentProp: scope });
           }
           const btnDelete = new Icon(row, {
@@ -46137,7 +46231,7 @@ var Form = class extends Control {
           setEnableBtnAdd();
         };
         btnCollapse.classList.add(listItemBtnDelete);
-        if (uiSchema) {
+        if (uiSchema && uiSchema.elements) {
           this.renderFormByUISchema(bodyStack, uiSchema, null, schema, elementLabelProp, labelProp);
         } else {
           this.renderFormByJSONSchema(bodyStack, schema, `${scope}/items`, true, hasSubLevel, { elementLabelProp, parentProp: scope });
