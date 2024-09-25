@@ -10153,9 +10153,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// node_modules/moment/moment.js
+// ../../node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "node_modules/moment/moment.js"(exports, module2) {
+  "../../node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -15767,7 +15767,7 @@ var Component = class extends HTMLElement {
       let propInfo = this._propInfo || getCustomElementProperties(this.tagName);
       this._propInfo = propInfo;
       if (propInfo && propInfo.props[prop] && prop !== "mediaQueries") {
-        if (!["link", "icon", "image", "rightIcon"].includes(prop)) {
+        if (!["link", "icon", "image", "rightIcon", "closeIcon"].includes(prop)) {
           this[prop] = breakpointProp != null ? breakpointProp : value;
         }
       }
@@ -16196,7 +16196,7 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
           overflow,
           background,
           grid,
-          zIndex,
+          zIndex: zIndex2,
           top,
           left,
           right,
@@ -16277,8 +16277,8 @@ var getControlMediaQueriesStyle = (mediaQueries, props) => {
         if (position) {
           styleObj["$nest"][mediaQueryRule]["position"] = `${position} !important`;
         }
-        if (zIndex !== void 0 && zIndex !== null) {
-          styleObj["$nest"][mediaQueryRule]["zIndex"] = `${zIndex} !important`;
+        if (zIndex2 !== void 0 && zIndex2 !== null) {
+          styleObj["$nest"][mediaQueryRule]["zIndex"] = `${zIndex2} !important`;
         }
         if (top !== void 0 && top !== null) {
           styleObj["$nest"][mediaQueryRule]["top"] = `${getSpacingValue(top)} !important`;
@@ -16654,6 +16654,15 @@ var Tooltip = class {
     if (this.tooltipElm)
       this.tooltipElm.classList.add(`ii-tooltip-${this.placement}`);
   }
+  get duration() {
+    return this._duration;
+  }
+  set duration(value) {
+    this._duration = value;
+  }
+  get isSmallScreen() {
+    return screen.width <= 1024;
+  }
   get maxWidth() {
     return this._maxWidth;
   }
@@ -16678,7 +16687,7 @@ var Tooltip = class {
       clearTimeout(this.timeout);
       if (this.tooltipElm && document.body.contains(this.tooltipElm))
         document.body.removeChild(this.tooltipElm);
-    }, 200);
+    }, this.duration || 2e3);
   }
   renderTooltip() {
     this.tooltipElm = document.createElement("div");
@@ -16709,7 +16718,7 @@ var Tooltip = class {
     source.addEventListener("mousedown", (e) => {
       if (!this.content)
         return;
-      if (this.trigger === "click") {
+      if (this.trigger === "click" || this.isSmallScreen) {
         this.onHandleClick(source);
       } else {
         this.close();
@@ -17111,7 +17120,7 @@ var ControlProperties = {
     border: { type: "object", default: {} },
     display: { type: "string", default: "" },
     mediaQueries: { type: "array", default: [] },
-    font: { type: "object", default: { color: "", size: "", name: "", shadow: "", style: "normal", transform: "none", weight: "", bold: false } },
+    font: { type: "object", default: { style: "normal", transform: "unset" } },
     stack: { type: "object", default: { basis: "", grow: "", shrink: "" } },
     class: { type: "string" },
     cursor: { type: "string", default: "auto" },
@@ -18175,7 +18184,8 @@ function customElements2(tagName, properties) {
           tagName
         };
       _customElementProperties[tagName] = properties;
-      window.customElements.define(tagName, constructor);
+      if (!window.customElements.get(tagName))
+        window.customElements.define(tagName, constructor);
     } catch (err) {
     }
   };
@@ -19279,8 +19289,10 @@ var FileManager = class {
     ;
   }
   delete(fileNode) {
-    if (fileNode.parent)
+    if (fileNode.parent) {
       fileNode.parent.removeItem(fileNode);
+      fileNode.parent.modified(true);
+    }
   }
   async addFolder(folder, name) {
     let node = folder;
@@ -19877,6 +19889,41 @@ cssRule("i-text", {
 });
 
 // packages/text/src/text.ts
+var textDataSchema = {
+  wordBreak: {
+    type: "string",
+    enum: ["normal", "break-all", "keep-all", "break-word"],
+    default: "normal"
+  },
+  overflowWrap: {
+    type: "string",
+    enum: ["normal", "break-word", "anywhere"],
+    default: "normal"
+  },
+  textOverflow: {
+    type: "string",
+    enum: ["clip", "ellipsis"]
+  },
+  lineClamp: {
+    type: "number"
+  }
+};
+var textPropsConfig = {
+  wordBreak: {
+    type: "string",
+    default: "normal"
+  },
+  overflowWrap: {
+    type: "string",
+    default: "normal"
+  },
+  textOverflow: {
+    type: "string"
+  },
+  lineClamp: {
+    type: "number"
+  }
+};
 var Text = class extends Control {
   constructor(parent, options) {
     super(parent, options);
@@ -20064,6 +20111,7 @@ Label = __decorateClass([
         type: "string",
         default: DEFAULT_VALUES2.textDecoration
       },
+      ...textPropsConfig,
       link: {
         type: "object",
         default: {
@@ -20084,6 +20132,7 @@ Label = __decorateClass([
           enum: ["none", "underline", "overline", "line-through"],
           default: DEFAULT_VALUES2.textDecoration
         },
+        ...textDataSchema,
         link: {
           type: "object",
           properties: {
@@ -20723,7 +20772,7 @@ var gridSchemaProps = {
   },
   templateAreas: {
     type: "array",
-    items: { type: "string" }
+    items: { type: "array", items: { type: "string" } }
   },
   autoColumnSize: {
     type: "string",
@@ -21420,8 +21469,8 @@ var Upload = class extends Control {
   }
   set multiple(value) {
     this._multiple = value;
-    if (this._fileElm && value)
-      this._fileElm.setAttribute("multiple", `${value}`);
+    if (this._fileElm && value != null)
+      this._fileElm.multiple = value;
   }
   get fileList() {
     return this._fileList;
@@ -21834,7 +21883,9 @@ var Button = class extends Control {
   }
   get icon() {
     if (!this._icon) {
-      this._icon = new Icon(this, defaultIcon);
+      let iconAttr = this.getAttribute("icon", true);
+      iconAttr = { ...defaultIcon, ...iconAttr };
+      this._icon = new Icon(this, iconAttr);
       this.prependIcon(this._icon);
     }
     return this._icon;
@@ -21847,9 +21898,11 @@ var Button = class extends Control {
   }
   get rightIcon() {
     if (!this._rightIcon) {
+      let rightIconAttr = this.getAttribute("rightIcon", true);
       this._rightIcon = new Icon(this, {
         ...defaultIcon,
-        name: "spinner"
+        name: "spinner",
+        ...rightIconAttr
       });
       this.appendIcon(this._rightIcon);
     }
@@ -21955,10 +22008,8 @@ Button = __decorateClass([
     events: {},
     dataSchema: {
       type: "object",
-      required: ["caption"],
       properties: {
         caption: {
-          required: true,
           type: "string",
           title: "Caption"
         },
@@ -22022,6 +22073,7 @@ Button = __decorateClass([
 
 // packages/modal/src/style/modal.css.ts
 var Theme11 = theme_exports.ThemeVars;
+var zIndex = 900;
 var getOverlayStyle = () => {
   return style({
     backgroundColor: "rgba(12, 18, 52, 0.7)",
@@ -22032,7 +22084,7 @@ var getOverlayStyle = () => {
     height: "100%",
     opacity: 0,
     visibility: "hidden",
-    zIndex: 1e3,
+    zIndex,
     transition: "visibility 0s linear .25s, opacity .25s",
     $nest: {
       "&.show": {
@@ -22054,7 +22106,7 @@ var getWrapperStyle = () => {
     visibility: "hidden",
     transform: "scale(0.8)",
     transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-    zIndex: 1e3,
+    zIndex,
     overflow: "auto",
     $nest: {
       "&.show": {
@@ -22075,7 +22127,7 @@ var getNoBackdropStyle = () => {
     visibility: "hidden",
     transform: "scale(0.8)",
     transition: "visibility 0s linear .25s,opacity .25s 0s,transform .25s",
-    zIndex: 1e3,
+    zIndex,
     maxWidth: "inherit",
     $nest: {
       ".modal": {
@@ -22846,6 +22898,9 @@ var Modal = class extends Container {
   }
   set border(value) {
     this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, value);
+    if (!this.showBackdrop) {
+      this.modalDiv.style.borderRadius = "inherit";
+    }
   }
   get padding() {
     return this._padding;
@@ -22957,6 +23012,9 @@ var Modal = class extends Container {
       if (border) {
         this._border = new Border(this.showBackdrop ? this.modalDiv : this.wrapperDiv, border);
         this.style.border = "none";
+        if (!this.showBackdrop) {
+          this.modalDiv.style.borderRadius = "inherit";
+        }
       }
       let padding = this.getAttribute("padding", true);
       if (padding) {
@@ -23397,7 +23455,7 @@ var Progress = class extends Control {
     }
   }
   get strokeWidth() {
-    return this._strokeWidth;
+    return this._strokeWidth || 2;
   }
   set strokeWidth(value) {
     this._strokeWidth = value || 2;
@@ -25019,10 +25077,11 @@ var Tab = class extends Container {
     if (!this._parent || !this.enabled || this._parent.activeTab.isSameNode(this) || this._designMode)
       return false;
     if (this._parent) {
+      const oldActiveTab = this._parent.activeTab;
       if (this._parent.activeTab != this)
         this._parent.activeTabIndex = this.index;
       if (typeof this._parent.onChanged === "function")
-        this._parent.onChanged(this._parent, this._parent.activeTab);
+        this._parent.onChanged(this._parent, this._parent.activeTab, oldActiveTab);
     }
     return super._handleClick(event);
   }
@@ -25224,7 +25283,7 @@ cssRule("i-combo-box", {
       borderBottomLeftRadius: "0px !important"
     },
     "> .icon-btn:hover": {
-      backgroundColor: Theme18.action.hover
+      backgroundColor: Theme18.action.hoverBackground
     },
     "> .icon-btn i-icon": {
       display: "inline-block",
@@ -25324,6 +25383,7 @@ var ComboBox = class extends Control {
     if (value === void 0) {
       this._selectedItem = void 0;
       this.inputElm.value = "";
+      this.inputElm.style.display = "";
       return;
     }
     let isValueValid = false;
@@ -25340,6 +25400,7 @@ var ComboBox = class extends Control {
       this._selectedItem = validValue;
       if (Array.isArray(this._selectedItem)) {
         this.inputElm.value = "";
+        this.inputElm.style.display = "none";
         const selectionItems = Array.from(this.inputWrapElm.querySelectorAll(".selection-item"));
         selectionItems.forEach((elm) => this.inputWrapElm.removeChild(elm));
         this._selectedItem.forEach((item) => {
@@ -25363,6 +25424,7 @@ var ComboBox = class extends Control {
     } else if (this.isMulti) {
       this._selectedItem = validValue;
       this.inputElm.value = "";
+      this.inputElm.style.display = "";
       const selectionItems = Array.from(this.inputWrapElm.querySelectorAll(".selection-item"));
       selectionItems.forEach((elm) => this.inputWrapElm.removeChild(elm));
     }
@@ -25674,6 +25736,7 @@ var ComboBox = class extends Control {
     } else {
       this._selectedItem = void 0;
     }
+    this.inputElm.style.display = "";
     this.inputElm.value = "";
   }
   init() {
@@ -27463,12 +27526,14 @@ var ColorPicker = class extends Control {
     }
   }
   onOpenPicker() {
+    this.isValueChanged = false;
     document.addEventListener("mouseup", this.handleMouseUp);
     document.addEventListener("mousemove", this.handleMouseMove);
   }
   onClosePicker() {
-    if (typeof this.onClosed === "function")
+    if (typeof this.onClosed === "function" && this.isValueChanged) {
       this.onClosed();
+    }
     if (this.inputSpanElm)
       this.inputSpanElm.style.background = this.value || DEFAULT_BG_COLOR;
     this.isMousePressed = false;
@@ -27725,7 +27790,8 @@ var ColorPicker = class extends Control {
     if (hexInput)
       hexInput.value = hex2 || "";
     if (this.inputSpanElm)
-      this.inputSpanElm.style.background = this.value || DEFAULT_COLOR;
+      this.inputSpanElm.style.background = this.value || DEFAULT_BG_COLOR;
+    this.isValueChanged = true;
   }
   initUI() {
     const { h, a } = this.currentColor || {};
@@ -28152,6 +28218,7 @@ var Input = class extends Control {
     const designMode = this.getAttribute("designMode", true);
     const caption = this._caption;
     this._clearBtnWidth = height - 2 || CLEAR_BTN_WIDTH;
+    let cursor = "text";
     switch (type) {
       case "checkbox":
         this._inputControl = new Checkbox(this, {
@@ -28166,6 +28233,7 @@ var Input = class extends Control {
           this._inputControl.onChanged = this.onChanged;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="checkbox"]');
+        cursor = "pointer";
         break;
       case "combobox":
         this._inputControl = new ComboBox(this, {
@@ -28227,6 +28295,7 @@ var Input = class extends Control {
         this._inputControl.onKeyUp = this.onKeyUp;
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="range"]');
+        cursor = "pointer";
         break;
       case "radio":
         const id = this.getAttribute("id") || "";
@@ -28240,6 +28309,7 @@ var Input = class extends Control {
         });
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector('input[type="radio"]');
+        cursor = "pointer";
         break;
       case "textarea":
         this.captionSpanElm = this.createElement("span", this);
@@ -28278,6 +28348,7 @@ var Input = class extends Control {
         }
         this.appendChild(this._inputControl);
         this.inputElm = this._inputControl.querySelector(".input-span");
+        cursor = "default";
         break;
       default:
         const inputType = type == "password" ? type : "text";
@@ -28314,7 +28385,7 @@ var Input = class extends Control {
     }
     if (this.inputElm) {
       this.inputElm.readOnly = designMode || this.readOnly;
-      this.inputElm.style.cursor = designMode ? "pointer" : "default";
+      this.inputElm.style.cursor = designMode ? "pointer" : cursor;
     }
     if (background && this._inputControl)
       this._inputControl.background = background;
@@ -28750,6 +28821,10 @@ var validate = (instance, schema, options) => {
             const regex = new RegExp("^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$");
             if (!regex.test(value))
               addError("is not a valid uuid", scope);
+          } else if (schema2.format === "url") {
+            const regex = new RegExp("^(https?|ftp)://[^s/$.?#].[^s]*$");
+            if (!regex.test(value))
+              addError("is not a valid URL", scope);
           }
         }
       }
@@ -30468,6 +30543,7 @@ var Application = class {
     this.bundleLibs = {};
     this.store = {};
     this.rootDir = "";
+    this.dev = null;
     this.globalEvents = new GlobalEvents();
   }
   get EventBus() {
@@ -30841,13 +30917,13 @@ var Application = class {
     ;
     return "";
   }
-  async loadScript(modulePath, script) {
+  async loadScript(modulePath, script, forcedSave = false) {
     try {
       if (this.scripts[modulePath])
         return true;
       if (!script)
         script = await this.getContent(modulePath);
-      if (script && await this.verifyScript(modulePath, script)) {
+      if (script && (forcedSave || await this.verifyScript(modulePath, script))) {
         this.scripts[modulePath] = script;
         await import(`data:text/javascript,${encodeURIComponent(script)}`);
         return true;
@@ -31112,8 +31188,13 @@ var Application = class {
       if (module2) {
         this.id++;
         let elmId = `i-module--${this.id}`;
-        let Module2 = class extends module2 {
-        };
+        let Module2;
+        if (Object.keys(module2).length === 1) {
+          Module2 = class extends module2[Object.keys(module2)[0]] {
+          };
+        } else
+          Module2 = class extends module2 {
+          };
         this.modulesId[modulePath] = elmId;
         this.modules[modulePath] = Module2;
         customElements.define(elmId, Module2);
@@ -31639,12 +31720,6 @@ async function getFileModel(fileName) {
   ;
   return null;
 }
-async function getModels() {
-  let monaco = await initMonaco();
-  if (monaco) {
-    return monaco.editor.getModels();
-  }
-}
 async function addLib(lib, dts) {
   let monaco = await initMonaco();
   monaco.languages.typescript.typescriptDefaults.addExtraLib(dts, lib);
@@ -31830,6 +31905,11 @@ var CodeEditor = class extends Control {
     if (this.editor)
       this.editor.updateOptions({ readOnly: value });
   }
+  getErrors() {
+    var _a;
+    const markers = this.monaco.editor.getModelMarkers({ resource: (_a = this._editor.getModel()) == null ? void 0 : _a.uri });
+    return markers.filter((marker) => marker.severity === this.monaco.MarkerSeverity.Error);
+  }
   async loadContent(content, language, fileName) {
     let monaco = await initMonaco();
     if (content == void 0)
@@ -31846,6 +31926,7 @@ var CodeEditor = class extends Control {
       let options = {
         theme: "vs-dark",
         tabSize: 2,
+        autoIndent: "advanced",
         formatOnPaste: true,
         formatOnType: true,
         renderWhitespace: "none",
@@ -31857,6 +31938,9 @@ var CodeEditor = class extends Control {
         ...customOptions
       };
       this._editor = monaco.editor.create(captionDiv, options);
+      if (typeof this.onAddAction === "function") {
+        this.onAddAction(this._editor);
+      }
       this._editor.onDidChangeModelContent((event) => {
         if (typeof this.onChange === "function")
           this.onChange(this, event);
@@ -31869,6 +31953,16 @@ var CodeEditor = class extends Control {
       this._editor.onKeyUp((event) => {
         if (typeof this.onKeyUp === "function") {
           this.onKeyUp(this, event);
+        }
+      });
+      this._editor.onMouseDown((event) => {
+        if (typeof this.onMouseDown === "function") {
+          this.onMouseDown(this, event);
+        }
+      });
+      this._editor.onContextMenu((event) => {
+        if (typeof this.onContextMenu === "function") {
+          this.onContextMenu(this._editor, event);
         }
       });
       if (fileName) {
@@ -31909,6 +32003,16 @@ var CodeEditor = class extends Control {
     this._fileName = fileName || "";
     this._editor.setScrollTop(0);
   }
+  saveViewState() {
+    if (this._editor) {
+      return this._editor.saveViewState();
+    }
+  }
+  restoreViewState(state) {
+    if (this._editor && state) {
+      this._editor.restoreViewState(state);
+    }
+  }
   async updateFileName(oldValue, newValue) {
     let oldModel = await getFileModel(oldValue);
     if (oldModel) {
@@ -31931,15 +32035,10 @@ var CodeEditor = class extends Control {
       (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
     }
   }
-  async disposeEditor() {
+  disposeEditor() {
     var _a;
     if (this._editor) {
       (_a = this._editor.getModel()) == null ? void 0 : _a.dispose();
-      const models = await getModels() || [];
-      for (let i = 0; i < models.length; i++) {
-        const model = models[i];
-        model.dispose();
-      }
       this._editor.dispose();
       const domNode = this._editor.getDomNode();
       if (domNode) {
@@ -32031,10 +32130,15 @@ var EditorType;
   EditorType2[EditorType2["original"] = 1] = "original";
 })(EditorType || (EditorType = {}));
 var CodeDiffEditor = class extends Control {
+  constructor() {
+    super(...arguments);
+    this._renderSideBySide = true;
+  }
   init() {
     if (!this.editor) {
       super.init();
       this.language = this.getAttribute("language", true);
+      this._renderSideBySide = this.getAttribute("renderSideBySide", true, true);
       this.style.display = "inline-block";
     }
     ;
@@ -32063,7 +32167,10 @@ var CodeDiffEditor = class extends Control {
   set designMode(value) {
     this._designMode = value;
     if (this.editor)
-      this.editor.updateOptions({ readOnly: value });
+      this.editor.updateOptions({ ...this.editor.getModifiedEditor().getOptions(), readOnly: value });
+  }
+  get monaco() {
+    return window.monaco;
   }
   setModelLanguage(value, functionName) {
     let monaco = window.monaco;
@@ -32086,6 +32193,11 @@ var CodeDiffEditor = class extends Control {
   }
   updateFileName() {
   }
+  getErrors() {
+    var _a;
+    const markers = this.monaco.editor.getModelMarkers({ resource: (_a = this._editor.getModifiedEditor().getModel()) == null ? void 0 : _a.uri });
+    return markers.filter((marker) => marker.severity === this.monaco.MarkerSeverity.Error);
+  }
   getEditor(type) {
     if (type === 1)
       return this.editor.getOriginalEditor();
@@ -32098,7 +32210,6 @@ var CodeDiffEditor = class extends Control {
   async loadContent(type, content, language, fileName) {
     var _a;
     let monaco = await initMonaco();
-    let initialSetup = true;
     const funcName = type === 0 ? "getModifiedEditor" : "getOriginalEditor";
     const value = type === 0 ? this._modifiedValue : this._originalValue;
     const newFileName = `${type}` + fileName;
@@ -32116,7 +32227,8 @@ var CodeDiffEditor = class extends Control {
         theme: "vs-dark",
         originalEditable: false,
         automaticLayout: true,
-        readOnly: this._designMode
+        readOnly: this._designMode,
+        renderSideBySide: this._renderSideBySide
       };
       this._editor = monaco.editor.createDiffEditor(captionDiv, options);
       (_a = this._editor.getModifiedEditor()) == null ? void 0 : _a.onDidChangeModelContent((event) => {
@@ -32139,7 +32251,6 @@ var CodeDiffEditor = class extends Control {
     }
     if (model) {
       if (fileName && this._fileName !== fileName) {
-        initialSetup = true;
         model.dispose();
         model = await getFileModel(newFileName);
         if (!model)
@@ -32161,7 +32272,6 @@ var CodeDiffEditor = class extends Control {
         } else
           model2 = monaco.editor.createModel(content || value || "", language || this._language || "typescript", file);
       }
-      initialSetup = true;
       this._editor[funcName]().setModel(model2);
     }
     this._fileName = fileName || "";
@@ -35680,6 +35790,7 @@ var MarkdownEditor = class extends Text {
     this._hideModeSwitch = false;
     this._placeholder = "";
     this._autoFocus = false;
+    this.isPaste = false;
   }
   setFocus() {
     var _a;
@@ -35744,7 +35855,7 @@ var MarkdownEditor = class extends Text {
     this._value = value;
     if (this.viewer) {
       this.mdViewer.load(value);
-    } else if (!this.viewer && this.editorObj) {
+    } else if (!this.viewer && this.editorObj && typeof this.editorObj.setMarkdown === "function") {
       this.editorObj.setMarkdown(value);
     }
   }
@@ -35752,7 +35863,7 @@ var MarkdownEditor = class extends Text {
     this._value = value;
     if (this.viewer) {
       await this.mdViewer.load(value);
-    } else if (!this.viewer && this.editorObj) {
+    } else if (!this.viewer && this.editorObj && typeof this.editorObj.setMarkdown === "function") {
       this.editorObj.setMarkdown(value);
     }
   }
@@ -35949,6 +36060,11 @@ var MarkdownEditor = class extends Text {
           change: (event) => {
             if (this._designMode)
               return;
+            if (this.isPaste) {
+              this.isPaste = false;
+              this.editorObj.setMarkdown(this.editorObj.getMarkdown(), false);
+              return;
+            }
             if (this.onChanged)
               this.onChanged(this, event);
           },
@@ -35963,6 +36079,9 @@ var MarkdownEditor = class extends Text {
               this.onBlur(this, event);
           },
           keydown: (target, event) => {
+            var _a2;
+            const isPaste = event.ctrlKey && event.key === "v";
+            this.isPaste = isPaste && this.editorObj && ((_a2 = this._widgetRules) == null ? void 0 : _a2.length) > 0;
             if (this._designMode) {
               event.preventDefault();
               event.stopPropagation();
@@ -36081,7 +36200,8 @@ MarkdownEditor = __decorateClass([
       toolbarItems: { type: "array" },
       plugins: { type: "array" },
       widgetRules: { type: "array" },
-      placeholder: { type: "string", default: "" }
+      placeholder: { type: "string", default: "" },
+      ...textPropsConfig
     },
     events: {},
     dataSchema: {
@@ -36108,7 +36228,8 @@ MarkdownEditor = __decorateClass([
         },
         placeholder: {
           type: "string"
-        }
+        },
+        ...textDataSchema
       }
     }
   })
@@ -37300,6 +37421,9 @@ var Module = class extends Container {
     let modal = Module._modalMap[this.uuid];
     if (modal) {
       modal.visible = false;
+    }
+    if (document.body.contains(modal)) {
+      document.body.removeChild(modal);
     }
   }
 };
@@ -39032,12 +39156,34 @@ var Iframe = class extends Control {
   reload() {
     let iframe = this.iframeElm;
     return new Promise((resolve) => {
-      iframe.src = iframe.src;
-      iframe.onload = function() {
-        resolve();
-        iframe.onload = null;
-      };
+      if (iframe) {
+        iframe.src = iframe.src;
+        iframe.onload = function() {
+          resolve();
+          iframe && (iframe.onload = null);
+        };
+      }
     });
+  }
+  clear() {
+    var _a;
+    if (this.iframeElm) {
+      this.unload();
+      this.iframeElm.onload = null;
+      this.iframeElm.onerror = null;
+      (_a = this.iframeElm.parentNode) == null ? void 0 : _a.removeChild(this.iframeElm);
+      this.iframeElm.remove();
+      this.iframeElm = void 0;
+    }
+  }
+  unload() {
+    if (this.iframeElm) {
+      this.iframeElm.src = "";
+      if (this.iframeElm && this.iframeElm.contentWindow) {
+        this.iframeElm.contentWindow.document.write("");
+        this.iframeElm.contentWindow.close();
+      }
+    }
   }
   postMessage(msg) {
     if (this.iframeElm && this.iframeElm.contentWindow) {
@@ -44697,20 +44843,23 @@ var Form = class extends Control {
     }
   }
   setData(scope, value, parentElm, customData) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     let _control;
     this.setCustomData(scope, value, void 0, customData);
+    if (((_b = (_a = this._formControls[scope]) == null ? void 0 : _a.input) == null ? void 0 : _b.tagName) === "designer-template-areas".toUpperCase()) {
+      return;
+    }
     if (typeof value === "object") {
       if (value instanceof Array) {
         if (parentElm) {
           const currentFld = scope.split("/").pop();
-          _control = (_a = parentElm.querySelector(`[array-field="${currentFld}"]`)) == null ? void 0 : _a.lastChild;
+          _control = (_c = parentElm.querySelector(`[array-field="${currentFld}"]`)) == null ? void 0 : _c.lastChild;
         }
-        const grid = _control || ((_b = this._formControls[scope]) == null ? void 0 : _b.input);
+        const grid = _control || ((_d = this._formControls[scope]) == null ? void 0 : _d.input);
         if (grid) {
           grid.clearInnerHTML();
           for (const data of value) {
-            const schema = (_c = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _c.items;
+            const schema = (_e = this.getDataSchemaByScope(scope)[1]) == null ? void 0 : _e.items;
             this.renderCard({ parent: grid, scope, schema, options: {} });
           }
           const listItems = grid == null ? void 0 : grid.querySelectorAll(':scope > [role="list-item"]');
@@ -44803,7 +44952,7 @@ var Form = class extends Control {
           _control = parentElm.querySelector(`[custom-control="${customScope}"]`);
         }
       }
-      const input = _control || ((_d = this._formControls[scope]) == null ? void 0 : _d.input);
+      const input = _control || ((_f = this._formControls[scope]) == null ? void 0 : _f.input);
       if (!input && value === void 0) {
         const currentFld = scope.split("/").pop();
         const objElm = parentElm == null ? void 0 : parentElm.querySelector(`[object-field="${currentFld}"]`);
@@ -44846,6 +44995,9 @@ var Form = class extends Control {
     if (!this._jsonSchema)
       return void 0;
     const data = await this.getDataBySchema(this._jsonSchema, "#", isErrorShown);
+    if (isErrorShown) {
+      this.checkArrayErrors();
+    }
     return data;
   }
   async getDataBySchema(schema, scope = "#", isErrorShown, parentElm, listItem, parentScope) {
@@ -45011,6 +45163,48 @@ var Form = class extends Control {
     }
     return true;
   }
+  checkArrayErrors() {
+    if (!this.validationResult || this.validationResult.valid)
+      return;
+    const lbArrayError = this.querySelectorAll('[role="error"][array-scope]');
+    lbArrayError.forEach((elm) => {
+      this.checkError(elm);
+    });
+  }
+  checkError(lbError) {
+    var _a, _b;
+    if (!lbError)
+      return;
+    const listItem = lbError.closest('[role="list-item"]');
+    let error;
+    if (!listItem) {
+      error = (_a = this.validationResult) == null ? void 0 : _a.errors.find((f) => f.scope === lbError.getAttribute("array-scope"));
+    } else {
+      const parentArr = listItem.parentElement;
+      if (!parentArr)
+        return;
+      let arrIdx = -1;
+      for (let i = 0; i < parentArr.childElementCount; i++) {
+        if (parentArr.childNodes[i] === listItem) {
+          arrIdx = i;
+          break;
+        }
+      }
+      if (arrIdx > -1) {
+        const arrayScope = `${lbError.getAttribute("array-scope")}_${arrIdx + 1}`;
+        error = (_b = this.validationResult) == null ? void 0 : _b.errors.find((f) => f.scope.endsWith(arrayScope));
+      }
+    }
+    if (error) {
+      lbError.setAttribute("is-visible", "");
+      lbError.caption = `${lbError.getAttribute("array-caption") || "This "} ${error.message}`;
+      lbError.visible = true;
+    } else {
+      lbError.removeAttribute("is-visible");
+      lbError.caption = "";
+      lbError.visible = false;
+    }
+  }
   findTabByElm(elm) {
     const wrapper = elm.closest(".content-pane");
     if (wrapper && this.contains(wrapper)) {
@@ -45174,6 +45368,7 @@ var Form = class extends Control {
         const error = this.renderLabel({ parent: vstack, options: controlOptions, type: "error" });
         this._formControls[customControlScope] = {
           input: control,
+          getCustomData: () => customRenderer.getData(control),
           label,
           error
         };
@@ -45295,6 +45490,13 @@ var Form = class extends Control {
       }
       if (btnAdd) {
         btnAdd.onClick = () => {
+          var _a2;
+          const lbError = (_a2 = btnAdd.parentElement) == null ? void 0 : _a2.querySelector('[role="error"][array-scope]');
+          if (lbError && lbError.hasAttribute("is-visible")) {
+            lbError.removeAttribute("is-visible");
+            lbError.caption = "";
+            lbError.visible = false;
+          }
           if (schemaOptions && schemaOptions.detail) {
             this.renderCard({ parent: body, scope, schema: schema.items, options: controlOptions, uiSchema: schemaOptions.detail, elementLabelProp: schemaOptions.elementLabelProp });
           } else if (schema.items instanceof Array) {
@@ -45454,12 +45656,12 @@ var Form = class extends Control {
         const control = this._formControls[rule.condition.scope].input;
         if (!control)
           continue;
-        this.setupControlRule(elm, rule.effect, control, rule.condition.schema, inputControl);
+        this.setupControlRule(elm, rule.effect, control, rule.condition.schema, inputControl, this._formControls[rule.condition.scope].getCustomData);
       }
     }
     this.validateAllRule();
   }
-  setupControlRule(elm, effect, control, schema, inputControl) {
+  setupControlRule(elm, effect, control, schema, inputControl, getCustomData) {
     if (!elm || !effect || !control || !schema)
       return;
     if (control.tagName === "I-INPUT") {
@@ -45511,6 +45713,16 @@ var Form = class extends Control {
         if (cachedOnChanged)
           cachedOnChanged();
         const value = control.selectedValue;
+        this.validateRule(elm, effect, value, schema, inputControl);
+      };
+    } else if (getCustomData) {
+      let cachedOnChanged;
+      if (control.onChanged)
+        cachedOnChanged = control.onChanged;
+      control.onChanged = () => {
+        if (cachedOnChanged)
+          cachedOnChanged();
+        const value = getCustomData();
         this.validateRule(elm, effect, value, schema, inputControl);
       };
     }
@@ -45570,7 +45782,8 @@ var Form = class extends Control {
       if (rule && rule.condition && (!rule.condition.scope || !rule.condition.schema))
         continue;
       if ((_a = rule.condition) == null ? void 0 : _a.scope) {
-        const control = this._formControls[rule.condition.scope].input;
+        const formControl = this._formControls[rule.condition.scope];
+        const control = formControl.input;
         if (!control)
           continue;
         let value;
@@ -45584,6 +45797,8 @@ var Form = class extends Control {
           value = control.checked;
         } else if (control.tagName === "I-RADIO-GROUP") {
           value = control.selectedValue;
+        } else if (formControl.getCustomData) {
+          value = formControl.getCustomData();
         }
         this.validateRule(elm, rule.effect, value, rule.condition.schema, inputControl);
       }
@@ -46116,6 +46331,17 @@ var Form = class extends Control {
       fill: theme.colors.primary.contrastText
     }));
     btnAdd.classList.add(listBtnAddStyle);
+    let lbError;
+    if (options.required) {
+      lbError = new Label(header, {
+        visible: false,
+        font: { color: "#ff0000", bold: false },
+        margin: { top: 2 }
+      });
+      lbError.setAttribute("role", "error");
+      lbError.setAttribute("array-scope", this.replacePhrase(scope));
+      lbError.setAttribute("array-caption", options.caption || "");
+    }
     const columnHeader = new VStack(wrapper);
     const body = new VStack(wrapper, {
       gap: 10
@@ -46126,6 +46352,7 @@ var Form = class extends Control {
     }
     this._formControls[scope] = {
       wrapper,
+      error: lbError,
       input: body
     };
     return {
@@ -46411,8 +46638,12 @@ var Form = class extends Control {
           }
           if (schema2.items && schema2.items.type != "object") {
             const itemSchema = { required: schema2.required, ...schema2.items };
-            for (let i2 = 0; i2 < value.length; i2++) {
-              checkProp(value[i2], itemSchema, path, scope, i2, true);
+            if (schema2.items.type === "array" && value instanceof Array) {
+              checkProp(value, itemSchema, path, scope);
+            } else {
+              for (let i2 = 0; i2 < value.length; i2++) {
+                checkProp(value[i2], itemSchema, path, scope, i2, true);
+              }
             }
           }
           if (schema2.pattern && typeof value == "string" && !value.match(schema2.pattern)) {
@@ -46468,6 +46699,10 @@ var Form = class extends Control {
               const regex = new RegExp("^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$");
               if (!regex.test(value))
                 addError("is not a valid uuid", scope);
+            } else if (schema2.format === "url") {
+              const regex = new RegExp("^(https?|ftp)://[^s/$.?#].[^s]*$");
+              if (!regex.test(value))
+                addError("is not a valid URL", scope);
             }
           }
         }
@@ -46839,6 +47074,14 @@ var AccordionItem = class extends Container {
   get contentControl() {
     return this.pnlContent;
   }
+  get font() {
+    return this.lbTitle.font;
+  }
+  set font(value) {
+    if (this.lbTitle) {
+      this.lbTitle.font = value;
+    }
+  }
   async renderUI() {
     this.pnlAccordionItem = new VStack(void 0, {
       padding: { top: "0.5rem", bottom: "0.5rem", left: "0.5rem", right: "0.5rem" },
@@ -46923,6 +47166,9 @@ var AccordionItem = class extends Container {
       this._defaultExpanded = defaultExpanded;
       this._showRemove = showRemove;
       await this.renderUI();
+      const font = this.getAttribute("font", true);
+      if (font)
+        this.font = font;
       if (!this.pnlContent.isConnected)
         await this.pnlContent.ready();
       if (childNodes == null ? void 0 : childNodes.length) {

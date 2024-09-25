@@ -3864,6 +3864,7 @@ declare module "packages/tooltip/src/tooltip" {
         color?: string;
         placement?: PlacementType;
         trigger?: TriggerType;
+        duration?: number;
         maxWidth?: string;
     }
     export class Tooltip {
@@ -3873,6 +3874,7 @@ declare module "packages/tooltip/src/tooltip" {
         private _color;
         private _maxWidth;
         private _trigger;
+        private _duration;
         private timeout;
         private tooltipElm;
         constructor(source: Control);
@@ -3888,6 +3890,9 @@ declare module "packages/tooltip/src/tooltip" {
         set content(value: string);
         get placement(): PlacementType;
         set placement(value: PlacementType);
+        get duration(): number;
+        set duration(value: number);
+        get isSmallScreen(): boolean;
         get maxWidth(): string;
         set maxWidth(value: string);
         private show;
@@ -4919,6 +4924,41 @@ declare module "packages/text/src/text" {
         textOverflow?: TextOverflowType;
         lineClamp?: number;
     }
+    export const textDataSchema: {
+        wordBreak: {
+            type: string;
+            enum: string[];
+            default: string;
+        };
+        overflowWrap: {
+            type: string;
+            enum: string[];
+            default: string;
+        };
+        textOverflow: {
+            type: string;
+            enum: string[];
+        };
+        lineClamp: {
+            type: string;
+        };
+    };
+    export const textPropsConfig: {
+        wordBreak: {
+            type: string;
+            default: string;
+        };
+        overflowWrap: {
+            type: string;
+            default: string;
+        };
+        textOverflow: {
+            type: string;
+        };
+        lineClamp: {
+            type: string;
+        };
+    };
     global {
         namespace JSX {
             interface IntrinsicElements {
@@ -5636,7 +5676,7 @@ declare module "packages/tab/src/tab" {
     import { Icon, IconElement } from "packages/icon/src/index";
     import "packages/tab/src/style/tab.css";
     type TabModeType = "horizontal" | "vertical";
-    type TabsEventCallback = (target: Tabs, activeTab: Tab) => void;
+    type TabsEventCallback = (target: Tabs, activeTab: Tab, oldActiveTab?: Tab) => void;
     type TabCloseEventCallback = (target: Tabs, tab: Tab) => void;
     export interface TabsElement extends ContainerElement {
         activeTabIndex?: number;
@@ -6132,6 +6172,7 @@ declare module "packages/color/src/color" {
         private currentColor;
         private currentPalette;
         private isMousePressed;
+        private isValueChanged;
         onChanged: notifyEventCallback;
         onClosed: () => void;
         constructor(parent?: Control, options?: any);
@@ -6737,6 +6778,14 @@ declare module "packages/application/src/index" {
         cid: ICidInfo;
         data?: File | string;
     }
+    interface IDevInfo {
+        data?: {
+            [name: string]: any;
+        };
+        paths?: {
+            [name: string]: any;
+        };
+    }
     class Application {
         private static _instance;
         private modules;
@@ -6759,6 +6808,7 @@ declare module "packages/application/src/index" {
         private bundleLibs;
         store: Record<string, any>;
         rootDir: string;
+        dev: IDevInfo | null;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -6781,7 +6831,7 @@ declare module "packages/application/src/index" {
         private getCidItem;
         private verifyScript;
         private getScript;
-        loadScript(modulePath: string, script?: string): Promise<boolean>;
+        loadScript(modulePath: string, script?: string, forcedSave?: boolean): Promise<boolean>;
         getContent(modulePath: string): Promise<string>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
         private calculatePackageModulePath;
@@ -9837,6 +9887,7 @@ declare module "packages/code-editor/src/monaco" {
     export type LanguageType = "txt" | "css" | "json" | "javascript" | "typescript" | "solidity" | "markdown" | "html" | "xml" | "shell";
     export function getLanguageType(fileName: string): LanguageType | undefined;
     export interface Monaco {
+        MarkerSeverity: typeof IMonaco.MarkerSeverity;
         editor: typeof IMonaco.editor;
         Uri: typeof IMonaco.Uri;
         languages: typeof IMonaco.languages;
@@ -9860,6 +9911,7 @@ declare module "packages/code-editor/src/code-editor" {
         onChange?: notifyEventCallback;
         onKeyDown?: notifyKeyboardEventCallback;
         onKeyUp?: notifyKeyboardEventCallback;
+        onAddAction?: (editor: IMonaco.editor.IStandaloneCodeEditor) => void;
     }
     global {
         namespace JSX {
@@ -9877,6 +9929,7 @@ declare module "packages/code-editor/src/code-editor" {
         onChange: notifyEventCallback;
         onKeyDown: notifyKeyboardEventCallback;
         onKeyUp: notifyKeyboardEventCallback;
+        onAddAction: (editor: IMonaco.editor.IStandaloneCodeEditor) => void;
         static addLib: typeof addLib;
         static addFile: typeof addFile;
         static getFileModel: typeof getFileModel;
@@ -9890,10 +9943,13 @@ declare module "packages/code-editor/src/code-editor" {
         set language(value: LanguageType);
         get designMode(): boolean;
         set designMode(value: boolean);
+        getErrors(): IMonaco.editor.IMarker[];
         loadContent(content?: string, language?: LanguageType, fileName?: string): Promise<void>;
+        saveViewState(): IMonaco.editor.ICodeEditorViewState | null | undefined;
+        restoreViewState(state: IMonaco.editor.ICodeEditorViewState): void;
         updateFileName(oldValue: string, newValue: string): Promise<void>;
         dispose(): void;
-        disposeEditor(): Promise<void>;
+        disposeEditor(): void;
         scrollToLine(line: number, column: number): void;
         loadFile(fileName: string): Promise<void>;
         updateOptions(options: IMonaco.editor.IEditorOptions): void;
@@ -9903,7 +9959,7 @@ declare module "packages/code-editor/src/code-editor" {
 }
 declare module "packages/code-editor/src/diff-editor" {
     import { Control } from "@ijstech/components/base";
-    import { addLib, addFile, getFileModel, updateFile, LanguageType } from "packages/code-editor/src/monaco";
+    import { addLib, addFile, getFileModel, updateFile, LanguageType, Monaco } from "packages/code-editor/src/monaco";
     import { CodeEditorElement } from "packages/code-editor/src/code-editor";
     import * as IMonaco from "packages/code-editor/src/editor.api";
     import "packages/code-editor/src/style/code-editor.css";
@@ -9913,6 +9969,7 @@ declare module "packages/code-editor/src/diff-editor" {
     }
     export interface CodeDiffEditorElement extends CodeEditorElement {
         onChange?: any;
+        renderSideBySide?: boolean;
     }
     global {
         namespace JSX {
@@ -9929,6 +9986,7 @@ declare module "packages/code-editor/src/diff-editor" {
         private _fileName;
         private _originalValue;
         private _modifiedValue;
+        private _renderSideBySide;
         onChange: any;
         static addLib: typeof addLib;
         static addFile: typeof addFile;
@@ -9940,9 +9998,11 @@ declare module "packages/code-editor/src/diff-editor" {
         set language(value: LanguageType);
         get designMode(): boolean;
         set designMode(value: boolean);
+        get monaco(): Monaco;
         setModelLanguage(value: LanguageType, functionName: 'getModifiedEditor' | 'getOriginalEditor'): void;
         dispose(): void;
         updateFileName(): void;
+        getErrors(): IMonaco.editor.IMarker[];
         getEditor(type: EditorType): IMonaco.editor.ICodeEditor;
         getModel(type: EditorType): IMonaco.editor.ITextModel | null;
         loadContent(type: EditorType, content?: string, language?: LanguageType, fileName?: string): Promise<void>;
@@ -10429,6 +10489,7 @@ declare module "packages/markdown-editor/src/markdown-editor" {
         private _placeholder;
         private _autoFocus;
         private overlayElm;
+        private isPaste;
         onChanged: notifyEventCallback;
         onFocus: notifyEventCallback;
         onBlur: notifyEventCallback;
@@ -11093,6 +11154,8 @@ declare module "packages/iframe/src/iframe" {
         private overlayElm;
         constructor(parent?: Control, options?: any);
         reload(): Promise<void>;
+        clear(): void;
+        unload(): void;
         postMessage(msg: string): void;
         get url(): string;
         set url(value: string);
@@ -12104,6 +12167,8 @@ declare module "packages/form/src/form" {
         getFormData(isErrorShown?: boolean): Promise<any>;
         private getDataBySchema;
         private isNumber;
+        private checkArrayErrors;
+        private checkError;
         private findTabByElm;
         renderForm(): void;
         private renderFormByJSONSchema;
@@ -12195,6 +12260,7 @@ declare module "packages/accordion/src/style/accordion.css" {
 declare module "packages/accordion/src/accordion-item" {
     import { Control, Container } from "@ijstech/components/base";
     import { IAccordionItem } from "packages/accordion/src/interface";
+    import { IFont } from "packages/base/src/component";
     type onSelectedFn = (target: AccordionItem) => void;
     export interface AccordionItemElement extends IAccordionItem {
         onSelected?: onSelectedFn;
@@ -12229,6 +12295,8 @@ declare module "packages/accordion/src/accordion-item" {
         get showRemove(): boolean;
         set showRemove(value: boolean);
         get contentControl(): Control;
+        get font(): IFont;
+        set font(value: IFont);
         private renderUI;
         private updatePanel;
         private onSelectClick;
