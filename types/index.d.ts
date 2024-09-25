@@ -6808,6 +6808,7 @@ declare module "packages/application/src/index" {
         private bundleLibs;
         store: Record<string, any>;
         rootDir: string;
+        assetsDir: string;
         dev: IDevInfo | null;
         private constructor();
         get EventBus(): EventBus;
@@ -12152,6 +12153,7 @@ declare module "packages/form/src/form" {
         private _formControls;
         private validationData;
         private validationResult;
+        private isSubmitted;
         constructor(parent?: Control, options?: any);
         protected init(): void;
         set formOptions(options: any);

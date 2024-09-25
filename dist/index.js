@@ -30543,6 +30543,7 @@ var Application = class {
     this.bundleLibs = {};
     this.store = {};
     this.rootDir = "";
+    this.assetsDir = "";
     this.dev = null;
     this.globalEvents = new GlobalEvents();
   }
@@ -44998,6 +44999,7 @@ var Form = class extends Control {
     if (isErrorShown) {
       this.checkArrayErrors();
     }
+    this.isSubmitted = false;
     return data;
   }
   async getDataBySchema(schema, scope = "#", isErrorShown, parentElm, listItem, parentScope) {
@@ -45290,6 +45292,7 @@ var Form = class extends Control {
         var _a2, _b2;
         this.validationData = await this.getFormData();
         this.validationResult = this.validate(this.validationData, this._jsonSchema, { changing: false });
+        this.isSubmitted = true;
         await this.getFormData(true);
         if (this.validationResult && !this.validationResult.valid && this.uiSchema) {
           const firstErrorElement = this.querySelector('i-label[role="error"][is-visible]');
@@ -45355,7 +45358,7 @@ var Form = class extends Control {
         }
         control.onChanged = () => {
           this.validateOnValueChanged(control, parent, customControlScope, labelName);
-          if (this._formOptions.onChange) {
+          if (!this.isSubmitted && this._formOptions.onChange) {
             this._formOptions.onChange(control, customRenderer.getData(control));
           }
         };
@@ -45921,7 +45924,7 @@ var Form = class extends Control {
       if (labelProp)
         labelProp.caption = input.value;
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.value);
       }
     };
@@ -45969,7 +45972,7 @@ var Form = class extends Control {
       if (labelProp)
         labelProp.caption = input.value;
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.value);
       }
     };
@@ -46019,7 +46022,7 @@ var Form = class extends Control {
       if (labelProp)
         labelProp.caption = input.value;
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.value);
       }
     };
@@ -46066,7 +46069,7 @@ var Form = class extends Control {
       if (labelProp)
         labelProp.caption = input.value;
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.value);
       }
     };
@@ -46112,7 +46115,7 @@ var Form = class extends Control {
     uploader.setAttribute("dataType", "string");
     uploader.onChanged = () => {
       this.validateOnValueChanged(uploader, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(uploader);
       }
     };
@@ -46159,7 +46162,7 @@ var Form = class extends Control {
     });
     input.onChanged = () => {
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.value);
       }
     };
@@ -46206,7 +46209,7 @@ var Form = class extends Control {
       if (labelProp) {
       }
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, (_a = input.value) == null ? void 0 : _a.value);
       }
     };
@@ -46246,7 +46249,7 @@ var Form = class extends Control {
       if (labelProp) {
       }
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.selectedValue);
       }
     };
@@ -46281,7 +46284,7 @@ var Form = class extends Control {
       if (labelProp)
         labelProp.caption = input.checked.toString();
       this.validateOnValueChanged(input, parent, scope, options == null ? void 0 : options.caption);
-      if (this._formOptions.onChange) {
+      if (!this.isSubmitted && this._formOptions.onChange) {
         this._formOptions.onChange(input, input.checked);
       }
     };
