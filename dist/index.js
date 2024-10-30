@@ -15183,7 +15183,15 @@ var filterChanges = (options, changes) => {
   let result = changes;
   if (options.path) {
     const oPath = options.path;
-    result = changes.filter((change) => change.path.join(".") === oPath);
+    const tempArr = [];
+    result = changes.filter((change) => {
+      if (change.path.join(".").startsWith(oPath) && change.type == "insert")
+        tempArr.push(change);
+      return change.path.join(".") === oPath;
+    });
+    if (result.length === 0) {
+      result = tempArr;
+    }
   } else if (options.pathsOf) {
     const oPathsOf = options.pathsOf;
     const oPathsOfStr = oPathsOf.join(".");
@@ -15659,18 +15667,23 @@ function ClearObservers(target) {
     target.__clearObservers();
   }
 }
-function observable(propName) {
+function observable(propName, isArray) {
   return function(target, propertyName) {
     target["$observableProps"] = target["$observableProps"] || {};
-    target["$observableProps"][propName || propertyName] = propertyName;
+    target["$observableProps"][propName || propertyName] = {
+      propertyName,
+      isArray
+    };
   };
 }
 function initObservables(target) {
+  var _a, _b;
   let observables = target["$observableProps"];
   target["$observables"] = target["$observables"] || {};
   for (let propName in observables) {
-    let propertyName = observables[propName];
-    let val = Observe({});
+    let propertyName = (_a = observables[propName]) == null ? void 0 : _a.propertyName;
+    let isArray = (_b = observables[propName]) == null ? void 0 : _b.isArray;
+    let val = isArray ? Observe([]) : Observe({});
     let isObject = false;
     target["$observables"][propName] = val;
     const getter = function() {
@@ -17594,6 +17607,13 @@ var Control = class extends Component {
   set onMouseUp(callback) {
     this._onMouseUp = callback;
   }
+  set onObserverChanged(callback) {
+    if (!this._onObserverChanged)
+      this._onObserverChanged = callback;
+  }
+  get onObserverChanged() {
+    return this._onObserverChanged;
+  }
   clearInnerHTML() {
     this.innerHTML = "";
   }
@@ -17787,7 +17807,7 @@ var Control = class extends Component {
       this.style.display = "none";
     else if (this._left != null || this._top != null)
       this.style.display = "";
-    else
+    else if (this.style.display === "none")
       this.style.display = "";
     if (this._parent && !_refreshTimeout)
       this._parent.refresh();
@@ -18397,6 +18417,15 @@ var Checkbox = class extends Control {
   set value(data) {
     this.inputElm.value = data;
   }
+  get enabled() {
+    return super.enabled;
+  }
+  set enabled(value) {
+    super.enabled = value;
+    if (this.inputElm) {
+      this.inputElm.disabled = !value;
+    }
+  }
   get readOnly() {
     return this._readOnly;
   }
@@ -18411,6 +18440,8 @@ var Checkbox = class extends Control {
       return;
     this.checked = this.inputElm.checked || false;
     this.addClass(this.checked, "is-checked");
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, event);
     if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
@@ -21543,6 +21574,8 @@ var Upload = class extends Control {
     this.previewFile(this._dt.files);
     if (typeof this.onChanged === "function")
       this.onChanged(this, this.fileList);
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, this.fileList);
   }
   async checkBeforeUpload(file) {
     const before = typeof this.onUploading === "function" && this.onUploading(this, file);
@@ -25512,6 +25545,15 @@ var ComboBox = class extends Control {
   get border() {
     return super.border;
   }
+  get enabled() {
+    return super.enabled;
+  }
+  set enabled(value) {
+    super.enabled = value;
+    if (this.inputElm) {
+      this.inputElm.disabled = !value;
+    }
+  }
   get readOnly() {
     return this._readOnly;
   }
@@ -25550,7 +25592,8 @@ var ComboBox = class extends Control {
     return index >= 0;
   }
   getItemIndex(items, item) {
-    const value = item == null ? void 0 : item.value.toString();
+    var _a;
+    const value = (_a = item == null ? void 0 : item.value) == null ? void 0 : _a.toString();
     if (!value && value !== "")
       return -1;
     const index = items.findIndex((_item) => {
@@ -25702,7 +25745,9 @@ var ComboBox = class extends Control {
     if (selectedIndex >= 0)
       selectedItem.splice(selectedIndex, 1);
     this.selectedItem = selectedItem;
-    if (this.onChanged)
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, event);
+    if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
   onItemClick(event, liElm, item) {
@@ -25727,7 +25772,9 @@ var ComboBox = class extends Control {
       this.selectedItem = item;
       this.closeList();
     }
-    if (this.onChanged)
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, event);
+    if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
   clear() {
@@ -25756,14 +25803,14 @@ var ComboBox = class extends Control {
       this.inputElm.disabled = disabled;
       this.readOnly = this.getAttribute("readOnly", true, false);
       this.inputElm.addEventListener("click", (e) => {
-        if (this._readOnly || this._designMode)
+        if (!this._enabled || this._readOnly || this._designMode)
           return false;
         this.openList();
         if (this.onClick)
           this.onClick(this, e);
       });
       this.inputElm.addEventListener("keyup", () => {
-        if (this._readOnly || this._designMode)
+        if (!this._enabled || this._readOnly || this._designMode)
           return false;
         this.searchStr = this.inputElm.value;
         this.renderItems();
@@ -26009,15 +26056,13 @@ var Datepicker = class extends Control {
       if (!pickerValue) {
         this.inputElm.placeholder = this._placeholder || "";
         this.inputElm.value = "";
-        if (this.onChanged)
-          this.onChanged(this, event);
+        this.emitChange(event);
         return;
       }
       RequireJS.require(["@moment"], (moment2) => {
         let _moment = this._type === "time" ? moment2(pickerValue, "HH:mm:ss") : moment2(pickerValue);
         this.updateValue(_moment);
-        if (this.onChanged)
-          this.onChanged(this, event);
+        this.emitChange(event);
       });
     };
     this._onBlur = (event) => {
@@ -26028,8 +26073,9 @@ var Datepicker = class extends Control {
         const oldVal = this.value;
         this.clear();
         const isChanged = oldVal !== this.value;
-        if (event && isChanged && this.onChanged)
-          this.onChanged(this, event);
+        if (event && isChanged) {
+          this.emitChange(event);
+        }
         return;
       }
       ;
@@ -26102,6 +26148,15 @@ var Datepicker = class extends Control {
       this.updateValue(value);
     else
       this.clear();
+  }
+  set minDate(value) {
+    if (!value) {
+      this._minDate = "";
+    } else {
+      this._minDate = value.format("YYYY-MM-DDTHH:mm");
+    }
+    if (this.datepickerElm)
+      this.datepickerElm.min = this._minDate;
   }
   get defaultDateTimeFormat() {
     switch (this._type) {
@@ -26182,6 +26237,12 @@ var Datepicker = class extends Control {
   get formatString() {
     return this.dateTimeFormat || this.defaultDateTimeFormat;
   }
+  emitChange(event) {
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, event);
+    if (typeof this.onChanged === "function")
+      this.onChanged(this, event);
+  }
   updateValue(value, event) {
     this.inputElm.placeholder = this._placeholder || "";
     const oldVal = this.value;
@@ -26196,8 +26257,9 @@ var Datepicker = class extends Control {
       this.datepickerElm.value = this.value.format(this.datepickerFormat);
     }
     const isChanged = oldVal && this.value && !oldVal.isSame(this.value) || (!oldVal || !this.value);
-    if (event && isChanged && this.onChanged)
-      this.onChanged(this, event);
+    if (event && isChanged) {
+      this.emitChange(event);
+    }
   }
   clear() {
     this._value = void 0;
@@ -26243,6 +26305,8 @@ var Datepicker = class extends Control {
         this._onDatePickerChange(event);
       });
       this.toggleElm.appendChild(this.datepickerElm);
+      const minDate = this.getAttribute("minDate", true);
+      this.minDate = minDate;
       this.caption = this.getAttribute("caption", true);
       this.captionWidth = this.getAttribute("captionWidth", true, this._caption ? defaultCaptionWidth : 0);
       super.init();
@@ -26558,6 +26622,8 @@ var Range2 = class extends Control {
     this.inputElm.style.backgroundSize = (this._value - min) * 100 / (max - min) + "% 100%";
     if (typeof this.onChanged === "function")
       this.onChanged(this, event);
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, event);
     this.onUpdateTooltip(false);
   }
   onUpdateTooltip(init) {
@@ -26889,8 +26955,12 @@ var RadioGroup = class extends Control {
     this._selectedValue = value;
     this._group.forEach((item) => item.classList.remove("is-checked"));
     source.classList.add("is-checked");
-    if (typeof this.onChanged === "function" && selectedValue !== value)
-      this.onChanged(this, event);
+    if (selectedValue !== value) {
+      if (typeof this.onChanged === "function")
+        this.onChanged(this, event);
+      if (typeof this.onObserverChanged === "function")
+        this.onObserverChanged(this, event);
+    }
   }
   add(options) {
     const elm = new Radio(this, options);
@@ -27764,6 +27834,8 @@ var ColorPicker = class extends Control {
     if (data)
       this.currentColor = { ...data };
     this.updateUI(init);
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, this.value);
     if (typeof this.onChanged === "function")
       this.onChanged(this, this.value);
   }
@@ -27997,6 +28069,35 @@ var Input = class extends Control {
       this._value = value;
     };
   }
+  set onObserverChanged(callback) {
+    super.onObserverChanged = callback;
+    if (this._inputControl) {
+      this._inputControl.onObserverChanged = callback;
+    }
+  }
+  get onObserverChanged() {
+    return super.onObserverChanged;
+  }
+  set checked(value) {
+    if (this._inputControl) {
+      this._inputControl.checked = value;
+    }
+  }
+  get checked() {
+    if (this._inputControl) {
+      return this._inputControl.checked;
+    }
+    return false;
+  }
+  set selectedItem(value) {
+    if (this._inputControl) {
+      this._inputControl.selectedItem = value;
+    }
+  }
+  get selectedItem() {
+    var _a;
+    return (_a = this._inputControl) == null ? void 0 : _a.selectedItem;
+  }
   get caption() {
     if (this._inputControl) {
       return this._inputControl.caption;
@@ -28065,6 +28166,8 @@ var Input = class extends Control {
         this.inputElm.style.height = this.inputElm.scrollHeight + 2 + "px";
       }
     }
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this);
   }
   get width() {
     return this.offsetWidth;
@@ -28400,6 +28503,8 @@ var Input = class extends Control {
       this.inputElm.style.height = this.inputElm.scrollHeight + 2 + "px";
     }
     this._value = this.inputElm.value;
+    if (typeof this.onObserverChanged === "function")
+      this.onObserverChanged(this, event);
     if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
@@ -30535,6 +30640,7 @@ var Application = class {
     this.modules = {};
     this.modulesId = {};
     this.scripts = {};
+    this.loadedScripts = {};
     this.id = 0;
     this.LibHost = "";
     this.packageNames = new Set();
@@ -30933,6 +31039,35 @@ var Application = class {
     } catch (err) {
     }
     ;
+    return false;
+  }
+  async loadScriptWithIntegrity(modulePath, integrity = "", crossorigin = "anonymous") {
+    var _a, _b;
+    try {
+      if (this.loadedScripts[modulePath])
+        return true;
+      let checkedIntegrity = integrity;
+      if (!checkedIntegrity && ((_a = this._initOptions) == null ? void 0 : _a.ipfs) && typeof ((_b = this._initOptions) == null ? void 0 : _b.ipfs) == "string") {
+        try {
+          const paths = modulePath.split("/");
+          const cid = await this.getCidItem("/ipfs", this._initOptions.ipfs, paths);
+          if (cid)
+            checkedIntegrity = cidToHash(cid == null ? void 0 : cid.cid);
+        } catch (err) {
+        }
+      }
+      ;
+      const script = document.createElement("script");
+      script.src = modulePath;
+      if (checkedIntegrity)
+        script.integrity = checkedIntegrity;
+      script.crossOrigin = crossorigin;
+      script.async = true;
+      document.head.appendChild(script);
+      this.loadedScripts[modulePath] = true;
+      return script;
+    } catch (err) {
+    }
     return false;
   }
   async getContent(modulePath) {
@@ -35664,7 +35799,7 @@ var Markdown = class extends Control {
     const breakRegex = /\|(\s)*:?(-+):?(\s)*\|/gm;
     if (!breakRegex.test(tableMd))
       return text;
-    const splittedArr = tableMd.split("|") || [];
+    const splittedArr = tableMd.split(/(?<!\\)\|/g) || [];
     for (let i = 0; i < splittedArr.length; i++) {
       let child2 = splittedArr[i].trim() || "";
       if (child2) {
@@ -35674,7 +35809,7 @@ var Markdown = class extends Control {
           breaks: true
         });
         if (child2 !== "\n") {
-          splittedArr[i] = child2.replace(/\n/g, "");
+          splittedArr[i] = child2.replace(/\n/g, "").replace("|", "&#124;");
         }
       }
     }
@@ -36066,7 +36201,9 @@ var MarkdownEditor = class extends Text {
               this.editorObj.setMarkdown(this.editorObj.getMarkdown(), false);
               return;
             }
-            if (this.onChanged)
+            if (typeof this.onObserverChanged === "function")
+              this.onObserverChanged(this, event);
+            if (typeof this.onChanged === "function")
               this.onChanged(this, event);
           },
           focus: (event, data) => {
@@ -37232,14 +37369,341 @@ MenuItem = __decorateClass([
   })
 ], MenuItem);
 
+// packages/switch/src/style/switch.css.ts
+var Theme31 = theme_exports.ThemeVars;
+cssRule("i-switch", {
+  display: "block",
+  fontFamily: Theme31.typography.fontFamily,
+  fontSize: Theme31.typography.fontSize,
+  $nest: {
+    ".wrapper": {
+      width: "48px",
+      height: "22px",
+      position: "relative",
+      display: "inline-flex",
+      flexShrink: 0,
+      overflow: "hidden",
+      zIndex: 0,
+      verticalAlign: "middle"
+    },
+    ".switch-base": {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      outline: 0,
+      border: 0,
+      margin: 0,
+      cursor: "pointer",
+      userSelect: "none",
+      verticalAlign: "middle",
+      textDecoration: "none",
+      padding: "1px",
+      borderRadius: "50%",
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      zIndex: 1,
+      color: "#fff",
+      transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+      $nest: {
+        "&.checked": {
+          transform: "translateX(26px)",
+          $nest: {
+            ".thumb:before": {
+              backgroundImage: "var(--checked-background)"
+            },
+            ".thumb-text:before": {
+              content: "var(--thumb-checked-text)"
+            },
+            "+.track": {
+              backgroundColor: "#1976d2",
+              $nest: {
+                "&::before": {
+                  opacity: 1
+                },
+                "&::after": {
+                  opacity: 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    input: {
+      position: "absolute",
+      top: 0,
+      left: "-100%",
+      width: "300%",
+      height: "100%",
+      opacity: 0,
+      margin: 0,
+      padding: 0,
+      cursor: "inherit",
+      zIndex: 1
+    },
+    ".thumb": {
+      width: "16px",
+      height: "16px",
+      margin: "2px",
+      backgroundColor: "currentColor",
+      borderRadius: "50%",
+      boxShadow: "none"
+    },
+    ".thumb:before": {
+      content: '""',
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+      left: 0,
+      top: 0,
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "center",
+      backgroundSize: "14px",
+      backgroundImage: "var(--background)"
+    },
+    ".thumb.thumb-text:before": {
+      content: "var(--thumb-text)",
+      position: "absolute",
+      width: "inherit",
+      height: "inherit",
+      top: "auto",
+      left: "auto",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff"
+    },
+    ".track": {
+      width: "100%",
+      height: "100%",
+      zIndex: -1,
+      borderRadius: "11px",
+      backgroundColor: "#000",
+      transition: "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+      $nest: {
+        "&::before": {
+          content: "var(--checked-text)",
+          position: "absolute",
+          left: "4px",
+          top: "calc(50% - 0.6px)",
+          transform: "translateY(-50%)",
+          fontSize: "10px",
+          color: "white",
+          opacity: 0
+        },
+        "&::after": {
+          content: "var(--text)",
+          position: "absolute",
+          right: "6px",
+          top: "calc(50% - 0.6px)",
+          transform: "translateY(-50%)",
+          fontSize: "10px",
+          color: "white",
+          opacity: 1
+        }
+      }
+    }
+  }
+});
+
+// packages/switch/src/switch.ts
+var Switch = class extends Control {
+  constructor(parent, options) {
+    super(parent, options);
+  }
+  get checked() {
+    return this._checked;
+  }
+  set checked(value) {
+    if (this._checked === value)
+      return;
+    this._checked = value;
+    this._checked ? this.switchBaseElm.classList.add("checked") : this.switchBaseElm.classList.remove("checked");
+    if (this._checked) {
+      if (this.checkedThumbColor)
+        this.switchBaseElm.style.color = this.checkedThumbColor;
+      if (this.checkedTrackColor)
+        this.trackElm.style.backgroundColor = this.checkedTrackColor;
+    } else {
+      if (this.uncheckedThumbColor)
+        this.switchBaseElm.style.color = this.uncheckedThumbColor;
+      if (this.uncheckedTrackColor)
+        this.trackElm.style.backgroundColor = this.uncheckedTrackColor;
+    }
+  }
+  get checkedThumbColor() {
+    return this._checkedThumbColor;
+  }
+  set checkedThumbColor(value) {
+    if (this._checkedThumbColor === value)
+      return;
+    this._checkedThumbColor = value;
+    if (this._checked) {
+      this.switchBaseElm.style.color = this.checkedThumbColor;
+    }
+  }
+  get uncheckedThumbColor() {
+    return this._uncheckedThumbColor;
+  }
+  set uncheckedThumbColor(value) {
+    if (this._uncheckedThumbColor === value)
+      return;
+    this._uncheckedThumbColor = value;
+    if (!this._checked) {
+      this.switchBaseElm.style.color = value;
+    }
+  }
+  get checkedTrackColor() {
+    return this._checkedTrackColor;
+  }
+  set checkedTrackColor(value) {
+    if (this._checkedTrackColor === value)
+      return;
+    this._checkedTrackColor = value;
+    if (this._checked) {
+      this.trackElm.style.backgroundColor = value;
+    }
+  }
+  get uncheckedTrackColor() {
+    return this._uncheckedTrackColor;
+  }
+  set uncheckedTrackColor(value) {
+    if (this._uncheckedTrackColor === value)
+      return;
+    this._uncheckedTrackColor = value;
+    if (!this._checked) {
+      this.trackElm.style.backgroundColor = value;
+    }
+  }
+  get checkedText() {
+    return this._checkedText;
+  }
+  set checkedText(value) {
+    this._checkedText = value;
+    this.trackElm.style.setProperty("--checked-text", `"${value}"`);
+  }
+  get uncheckedText() {
+    return this._uncheckedText;
+  }
+  set uncheckedText(value) {
+    this._uncheckedText = value;
+    this.trackElm.style.setProperty("--text", `"${value}"`);
+  }
+  get checkedThumbText() {
+    return this._checkedThumbText;
+  }
+  set checkedThumbText(value) {
+    this._checkedThumbText = value;
+    this.thumbElm.classList.add("thumb-text");
+    this.thumbElm.style.setProperty("--thumb-text", `'${value || ""}'`);
+  }
+  get uncheckedThumbText() {
+    return this._uncheckedThumbText;
+  }
+  set uncheckedThumbText(value) {
+    this._uncheckedThumbText = value;
+    this.thumbElm.classList.add("thumb-text");
+    this.thumbElm.style.setProperty("--thumb-checked-text", `'${value || ""}'`);
+  }
+  setAttributeToProperty(propertyName) {
+    const prop = this.getAttribute(propertyName, true);
+    if (prop)
+      this[propertyName] = prop;
+  }
+  _handleClick(event) {
+    if (this._designMode)
+      return false;
+    if (!this.onClick) {
+      this.checked = !this.checked;
+      if (typeof this.onChanged === "function")
+        this.onChanged(this, event);
+      if (typeof this.onObserverChanged === "function")
+        this.onObserverChanged(this, event);
+    }
+    return super._handleClick(event, true);
+  }
+  init() {
+    if (!this.wrapperElm) {
+      this.wrapperElm = this.createElement("div", this);
+      this.wrapperElm.classList.add("wrapper");
+      this.switchBaseElm = this.createElement("div");
+      this.switchBaseElm.classList.add("switch-base");
+      this.wrapperElm.appendChild(this.switchBaseElm);
+      this.trackElm = this.createElement("div");
+      this.trackElm.classList.add("track");
+      this.wrapperElm.appendChild(this.trackElm);
+      this.inputElm = this.createElement("input");
+      this.inputElm.setAttribute("type", "checkbox");
+      this.switchBaseElm.appendChild(this.inputElm);
+      this.thumbElm = this.createElement("div");
+      this.thumbElm.classList.add("thumb");
+      this.switchBaseElm.appendChild(this.thumbElm);
+      this.rippleElm = this.createElement("div");
+      this.rippleElm.classList.add("ripple");
+      this.switchBaseElm.appendChild(this.rippleElm);
+      this.checked = this.getAttribute("checked", true) || false;
+      this.setAttributeToProperty("checkedThumbColor");
+      this.setAttributeToProperty("uncheckedThumbColor");
+      this.setAttributeToProperty("checkedTrackColor");
+      this.setAttributeToProperty("uncheckedTrackColor");
+      this.setAttributeToProperty("checkedText");
+      this.setAttributeToProperty("uncheckedText");
+      this.setAttributeToProperty("checkedThumbText");
+      this.setAttributeToProperty("uncheckedThumbText");
+      super.init();
+    }
+  }
+  static async create(options, parent) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
+};
+Switch = __decorateClass([
+  customElements2("i-switch", {
+    icon: "toggle-on",
+    group: GroupType.FIELDS,
+    className: "Switch",
+    props: {
+      checkedThumbColor: { type: "string", default: "" },
+      uncheckedThumbColor: { type: "string", default: "" },
+      checkedThumbText: { type: "string", default: "" },
+      uncheckedThumbText: { type: "string", default: "" },
+      checkedTrackColor: { type: "string", default: "" },
+      uncheckedTrackColor: { type: "string", default: "" },
+      checkedText: { type: "string", default: "" },
+      uncheckedText: { type: "string", default: "" },
+      checked: { type: "boolean", default: false }
+    },
+    events: {},
+    dataSchema: {
+      type: "object",
+      properties: {
+        checkedThumbColor: { type: "string", format: "color" },
+        uncheckedThumbColor: { type: "string", format: "color" },
+        checkedThumbText: { type: "string" },
+        uncheckedThumbText: { type: "string" },
+        checkedTrackColor: { type: "string", format: "color" },
+        uncheckedTrackColor: { type: "string", format: "color" },
+        checkedText: { type: "string" },
+        uncheckedText: { type: "string" },
+        checked: { type: "boolean", default: false }
+      }
+    }
+  })
+], Switch);
+
 // packages/module/src/module.ts
 function ProxySetter(obj, prop, value) {
   obj["__target"][prop] = value;
   return true;
 }
 function ProxyGetter(target, prop) {
-  if (typeof target.__target[prop] == "function")
+  if (typeof target.__target[prop] == "function") {
     return target.__target[prop].bind(target.__target);
+  }
   if (prop == "__target")
     return target["__target"];
   else if (prop == "__path")
@@ -37288,7 +37752,25 @@ function getObservable(target, paths) {
 }
 function bindObservable(elm, prop) {
   return function(changes) {
-    elm[prop] = changes[0].value;
+    var _a, _b;
+    const changeData = changes[0];
+    const type = changeData.type;
+    if (Array.isArray(changeData.object)) {
+      if (type === "shuffle" || type === "reverse" || ((_a = changeData.path) == null ? void 0 : _a.length) > 1) {
+        elm[prop] = changeData.object;
+      } else if ((_b = changeData.path) == null ? void 0 : _b.length) {
+        let newArray = elm[prop];
+        if (type === "delete") {
+          newArray[changeData.path[0]] = void 0;
+          newArray = newArray.filter(Boolean);
+        } else if (type === "insert" || type === "update") {
+          newArray[changeData.path[0]] = changeData.value;
+        }
+        elm[prop] = newArray;
+      }
+    } else {
+      elm[prop] = changeData.value;
+    }
   };
 }
 var Module = class extends Container {
@@ -37304,6 +37786,7 @@ var Module = class extends Container {
     return self;
   }
   init() {
+    var _a;
     super.init();
     this.$renderElms = [];
     let proxy = ProxyObject(this, true);
@@ -37322,10 +37805,47 @@ var Module = class extends Container {
           let targetValue = this.getAttributeValue(target, paths);
           let observable3 = getObservable(target, paths);
           if (isObservable(observable3)) {
-            if (paths.length > 0)
+            if (paths.length > 0) {
               Observe(observable3, bindObservable(elm, prop), { path: paths.join(".") });
-            else {
+              const onObserverChanged = elm["onObserverChanged"];
+              elm.onObserverChanged = (target2, event) => {
+                var _a2;
+                const observables = (_a2 = proxy == null ? void 0 : proxy.__target) == null ? void 0 : _a2["$observables"];
+                for (const prop2 in observables) {
+                  const observable4 = observables[prop2];
+                  let target3 = observable4;
+                  for (let i2 = 0; i2 < paths.length - 1; i2++) {
+                    target3 = target3 == null ? void 0 : target3[paths[i2]];
+                  }
+                  if (target3) {
+                    const lastProp = paths[paths.length - 1];
+                    target3[lastProp] = this._getValueByControl(elm);
+                  }
+                }
+                if (typeof onObserverChanged === "function") {
+                  onObserverChanged(target2, event);
+                }
+              };
+            } else {
               Observe(observable3, bindObservable(elm, prop));
+              const observables = (_a = proxy == null ? void 0 : proxy.__target) == null ? void 0 : _a["$observables"];
+              let updatedProp = "";
+              for (const p in observables) {
+                if (observables[p] === observable3) {
+                  updatedProp = p;
+                  break;
+                }
+              }
+              const onObserverChanged = elm["onObserverChanged"];
+              elm.onObserverChanged = (target2, event) => {
+                if (updatedProp && updatedProp !== prop) {
+                  const newValue = this._getValueByControl(elm);
+                  ProxySetter(proxy, updatedProp, newValue);
+                }
+                if (typeof onObserverChanged === "function") {
+                  onObserverChanged(target2, event);
+                }
+              };
             }
           }
           elm[prop] = targetValue;
@@ -37334,6 +37854,19 @@ var Module = class extends Container {
     }
     this.$renderElms = [];
     window["Render"] = r;
+  }
+  _getValueByControl(elm) {
+    if (elm instanceof RadioGroup) {
+      return elm.selectedValue;
+    } else if (elm instanceof Switch || elm instanceof Checkbox || elm instanceof Input && elm.inputType === "checkbox") {
+      return elm.checked;
+    } else if (elm instanceof Upload) {
+      return elm.fileList;
+    } else if (elm instanceof ComboBox || elm instanceof Input && elm.inputType === "combobox") {
+      return elm.selectedItem;
+    } else {
+      return elm.value;
+    }
   }
   flattenArray(arr) {
     return arr.reduce((result, item) => {
@@ -37434,13 +37967,13 @@ Module = __decorateClass([
 ], Module);
 
 // packages/tree-view/src/style/treeView.css.ts
-var Theme31 = theme_exports.ThemeVars;
+var Theme32 = theme_exports.ThemeVars;
 cssRule("i-tree-view", {
   display: "block",
   overflowY: "auto",
   overflowX: "hidden",
-  fontFamily: Theme31.typography.fontFamily,
-  fontSize: Theme31.typography.fontSize,
+  fontFamily: Theme32.typography.fontFamily,
+  fontSize: Theme32.typography.fontSize,
   $nest: {
     ".i-tree-node_content": {
       display: "flex",
@@ -37474,7 +38007,7 @@ cssRule("i-tree-view", {
     ".i-tree-node_label": {
       position: "relative",
       display: "inline-block",
-      color: Theme31.text.primary,
+      color: Theme32.text.primary,
       cursor: "pointer",
       fontSize: "inherit"
     },
@@ -37508,7 +38041,7 @@ cssRule("i-tree-view", {
       position: "relative",
       $nest: {
         ".is-checked:before": {
-          borderLeft: `1px solid ${Theme31.divider}`,
+          borderLeft: `1px solid ${Theme32.divider}`,
           height: "calc(100% - 1em)",
           top: "1em"
         },
@@ -37517,17 +38050,17 @@ cssRule("i-tree-view", {
           top: 25
         },
         "i-tree-node.active > .i-tree-node_content": {
-          backgroundColor: Theme31.action.selectedBackground,
-          color: Theme31.action.selected,
+          backgroundColor: Theme32.action.selectedBackground,
+          color: Theme32.action.selected,
           $nest: {
             "> .i-tree-node_label": {
-              color: Theme31.action.selected
+              color: Theme32.action.selected
             }
           }
         },
         ".i-tree-node_content:hover": {
-          backgroundColor: Theme31.action.hoverBackground,
-          color: Theme31.action.hover,
+          backgroundColor: Theme32.action.hoverBackground,
+          color: Theme32.action.hover,
           $nest: {
             "> .is-right .button-group *": {
               display: "inline-flex"
@@ -37555,8 +38088,8 @@ cssRule("i-tree-view", {
           marginLeft: "1em"
         },
         "input ~ .i-tree-node_label:before": {
-          background: Theme31.colors.primary.main,
-          color: Theme31.colors.primary.contrastText,
+          background: Theme32.colors.primary.main,
+          color: Theme32.colors.primary.contrastText,
           position: "relative",
           zIndex: "1",
           float: "left",
@@ -37597,7 +38130,7 @@ cssRule("i-tree-view", {
           left: "-.1em",
           display: "block",
           width: "1px",
-          borderLeft: `1px solid ${Theme31.divider}`,
+          borderLeft: `1px solid ${Theme32.divider}`,
           content: "''"
         },
         ".i-tree-node_icon:not(.custom-icon)": {
@@ -37613,15 +38146,15 @@ cssRule("i-tree-view", {
           display: "block",
           height: "0.5em",
           width: "1em",
-          borderBottom: `1px solid ${Theme31.divider}`,
-          borderLeft: `1px solid ${Theme31.divider}`,
+          borderBottom: `1px solid ${Theme32.divider}`,
+          borderLeft: `1px solid ${Theme32.divider}`,
           borderRadius: " 0 0 0 0",
           content: "''"
         },
         "i-tree-node input:checked ~ .i-tree-node_label:after": {
           borderRadius: "0 .1em 0 0",
-          borderTop: `1px solid ${Theme31.divider}`,
-          borderRight: `0.5px solid ${Theme31.divider}`,
+          borderTop: `1px solid ${Theme32.divider}`,
+          borderRight: `0.5px solid ${Theme32.divider}`,
           borderBottom: "0",
           borderLeft: "0",
           bottom: "0",
@@ -37640,7 +38173,7 @@ cssRule("i-tree-view", {
       width: "100%",
       $nest: {
         "&:focus": {
-          borderBottom: `2px solid ${Theme31.colors.primary.main}`
+          borderBottom: `2px solid ${Theme32.colors.primary.main}`
         }
       }
     },
@@ -37667,11 +38200,11 @@ cssRule("i-tree-view", {
 });
 
 // packages/tree-view/src/treeView.ts
-var Theme32 = theme_exports.ThemeVars;
+var Theme33 = theme_exports.ThemeVars;
 var beforeExpandEvent = new Event("beforeExpand");
 var defaultIcon2 = {
   name: "caret-right",
-  fill: Theme32.text.secondary,
+  fill: Theme33.text.secondary,
   width: "0.75rem",
   height: "0.75rem"
 };
@@ -38257,330 +38790,6 @@ var TreeNode = class extends Control {
 TreeNode = __decorateClass([
   customElements2("i-tree-node")
 ], TreeNode);
-
-// packages/switch/src/style/switch.css.ts
-var Theme33 = theme_exports.ThemeVars;
-cssRule("i-switch", {
-  display: "block",
-  fontFamily: Theme33.typography.fontFamily,
-  fontSize: Theme33.typography.fontSize,
-  $nest: {
-    ".wrapper": {
-      width: "48px",
-      height: "22px",
-      position: "relative",
-      display: "inline-flex",
-      flexShrink: 0,
-      overflow: "hidden",
-      zIndex: 0,
-      verticalAlign: "middle"
-    },
-    ".switch-base": {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      outline: 0,
-      border: 0,
-      margin: 0,
-      cursor: "pointer",
-      userSelect: "none",
-      verticalAlign: "middle",
-      textDecoration: "none",
-      padding: "1px",
-      borderRadius: "50%",
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      left: 0,
-      zIndex: 1,
-      color: "#fff",
-      transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
-      $nest: {
-        "&.checked": {
-          transform: "translateX(26px)",
-          $nest: {
-            ".thumb:before": {
-              backgroundImage: "var(--checked-background)"
-            },
-            ".thumb-text:before": {
-              content: "var(--thumb-checked-text)"
-            },
-            "+.track": {
-              backgroundColor: "#1976d2",
-              $nest: {
-                "&::before": {
-                  opacity: 1
-                },
-                "&::after": {
-                  opacity: 0
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    input: {
-      position: "absolute",
-      top: 0,
-      left: "-100%",
-      width: "300%",
-      height: "100%",
-      opacity: 0,
-      margin: 0,
-      padding: 0,
-      cursor: "inherit",
-      zIndex: 1
-    },
-    ".thumb": {
-      width: "16px",
-      height: "16px",
-      margin: "2px",
-      backgroundColor: "currentColor",
-      borderRadius: "50%",
-      boxShadow: "none"
-    },
-    ".thumb:before": {
-      content: '""',
-      position: "absolute",
-      width: "100%",
-      height: "100%",
-      left: 0,
-      top: 0,
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "center",
-      backgroundSize: "14px",
-      backgroundImage: "var(--background)"
-    },
-    ".thumb.thumb-text:before": {
-      content: "var(--thumb-text)",
-      position: "absolute",
-      width: "inherit",
-      height: "inherit",
-      top: "auto",
-      left: "auto",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#fff"
-    },
-    ".track": {
-      width: "100%",
-      height: "100%",
-      zIndex: -1,
-      borderRadius: "11px",
-      backgroundColor: "#000",
-      transition: "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
-      $nest: {
-        "&::before": {
-          content: "var(--checked-text)",
-          position: "absolute",
-          left: "4px",
-          top: "calc(50% - 0.6px)",
-          transform: "translateY(-50%)",
-          fontSize: "10px",
-          color: "white",
-          opacity: 0
-        },
-        "&::after": {
-          content: "var(--text)",
-          position: "absolute",
-          right: "6px",
-          top: "calc(50% - 0.6px)",
-          transform: "translateY(-50%)",
-          fontSize: "10px",
-          color: "white",
-          opacity: 1
-        }
-      }
-    }
-  }
-});
-
-// packages/switch/src/switch.ts
-var Switch = class extends Control {
-  constructor(parent, options) {
-    super(parent, options);
-  }
-  get checked() {
-    return this._checked;
-  }
-  set checked(value) {
-    if (this._checked === value)
-      return;
-    this._checked = value;
-    this._checked ? this.switchBaseElm.classList.add("checked") : this.switchBaseElm.classList.remove("checked");
-    if (this._checked) {
-      if (this.checkedThumbColor)
-        this.switchBaseElm.style.color = this.checkedThumbColor;
-      if (this.checkedTrackColor)
-        this.trackElm.style.backgroundColor = this.checkedTrackColor;
-    } else {
-      if (this.uncheckedThumbColor)
-        this.switchBaseElm.style.color = this.uncheckedThumbColor;
-      if (this.uncheckedTrackColor)
-        this.trackElm.style.backgroundColor = this.uncheckedTrackColor;
-    }
-  }
-  get checkedThumbColor() {
-    return this._checkedThumbColor;
-  }
-  set checkedThumbColor(value) {
-    if (this._checkedThumbColor === value)
-      return;
-    this._checkedThumbColor = value;
-    if (this._checked) {
-      this.switchBaseElm.style.color = this.checkedThumbColor;
-    }
-  }
-  get uncheckedThumbColor() {
-    return this._uncheckedThumbColor;
-  }
-  set uncheckedThumbColor(value) {
-    if (this._uncheckedThumbColor === value)
-      return;
-    this._uncheckedThumbColor = value;
-    if (!this._checked) {
-      this.switchBaseElm.style.color = value;
-    }
-  }
-  get checkedTrackColor() {
-    return this._checkedTrackColor;
-  }
-  set checkedTrackColor(value) {
-    if (this._checkedTrackColor === value)
-      return;
-    this._checkedTrackColor = value;
-    if (this._checked) {
-      this.trackElm.style.backgroundColor = value;
-    }
-  }
-  get uncheckedTrackColor() {
-    return this._uncheckedTrackColor;
-  }
-  set uncheckedTrackColor(value) {
-    if (this._uncheckedTrackColor === value)
-      return;
-    this._uncheckedTrackColor = value;
-    if (!this._checked) {
-      this.trackElm.style.backgroundColor = value;
-    }
-  }
-  get checkedText() {
-    return this._checkedText;
-  }
-  set checkedText(value) {
-    this._checkedText = value;
-    this.trackElm.style.setProperty("--checked-text", `"${value}"`);
-  }
-  get uncheckedText() {
-    return this._uncheckedText;
-  }
-  set uncheckedText(value) {
-    this._uncheckedText = value;
-    this.trackElm.style.setProperty("--text", `"${value}"`);
-  }
-  get checkedThumbText() {
-    return this._checkedThumbText;
-  }
-  set checkedThumbText(value) {
-    this._checkedThumbText = value;
-    this.thumbElm.classList.add("thumb-text");
-    this.thumbElm.style.setProperty("--thumb-text", `'${value || ""}'`);
-  }
-  get uncheckedThumbText() {
-    return this._uncheckedThumbText;
-  }
-  set uncheckedThumbText(value) {
-    this._uncheckedThumbText = value;
-    this.thumbElm.classList.add("thumb-text");
-    this.thumbElm.style.setProperty("--thumb-checked-text", `'${value || ""}'`);
-  }
-  setAttributeToProperty(propertyName) {
-    const prop = this.getAttribute(propertyName, true);
-    if (prop)
-      this[propertyName] = prop;
-  }
-  _handleClick(event) {
-    if (this._designMode)
-      return false;
-    if (!this.onClick) {
-      this.checked = !this.checked;
-      if (typeof this.onChanged === "function")
-        this.onChanged(this, event);
-    }
-    return super._handleClick(event, true);
-  }
-  init() {
-    if (!this.wrapperElm) {
-      this.wrapperElm = this.createElement("div", this);
-      this.wrapperElm.classList.add("wrapper");
-      this.switchBaseElm = this.createElement("div");
-      this.switchBaseElm.classList.add("switch-base");
-      this.wrapperElm.appendChild(this.switchBaseElm);
-      this.trackElm = this.createElement("div");
-      this.trackElm.classList.add("track");
-      this.wrapperElm.appendChild(this.trackElm);
-      this.inputElm = this.createElement("input");
-      this.inputElm.setAttribute("type", "checkbox");
-      this.switchBaseElm.appendChild(this.inputElm);
-      this.thumbElm = this.createElement("div");
-      this.thumbElm.classList.add("thumb");
-      this.switchBaseElm.appendChild(this.thumbElm);
-      this.rippleElm = this.createElement("div");
-      this.rippleElm.classList.add("ripple");
-      this.switchBaseElm.appendChild(this.rippleElm);
-      this.checked = this.getAttribute("checked", true) || false;
-      this.setAttributeToProperty("checkedThumbColor");
-      this.setAttributeToProperty("uncheckedThumbColor");
-      this.setAttributeToProperty("checkedTrackColor");
-      this.setAttributeToProperty("uncheckedTrackColor");
-      this.setAttributeToProperty("checkedText");
-      this.setAttributeToProperty("uncheckedText");
-      this.setAttributeToProperty("checkedThumbText");
-      this.setAttributeToProperty("uncheckedThumbText");
-      super.init();
-    }
-  }
-  static async create(options, parent) {
-    let self = new this(parent, options);
-    await self.ready();
-    return self;
-  }
-};
-Switch = __decorateClass([
-  customElements2("i-switch", {
-    icon: "toggle-on",
-    group: GroupType.FIELDS,
-    className: "Switch",
-    props: {
-      checkedThumbColor: { type: "string", default: "" },
-      uncheckedThumbColor: { type: "string", default: "" },
-      checkedThumbText: { type: "string", default: "" },
-      uncheckedThumbText: { type: "string", default: "" },
-      checkedTrackColor: { type: "string", default: "" },
-      uncheckedTrackColor: { type: "string", default: "" },
-      checkedText: { type: "string", default: "" },
-      uncheckedText: { type: "string", default: "" },
-      checked: { type: "boolean", default: false }
-    },
-    events: {},
-    dataSchema: {
-      type: "object",
-      properties: {
-        checkedThumbColor: { type: "string", format: "color" },
-        uncheckedThumbColor: { type: "string", format: "color" },
-        checkedThumbText: { type: "string" },
-        uncheckedThumbText: { type: "string" },
-        checkedTrackColor: { type: "string", format: "color" },
-        uncheckedTrackColor: { type: "string", format: "color" },
-        checkedText: { type: "string" },
-        uncheckedText: { type: "string" },
-        checked: { type: "boolean", default: false }
-      }
-    }
-  })
-], Switch);
 
 // packages/popover/src/style/popover.css.ts
 var Theme34 = theme_exports.ThemeVars;
@@ -39807,7 +40016,7 @@ var TableColumn = class extends Control {
       this.ascElm && this.ascElm.classList.remove("sort-icon--active");
       this.descElm && this.descElm.classList.remove("sort-icon--active");
     }
-    if (value && this.onSortChange)
+    if (value && typeof this.onSortChange === "function")
       this.onSortChange(this, this.fieldName, value);
   }
   get textAlign() {
@@ -39990,7 +40199,8 @@ var Table = class extends Control {
     this.filteredData = value;
     if (this.pagination)
       this.pagination.totalPages = Math.ceil(value.length / this.pagination.pageSize);
-    this.renderBody && this.renderBody();
+    if (typeof this.renderBody === "function")
+      this.renderBody();
   }
   get filteredData() {
     return this.sortFn(this._filteredData);
@@ -40027,7 +40237,7 @@ var Table = class extends Control {
   set columns(value) {
     this._columns = value;
     this._heading && this.renderHeader();
-    !this.firstLoad && this.renderBody && this.renderBody();
+    !this.firstLoad && typeof this.renderBody === "function" && this.renderBody();
   }
   get rows() {
     return this._rows;
@@ -40119,7 +40329,7 @@ var Table = class extends Control {
     this._sortConfig[key2] = value;
     if (this.filteredData)
       this.renderBody();
-    if (this.onColumnSort)
+    if (typeof this.onColumnSort === "function")
       this.onColumnSort(this, key2, value);
   }
   renderHeader() {
@@ -40155,7 +40365,7 @@ var Table = class extends Control {
       const rowData = colElm ? colElm.rowData : null;
       const rowIndex = (rowElm == null ? void 0 : rowElm.getAttribute("data-index")) || -1;
       const colIndex = (tdElm == null ? void 0 : tdElm.getAttribute("data-index")) || -1;
-      if (this.onCellClick && rowIndex !== -1)
+      if (typeof this.onCellClick === "function" && rowIndex !== -1)
         this.onCellClick(this, +rowIndex, +colIndex, rowData);
       if (this.expandable && rowElm) {
         const expandTd = rowElm.querySelector(".i-table-cell--expand");
@@ -40252,7 +40462,7 @@ var Table = class extends Control {
       const tdElm = this.createElement("td", rowElm);
       tdElm.setAttribute("colspan", `${this.columnLength + (this.hasExpandColumn ? 1 : 0)}`);
       tdElm.classList.add("i-table-cell", "text-center", this._bodyStyle);
-      if (this.onRenderEmptyTable) {
+      if (typeof this.onRenderEmptyTable === "function") {
         this.onRenderEmptyTable(this);
       } else {
         const label = this.createElement("span");
@@ -40325,6 +40535,9 @@ var Table = class extends Control {
     return self;
   }
 };
+__decorateClass([
+  observable("data", true)
+], Table.prototype, "_data", 2);
 Table = __decorateClass([
   customElements2("i-table")
 ], Table);
@@ -45915,11 +46128,15 @@ var Form = class extends Control {
       label = this.renderLabel({ parent: wrapper, options, type: "caption" });
     }
     const vstack = new VStack(wrapper, { gap: 4 });
-    const input = new Input(vstack, {
+    const inputOpt = {
       inputType: "text",
       height: "42px",
       width: "100%"
-    });
+    };
+    if (defaultValue) {
+      inputOpt.value = defaultValue.toString();
+    }
+    const input = new Input(vstack, inputOpt);
     input.onChanged = () => {
       if (labelProp)
         labelProp.caption = input.value;
@@ -45948,9 +46165,6 @@ var Form = class extends Control {
       description,
       error
     };
-    if (defaultValue) {
-      input.setAttribute("value", defaultValue.toString());
-    }
     return wrapper;
   }
   renderNumberInput(numberInputOption) {
@@ -45963,11 +46177,17 @@ var Form = class extends Control {
       label = this.renderLabel({ parent: wrapper, options, type: "caption" });
     }
     const vstack = new VStack(wrapper, { gap: 4 });
-    const input = new Input(vstack, {
+    const inputOpt = {
       inputType: "number",
       height: "42px",
       width: "100%"
-    });
+    };
+    if (defaultValue) {
+      const numDefaultValue = parseFloat(defaultValue);
+      if (!isNaN(numDefaultValue))
+        inputOpt.value = numDefaultValue;
+    }
+    const input = new Input(vstack, inputOpt);
     input.onChanged = () => {
       if (labelProp)
         labelProp.caption = input.value;
@@ -45996,11 +46216,6 @@ var Form = class extends Control {
       description,
       error
     };
-    if (defaultValue) {
-      const numDefaultValue = parseFloat(defaultValue);
-      if (!isNaN(numDefaultValue))
-        input.setAttribute("value", numDefaultValue.toString());
-    }
     return wrapper;
   }
   renderTextArea(textAreaOption) {
@@ -46013,11 +46228,15 @@ var Form = class extends Control {
       label = this.renderLabel({ parent: wrapper, options, type: "caption" });
     }
     const vstack = new VStack(wrapper);
-    const input = new Input(vstack, {
+    const inputOpt = {
       inputType: "textarea",
       height: "unset",
       rows: 5
-    });
+    };
+    if (defaultValue) {
+      inputOpt.value = defaultValue.toString();
+    }
+    const input = new Input(vstack, inputOpt);
     input.onChanged = () => {
       if (labelProp)
         labelProp.caption = input.value;
@@ -46046,8 +46265,6 @@ var Form = class extends Control {
       description,
       error
     };
-    if (defaultValue)
-      input.setAttribute("value", defaultValue.toString());
     return wrapper;
   }
   renderColorPicker(colorPickerOption) {
@@ -46060,11 +46277,15 @@ var Form = class extends Control {
       label = this.renderLabel({ parent: wrapper, options, type: "caption" });
     }
     const vstack = new VStack(wrapper, { gap: 4 });
-    const input = new Input(vstack, {
+    const inputOpt = {
       inputType: "color",
       height: "42px",
       width: "100%"
-    });
+    };
+    if (defaultValue) {
+      inputOpt.value = defaultValue.toString();
+    }
+    const input = new Input(vstack, inputOpt);
     input.onClosed = () => {
       if (labelProp)
         labelProp.caption = input.value;
@@ -46090,9 +46311,6 @@ var Form = class extends Control {
       description,
       error
     };
-    if (defaultValue) {
-      input.setAttribute("value", defaultValue.toString());
-    }
     return wrapper;
   }
   renderUploader(uploaderOption) {
@@ -46703,7 +46921,7 @@ var Form = class extends Control {
               if (!regex.test(value))
                 addError("is not a valid uuid", scope);
             } else if (schema2.format === "url") {
-              const regex = new RegExp("^(https?|ftp)://[^s/$.?#].[^s]*$");
+              const regex = new RegExp("^(https?|ftp)://[a-zA-Z0-9.-]+.[a-zA-Z]{2,}(?:/[^s]*)?$");
               if (!regex.test(value))
                 addError("is not a valid URL", scope);
             }
@@ -46860,6 +47078,7 @@ var DEFAULT_COUNT = 0;
 var Repeater = class extends Container {
   constructor(parent, options) {
     super(parent, options);
+    this._data = [];
   }
   get count() {
     var _a;
@@ -46868,6 +47087,14 @@ var Repeater = class extends Container {
   set count(value) {
     this._count = value != null ? value : DEFAULT_COUNT;
     this.cloneItems();
+  }
+  set data(value) {
+    this._data = value;
+    this.count = value.length;
+    this.cloneItems();
+  }
+  get data() {
+    return this._data;
   }
   foreachNode(node, clonedNode) {
     var _a;
@@ -46908,6 +47135,9 @@ var Repeater = class extends Container {
       this.wrapper.appendChild(clone);
       const newControl = this.wrapper.lastElementChild;
       this.foreachNode(this.templateEl.content.firstChild, newControl);
+      if ("setData" in newControl) {
+        newControl.setData(this._data[i]);
+      }
       if (typeof this.onRender === "function")
         this.onRender(this.wrapper, i);
     }
@@ -46942,6 +47172,7 @@ var Repeater = class extends Container {
       }
       this.onRender = this.getAttribute("onRender", true) || this.onRender;
       const count = this.getAttribute("count", true, DEFAULT_COUNT);
+      const data = this.getAttribute("data", true);
       super.init();
       this.wrapper = this.createElement("div", this);
       this.wrapper.classList.add("repeater-container");
@@ -46957,7 +47188,7 @@ var Repeater = class extends Container {
           this.templateEl.content.append(this.pnlPanel);
         }
       }
-      this.count = count;
+      this.count = (data == null ? void 0 : data.length) || count;
     }
   }
   static async create(options, parent) {
@@ -46966,6 +47197,9 @@ var Repeater = class extends Container {
     return self;
   }
 };
+__decorateClass([
+  observable("_data", true)
+], Repeater.prototype, "_data", 2);
 Repeater = __decorateClass([
   customElements2("i-repeater", {
     icon: "clone",
