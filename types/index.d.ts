@@ -3875,6 +3875,7 @@ declare module "packages/tooltip/src/tooltip" {
         private _maxWidth;
         private _trigger;
         private _duration;
+        private _designMode;
         private timeout;
         private tooltipElm;
         constructor(source: Control);
@@ -3895,6 +3896,8 @@ declare module "packages/tooltip/src/tooltip" {
         get isSmallScreen(): boolean;
         get maxWidth(): string;
         set maxWidth(value: string);
+        get designMode(): boolean;
+        set designMode(value: boolean);
         private show;
         close(): void;
         private onHandleClick;
@@ -3905,9 +3908,783 @@ declare module "packages/tooltip/src/tooltip" {
 declare module "packages/tooltip/src/index" {
     export { Tooltip, ITooltip } from "packages/tooltip/src/tooltip";
 }
+declare module "packages/base/src/i18n" {
+    export type Locales = keyof typeof languages;
+    export type Translations = {
+        [locale in Locales]?: {
+            [key: string]: string;
+        };
+    };
+    export class I18n {
+        private translations;
+        init(translations: Translations): void;
+        get(key: string, params?: {
+            [key: string]: string;
+        }, skipApp?: boolean): string;
+        has(key: string): boolean;
+    }
+    export const languages: {
+        aa: {
+            name: string;
+            native: string;
+        };
+        ab: {
+            name: string;
+            native: string;
+        };
+        af: {
+            name: string;
+            native: string;
+        };
+        ak: {
+            name: string;
+            native: string;
+        };
+        am: {
+            name: string;
+            native: string;
+        };
+        an: {
+            name: string;
+            native: string;
+        };
+        ar: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        as: {
+            name: string;
+            native: string;
+        };
+        av: {
+            name: string;
+            native: string;
+        };
+        ay: {
+            name: string;
+            native: string;
+        };
+        az: {
+            name: string;
+            native: string;
+        };
+        ba: {
+            name: string;
+            native: string;
+        };
+        be: {
+            name: string;
+            native: string;
+        };
+        bg: {
+            name: string;
+            native: string;
+        };
+        bh: {
+            name: string;
+            native: string;
+        };
+        bi: {
+            name: string;
+            native: string;
+        };
+        bm: {
+            name: string;
+            native: string;
+        };
+        bn: {
+            name: string;
+            native: string;
+        };
+        bo: {
+            name: string;
+            native: string;
+        };
+        br: {
+            name: string;
+            native: string;
+        };
+        bs: {
+            name: string;
+            native: string;
+        };
+        ca: {
+            name: string;
+            native: string;
+        };
+        ce: {
+            name: string;
+            native: string;
+        };
+        ch: {
+            name: string;
+            native: string;
+        };
+        co: {
+            name: string;
+            native: string;
+        };
+        cr: {
+            name: string;
+            native: string;
+        };
+        cs: {
+            name: string;
+            native: string;
+        };
+        cu: {
+            name: string;
+            native: string;
+        };
+        cv: {
+            name: string;
+            native: string;
+        };
+        cy: {
+            name: string;
+            native: string;
+        };
+        da: {
+            name: string;
+            native: string;
+        };
+        de: {
+            name: string;
+            native: string;
+        };
+        dv: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        dz: {
+            name: string;
+            native: string;
+        };
+        ee: {
+            name: string;
+            native: string;
+        };
+        el: {
+            name: string;
+            native: string;
+        };
+        en: {
+            name: string;
+            native: string;
+        };
+        eo: {
+            name: string;
+            native: string;
+        };
+        es: {
+            name: string;
+            native: string;
+        };
+        et: {
+            name: string;
+            native: string;
+        };
+        eu: {
+            name: string;
+            native: string;
+        };
+        fa: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        ff: {
+            name: string;
+            native: string;
+        };
+        fi: {
+            name: string;
+            native: string;
+        };
+        fj: {
+            name: string;
+            native: string;
+        };
+        fo: {
+            name: string;
+            native: string;
+        };
+        fr: {
+            name: string;
+            native: string;
+        };
+        fy: {
+            name: string;
+            native: string;
+        };
+        ga: {
+            name: string;
+            native: string;
+        };
+        gd: {
+            name: string;
+            native: string;
+        };
+        gl: {
+            name: string;
+            native: string;
+        };
+        gn: {
+            name: string;
+            native: string;
+        };
+        gu: {
+            name: string;
+            native: string;
+        };
+        gv: {
+            name: string;
+            native: string;
+        };
+        ha: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        he: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        hi: {
+            name: string;
+            native: string;
+        };
+        ho: {
+            name: string;
+            native: string;
+        };
+        hr: {
+            name: string;
+            native: string;
+        };
+        ht: {
+            name: string;
+            native: string;
+        };
+        hu: {
+            name: string;
+            native: string;
+        };
+        hy: {
+            name: string;
+            native: string;
+        };
+        hz: {
+            name: string;
+            native: string;
+        };
+        ia: {
+            name: string;
+            native: string;
+        };
+        id: {
+            name: string;
+            native: string;
+        };
+        ie: {
+            name: string;
+            native: string;
+        };
+        ig: {
+            name: string;
+            native: string;
+        };
+        ii: {
+            name: string;
+            native: string;
+        };
+        ik: {
+            name: string;
+            native: string;
+        };
+        io: {
+            name: string;
+            native: string;
+        };
+        is: {
+            name: string;
+            native: string;
+        };
+        it: {
+            name: string;
+            native: string;
+        };
+        iu: {
+            name: string;
+            native: string;
+        };
+        ja: {
+            name: string;
+            native: string;
+        };
+        jv: {
+            name: string;
+            native: string;
+        };
+        ka: {
+            name: string;
+            native: string;
+        };
+        kg: {
+            name: string;
+            native: string;
+        };
+        ki: {
+            name: string;
+            native: string;
+        };
+        kj: {
+            name: string;
+            native: string;
+        };
+        kk: {
+            name: string;
+            native: string;
+        };
+        kl: {
+            name: string;
+            native: string;
+        };
+        km: {
+            name: string;
+            native: string;
+        };
+        kn: {
+            name: string;
+            native: string;
+        };
+        ko: {
+            name: string;
+            native: string;
+        };
+        kr: {
+            name: string;
+            native: string;
+        };
+        ks: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        ku: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        kv: {
+            name: string;
+            native: string;
+        };
+        kw: {
+            name: string;
+            native: string;
+        };
+        ky: {
+            name: string;
+            native: string;
+        };
+        la: {
+            name: string;
+            native: string;
+        };
+        lb: {
+            name: string;
+            native: string;
+        };
+        lg: {
+            name: string;
+            native: string;
+        };
+        li: {
+            name: string;
+            native: string;
+        };
+        ln: {
+            name: string;
+            native: string;
+        };
+        lo: {
+            name: string;
+            native: string;
+        };
+        lt: {
+            name: string;
+            native: string;
+        };
+        lu: {
+            name: string;
+            native: string;
+        };
+        lv: {
+            name: string;
+            native: string;
+        };
+        mg: {
+            name: string;
+            native: string;
+        };
+        mh: {
+            name: string;
+            native: string;
+        };
+        mi: {
+            name: string;
+            native: string;
+        };
+        mk: {
+            name: string;
+            native: string;
+        };
+        ml: {
+            name: string;
+            native: string;
+        };
+        mn: {
+            name: string;
+            native: string;
+        };
+        mo: {
+            name: string;
+            native: string;
+        };
+        mr: {
+            name: string;
+            native: string;
+        };
+        ms: {
+            name: string;
+            native: string;
+        };
+        mt: {
+            name: string;
+            native: string;
+        };
+        my: {
+            name: string;
+            native: string;
+        };
+        na: {
+            name: string;
+            native: string;
+        };
+        nb: {
+            name: string;
+            native: string;
+        };
+        nd: {
+            name: string;
+            native: string;
+        };
+        ne: {
+            name: string;
+            native: string;
+        };
+        ng: {
+            name: string;
+            native: string;
+        };
+        nl: {
+            name: string;
+            native: string;
+        };
+        nn: {
+            name: string;
+            native: string;
+        };
+        no: {
+            name: string;
+            native: string;
+        };
+        nr: {
+            name: string;
+            native: string;
+        };
+        nv: {
+            name: string;
+            native: string;
+        };
+        ny: {
+            name: string;
+            native: string;
+        };
+        oc: {
+            name: string;
+            native: string;
+        };
+        oj: {
+            name: string;
+            native: string;
+        };
+        om: {
+            name: string;
+            native: string;
+        };
+        or: {
+            name: string;
+            native: string;
+        };
+        os: {
+            name: string;
+            native: string;
+        };
+        pa: {
+            name: string;
+            native: string;
+        };
+        pi: {
+            name: string;
+            native: string;
+        };
+        pl: {
+            name: string;
+            native: string;
+        };
+        ps: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        pt: {
+            name: string;
+            native: string;
+        };
+        qu: {
+            name: string;
+            native: string;
+        };
+        rm: {
+            name: string;
+            native: string;
+        };
+        rn: {
+            name: string;
+            native: string;
+        };
+        ro: {
+            name: string;
+            native: string;
+        };
+        ru: {
+            name: string;
+            native: string;
+        };
+        rw: {
+            name: string;
+            native: string;
+        };
+        sa: {
+            name: string;
+            native: string;
+        };
+        sc: {
+            name: string;
+            native: string;
+        };
+        sd: {
+            name: string;
+            native: string;
+        };
+        se: {
+            name: string;
+            native: string;
+        };
+        sg: {
+            name: string;
+            native: string;
+        };
+        sh: {
+            name: string;
+            native: string;
+        };
+        si: {
+            name: string;
+            native: string;
+        };
+        sk: {
+            name: string;
+            native: string;
+        };
+        sl: {
+            name: string;
+            native: string;
+        };
+        sm: {
+            name: string;
+            native: string;
+        };
+        sn: {
+            name: string;
+            native: string;
+        };
+        so: {
+            name: string;
+            native: string;
+        };
+        sq: {
+            name: string;
+            native: string;
+        };
+        sr: {
+            name: string;
+            native: string;
+        };
+        ss: {
+            name: string;
+            native: string;
+        };
+        st: {
+            name: string;
+            native: string;
+        };
+        su: {
+            name: string;
+            native: string;
+        };
+        sv: {
+            name: string;
+            native: string;
+        };
+        sw: {
+            name: string;
+            native: string;
+        };
+        ta: {
+            name: string;
+            native: string;
+        };
+        te: {
+            name: string;
+            native: string;
+        };
+        tg: {
+            name: string;
+            native: string;
+        };
+        th: {
+            name: string;
+            native: string;
+        };
+        ti: {
+            name: string;
+            native: string;
+        };
+        tk: {
+            name: string;
+            native: string;
+        };
+        tl: {
+            name: string;
+            native: string;
+        };
+        tn: {
+            name: string;
+            native: string;
+        };
+        to: {
+            name: string;
+            native: string;
+        };
+        tr: {
+            name: string;
+            native: string;
+        };
+        ts: {
+            name: string;
+            native: string;
+        };
+        tt: {
+            name: string;
+            native: string;
+        };
+        tw: {
+            name: string;
+            native: string;
+        };
+        ty: {
+            name: string;
+            native: string;
+        };
+        ug: {
+            name: string;
+            native: string;
+        };
+        uk: {
+            name: string;
+            native: string;
+        };
+        ur: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        uz: {
+            name: string;
+            native: string;
+        };
+        ve: {
+            name: string;
+            native: string;
+        };
+        vi: {
+            name: string;
+            native: string;
+        };
+        vo: {
+            name: string;
+            native: string;
+        };
+        wa: {
+            name: string;
+            native: string;
+        };
+        wo: {
+            name: string;
+            native: string;
+        };
+        xh: {
+            name: string;
+            native: string;
+        };
+        yi: {
+            name: string;
+            native: string;
+            rtl: number;
+        };
+        yo: {
+            name: string;
+            native: string;
+        };
+        za: {
+            name: string;
+            native: string;
+        };
+        "zh-hans": {
+            name: string;
+            native: string;
+        };
+        "zh-hant": {
+            name: string;
+            native: string;
+        };
+        zu: {
+            name: string;
+            native: string;
+        };
+    };
+}
 declare module "packages/base/src/control" {
     import { Component, IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground, ICustomProperties, CursorType } from "packages/base/src/component";
     import { notifyEventCallback, notifyMouseEventCallback, notifyKeyboardEventCallback, notifyGestureEventCallback } from "@ijstech/components/base";
+    import { Module } from "packages/module/src/index";
+    import { I18n } from "packages/base/src/i18n";
     export type DockStyle = 'none' | 'bottom' | 'center' | 'fill' | 'left' | 'right' | 'top';
     export type LineHeightType = string | number | 'normal' | 'initial' | 'inherit';
     export type DisplayType = 'inline-block' | 'block' | 'inline-flex' | 'flex' | 'inline' | 'initial' | 'inherit' | 'none' | '-webkit-box' | 'grid' | 'inline-grid';
@@ -4063,6 +4840,7 @@ declare module "packages/base/src/control" {
     }
     export class Control extends Component {
         protected _controls: Control[];
+        protected _parentModule: Module | null;
         protected _enabled: boolean;
         protected _onClick: notifyMouseEventCallback;
         protected _onContextMenu: notifyMouseEventCallback;
@@ -4106,6 +4884,7 @@ declare module "packages/base/src/control" {
         tag: any;
         protected static create(options?: any, parent?: Container, defaults?: any): Promise<Control>;
         constructor(parent?: Control, options?: any, defaults?: any);
+        get parentModule(): Module | null;
         _setDesignPropValue(prop: string, value: string | number | boolean | object, breakpointProp?: any): void;
         _getCustomProperties(): ICustomProperties;
         private getMarginStyle;
@@ -4226,6 +5005,7 @@ declare module "packages/base/src/control" {
         set mediaQueries(value: any[]);
         protected removeStyle<P extends keyof Control>(propertyName: P): void;
         protected setStyle<P extends keyof Control>(propertyName: P, value: string): void;
+        updateLocale(i18n: I18n): void;
     }
     export class ContainerResizer {
         private target;
@@ -4250,6 +5030,7 @@ declare module "packages/base/src/control" {
         protected init(): void;
         protected refreshControls(): void;
         refresh(skipRefreshControls?: boolean): void;
+        updateLocale(i18n: I18n): void;
     }
 }
 declare module "packages/base/src/types" {
@@ -4266,6 +5047,7 @@ declare module "@ijstech/components/base" {
     import { IStack, IFont, ISpace, IOverflow, OverflowType, IAnchor, IBackground, ICustomProperties, CursorType } from "packages/base/src/component";
     import { Control, Container, DockStyle, LineHeightType, IBorder, IGrid, DisplayType, PositionType, IControlMediaQuery } from "packages/base/src/control";
     import { ITooltip } from "packages/tooltip/src/index";
+    export { Locales, I18n } from "packages/base/src/i18n";
     export { Control, Container };
     export * as Types from "packages/base/src/types";
     export { getControlMediaQueriesStyle, getBackground, getSpacingValue } from "packages/base/src/style/base.css";
@@ -4481,6 +5263,30 @@ declare module "packages/icon/src/index" {
 declare module "packages/combo-box/src/style/combo-box.css" {
     export let ItemListStyle: string;
 }
+declare module "packages/combo-box/src/combo-box-item" {
+    import { Control, ControlElement } from "@ijstech/components/base";
+    export interface ComboBoxItemElement extends ControlElement {
+        value?: string;
+        label?: string;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ["i-combo-box-item"]: ComboBoxItemElement;
+            }
+        }
+    }
+    export class ComboBoxItem extends Control {
+        private _value;
+        private _label;
+        get value(): string;
+        set value(data: string);
+        get label(): string;
+        set label(data: string);
+        init(): void;
+        static create(options?: ComboBoxItemElement, parent?: Control): Promise<ComboBoxItem>;
+    }
+}
 declare module "packages/combo-box/src/combo-box" {
     import { Control, ControlElement, notifyEventCallback, IBorder, Border, IFont, IBackground, Background } from "@ijstech/components/base";
     import { Icon, IconElement } from "packages/icon/src/index";
@@ -4494,7 +5300,8 @@ declare module "packages/combo-box/src/combo-box" {
     }
     type ModeType = 'single' | 'multiple' | 'tags';
     export interface ComboBoxElement extends ControlElement {
-        selectedItem?: IComboItem | IComboItem[];
+        selectedItem?: IComboItem;
+        selectedItems?: IComboItem[];
         items?: IComboItem[];
         icon?: IconElement;
         mode?: ModeType;
@@ -4511,6 +5318,7 @@ declare module "packages/combo-box/src/combo-box" {
     }
     export class ComboBox extends Control {
         private _selectedItem;
+        private _selectedItems;
         private _caption;
         private _captionWidth;
         private _items;
@@ -4531,8 +5339,10 @@ declare module "packages/combo-box/src/combo-box" {
         constructor(parent?: Control, options?: any);
         get value(): IComboItem | IComboItem[] | undefined;
         set value(value: IComboItem | IComboItem[] | undefined);
-        get selectedItem(): IComboItem | IComboItem[] | undefined;
-        set selectedItem(value: IComboItem | IComboItem[] | undefined);
+        get selectedItem(): IComboItem | undefined;
+        set selectedItem(value: IComboItem | undefined);
+        get selectedItems(): IComboItem[] | undefined;
+        set selectedItems(value: IComboItem[] | undefined);
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -4577,6 +5387,7 @@ declare module "packages/combo-box/src/combo-box" {
 }
 declare module "packages/combo-box/src/index" {
     export { ComboBox, ComboBoxElement, IComboItem } from "packages/combo-box/src/combo-box";
+    export { ComboBoxItem, ComboBoxItemElement } from "packages/combo-box/src/combo-box-item";
 }
 declare module "packages/datepicker/src/style/datepicker.css" { }
 declare module "packages/datepicker/src/datepicker" {
@@ -4665,6 +5476,7 @@ declare module "packages/range/src/style/range.css" { }
 declare module "packages/range/src/range" {
     import { Control, ControlElement, notifyEventCallback, Types } from "@ijstech/components/base";
     import "packages/range/src/style/range.css";
+    type tooltipFormatterCallback = (value: number) => string;
     export interface RangeElement extends ControlElement {
         caption?: string;
         captionWidth?: number | string;
@@ -4673,7 +5485,7 @@ declare module "packages/range/src/range" {
         max?: number;
         step?: number;
         stepDots?: boolean | number;
-        tooltipFormatter?: any;
+        tooltipFormatter?: tooltipFormatterCallback;
         tooltipVisible?: boolean;
         trackColor?: Types.Color;
         onChanged?: notifyEventCallback;
@@ -4812,7 +5624,7 @@ declare module "packages/modal/src/style/modal.css" {
 declare module "packages/modal/src/modal" {
     import { Control, ControlElement, Container, IBackground, IBorder, Background, Border, IMediaQuery, IControlMediaQueryProps, ISpace, Overflow, IOverflow, OverflowType } from "@ijstech/components/base";
     import { Icon, IconElement } from "packages/icon/src/index";
-    export type modalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
+    export type ModalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
     type eventCallback = (target: Control) => void;
     type ModalPositionType = "fixed" | "absolute";
     export interface IModalMediaQueryProps extends IControlMediaQueryProps {
@@ -4825,7 +5637,7 @@ declare module "packages/modal/src/modal" {
         title?: string;
         showBackdrop?: boolean;
         closeIcon?: IconElement;
-        popupPlacement?: modalPopupPlacementType;
+        popupPlacement?: ModalPopupPlacementType;
         closeOnBackdropClick?: boolean;
         isChildFixed?: boolean;
         closeOnScrollChildFixed?: boolean;
@@ -4870,8 +5682,8 @@ declare module "packages/modal/src/modal" {
         set onOpen(callback: any);
         get title(): string;
         set title(value: string);
-        get popupPlacement(): modalPopupPlacementType;
-        set popupPlacement(value: modalPopupPlacementType);
+        get popupPlacement(): ModalPopupPlacementType;
+        set popupPlacement(value: ModalPopupPlacementType);
         get closeIcon(): Icon | null;
         set closeIcon(elm: Icon | null);
         get closeOnBackdropClick(): boolean;
@@ -4927,7 +5739,7 @@ declare module "packages/modal/src/modal" {
     }
 }
 declare module "packages/modal/src/index" {
-    export { Modal, ModalElement, modalPopupPlacementType } from "packages/modal/src/modal";
+    export { Modal, ModalElement, ModalPopupPlacementType } from "packages/modal/src/modal";
 }
 declare module "packages/layout/src/interfaces" {
     export interface IHover {
@@ -5148,7 +5960,6 @@ declare module "packages/layout/src/grid" {
         autoFillInHoles?: boolean;
         autoRowSize?: string;
         columnsPerRow?: number;
-        display?: DisplayType;
         gap?: IGap;
         horizontalAlignment?: GridLayoutHorizontalAlignmentType;
         justifyContent?: GridLayoutJustifyContentType;
@@ -5380,7 +6191,7 @@ declare module "packages/input/src/input" {
     export type InputType = 'checkbox' | 'radio' | 'range' | 'date' | 'time' | 'dateTime' | 'password' | 'combobox' | 'number' | 'textarea' | 'text' | 'color';
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio | ColorPicker;
     type actionCallback = (target: Input) => void;
-    type resizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
+    type ResizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
     export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
         caption?: string;
         captionWidth?: number | string;
@@ -5391,7 +6202,7 @@ declare module "packages/input/src/input" {
         showClearButton?: boolean;
         rows?: number;
         multiline?: boolean;
-        resize?: resizeType;
+        resize?: ResizeType;
         maxLength?: number;
         onChanged?: notifyEventCallback;
         onKeyDown?: notifyEventCallback;
@@ -5462,8 +6273,8 @@ declare module "packages/input/src/input" {
         set rows(value: number);
         get multiline(): boolean;
         set multiline(value: boolean);
-        get resize(): resizeType;
-        set resize(value: resizeType);
+        get resize(): ResizeType;
+        set resize(value: ResizeType);
         set border(value: IBorder);
         get border(): Border;
         set maxLength(value: number);
@@ -5663,14 +6474,15 @@ declare module "packages/text/src/index" {
 }
 declare module "packages/label/src/style/label.css" { }
 declare module "packages/label/src/label" {
-    import { Control } from "@ijstech/components/base";
+    import { Control, I18n } from "@ijstech/components/base";
     import { Link, LinkElement } from "packages/link/src/index";
     import { Text, TextElement } from "packages/text/src/index";
     import "packages/label/src/style/label.css";
+    type TextDecorationType = 'none' | 'underline' | 'overline' | 'line-through';
     export interface LabelElement extends TextElement {
         caption?: string;
         link?: LinkElement;
-        textDecoration?: string;
+        textDecoration?: TextDecorationType;
     }
     global {
         namespace JSX {
@@ -5682,15 +6494,17 @@ declare module "packages/label/src/label" {
     export class Label extends Text {
         private captionSpan;
         private _link;
+        private _caption;
         constructor(parent?: Control, options?: any);
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get link(): Link;
         set link(value: Link);
         set height(value: number);
         set width(value: number);
-        get textDecoration(): string;
-        set textDecoration(value: string);
+        get textDecoration(): TextDecorationType;
+        set textDecoration(value: TextDecorationType);
         protected init(): void;
         static create(options?: LabelElement, parent?: Control): Promise<Label>;
     }
@@ -5984,7 +6798,7 @@ declare module "packages/upload/src/upload" {
 declare module "packages/button/src/style/button.css" { }
 /// <amd-module name="@ijstech/components/button" />
 declare module "@ijstech/components/button" {
-    import { Control, Container, ControlElement } from "@ijstech/components/base";
+    import { Control, Container, ControlElement, I18n } from "@ijstech/components/base";
     import { Icon, IconElement } from "packages/icon/src/index";
     import "packages/button/src/style/button.css";
     export interface ButtonElement extends ControlElement {
@@ -6003,8 +6817,10 @@ declare module "@ijstech/components/button" {
         private captionElm;
         private _icon;
         private _rightIcon;
+        private _caption;
         static create(options?: ButtonElement, parent?: Container): Promise<Button>;
         constructor(parent?: Control, options?: ButtonElement);
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get icon(): Icon;
@@ -6205,7 +7021,7 @@ declare module "packages/upload/src/index" {
     export { UploadModal } from "packages/upload/src/upload-modal";
 }
 declare module "packages/module/src/module" {
-    import { Container, ContainerElement, Control } from "@ijstech/components/base";
+    import { Container, ContainerElement, Control, I18n } from "@ijstech/components/base";
     import { IconElement } from "packages/icon/src/index";
     import { Modal, ModalElement } from "packages/modal/src/index";
     export interface ModuleElement extends ContainerElement {
@@ -6231,9 +7047,14 @@ declare module "packages/module/src/module" {
         private $render;
         private modulesUrlRegex;
         private static _modalMap;
+        private static _modules;
         currentModuleDir: string;
+        private _i18n;
+        static updateLocale(): void;
         static create(options?: ModuleElement, parent?: Container, defaults?: ModuleElement): Promise<Module>;
         constructor(parent?: Container, options?: any, defaults?: any);
+        get i18n(): I18n;
+        updateLocale(): void;
         init(): void;
         _getValueByControl(elm: Control): any;
         flattenArray(arr: any[]): any;
@@ -6242,6 +7063,7 @@ declare module "packages/module/src/module" {
         onLoad(): void;
         onShow(options?: any): void;
         onHide(): void;
+        connectedCallback(): void;
         disconnectedCallback(): void;
         openModal(options?: ModalElement): Modal;
         closeModal(): void;
@@ -6719,6 +7541,7 @@ declare module "packages/application/src/idUtils" {
 }
 declare module "packages/application/src/index" {
     import { Module } from "packages/module/src/index";
+    import { Locales, I18n } from "@ijstech/components/base";
     import { EventBus } from "packages/application/src/event-bus";
     import { GlobalEvents } from "packages/application/src/globalEvent";
     import { ICidInfo } from "packages/ipfs/src/index";
@@ -6829,6 +7652,8 @@ declare module "packages/application/src/index" {
         rootDir: string;
         assetsDir: string;
         dev: IDevInfo | null;
+        private _locale;
+        private _i18n;
         private constructor();
         get EventBus(): EventBus;
         static get Instance(): Application;
@@ -6844,6 +7669,9 @@ declare module "packages/application/src/index" {
         getUploadUrl(item: ICidInfo): Promise<{
             [cid: string]: string;
         }>;
+        get i18n(): I18n;
+        get locale(): Locales;
+        set locale(value: Locales);
         uploadData(fileName: string, content: string): Promise<IUploadResult>;
         uploadFile(extensions?: string | string[]): Promise<IUploadResult>;
         uploadTo(targetCid: string, items: IUploadItem[]): Promise<IUploadResult>;
@@ -10421,9 +11249,7 @@ declare module "packages/markdown/src/markdown" {
     import { Control, ControlElement, ISpace } from "@ijstech/components/base";
     import "packages/markdown/src/styles/index.css";
     export interface MarkdownElement extends ControlElement {
-        caption?: string;
-        src?: string;
-        assetPath?: string;
+        theme?: 'light' | 'dark';
     }
     global {
         namespace JSX {
@@ -10452,7 +11278,7 @@ declare module "packages/markdown/src/markdown" {
         private preParse;
         beforeRender(text: string): Promise<void>;
         processText(text: string): Promise<string>;
-        loadLib(): Promise<unknown>;
+        private loadLib;
         protected init(): void;
     }
 }
@@ -10943,216 +11769,6 @@ declare module "packages/popover/src/popover" {
 declare module "packages/popover/src/index" {
     export { Popover, PopoverElement, popoverPlacementType } from "packages/popover/src/popover";
 }
-declare module "packages/chart/src/chart" {
-    import { Control, ControlElement } from "@ijstech/components/base";
-    export interface EchartElement extends ControlElement {
-        theme?: 'light' | 'dark';
-    }
-    export class Chart<T> extends Control {
-        private _data;
-        private _theme;
-        private _echart;
-        private _chartDom;
-        private _chartIns;
-        constructor(parent?: Control, options?: any);
-        get data(): T;
-        set data(value: T);
-        get theme(): 'light' | 'dark';
-        set theme(value: 'light' | 'dark');
-        private get dataObj();
-        showLoading(): void;
-        drawChart(): void;
-        private _drawChart;
-        updateChartOptions(): void;
-        resize(): void;
-        private initChartDom;
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/lineChart" {
-    import { Control } from "@ijstech/components/base";
-    import { Chart, EchartElement } from "packages/chart/src/chart";
-    export interface LineEchartElement extends EchartElement {
-        data?: any;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-line-chart']: LineEchartElement;
-            }
-        }
-    }
-    export class LineChart extends Chart<any> {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/barChart" {
-    import { Control } from "@ijstech/components/base";
-    import { Chart, EchartElement } from "packages/chart/src/chart";
-    export interface IBarChartAxisTick {
-        show?: boolean;
-    }
-    export interface IBarChartAxisLineStyle {
-        type?: string;
-    }
-    export interface IBarChartAxisLine {
-        show?: boolean;
-        lineStyle?: IBarChartAxisLineStyle;
-    }
-    export interface IBarChartAxisSplitLine {
-        show?: boolean;
-        lineStyle?: IBarChartAxisLineStyle;
-    }
-    export interface IBarChartAxisLabel {
-        color?: string;
-        fontSize?: number;
-        fontFamily?: string;
-    }
-    export interface IBarChartAxisNameTextStyle {
-        fontSize?: number;
-        color?: string;
-    }
-    export interface IBarChartAxis {
-        type?: string;
-        name?: string;
-        nameGap?: number;
-        nameTextStyle?: IBarChartAxisNameTextStyle;
-        boundaryGap?: boolean;
-        data?: string[];
-        min?: number;
-        max?: number;
-        axisTick?: IBarChartAxisTick;
-        axisLabel?: IBarChartAxisLabel;
-        axisLine?: IBarChartAxisLine;
-        splitLine?: IBarChartAxisSplitLine;
-    }
-    export interface IBarChartSeriesLabel {
-        show: boolean;
-        position: string;
-    }
-    export interface IBarChartSeries {
-        type?: string;
-        name?: string;
-        data?: any[];
-        label?: IBarChartSeriesLabel;
-    }
-    export interface IBarChartData {
-        xAxis?: IBarChartAxis;
-        yAxis?: IBarChartAxis;
-        color?: string[];
-        series?: IBarChartSeries[];
-    }
-    export interface BarEchartElement extends EchartElement {
-        data?: IBarChartData;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-bar-chart']: BarEchartElement;
-            }
-        }
-    }
-    export class BarChart extends Chart<IBarChartData> {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/barStackChart" {
-    import { Control } from "@ijstech/components/base";
-    import { Chart, EchartElement } from "packages/chart/src/chart";
-    export interface BarEchartElement extends EchartElement {
-        data?: any;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-bar-stack-chart']: BarEchartElement;
-            }
-        }
-    }
-    export class BarStackChart extends Chart<any> {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/pieChart" {
-    import { Control } from "@ijstech/components/base";
-    import { Chart, EchartElement } from "packages/chart/src/chart";
-    export interface IPieChartTooltip {
-        trigger?: string;
-        formatter?: string;
-    }
-    export interface IPieChartSeries {
-        type?: string;
-        radius?: string[];
-        avoidLabelOverlap?: boolean;
-        data?: any[];
-    }
-    export interface IPieChartData {
-        tooltip?: IPieChartTooltip;
-        series?: IPieChartSeries[];
-    }
-    export interface PieEchartElement extends EchartElement {
-        data?: IPieChartData;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-pie-chart']: PieEchartElement;
-            }
-        }
-    }
-    export class PieChart extends Chart<IPieChartData> {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/scatterChart" {
-    import { Control } from "@ijstech/components/base";
-    import { Chart, EchartElement } from "packages/chart/src/chart";
-    export interface ScatterChartElement extends EchartElement {
-        data?: any;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-scatter-chart']: ScatterChartElement;
-            }
-        }
-    }
-    export class ScatterChart extends Chart<any> {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/scatterLineChart" {
-    import { Control } from "@ijstech/components/base";
-    import { Chart, EchartElement } from "packages/chart/src/chart";
-    export interface ScatterLineChartElement extends EchartElement {
-        data?: any;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-scatter-line-chart']: ScatterLineChartElement;
-            }
-        }
-    }
-    export class ScatterLineChart extends Chart<any> {
-        constructor(parent?: Control, options?: any);
-        protected init(): void;
-    }
-}
-declare module "packages/chart/src/index" {
-    export { Chart } from "packages/chart/src/chart";
-    export { LineChart } from "packages/chart/src/lineChart";
-    export { BarChart } from "packages/chart/src/barChart";
-    export { BarStackChart } from "packages/chart/src/barStackChart";
-    export { PieChart } from "packages/chart/src/pieChart";
-    export { ScatterChart } from "packages/chart/src/scatterChart";
-    export { ScatterLineChart } from "packages/chart/src/scatterLineChart";
-}
 declare module "packages/iframe/src/style/iframe.css" { }
 declare module "packages/iframe/src/iframe" {
     import { Control, ControlElement } from "@ijstech/components/base";
@@ -11529,8 +12145,8 @@ declare module "packages/carousel/src/carousel" {
         get items(): CarouselItemElement[];
         set items(nodes: CarouselItemElement[]);
         add(control: Control): Control;
-        get type(): 'dot' | 'arrow';
-        set type(value: 'dot' | 'arrow');
+        get type(): CarouselType;
+        set type(value: CarouselType);
         get swipe(): boolean;
         set swipe(value: boolean);
         get mediaQueries(): ICarouselMediaQuery[];
@@ -11540,7 +12156,7 @@ declare module "packages/carousel/src/carousel" {
         _handleMouseUp(event: PointerEvent | MouseEvent | TouchEvent, stopPropagation?: boolean): boolean;
         get indicators(): boolean;
         set indicators(value: boolean);
-        get isArrow(): boolean;
+        private get isArrow();
         private updateArrows;
         private updateSliderByArrows;
         private updateWrapperClass;
@@ -11552,9 +12168,9 @@ declare module "packages/carousel/src/carousel" {
         prev(): void;
         next(): void;
         refresh(): void;
-        dragStartHandler(event: MouseEvent | TouchEvent): void;
-        dragHandler(event: MouseEvent | TouchEvent): void;
-        dragEndHandler(event: MouseEvent | TouchEvent): void;
+        private dragStartHandler;
+        private dragHandler;
+        private dragEndHandler;
         protected init(): void;
         static create(options?: CarouselSliderElement, parent?: Control): Promise<CarouselSlider>;
     }
@@ -12297,6 +12913,7 @@ declare module "packages/accordion/src/accordion-item" {
     type onSelectedFn = (target: AccordionItem) => void;
     export interface AccordionItemElement extends IAccordionItem {
         onSelected?: onSelectedFn;
+        onRemoved?: onSelectedFn;
     }
     global {
         namespace JSX {
@@ -12373,9 +12990,10 @@ declare module "packages/accordion/src/accordion" {
         private createAccordionItem;
         private onItemClick;
         private onRemoveClick;
+        private removeItem;
         add(item: IAccordionItem): AccordionItem;
+        delete(item: AccordionItem): void;
         updateItemName(id: string, name: string): void;
-        removeItem(id: string): void;
         clear(): void;
         private appendItem;
         protected init(): Promise<void>;
@@ -12387,7 +13005,7 @@ declare module "packages/accordion/src/index" {
 declare module "@ijstech/components" {
     export * as Styles from "packages/style/src/index";
     export { application, EventBus, IEventBus, IHasDependencies, IModuleOptions, IModuleRoute, IModuleMenuItem, IRenderUIOptions, DataSchemaValidator, renderUI, FormatUtils, IFormatNumberOptions, IdUtils } from "packages/application/src/index";
-    export { customModule, customElements, getCustomElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace, IBorder, IFont } from "@ijstech/components/base";
+    export { customModule, customElements, getCustomElements, Component, Control, ControlElement, Container, Observe, Unobserve, ClearObservers, isObservable, observable, LibPath, RequireJS, ISpace, IBorder, IFont, I18n, Locales } from "@ijstech/components/base";
     export { Alert } from "packages/alert/src/index";
     export { Button } from "packages/button/src/index";
     export { CodeEditor, LanguageType, CodeDiffEditor } from "packages/code-editor/src/index";
@@ -12408,7 +13026,6 @@ declare module "@ijstech/components" {
     export { Popover } from "packages/popover/src/index";
     export { Checkbox } from "packages/checkbox/src/index";
     export { Datepicker } from "packages/datepicker/src/index";
-    export { LineChart, BarChart, PieChart, ScatterChart, ScatterLineChart } from "packages/chart/src/index";
     export { Upload, UploadModal } from "packages/upload/src/index";
     export { Tabs, Tab } from "packages/tab/src/index";
     export { Iframe } from "packages/iframe/src/index";
