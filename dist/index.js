@@ -10153,9 +10153,9 @@ var __decorateClass = (decorators, target, key2, kind) => {
   return result;
 };
 
-// ../../node_modules/moment/moment.js
+// node_modules/moment/moment.js
 var require_moment = __commonJS({
-  "../../node_modules/moment/moment.js"(exports, module2) {
+  "node_modules/moment/moment.js"(exports, module2) {
     (function(global, factory) {
       typeof exports === "object" && typeof module2 !== "undefined" ? module2.exports = factory() : typeof define === "function" && define.amd ? define(factory) : global.moment = factory();
     })(exports, function() {
@@ -19151,38 +19151,29 @@ var ComboBox = class extends Control {
     this.isListShown = false;
   }
   get value() {
-    return this.mode === "single" ? this.selectedItem : this.selectedItems;
+    return this._value;
   }
   set value(value) {
+    this._value = value;
+    const selectedItem = this.items.find((item) => item.value === value);
+    this.selectedItem = selectedItem;
   }
   get selectedItem() {
     return this._selectedItem;
   }
   set selectedItem(value) {
+    var _a;
     if (value === void 0) {
       this._selectedItem = void 0;
       this.inputElm.value = "";
       this.inputElm.style.display = "";
       return;
     }
-    let isValueValid = false;
-    let validValue;
-    if (this.isMulti) {
-      const formattedValue = [value];
-      validValue = formattedValue.filter((item) => this.isValueValid(item));
-      isValueValid = !!validValue.length;
-    } else {
-      validValue = value;
-      isValueValid = this.isValueValid(value);
-    }
+    let validValue = value;
+    const isValueValid = this.isValueValid(value);
     if (isValueValid) {
-      if (this.mode === "single") {
-        this._selectedItem = validValue;
-        this._selectedItems = [validValue];
-      } else {
-        this._selectedItems = validValue;
-        this._selectedItem = (validValue == null ? void 0 : validValue[0]) || void 0;
-      }
+      this._selectedItem = validValue;
+      this._selectedItems = [validValue];
       if (this.mode !== "single") {
         this.inputElm.value = "";
         this.inputElm.style.display = "none";
@@ -19202,12 +19193,12 @@ var ComboBox = class extends Control {
           this.inputWrapElm.insertBefore(itemElm, this.inputElm);
         });
       } else {
-        this.inputElm.value = this._selectedItem.label;
+        this.inputElm.value = ((_a = this._selectedItem) == null ? void 0 : _a.label) || "";
       }
       if (this.callback)
         this.callback(value);
     } else if (this.isMulti) {
-      this._selectedItems = validValue;
+      this._selectedItems = [validValue];
       this.inputElm.value = "";
       this.inputElm.style.display = "";
       const selectionItems = Array.from(this.inputWrapElm.querySelectorAll(".selection-item"));
@@ -19218,6 +19209,7 @@ var ComboBox = class extends Control {
     return this._selectedItems;
   }
   set selectedItems(value) {
+    var _a;
     if (value === void 0) {
       this._selectedItems = void 0;
       this.inputElm.value = "";
@@ -19225,7 +19217,7 @@ var ComboBox = class extends Control {
       return;
     }
     let isValueValid = false;
-    let validValue;
+    let validValue = [];
     if (this.isMulti) {
       const formattedValue = value;
       validValue = formattedValue.filter((item) => this.isValueValid(item));
@@ -19235,13 +19227,8 @@ var ComboBox = class extends Control {
       isValueValid = this.isValueValid(value[0]);
     }
     if (isValueValid) {
-      if (this.mode === "single") {
-        this._selectedItem = validValue[0];
-        this._selectedItems = validValue;
-      } else {
-        this._selectedItems = validValue;
-        this._selectedItem = (validValue == null ? void 0 : validValue[0]) || void 0;
-      }
+      this._selectedItem = validValue[0] || void 0;
+      this._selectedItems = validValue;
       if (this.mode !== "single") {
         this.inputElm.value = "";
         this.inputElm.style.display = "none";
@@ -19261,7 +19248,7 @@ var ComboBox = class extends Control {
           this.inputWrapElm.insertBefore(itemElm, this.inputElm);
         });
       } else {
-        this.inputElm.value = this._selectedItem.label;
+        this.inputElm.value = ((_a = this._selectedItem) == null ? void 0 : _a.label) || "";
       }
       if (this.callback)
         this.callback(value);
@@ -19434,15 +19421,15 @@ var ComboBox = class extends Control {
     this.listElm.style.width = width + "px";
   }
   closeList() {
-    var _a, _b;
+    var _a;
     this.isListShown = false;
     this.listElm.remove();
     this.listElm.style.display = "none";
     this.listElm.classList.remove("show");
     this.searchStr = "";
-    if (this.isMulti || ((_a = this.selectedItems) == null ? void 0 : _a.length))
+    if (this.isMulti)
       return;
-    const label = (_b = this.selectedItem) == null ? void 0 : _b.label;
+    const label = (_a = this.selectedItem) == null ? void 0 : _a.label;
     if (label && this.inputElm)
       this.inputElm.value = label;
   }
@@ -19453,7 +19440,7 @@ var ComboBox = class extends Control {
     return text ? text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&") : text;
   }
   renderItems() {
-    var _a;
+    var _a, _b;
     if (this.mode === "tags" && this.newItem) {
       if (this.searchStr)
         this.newItem.label = this.searchStr;
@@ -19491,11 +19478,11 @@ var ComboBox = class extends Control {
           event.stopPropagation();
           this.onItemClick(event, liElm, item);
         });
-        if (((_a = this.selectedItems) == null ? void 0 : _a.length) && this.mode == "multiple") {
+        if (((_a = this.selectedItems) == null ? void 0 : _a.length) && this.isMulti) {
           const index = this.getItemIndex(this.selectedItems, item);
           if (index >= 0)
             liElm.classList.add("matched");
-        } else if (item === this.selectedItem) {
+        } else if ((item == null ? void 0 : item.value) === ((_b = this.selectedItem) == null ? void 0 : _b.value)) {
           liElm.classList.add("matched");
         }
         let displayItem = "";
@@ -19541,6 +19528,7 @@ var ComboBox = class extends Control {
     parent.prepend(liElm);
   }
   handleRemove(event, item) {
+    var _a;
     event.stopPropagation();
     if (!this.enabled)
       return;
@@ -19552,36 +19540,39 @@ var ComboBox = class extends Control {
         this.items = this.items.filter((data) => data.value !== item.value);
       }
     }
-    const selectedItems = this.selectedItems;
+    const selectedItems = this.selectedItems || [];
     const selectedIndex = this.getItemIndex(selectedItems, item);
     if (selectedIndex >= 0)
       selectedItems.splice(selectedIndex, 1);
     this.selectedItems = selectedItems;
+    this._value = (_a = selectedItems[0]) == null ? void 0 : _a.value;
     if (typeof this.onObserverChanged === "function")
       this.onObserverChanged(this, event);
     if (typeof this.onChanged === "function")
       this.onChanged(this, event);
   }
   onItemClick(event, liElm, item) {
-    var _a, _b;
+    var _a, _b, _c;
     if (((_a = this.newItem) == null ? void 0 : _a.value) === item.value) {
       item = { ...this.newItem, value: this.newItem.label, isNew: true };
       this.items.push(item);
     }
     this.newItem = null;
-    if (((_b = this.selectedItems) == null ? void 0 : _b.length) && this.mode == "multiple") {
+    if (this.isMulti && ((_b = this.selectedItems) == null ? void 0 : _b.length)) {
       const index = this.getItemIndex(this.selectedItems, item);
-      const selectedItems = this.selectedItems;
+      const selectedItems = this.selectedItems || [];
       if (index >= 0) {
         selectedItems.splice(index, 1);
       } else {
         selectedItems.push(item);
       }
       this.selectedItems = selectedItems;
+      this._value = (_c = selectedItems[0]) == null ? void 0 : _c.value;
       liElm.classList.toggle("matched");
       this.closeList();
     } else {
       this.selectedItem = item;
+      this._value = item == null ? void 0 : item.value;
       this.closeList();
     }
     if (typeof this.onObserverChanged === "function")
@@ -19651,13 +19642,20 @@ var ComboBox = class extends Control {
       }
       const icon = new Icon(void 0, iconAttr);
       this.icon = icon;
-      this.selectedItem = this.getAttribute("selectedItem", true);
+      const value = this.getAttribute("value", true);
+      const selectedItems = this.getAttribute("selectedItems", true);
+      const selectedItem = this.getAttribute("selectedItem", true);
+      if (selectedItem)
+        this.selectedItem = selectedItem;
+      if (selectedItems)
+        this.selectedItems = selectedItems;
       this.listElm = this.createElement("div");
       this.listElm.classList.add(ItemListStyle);
       this.listElm.classList.add("item-list");
       if (_items.length) {
         this.items = [..._items];
       }
+      this.value = value;
       this.renderItems();
       document.addEventListener("click", (e) => {
         if (!this._enabled)
@@ -19678,6 +19676,9 @@ var ComboBox = class extends Control {
     return self;
   }
 };
+__decorateClass([
+  observable("value")
+], ComboBox.prototype, "_value", 2);
 ComboBox = __decorateClass([
   customElements2("i-combo-box", {
     icon: "tasks",
@@ -25088,6 +25089,8 @@ var Label = class extends Text {
     return ((_a = this.captionSpan) == null ? void 0 : _a.innerHTML) || "";
   }
   set caption(value) {
+    if (typeof value !== "string")
+      value = String(value);
     this._caption = value;
     if (this.captionSpan) {
       if ((value == null ? void 0 : value.startsWith("$")) && this.parentModule)
@@ -28517,7 +28520,7 @@ var Module = class extends Container {
     } else if (elm instanceof Upload) {
       return elm.fileList;
     } else if (elm instanceof ComboBox || elm instanceof Input && elm.inputType === "combobox") {
-      return elm.selectedItem;
+      return elm.value;
     } else {
       return elm.value;
     }
@@ -34426,6 +34429,7 @@ var DataGrid = class extends Control {
     }
   }
   _updateCurrCellValue(editor) {
+    var _a;
     console.dir("### _updateCurrCellValue");
     let cardViewEditor = false;
     if (editor)
@@ -34447,7 +34451,7 @@ var DataGrid = class extends Control {
       } else if (rowOrColDataType == "time" && rowOrColType == "timePicker") {
         cell._value = editor.value;
       } else if (rowOrColDataType == "string" && rowOrColType == "comboBox") {
-        cell._value = editor.value.value;
+        cell._value = (_a = editor.selectedItem) == null ? void 0 : _a.value;
       } else if (rowOrColDataType == "number" && rowOrColType == "number") {
         cell._value = parseFloat(editor.value);
       } else if (rowOrColDataType == "integer" && rowOrColType == "integer") {
@@ -36650,6 +36654,13 @@ var Markdown = class extends Control {
       const rows = text.split(/\n{2}|(?:\r\n){2}/);
       for (let i = 0; i < rows.length; i++) {
         rows[i] = rows[i] ? await this.preParse(rows[i]) : "";
+        const regex = /```((\w+)?[\s\n])*\(/g;
+        const matches = regex.exec(rows[i]);
+        if (matches == null ? void 0 : matches.length) {
+          const group = matches[1];
+          if (group)
+            rows[i] = rows[i].replace(group, group.trim());
+        }
       }
       text = rows.join("\n\n");
       text = await this.marked.parse(text, {
@@ -36671,7 +36682,7 @@ var Markdown = class extends Control {
     const firstIndex = text.indexOf("|");
     const lastIndex2 = text.lastIndexOf("|");
     const tableMd = text.slice(firstIndex, lastIndex2 + 1);
-    const tableMdRegex = /(?<=(\r\n){2}|^)([^\r\n]*\|[^\r\n]*(\r?\n)?)+(?=(\r?\n){2}|$)/gm;
+    const tableMdRegex = /(?:^|\r?\n\r?\n)([^\r\n]*\|[^\r\n]*(\r?\n)?)+(?=\r?\n\r?\n|$)/gm;
     if (!tableMdRegex.test(tableMd))
       return text;
     const breakRegex = /\|(\s)*:?(-+):?(\s)*\|/gm;
@@ -39038,9 +39049,10 @@ var TreeNode = class extends Control {
       this.isLazyLoad = isLazyLoad;
       this._wrapperElm = this.createElement("div", this);
       this._wrapperElm.classList.add("i-tree-node_content");
-      const iconData = icon || defaultIcon2;
+      const iconData = { ...defaultIcon2, ...icon || {} };
       iconData.height = iconData.height || "0.75rem";
       iconData.width = iconData.width || "0.75rem";
+      iconData.name = iconData.name || "caret-right";
       this._iconElm = new Icon(void 0, iconData);
       this._iconElm.classList.add("i-tree-node_icon");
       icon && this._iconElm.classList.add("custom-icon");
@@ -39052,13 +39064,12 @@ var TreeNode = class extends Control {
       rightWrap.classList.add("is-right");
       const actionGroup = this.createElement("div", rightWrap);
       actionGroup.classList.add("button-group");
-      const rightIconData = rightIcon || defaultIcon2;
+      const rightIconData = { ...defaultIcon2, ...rightIcon || {} };
       rightIconData.height = rightIconData.height || "0.75rem";
       rightIconData.width = rightIconData.width || "0.75rem";
       rightIconData.name = (rightIcon == null ? void 0 : rightIcon.name) || "";
       this._iconRightElm = new Icon(void 0, rightIconData);
-      this._iconRightElm.classList.add("i-tree-node_icon");
-      this._iconRightElm.classList.add("custom-icon");
+      this._iconRightElm.classList.add("i-tree-node_icon", "custom-icon");
       rightWrap.appendChild(this._iconRightElm);
       rightWrap.insertBefore(this._iconRightElm, actionGroup);
       if ((_b = (_a = this.data) == null ? void 0 : _a.children) == null ? void 0 : _b.length)
@@ -43013,7 +43024,7 @@ var SchemaDesigner = class extends Container {
       if (control.tagName === "I-CHECKBOX")
         return control.checked;
       if (control.tagName === "I-COMBO-BOX") {
-        return (_a = control.value) == null ? void 0 : _a.value;
+        return (_a = control.selectedItem) == null ? void 0 : _a.value;
       }
       if (control.tagName === "I-INPUT") {
         const inputType = control.inputType;

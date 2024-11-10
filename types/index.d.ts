@@ -5300,6 +5300,7 @@ declare module "packages/combo-box/src/combo-box" {
     }
     type ModeType = 'single' | 'multiple' | 'tags';
     export interface ComboBoxElement extends ControlElement {
+        value?: string;
         selectedItem?: IComboItem;
         selectedItems?: IComboItem[];
         items?: IComboItem[];
@@ -5317,6 +5318,7 @@ declare module "packages/combo-box/src/combo-box" {
         }
     }
     export class ComboBox extends Control {
+        private _value;
         private _selectedItem;
         private _selectedItems;
         private _caption;
@@ -5337,8 +5339,8 @@ declare module "packages/combo-box/src/combo-box" {
         private callback;
         onChanged: notifyEventCallback;
         constructor(parent?: Control, options?: any);
-        get value(): IComboItem | IComboItem[] | undefined;
-        set value(value: IComboItem | IComboItem[] | undefined);
+        get value(): string | undefined;
+        set value(value: string | undefined);
         get selectedItem(): IComboItem | undefined;
         set selectedItem(value: IComboItem | undefined);
         get selectedItems(): IComboItem[] | undefined;
