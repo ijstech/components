@@ -1,0 +1,20 @@
+version: "3.1"
+services:
+  install:
+    image: node:18.15
+    user: node
+    volumes:
+      - .:/data
+    command: bash -c "cd data && rm -rf node_modules && rm -f package-lock.json && npm i"
+  build:
+    image: node:18.15
+    user: node
+    volumes:
+      - .:/data
+    command: bash -c "cd data && npm run build"
+  deploy:
+    image: node:18.15
+    user: node
+    volumes:
+      - .:/data
+    command: bash -c "cd data && npm run deploy"   
