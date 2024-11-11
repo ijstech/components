@@ -1,11 +1,11 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.117",
+    "version": "0.1.119",
     "main": "dist/index.js",
     "types": "pluginTypes/index.d.ts",
     "license": "BUSL-1.1",
     "devDependencies": {
-        "@ijstech/compiler": "0.1.91"
+        "@ijstech/compiler": "^0.1.91"
     },
     "scripts": {
         "build": "rm -rf dist && rm -rf pluginTypes && npx @ijstech/compiler",
