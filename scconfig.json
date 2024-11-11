@@ -5,7 +5,7 @@
         "before": [
             "lib/license.txt",
             "lib/loader.js",
-            "packages/ipfs/src/ipfs.js",
+            "packages/ipfs/src/lib/ipfs.js",
             "packages/application/src/lib/purify.js"
         ]
     },
