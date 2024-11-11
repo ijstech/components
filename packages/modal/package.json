@@ -1,0 +1,8 @@
+{
+    "name": "@ijstech/modal",
+    "version": "0.1.0",
+    "dependencies": {
+        "@ijstech/base": "^0.1.0",
+        "@ijstech/application": "^0.1.0"
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@ijstech/accordion",
+  "dependencies": {
+    "@ijstech/base": "^0.1.0"
+  },
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "build": "rm -rf ./dist/* && tsc && ts-node ../../tools/build",
+    "test": "npx playwright test"
+  }
+}

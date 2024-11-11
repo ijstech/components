@@ -1,0 +1,5 @@
+/*!-----------------------------------------------------------
+* Copyright (c) IJS Technologies. All rights reserved.
+* Released under dual BUSL-1.1/commercial license
+* https://ijs.network
+*-----------------------------------------------------------*/

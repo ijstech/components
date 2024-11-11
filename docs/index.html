@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
+  <script src="libs/@ijstech/components/index.js"></script>
+  <script src="libs/@ijstech/compiler/index.js"></script>
+  <script>
+    application.currentModuleDir = 'libs/@scom/scom-code-editor';
+  </script>
+  <script src="libs/@scom/scom-code-editor/index.js"></script>
+</head>
+<html>
+
+<body>
+  <script>
+    async function init() {
+      const scconfigPath = 'scconfig.json';
+      let themesValue = '';
+      try {
+        const scconfig = await fetch(scconfigPath).then(res => res.json());
+        if (scconfig?.themes) themesValue = JSON.stringify(scconfig.themes);
+      } catch (err) {}
+      let scbook = await application.createElement('@scom/scom-scbook', false, {
+        entrypoint: "data",
+        maxWidth: 1400,
+        showHeader: true,
+        showSearch: false,
+        themes: themesValue
+      });
+      document.body.append(scbook);
+    };
+    init();
+  </script>
+</body>
+
+</html>

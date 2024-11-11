@@ -1,0 +1,10 @@
+{
+    "name": "@scom/scom-scbook",
+    "type": "widget",
+    "version": "0.1.15",
+    "dependencies": [
+        "@ijstech/components",
+        "@scom/scom-designer",
+        "@scom/scom-code-viewer"
+    ]
+}

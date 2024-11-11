@@ -1,0 +1,1 @@
+export {Text, TextElement, TextOverflowType, textDataSchema, textPropsConfig} from './text'

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {    
+    "experimentalDecorators": true,
+    "module": "CommonJS",    
+    "baseUrl": ".",
+    "paths": {     
+      "@ijstech/*": ["../*/src"]
+    } 
+  },  
+  "include": [
+      "./src/index.ts"
+  ]
+}

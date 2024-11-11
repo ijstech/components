@@ -1,0 +1,1 @@
+export { Tabs, TabsElement, Tab, TabElement } from './tab';

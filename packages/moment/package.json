@@ -1,0 +1,7 @@
+{
+  "name": "@ijstech/moment",
+  "version": "0.1.0",
+  "dependencies": {
+    "moment": "^2.29.1"
+  }
+}

@@ -1,0 +1,12 @@
+{
+    "name": "@ijstech/application",
+    "version": "0.1.0",
+    "dependencies": {
+        "@ijstech/style": "file:../style/src",
+        "@ijstech/moment": "file:../moment/src"
+    },
+    "scripts": {
+        "build": "rm -rf ./dist/* && tsc && ts-node ../../tools/build",
+        "test": "mocha --exit --require ts-node/register -r tsconfig-paths/register ./test/*.spec.ts"
+    }
+}

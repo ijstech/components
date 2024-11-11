@@ -1,0 +1,47 @@
+{
+  "type": "VerticalLayout",
+  "elements": [
+    {
+      "type": "HorizontalLayout",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/apiEndpoint",
+          "title": "API Endpoint"
+        }
+      ]
+    },
+    {
+      "type": "HorizontalLayout",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/options/properties/title"
+        }
+      ]
+    },
+    {
+      "type": "HorizontalLayout",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/options/properties/description"
+        }
+      ]
+    },
+    {
+      "type": "HorizontalLayout",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/options/properties/options",
+          "options": {
+            "detail": {
+              "type": "VerticalLayout"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

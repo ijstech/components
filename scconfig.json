@@ -1,0 +1,152 @@
+{
+    "type": "widget",
+    "moduleDir": "packages",
+    "bundleLibs": {
+        "before": [
+            "lib/license.txt",
+            "lib/loader.js",
+            "packages/ipfs/src/ipfs.js",
+            "packages/application/src/lib/purify.js"
+        ]
+    },
+    "modules": {
+        "@ijstech/application": {
+            "path": "application/src"
+        },
+        "@ijstech/style": {
+            "path": "style/src"
+        },
+        "@ijstech/module": {
+            "path": "module/src"
+        },
+        "@ijstech/base": {
+            "path": "base/src"
+        },
+        "@ijstech/tooltip": {
+            "path": "tooltip/src"
+        },
+        "@ijstech/types": {
+            "path": "types/src"
+        },
+        "@ijstech/checkbox": {
+            "path": "checkbox/src"
+        },
+        "@ijstech/combo-box": {
+            "path": "combo-box/src"
+        },
+        "@ijstech/icon": {
+            "path": "icon/src"
+        },
+        "@ijstech/image": {
+            "path": "image/src"
+        },
+        "@ijstech/input": {
+            "path": "input/src"
+        },
+        "@ijstech/datepicker": {
+            "path": "datepicker/src"
+        },
+        "@ijstech/range": {
+            "path": "range/src"
+        },
+        "@ijstech/radio": {
+            "path": "radio/src"
+        },
+        "@ijstech/color": {
+            "path": "color/src"
+        },
+        "@ijstech/modal": {
+            "path": "modal/src"
+        },
+        "@ijstech/layout": {
+            "path": "layout/src"
+        },
+        "@ijstech/switch": {
+            "path": "switch/src"
+        },
+        "@ijstech/upload": {
+            "path": "upload/src"
+        },
+        "@ijstech/ipfs": {
+            "path": "ipfs/src"
+        },
+        "@ijstech/button": {
+            "path": "button/src"
+        },
+        "@ijstech/tab": {
+            "path": "tab/src"
+        },
+        "@ijstech/label": {
+            "path": "label/src"
+        },
+        "@ijstech/link": {
+            "path": "link/src"
+        },
+        "@ijstech/text": {
+            "path": "text/src"
+        },
+        "@ijstech/moment": {
+            "path": "moment/src"
+        },
+        "@ijstech/progress": {
+            "path": "progress/src"
+        },
+        "@ijstech/jsonUI": {
+            "path": "jsonUI/src"
+        },
+        "@ijstech/alert": {
+            "path": "alert/src"
+        },
+        "@ijstech/data-grid": {
+            "path": "data-grid/src"
+        },
+        "@ijstech/markdown": {
+            "path": "markdown/src"
+        },
+        "@ijstech/markdown-editor": {
+            "path": "markdown-editor/src"
+        },
+        "@ijstech/menu": {
+            "path": "menu/src"
+        },
+        "@ijstech/tree-view": {
+            "path": "tree-view/src"
+        },
+        "@ijstech/popover": {
+            "path": "popover/src"
+        },
+        "@ijstech/iframe": {
+            "path": "iframe/src"
+        },
+        "@ijstech/pagination": {
+            "path": "pagination/src"
+        },
+        "@ijstech/table": {
+            "path": "table/src"
+        },
+        "@ijstech/carousel": {
+            "path": "carousel/src"
+        },
+        "@ijstech/video": {
+            "path": "video/src"
+        },
+        "@ijstech/schema-designer": {
+            "path": "schema-designer/src"
+        },
+        "@ijstech/navigator": {
+            "path": "navigator/src"
+        },
+        "@ijstech/breadcrumb": {
+            "path": "breadcrumb/src"
+        },
+        "@ijstech/form": {
+            "path": "form/src"
+        },
+        "@ijstech/repeater": {
+            "path": "repeater/src"
+        },
+        "@ijstech/accordion": {
+            "path": "accordion/src"
+        }
+    }
+}

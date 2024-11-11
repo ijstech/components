@@ -1,0 +1,7 @@
+{
+  "name": "@ijstech/navigator",
+  "version": "0.1.0",
+  "dependencies": {
+    "@ijstech/base": "^0.1.0"
+  }
+}

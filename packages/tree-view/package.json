@@ -1,0 +1,6 @@
+{
+    "name": "@ijstech/tree-view",
+    "dependencies": {
+        "@ijstech/base": "^0.1.0"
+    }
+}

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "experimentalDecorators": true,
+    "module": "amd",
+    "moduleResolution": "node",
+    "removeComments": true,
+    "sourceMap": false,
+    "outFile": "types/index.js",
+    "paths": {
+      "@ijstech/*": ["packages/*/src"]
+    }
+  },
+  "include": ["src"]
+}
