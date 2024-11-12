@@ -34406,7 +34406,24 @@ define("@ijstech/markdown/markdown.ts", ["require", "exports", "@ijstech/base", 
             const breakRegex = /\|(\s)*:?(-+):?(\s)*\|/gm;
             if (!breakRegex.test(tableMd))
                 return text;
-            const splittedArr = tableMd.split(/(?<!\\)\|/g) || [];
+            const splittedArr = [];
+            let currentSegment = '';
+            let isEscaped = false;
+            for (let i = 0; i < tableMd.length; i++) {
+                const char = tableMd[i];
+                if (char === '\\' && !isEscaped) {
+                    isEscaped = true;
+                }
+                else if (char === '|' && !isEscaped) {
+                    splittedArr.push(currentSegment);
+                    currentSegment = '';
+                }
+                else {
+                    currentSegment += char;
+                    isEscaped = false;
+                }
+            }
+            splittedArr.push(currentSegment);
             for (let i = 0; i < splittedArr.length; i++) {
                 let child = splittedArr[i].trim() || '';
                 if (child) {
