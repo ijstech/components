@@ -463,6 +463,8 @@ export class Input extends Control {
             case "combobox":
                 this._inputControl = new ComboBox(this, {
                     selectedItem: this.getAttribute('selectedItem', true),
+                    selectedItems: this.getAttribute('selectedItems', true),
+                    value: this.getAttribute('value', true),
                     items: this.getAttribute('items', true),
                     width,
                     height,

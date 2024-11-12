@@ -274,9 +274,9 @@ export class Form extends Control {
                                         (field as Checkbox).checked = rowData;
                                     } else if (field.tagName === 'I-COMBO-BOX') {
                                         (field as ComboBox).value = rowData;
-                                        const selectedItem = (field as ComboBox).items.find(v => v.value === rowData);
-                                        if (selectedItem)
-                                            (field as ComboBox).selectedItem = selectedItem;
+                                        // const selectedItem = (field as ComboBox).items.find(v => v.value === rowData);
+                                        // if (selectedItem)
+                                        //     (field as ComboBox).selectedItem = selectedItem;
                                     } else if (field.tagName === 'I-RADIO-GROUP') {
                                         (field as RadioGroup).selectedValue = rowData;
                                     } else if (field.tagName === 'I-DATEPICKER') {
@@ -297,9 +297,9 @@ export class Form extends Control {
                                         (field as Checkbox).checked = columnData;
                                     } else if (field.tagName === 'I-COMBO-BOX') {
                                         (field as ComboBox).value = columnData;
-                                        const selectedItem = (field as ComboBox).items.find(v => v.value === columnData);
-                                        if (selectedItem)
-                                            (field as ComboBox).selectedItem = selectedItem;
+                                        // const selectedItem = (field as ComboBox).items.find(v => v.value === columnData);
+                                        // if (selectedItem)
+                                        //     (field as ComboBox).selectedItem = selectedItem;
                                     } else if (field.tagName === 'I-RADIO-GROUP') {
                                         (field as RadioGroup).selectedValue = columnData;
                                     } else if (field.tagName === 'I-DATEPICKER') {
@@ -374,7 +374,9 @@ export class Form extends Control {
                             break;
                         case 'I-COMBO-BOX':
                             (input as ComboBox).value = value;
-                            (input as ComboBox).selectedItem = (input as ComboBox).items.find(v => v.value === value) || (input as ComboBox).items[0];
+                            const isValid = (input as ComboBox).items.find(v => v.value === value);
+                            if (!isValid) (input as ComboBox).selectedItem = (input as ComboBox).items[0];
+                            // (input as ComboBox).selectedItem = (input as ComboBox).items.find(v => v.value === value) || (input as ComboBox).items[0];
                             break;
                         case 'I-DATEPICKER':
                             let datepicker = input as Datepicker;
@@ -455,7 +457,7 @@ export class Form extends Control {
                     case 'I-INPUT':
                         return (control as Input).value;
                     case 'I-COMBO-BOX':
-                        return ((control as ComboBox).value as any)?.value;
+                        return (control as ComboBox).selectedItem?.value;
                     case 'I-DATEPICKER':
                         let datepicker = control as Datepicker;
                         return datepicker.value?.format(datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
@@ -493,7 +495,7 @@ export class Form extends Control {
                         const val = (control as Input).value;
                         return this.isNumber(val) ? parseInt(val) : undefined;
                     case 'I-COMBO-BOX':
-                        return parseFloat(((control as ComboBox).value as any)?.value);
+                        return parseFloat((control as ComboBox).selectedItem?.value || '');
                     default:
                         return undefined;
                 }
@@ -1120,7 +1122,7 @@ export class Form extends Control {
             (control as ComboBox).onChanged = () => {
                 if (cachedOnChanged)
                     cachedOnChanged();
-                const value = ((control as ComboBox).value as any)?.value;
+                const value = ((control as ComboBox).selectedItem)?.value;
                 this.validateRule(elm, effect, value, schema, inputControl);
             };
         } else if (control.tagName === 'I-DATEPICKER') {
@@ -1226,7 +1228,7 @@ export class Form extends Control {
                 if (control.tagName === 'I-INPUT') {
                     value = (control as Input).value;
                 } else if (control.tagName === 'I-COMBO-BOX') {
-                    value = ((control as ComboBox).value as any)?.value
+                    value = ((control as ComboBox).selectedItem)?.value
                 } else if (control.tagName === 'I-DATEPICKER') {
                     value = (control as Datepicker).value;
                 } else if (control.tagName === 'I-CHECKBOX') {
@@ -1678,7 +1680,7 @@ export class Form extends Control {
             }
             this.validateOnValueChanged(input, parent, scope, options?.caption);
             if (!this.isSubmitted && this._formOptions.onChange) {
-                this._formOptions.onChange(input, ((input as ComboBox).value as any)?.value);
+                this._formOptions.onChange(input, ((input as ComboBox).selectedItem)?.value);
             }
         }
         input.setAttribute('role', 'field');
