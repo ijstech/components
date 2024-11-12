@@ -1,1 +1,1 @@
-# [DeCom](.scbook/assets/icon.svg)
+# [Secure Compute](.scbook/assets/icon.svg)
