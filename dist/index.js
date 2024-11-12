@@ -22476,6 +22476,8 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                 case "combobox":
                     this._inputControl = new combo_box_1.ComboBox(this, {
                         selectedItem: this.getAttribute('selectedItem', true),
+                        selectedItems: this.getAttribute('selectedItems', true),
+                        value: this.getAttribute('value', true),
                         items: this.getAttribute('items', true),
                         width,
                         height,
@@ -43625,9 +43627,9 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                                         }
                                         else if (field.tagName === 'I-COMBO-BOX') {
                                             field.value = rowData;
-                                            const selectedItem = field.items.find(v => v.value === rowData);
-                                            if (selectedItem)
-                                                field.selectedItem = selectedItem;
+                                            // const selectedItem = (field as ComboBox).items.find(v => v.value === rowData);
+                                            // if (selectedItem)
+                                            //     (field as ComboBox).selectedItem = selectedItem;
                                         }
                                         else if (field.tagName === 'I-RADIO-GROUP') {
                                             field.selectedValue = rowData;
@@ -43654,9 +43656,9 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                                         }
                                         else if (field.tagName === 'I-COMBO-BOX') {
                                             field.value = columnData;
-                                            const selectedItem = field.items.find(v => v.value === columnData);
-                                            if (selectedItem)
-                                                field.selectedItem = selectedItem;
+                                            // const selectedItem = (field as ComboBox).items.find(v => v.value === columnData);
+                                            // if (selectedItem)
+                                            //     (field as ComboBox).selectedItem = selectedItem;
                                         }
                                         else if (field.tagName === 'I-RADIO-GROUP') {
                                             field.selectedValue = columnData;
@@ -43738,7 +43740,10 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                                 break;
                             case 'I-COMBO-BOX':
                                 input.value = value;
-                                input.selectedItem = input.items.find(v => v.value === value) || input.items[0];
+                                const isValid = input.items.find(v => v.value === value);
+                                if (!isValid)
+                                    input.selectedItem = input.items[0];
+                                // (input as ComboBox).selectedItem = (input as ComboBox).items.find(v => v.value === value) || (input as ComboBox).items[0];
                                 break;
                             case 'I-DATEPICKER':
                                 let datepicker = input;
@@ -43819,7 +43824,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                         case 'I-INPUT':
                             return control.value;
                         case 'I-COMBO-BOX':
-                            return control.value?.value;
+                            return control.selectedItem?.value;
                         case 'I-DATEPICKER':
                             let datepicker = control;
                             return datepicker.value?.format(datepicker.dateTimeFormat || datepicker.defaultDateTimeFormat);
@@ -43866,7 +43871,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                             const val = control.value;
                             return this.isNumber(val) ? parseInt(val) : undefined;
                         case 'I-COMBO-BOX':
-                            return parseFloat(control.value?.value);
+                            return parseFloat(control.selectedItem?.value || '');
                         default:
                             return undefined;
                     }
@@ -44515,7 +44520,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 control.onChanged = () => {
                     if (cachedOnChanged)
                         cachedOnChanged();
-                    const value = control.value?.value;
+                    const value = (control.selectedItem)?.value;
                     this.validateRule(elm, effect, value, schema, inputControl);
                 };
             }
@@ -44634,7 +44639,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                         value = control.value;
                     }
                     else if (control.tagName === 'I-COMBO-BOX') {
-                        value = control.value?.value;
+                        value = (control.selectedItem)?.value;
                     }
                     else if (control.tagName === 'I-DATEPICKER') {
                         value = control.value;
@@ -45080,7 +45085,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 }
                 this.validateOnValueChanged(input, parent, scope, options?.caption);
                 if (!this.isSubmitted && this._formOptions.onChange) {
-                    this._formOptions.onChange(input, input.value?.value);
+                    this._formOptions.onChange(input, (input.selectedItem)?.value);
                 }
             };
             input.setAttribute('role', 'field');
