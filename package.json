@@ -10,6 +10,7 @@
     "scripts": {
         "build": "rm -rf dist && rm -rf pluginTypes && npx @ijstech/compiler",
         "docs": "npx @ijstech/cli serve 8080 docs",
+        "docs:init": "npx @ijstech/cli init docs",        
         "deploy": "node tools/deploy"
     }
 }

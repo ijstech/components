@@ -453,8 +453,8 @@ define("@scom/scom-designer/helpers/config.ts", ["require", "exports", "@ijstech
             inputFontColor: '#fff',
             paperBgColor: '#000',
             divider: '#374151',
-            "selected": "rgb(101 161 180)",
-            "selectedBackground": "rgb(63 137 161/.12)"
+            "selected": "#fff",
+            "selectedBackground": "rgba(133, 163, 224, 0.1)"
         },
         light: {
             backgroundColor: '#f5f5f5',
@@ -464,8 +464,8 @@ define("@scom/scom-designer/helpers/config.ts", ["require", "exports", "@ijstech
             actionFontColor: 'rgba(136, 153, 168, 1.00)',
             secondaryColor: 'rgba(245,247,249,1.00)',
             divider: "#d3dce4",
-            "selected": "rgb(101 161 180)",
-            "selectedBackground": "rgb(63 137 161/.12)"
+            "selected": "rgba(12, 18, 52, 1.00)",
+            "selectedBackground": "rgba(255, 255, 255, 1.00)"
         }
     };
     exports.themesConfig = themesConfig;
@@ -7002,6 +7002,7 @@ define("@scom/scom-designer", ["require", "exports", "@ijstech/components", "@sc
             this.updateStyle('--divider', this.tag[themeVar]?.divider);
             this.updateStyle('--action-selected_background', this.tag[themeVar]?.selectedBackground);
             this.updateStyle('--action-selected', this.tag[themeVar]?.selected);
+            console.log(themeVar), this.codeEditor;
             if (this.codeEditor) {
                 this.codeEditor.theme = themeVar;
             }

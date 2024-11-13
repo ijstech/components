@@ -7204,6 +7204,10 @@ declare module "@ijstech/compiler/parser" {
         lineNumber?: number;
         columnNumber?: number;
     };
+    export function locateControl(source: TS.SourceFile, control: IComponent): {
+        lineNumber?: number;
+        columnNumber?: number;
+    };
     export function parseUI(source: TS.SourceFile, funcName: string): IComponent | undefined;
     export function renderUI(source: TS.SourceFile, funcName: string, component?: IComponent): string;
 }
@@ -7399,10 +7403,13 @@ declare module "@ijstech/compiler" {
         private packageImporter;
         private tsconfig;
         private _packages;
+        private _importedPackages;
         constructor(options?: {
             packageImporter?: PackageImporter;
             tsconfig?: any;
         });
+        getImportedPackage(name: string): Types.IPackage;
+        setImportedPackage(name: string, pack: Types.IPackage): void;
         addPackage(name: string, pack: Types.IPackage): void;
         buildAll(storage?: Types.IStorage): Promise<boolean>;
         buildPackage(name: string, storage?: Types.IStorage): Promise<Types.IPackage>;
@@ -7419,8 +7426,10 @@ declare module "@ijstech/compiler" {
         private resolvedFileName;
         dependencies: string[];
         private host;
+        private packageManager;
         private packageImporter;
         constructor(options?: {
+            packageManager?: PackageManager;
             packageImporter?: PackageImporter;
             tsconfig?: any;
         });
@@ -7445,6 +7454,10 @@ declare module "@ijstech/compiler" {
             columnNumber?: number;
         };
         locateError(error: ICompilerError): {
+            lineNumber?: number;
+            columnNumber?: number;
+        };
+        locateControl(fileName: string, control: Parser.IComponent): {
             lineNumber?: number;
             columnNumber?: number;
         };

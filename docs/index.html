@@ -1,34 +1,32 @@
+
 <!DOCTYPE html>
 
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
-  <link rel="shortcut icon" type="image/x-icon" href="data/.scbook/assets/icon.png">
-  <script src="libs/@ijstech/components/index.js"></script>
-  <script src="libs/@ijstech/compiler/index.js"></script>
-  <script>
-    application.currentModuleDir = 'libs/@scom/scom-code-editor';
-  </script>
-  <script src="libs/@scom/scom-code-editor/index.js"></script>
+  <link rel="icon" href="modules/assets/img/favicon.png">
+  <title>Docs</title>
+  <meta name="description" content="Documentation">
+  <meta property="og:site_name" content="DOCS">
+  <meta property="og:url" content="">
+  <meta property="og:title" content="">
+  <meta property="og:type" content="website">
+  <meta name="mobile-web-app-capable" content="yes">
+
+
+  <script 
+    src="libs/@ijstech/components/index.js"
+    integrity="sha256-UDbwKNJ2A8A8Y3ocE+lnbhrJR1J7pbaNvidWetkZFFM="
+    crossorigin="anonymous"></script>
+  
+  <script src="bundle.js" integrity="sha256-UTpLWe+mwBZ31bXtANs0AOnYsEEZmVReyweZ0Ys5c7Q=" crossorigin="anonymous"></script>
 </head>
 <html>
 
 <body>
   <script>
     async function init() {
-      const scconfigPath = 'scconfig.json';
-      let themesValue = '';
-      try {
-        const scconfig = await fetch(scconfigPath).then(res => res.json());
-        if (scconfig?.themes) themesValue = JSON.stringify(scconfig.themes);
-      } catch (err) {}
-      let scbook = await application.createElement('@scom/scom-scbook', false, {
-        entrypoint: "data",
-        maxWidth: 1400,
-        showHeader: true,
-        showSearch: false,
-        themes: themesValue
-      });
-      document.body.append(scbook);
+      let module = await application.init('scconfig.json');
+      document.body.append(module);
     };
     init();
   </script>
