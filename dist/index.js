@@ -36866,6 +36866,9 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
                     this.classList.remove('is-checked');
             }
             ;
+            if (target.closest('i-icon') || target.nodeName === 'I-ICON') {
+                return true;
+            }
             const parent = this._parent || target.closest('i-tree-view');
             if (parent instanceof TreeView) {
                 parent._setActiveItem(this, event);
