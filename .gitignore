@@ -1,3 +1,8 @@
 data/config.js
 node_modules
 package-lock.json
+/docs/lbs
+/docs/node_modules
+/docs/bundle.js
+/docs/index.html
+/docs/tsconfig.json
