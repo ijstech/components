@@ -1,6 +1,6 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.121",
+    "version": "0.1.122",
     "main": "dist/index.js",
     "types": "pluginTypes/index.d.ts",
     "license": "BUSL-1.1",
@@ -10,7 +10,7 @@
     "scripts": {
         "build": "rm -rf dist && rm -rf pluginTypes && npx @ijstech/compiler",
         "docs": "npx @ijstech/cli serve 8080 docs",
-        "docs:init": "npx @ijstech/cli init docs",        
+        "docs:init": "npx @ijstech/cli init docs",
         "deploy": "node tools/deploy"
     }
 }
