@@ -11998,9 +11998,9 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
     }
     exports.SpaceValue = SpaceValue;
     ;
-    const DefaultBorderCornerStyles = {
-        radius: undefined
-    };
+    // const DefaultBorderCornerStyles: IBorderCornerStyles = {
+    //     radius: undefined
+    // }
     const DefaultBorderSideStyles = {
         width: undefined,
         style: undefined,
@@ -12008,6 +12008,10 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
     };
     const DefaultAnchor = { top: true, left: true, right: false, bottom: false };
     class Border {
+        // private _topLeft: IBorderCornerStyles;
+        // private _topRight: IBorderCornerStyles;
+        // private _bottomLeft: IBorderCornerStyles;
+        // private _bottomRight: IBorderCornerStyles;
         constructor(target, options) {
             this._styleClassMap = {};
             this._target = target;
@@ -16214,6 +16218,7 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
         }
         set checked(value) {
             this._checked = value;
+            console.log('checkbox change', value, this._checked);
             this.addClass(value, 'is-checked');
             this.inputElm && (this.inputElm.checked = value);
         }
@@ -16291,6 +16296,9 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
             return self;
         }
     };
+    __decorate([
+        (0, base_1.observable)('cchecked')
+    ], Checkbox.prototype, "_checked", void 0);
     Checkbox = __decorate([
         (0, base_1.customElements)('i-checkbox', {
             icon: 'check-square',
@@ -17109,6 +17117,9 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             this._items = items;
             if (this.listElm) {
                 this.listElm.innerHTML = "";
+                if (this._value !== undefined) {
+                    this.value = this._value;
+                }
                 this.renderItems();
             }
         }
@@ -22850,21 +22861,20 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
         fontSize: Theme.typography.fontSize,
         $nest: {
             ".wrapper": {
-                // width: "62px",
-                // height: "34px",
-                width: "48px",
-                height: "22px",
+                width: "100%",
+                height: "100%",
                 position: "relative",
                 display: "inline-flex",
                 flexShrink: 0,
                 overflow: "hidden",
                 zIndex: 0,
                 verticalAlign: "middle",
+                borderRadius: 'inherit'
             },
             ".switch-base": {
                 display: "inline-flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "start",
                 outline: 0,
                 border: 0,
                 margin: 0,
@@ -22879,12 +22889,15 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 bottom: 0,
                 left: 0,
                 zIndex: 1,
+                width: '100%',
+                height: '100%',
                 color: "#fff",
-                transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+                transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, justify-content 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 $nest: {
                     "&.checked": {
                         // color: "#1976d2",
-                        transform: "translateX(26px)",
+                        // transform: "translateX(26px)",
+                        justifyContent: 'flex-end',
                         $nest: {
                             ".thumb:before": {
                                 backgroundImage: "var(--checked-background)",
@@ -22911,7 +22924,7 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 position: "absolute",
                 top: 0,
                 left: "-100%",
-                width: "300%",
+                width: "100%",
                 height: "100%",
                 opacity: 0,
                 margin: 0,
@@ -22955,7 +22968,6 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 width: "100%",
                 height: "100%",
                 zIndex: -1,
-                borderRadius: "11px",
                 backgroundColor: "#000",
                 transition: "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 $nest: {
@@ -22990,7 +23002,12 @@ define("@ijstech/switch/switch.ts", ["require", "exports", "@ijstech/base", "@ij
     exports.Switch = void 0;
     let Switch = class Switch extends base_1.Control {
         constructor(parent, options) {
-            super(parent, options);
+            super(parent, options, {
+                width: "48px",
+                height: "22px",
+                border: { radius: '11px' }
+            });
+            this._checked = false;
         }
         get checked() {
             return this._checked;
@@ -23097,10 +23114,10 @@ define("@ijstech/switch/switch.ts", ["require", "exports", "@ijstech/base", "@ij
                 return false;
             if (!this.onClick) {
                 this.checked = !this.checked;
-                if (typeof this.onChanged === 'function')
-                    this.onChanged(this, event);
                 if (typeof this.onObserverChanged === 'function')
                     this.onObserverChanged(this, event);
+                if (typeof this.onChanged === 'function')
+                    this.onChanged(this, event);
             }
             return super._handleClick(event, true);
         }
@@ -23142,6 +23159,9 @@ define("@ijstech/switch/switch.ts", ["require", "exports", "@ijstech/base", "@ij
             return self;
         }
     };
+    __decorate([
+        (0, base_1.observable)('schecked')
+    ], Switch.prototype, "_checked", void 0);
     Switch = __decorate([
         (0, base_1.customElements)("i-switch", {
             icon: 'toggle-on',
@@ -26649,6 +26669,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Tooltip = void 0;
+    const DEFAULT_DURATION = 2000;
     let Tooltip = class Tooltip extends base_1.Control {
         constructor(parent) {
             super(parent);
@@ -26833,7 +26854,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 clearTimeout(this.timeout);
                 if (this.tooltipElm && document.body.contains(this.tooltipElm))
                     document.body.removeChild(this.tooltipElm);
-            }, this.duration || 2000);
+            }, this.duration || DEFAULT_DURATION);
         }
         renderTooltip() {
             this.tooltipElm = document.createElement("div");
@@ -33381,10 +33402,14 @@ define("@ijstech/data-grid/dataGrid.ts", ["require", "exports", "@ijstech/base",
                     let font = {
                         'bold': this.font.bold,
                         'color': this.font.color,
-                        'italic': this.font.italic,
+                        // 'italic': this.font.italic,
                         'name': this.font.name,
                         'size': this.font.size,
-                        'underline': this.font.underline
+                        'style': this.font.style,
+                        'transform': this.font.transform,
+                        'weight': this.font.weight,
+                        'shadow': this.font.shadow
+                        // 'underline': this.font.underline
                     };
                     let value;
                     if (this.onDisplayCell) {
@@ -34435,7 +34460,7 @@ define("@ijstech/markdown/markdown.ts", ["require", "exports", "@ijstech/base", 
                         breaks: true
                     });
                     if (child !== '\n') {
-                        splittedArr[i] = child.replace(/\n/g, '').replace("|", "&#124;");
+                        splittedArr[i] = child.replace(/\n/g, '').replace(/\|/g, '&#124;');
                     }
                 }
             }

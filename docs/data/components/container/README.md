@@ -6,10 +6,5 @@
 
 | Name            | Description                                       | Type       | Default |
 | --------------- | ------------------------------------------------- | ---------- | ------- |
-| controls | return array of child controls | Control[] |  |
+| controls | return array of child controls | [Control](../control/README.md)[] |  |
 | resizer | allows control to be resized via user interaction | boolean |  |
-| font |  | IFont |  |
-| textAlign | Text alignment, text transformation | [TextAlign](#textalign) |  |
-
-### TextAlign
-`left` \| `right`

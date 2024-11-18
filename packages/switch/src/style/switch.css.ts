@@ -8,22 +8,21 @@ Styles.cssRule("i-switch", {
 
   $nest: {
     ".wrapper": {
-      // width: "62px",
-      // height: "34px",
-      width: "48px",
-      height: "22px",
+      width: "100%",
+      height: "100%",
       position: "relative",
       display: "inline-flex",
       flexShrink: 0,
       overflow: "hidden",
       zIndex: 0,
       verticalAlign: "middle",
+      borderRadius: 'inherit'
     },
 
     ".switch-base": {
       display: "inline-flex",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "start",
       outline: 0,
       border: 0,
       margin: 0,
@@ -38,13 +37,16 @@ Styles.cssRule("i-switch", {
       bottom: 0,
       left: 0,
       zIndex: 1,
+      width: '100%',
+      height: '100%',
       color: "#fff",
-      transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+      transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, justify-content 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
 
       $nest: {
         "&.checked": {
           // color: "#1976d2",
-          transform: "translateX(26px)",
+          // transform: "translateX(26px)",
+          justifyContent: 'flex-end',
 
           $nest: {
             ".thumb:before": {
@@ -75,7 +77,7 @@ Styles.cssRule("i-switch", {
       position: "absolute",
       top: 0,
       left: "-100%",
-      width: "300%",
+      width: "100%",
       height: "100%",
       opacity: 0,
       margin: 0,
@@ -122,7 +124,6 @@ Styles.cssRule("i-switch", {
       width: "100%",
       height: "100%",
       zIndex: -1,
-      borderRadius: "11px",
       backgroundColor: "#000",
       transition:
         "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",

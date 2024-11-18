@@ -3,6 +3,7 @@ import "./style/tooltip.css";
 import {PlacementType, TriggerType, ITooltipImpl, ITooltip} from '@ijstech/types';
 export {ITooltip};
 
+const DEFAULT_DURATION = 2000;
 @customElements('i-tooltip')
 export class Tooltip extends Control implements ITooltipImpl {
   private _content: string;
@@ -12,7 +13,6 @@ export class Tooltip extends Control implements ITooltipImpl {
   private _maxWidth: string;
   private _trigger: TriggerType;
   private _duration: number;
-  // private _designMode: boolean = false;
   private timeout: any;
 
   private tooltipElm: HTMLElement;
@@ -213,7 +213,7 @@ export class Tooltip extends Control implements ITooltipImpl {
       clearTimeout(this.timeout)
       if (this.tooltipElm && document.body.contains(this.tooltipElm))
         document.body.removeChild(this.tooltipElm)
-    }, this.duration || 2000);
+    }, this.duration || DEFAULT_DURATION);
   }
 
   private renderTooltip() {

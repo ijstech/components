@@ -197,7 +197,7 @@ export class Markdown extends Control {
                     breaks: true
                 });
                 if (child !== '\n') {
-                    splittedArr[i] = child.replace(/\n/g, '').replace("|", "&#124;");
+                    splittedArr[i] = child.replace(/\n/g, '').replace(/\|/g, '&#124;');
                 }
             }
         }

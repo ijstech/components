@@ -20049,10 +20049,6 @@ declare module "@ijstech/base/types.ts" {
         right?: IBorderSideStyles;
         bottom?: IBorderSideStyles;
         left?: IBorderSideStyles;
-        topLeft?: IBorderCornerStyles;
-        topRight?: IBorderCornerStyles;
-        bottomLeft?: IBorderCornerStyles;
-        bottomRight?: IBorderCornerStyles;
     }
     export interface IAnchor {
         top?: boolean;
@@ -20069,10 +20065,8 @@ declare module "@ijstech/base/types.ts" {
         size?: string;
         color?: string;
         bold?: boolean;
-        italic?: boolean;
         style?: FontStyle;
         transform?: TextTransform;
-        underline?: boolean;
         weight?: number | string;
         shadow?: string;
     }
@@ -20327,7 +20321,7 @@ declare module "@ijstech/base/control.ts" {
     import { Component } from "@ijstech/base/component.ts";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, CursorType } from "@ijstech/base/types.ts";
     import { ICustomProperties, IAnchor, IBackground, IBorderSideStyles, BorderStyleType, IBorder, BorderStylesSideType } from "@ijstech/base/types.ts";
-    import { IGrid, LineHeightType, DockStyle, DisplayType, PositionType } from "@ijstech/base/types.ts";
+    import { IGrid, LineHeightType, DockStyle, DisplayType, IControlMediaQuery, PositionType } from "@ijstech/base/types.ts";
     import { I18n } from "@ijstech/base/i18n.ts";
     import { IModule } from '@ijstech/types';
     export type SpaceProps = 'margin' | 'padding';
@@ -20358,10 +20352,6 @@ declare module "@ijstech/base/control.ts" {
         private _right;
         private _bottom;
         private _left;
-        private _topLeft;
-        private _topRight;
-        private _bottomLeft;
-        private _bottomRight;
         constructor(target: Control, options?: IBorder);
         updateValue(options: IBorder): void;
         private isNumber;
@@ -20586,8 +20576,8 @@ declare module "@ijstech/base/control.ts" {
         set letterSpacing(value: string | number);
         get boxShadow(): string;
         set boxShadow(value: string);
-        get mediaQueries(): any[];
-        set mediaQueries(value: any[]);
+        get mediaQueries(): IControlMediaQuery[];
+        set mediaQueries(value: IControlMediaQuery[]);
         protected removeStyle<P extends keyof Control>(propertyName: P): void;
         protected setStyle<P extends keyof Control>(propertyName: P, value: string): void;
         updateLocale(i18n: I18n): void;
@@ -21769,10 +21759,10 @@ declare module "@ijstech/checkbox/checkbox.ts" {
         }
     }
     export class Checkbox extends Control {
+        private _checked;
         private _caption;
         private _captionWidth;
         private _indeterminate;
-        private _checked;
         private _readOnly;
         private wrapperElm;
         private inputSpanElm;

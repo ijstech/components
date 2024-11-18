@@ -315,6 +315,9 @@ export class ComboBox extends Control {
     this._items = items;
     if (this.listElm) {
       this.listElm.innerHTML = "";
+      if (this._value !== undefined) {
+        this.value = this._value;
+      }
       this.renderItems();
     }
   }

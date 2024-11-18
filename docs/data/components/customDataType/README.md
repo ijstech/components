@@ -43,6 +43,8 @@
     - [IMediaQuery](#imediaquery)
     - [IBackground](#ibackground)
     - [IHover](#ihover)
+    - [CursorType](#cursortype)
+    - [TextTransform](#texttransform)
 
 ## Data Type
 ### DockStyle
@@ -81,6 +83,10 @@ string \| number \| `normal` \| `initial` \| `inherit`
 `asc` \| `desc` \| `none`
 ### TextAlign
 `left` \| `right` \| `center`
+### TextTransform
+`capitalize` \| `uppercase` \| `lowercase` \| `full-width` \| `full-size-kana` \| `inherit` \| `initial` \| `revert` \| `revert-layer` \| `unset`
+### CursorType
+`auto` \| `default` \| `none` \| `context-menu` \| `help` \| `pointer` \| `progress` \| `wait` \| `cell` \| `crosshair` \| `text` \| `vertical-text` \| `alias` \| `copy` \| `move` \| `no-drop` \| `not-allowed` \| `grab` \| `grabbing` \| `e-resize` \| `n-resize` \| `ne-resize` \| `nw-resize` \| `s-resize` \| `se-resize` \| `sw-resize` \| `w-resize` \| `ew-resize` \| `ns-resize` \| `nesw-resize` \| `nwse-resize` \| `col-resize` \| `row-resize` \| `all-scroll` \| `zoom-in` \| `zoom-out`
 
 ## Interface
 ### IBorder
@@ -90,10 +96,6 @@ string \| number \| `normal` \| `initial` \| `inherit`
 | right           | Define the right style of the border              | [IBorderSideStyles](#ibordersidestyles)     |         |
 | bottom          | Define the bottom style of the border             | [IBorderSideStyles](#ibordersidestyles)     |         |
 | left            | Define the left style of the border               | [IBorderSideStyles](#ibordersidestyles)     |         |
-| topLeft         | Define the top left style of the border           | [IBorderCornerStyles](#ibordercornerstyles) |         |
-| topRight        | Define the top right style of the border          | [IBorderCornerStyles](#ibordercornerstyles) |         |
-| bottomLeft      | Define the bottom left style of the border        | [IBorderCornerStyles](#ibordercornerstyles) |         |
-| bottomRight     | Define the bottom right style of the border       | [IBorderCornerStyles](#ibordercornerstyles) |         |
 
 ### IBorderSideStyles
 | Name            | Description                                       | Type             | Default |
@@ -115,13 +117,16 @@ string \| number \| `normal` \| `initial` \| `inherit`
 | shrink          | Define the shrink of the stack                    | string     |         |
 
 ### IFont
-| Name            | Description                                       | Type       | Default |
-| --------------- | ------------------------------------------------- | ---------- | ------- |
-| name            | Define the name of font                           | string     |         |
-| size            | Define the size of font                           | string     |         |
-| color           | Define the color of font                          | string     |         |
-| bold            | Define the font is bold                           | boolean    |         |
-| style           | Define the font style of font        | [FontStyle](#fontstyle) |         |
+| Name      | Description                   | Type                            | Default |
+| --------- | ----------------------------- | ------------------------------- | ------- |
+| name      | Define the font family        | string                          |         |
+| size      | Define the size of font       | string                          |         |
+| color     | Define the color of font      | string                          |         |
+| bold      | Define the font is bold       | boolean                         | false   |
+| style     | Define the font style of font | [FontStyle](#fontstyle)         |         |
+| transform | Define the text transform     | [TextTransform](#texttransform) |         |
+| weight    | Define the font weight        | number \| string                |         |
+| shadow    | Define the font shadow        | string                          |         |
 
 ### IGap
 | Name            | Description                                       | Type             | Default |
@@ -161,8 +166,9 @@ string \| number \| `normal` \| `initial` \| `inherit`
 | rightIcon       | Define the icon on the right of the caption       | [Icon](#icon) |         |
 | collapsible     | Define the TreeNode collapsible                   | boolean       | true    |
 | expanded        | Define the TreeNode expanded                      | boolean       | false   |
-| isLazyLoad      | Define the TreeNode is LazyLoad                   | boolean       |         |
+| isLazyLoad      | Define the TreeNode is LazyLoad                   | boolean       | false   |
 | active          | Define the TreeNode active                        | boolean       |         |
+| alwaysExpanded  | Define the TreeNode always expanded               | boolean       | false   |
 | children        | Define the children TreeNode of TreeNode          | [ITreeNode](#itreenode) | |
 
 ### IComboItem
@@ -183,7 +189,8 @@ comboItems = [
 | title           | Define the header of the menu item                | string        |         |
 | link            | Define the hyperlink of the menu item             | [Link](#link) |         |
 | icon            | Define the icon of the menu item                  | [Icon](#icon) |         |
-| items           | Define the menu items                             | [IMenuItem&#91;&#93;](#imenuitem) | | 
+| items           | Define the menu items                             | [IMenuItem&#91;&#93;](#imenuitem) | |
+| textAlign       | Define the text align of the menu item            | [TextAlign](#textalign) |         |
 ```
 menuItems = [
     { title: 'Test 1', link: { href: '/#/test1', target: '_blank' } },
@@ -214,6 +221,7 @@ link={{ href: "/#/test2_1", target: "_blank"}}
 | placement       | Define the display location of the `tooltip`      | [PlacementType](#placementtype) |         |
 | trigger         | Define a trigger to show the `tooltip`            | [TriggerType](#triggertype)     |         |
 | maxWidth        | Define the max width of the `tooltip`             | string                          |         |
+| duration        | Define the duration of the `tooltip`              | number                          | 2000    |
 ```
 tooltip={{
     content: 'Tooltip test', popperClass: '',
@@ -233,11 +241,13 @@ icon={{ name: "address-card" }}
 ```
 
 ### Image
-| Name            | Description                                                     | Type       | Default |
-| --------------- | -------------------------------------------------               | ---------- | ------- |
-| rotate          | Define a 2D rotation, the angle is specified in the parameter   | number     |         |
-| url             | Define the path of an image                                     | string     |         |
-| fallbackUrl     | Define the default image path of an image for fail load url use | string     |         |
+| Name        | Description                                                     | Type                            | Default |
+| ----------- | --------------------------------------------------------------- | ------------------------------- | ------- |
+| rotate      | Define a 2D rotation, the angle is specified in the parameter   | number                          |         |
+| url         | Define the path of an image                                     | string                          |         |
+| fallbackUrl | Define the default image path of an image for fail load url use | string                          |         |
+| objectFit   | Define the object fit of an image                               | [ObjectFitType](../image/README.md#objectfittype) | contain |
+
 ```
 image={{ url: "https://via.placeholder.com/50", width: 24, height: 24 }}
 ```
@@ -290,16 +300,49 @@ interface ITableExpandable {
 | maxWidth        | Define the max width                              | string \| number |         |
 | properties      | Define the addon properties                       | T                |         |
 
+### IControlMediaQuery
+| Name       | Description                            | Type                                                     | Default |
+| ---------- | -------------------------------------- | -------------------------------------------------------- | ------- |
+| display    | Define the display behavior in control | [DisplayType](#displaytype)                              |         |
+| margin     |                                        | [ISpace](#ispace)                                        |         |
+| padding    |                                        | [ISpace](#ispace)                                        |         |
+| border     |                                        | [IBorder](#iborder)                                      |         |
+| visible    |                                        | boolean                                                  |         |
+| background |                                        | [IBackground](#ibackground)                              |         |
+| grid       |                                        | [IGrid](#igrid)                                          |         |
+| position   |                                        | [PositionType](#positiontype)                            |         |
+| left       |                                        | number \| string                                         |         |
+| bottom     |                                        | number \| string                                         |         |
+| right      |                                        | number \| string                                         |         |
+| top        |                                        | number \| string                                         |         |
+| zIndex     |                                        | string \| number                                         |         |
+| position   |                                        | [PositionType](#positiontype)                            |         |
+| height     |                                        | number \| string                                         |         |
+| width      |                                        | number \| string                                         |         |
+| maxWidth   |                                        | number \| string                                         |         |
+| minWidth   |                                        | number \| string                                         |         |
+| maxHeight  |                                        | number \| string                                         |         |
+| minHeight  |                                        | number \| string                                         |         |
+| overflow   |                                        | [OverflowType](#overflowtype) \| [IOverflow](#ioverflow) |         |
+| opacity    |                                        | number \| string                                         |         |
+| font       |                                        | [IFont](#ifont)                                          |         |
+| stack      |                                        | [IStack](#istack)                                        |         |
+
 #### ITableMediaQuery
 | Name            | Description                                       | Type                                  | Default |
 | --------------- | ------------------------------------------------- | ----------                            | ------- |
-| fieldNames      | Define the table field names                      | string                                |         |
+| fieldNames      | Define the table field names                      | string[]                              |         |
 | expandable      | Define the table expandable setting               | [ITableExpandable](#itableexpandable) |         |
 
 #### IStackMediaQuery
 | Name            | Description                                       | Type                                     | Default |
 | --------------- | ------------------------------------------------- | ----------                               | ------- |
 | direction       | Define the display direction of the stack         | [StackDirectionType](#stackdirectiontype)|         |
+| gap             | Define the gap between the stack elements         | number \| string                         |         |
+| justifyContent  | Define the justify content of the stack           | [StackJustifyContentType](../layout/stackLayout/y#stackjustifycontenttype) | |
+| alignItems      | Define the align items of the stack               | [StackAlignItemsType](../layout/stackLayout/y#stackalignitemstype) | |
+| alignSelf       | Define the align self of the stack                | [StackAlignSelfType](../layout/stackLayout/y#stackalignselftype) | |
+| reverse         | Define whether revered stack
 
 #### IGridLayoutMediaQuery
 | Name            | Description                                                | Type       | Default |
@@ -334,7 +377,6 @@ interface ITableExpandable {
 | right           |                                                   | boolean    |         |
 | bottom          |                                                   | boolean    |         |
 | left            |                                                   | boolean    |         |
-
 
 ### IBackground
 | Name            | Description                                       | Type       | Default |

@@ -1,4 +1,4 @@
-import { customElements, ControlElement, Control, RequireJS, LibPath, notifyEventCallback, IBorder, Border } from '@ijstech/base';
+import { customElements, ControlElement, Control, RequireJS, LibPath, notifyEventCallback, IBorder, Border, observable } from '@ijstech/base';
 import { Icon } from '@ijstech/icon';
 import './style/datepicker.css';
 import {moment, Moment} from '@ijstech/moment';
