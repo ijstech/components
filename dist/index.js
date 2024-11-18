@@ -22412,6 +22412,15 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
         get maxLength() {
             return this._maxLength;
         }
+        set enterKeyHint(value) {
+            this._enterKeyHint = value;
+            if (this.inputElm) {
+                this.inputElm.setAttribute('enterKeyHint', value);
+            }
+        }
+        get enterKeyHint() {
+            return this._enterKeyHint;
+        }
         get background() {
             return this._background;
         }
@@ -22698,6 +22707,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                 this.readOnly = this.getAttribute('readOnly', true, DEFAULT_VALUES.readOnly);
                 this.resize = this.getAttribute('resize', true, DEFAULT_VALUES.resize);
                 this.maxLength = this.getAttribute('maxLength', true);
+                this.enterKeyHint = this.getAttribute('enterKeyHint', true);
                 if (this.value && this.clearIconElm)
                     this.clearIconElm.classList.add('active');
                 super.init();
@@ -22767,6 +22777,9 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                 },
                 maxLength: {
                     type: 'number'
+                },
+                enterKeyHint: {
+                    type: 'string'
                 }
             },
             events: {

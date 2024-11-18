@@ -22863,6 +22863,7 @@ declare module "@ijstech/input/input.ts" {
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio | ColorPicker;
     type actionCallback = (target: Input) => void;
     type ResizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
+    type EnterKeyHintType = "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
         caption?: string;
         captionWidth?: number | string;
@@ -22875,6 +22876,7 @@ declare module "@ijstech/input/input.ts" {
         multiline?: boolean;
         resize?: ResizeType;
         maxLength?: number;
+        enterKeyHint?: EnterKeyHintType;
         onChanged?: notifyEventCallback;
         onKeyDown?: notifyEventCallback;
         onKeyUp?: notifyEventCallback;
@@ -22903,6 +22905,7 @@ declare module "@ijstech/input/input.ts" {
         private _multiline;
         private _resize;
         private _maxLength;
+        private _enterKeyHint;
         private captionSpanElm;
         private labelElm;
         private inputElm;
@@ -22950,6 +22953,8 @@ declare module "@ijstech/input/input.ts" {
         get border(): Border;
         set maxLength(value: number);
         get maxLength(): number;
+        set enterKeyHint(value: EnterKeyHintType);
+        get enterKeyHint(): EnterKeyHintType;
         get background(): Background;
         set background(value: IBackground);
         get font(): IFont;
