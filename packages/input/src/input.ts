@@ -14,6 +14,7 @@ export type InputType = 'checkbox'|'radio'|'range'|'date'|'time'|'dateTime'|'pas
 type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio | ColorPicker;
 type actionCallback = (target: Input) => void;
 type ResizeType = "none"|"auto"|"both"|"horizontal"|"vertical"|"initial"|"inherit"|"auto-grow";
+type EnterKeyHintType = "enter"|"done"|"go"|"next"|"previous"|"search"|"send";
 
 export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement{
     caption?: string;
@@ -27,6 +28,7 @@ export interface InputElement extends ControlElement, CheckboxElement, ComboBoxE
     multiline?: boolean;
     resize?: ResizeType;
     maxLength?: number;
+    enterKeyHint?: EnterKeyHintType;
     onChanged?: notifyEventCallback;
     onKeyDown?: notifyEventCallback;
     onKeyUp?: notifyEventCallback;
@@ -101,6 +103,9 @@ const DEFAULT_VALUES = {
         },
         maxLength: {
             type: 'number'
+        },
+        enterKeyHint: {
+            type: 'string'
         }
     },
     events: {
@@ -173,6 +178,7 @@ export class Input extends Control {
     private _multiline: boolean;
     private _resize: ResizeType;
     private _maxLength: number;
+    private _enterKeyHint: EnterKeyHintType;
     
     private captionSpanElm: HTMLElement;
     private labelElm: HTMLLabelElement;
@@ -399,6 +405,16 @@ export class Input extends Control {
     }
     get maxLength(): number {
         return this._maxLength;
+    }
+
+    set enterKeyHint(value: EnterKeyHintType) {
+        this._enterKeyHint = value;
+        if (this.inputElm) {
+            this.inputElm.setAttribute('enterKeyHint', value);
+        }
+    }
+    get enterKeyHint(): EnterKeyHintType {
+        return this._enterKeyHint;
     }
 
     get background(): Background {
@@ -679,6 +695,7 @@ export class Input extends Control {
             this.readOnly = this.getAttribute('readOnly', true, DEFAULT_VALUES.readOnly);
             this.resize = this.getAttribute('resize', true, DEFAULT_VALUES.resize);
             this.maxLength = this.getAttribute('maxLength', true);
+            this.enterKeyHint = this.getAttribute('enterKeyHint', true);
             if (this.value && this.clearIconElm) this.clearIconElm.classList.add('active');
             super.init();
             if (this.inputType === 'textarea' && this.maxHeight != null) {
