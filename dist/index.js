@@ -17751,7 +17751,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 }
                 // RequireJS.require(['@moment'], (moment: Moment) => {
                 let _moment = this._type === 'time' ? (0, moment_1.moment)(pickerValue, 'HH:mm:ss') : (0, moment_1.moment)(pickerValue);
-                this.updateValue(_moment);
+                this.valueFormat = _moment.utc().toString();
                 this.emitChange(event);
                 // })
             };
@@ -17803,7 +17803,11 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 // RequireJS.require(['@moment'], (moment: typeof Moment) => {
                 const temp = (0, moment_1.moment)(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
                 const _moment = (0, moment_1.moment)(temp, this.datepickerFormat, true);
-                this.updateValue(_moment, event);
+                const oldVal = this.value;
+                this.valueFormat = _moment.utc().toString();
+                const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value);
+                if (isChanged)
+                    this.emitChange(event);
                 // })
             };
         }
@@ -17955,6 +17959,15 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.datepickerElm.readOnly = value;
             }
         }
+        get valueFormat() {
+            return this._valueFormat;
+        }
+        set valueFormat(value) {
+            this._valueFormat = value || '';
+            if (this._valueFormat) {
+                this.updateValue(((0, moment_1.moment)(value)));
+            }
+        }
         get formatString() {
             return this.dateTimeFormat || this.defaultDateTimeFormat;
         }
@@ -17964,9 +17977,8 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             if (typeof this.onChanged === 'function')
                 this.onChanged(this, event);
         }
-        updateValue(value, event) {
+        updateValue(value) {
             this.inputElm.placeholder = this._placeholder || '';
-            const oldVal = this.value;
             if (value.isValid()) {
                 this._value = value;
                 this.inputElm.value = value.format(this.formatString);
@@ -17978,14 +17990,11 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.inputElm.value = this.value.format(this.formatString);
                 this.datepickerElm.value = this.value.format(this.datepickerFormat);
             }
-            const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value);
-            if (event && isChanged) {
-                this.emitChange(event);
-            }
         }
         clear() {
             this._value = undefined;
             this.inputElm.value = '';
+            this._valueFormat = '';
             this.datepickerElm.value = '';
             this.callback && this.callback('');
         }
@@ -18006,10 +18015,6 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.inputElm = this.createElement('input', this);
                 this.inputElm.setAttribute('type', 'text');
                 this.inputElm.setAttribute('autocomplete', 'disabled');
-                // this.inputElm.style.height = this.height + 'px';
-                // this.inputElm.maxLength = this.maxLength;
-                // this.inputElm.addEventListener('keypress', this._dateInputMask);
-                // this.inputElm.onfocus = this._onFocus;
                 this.inputElm.pattern = this.formatString;
                 this.placeholder = this.getAttribute('placeholder', true);
                 this.toggleElm = this.createElement('span', this);
@@ -18036,6 +18041,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.caption = this.getAttribute('caption', true);
                 this.captionWidth = this.getAttribute('captionWidth', true, this._caption ? defaultCaptionWidth : 0);
                 super.init();
+                this.valueFormat = this.getAttribute('valueFormat', true);
             }
         }
         _handleBlur(event, stopPropagation) {
@@ -18051,6 +18057,9 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             return self;
         }
     };
+    __decorate([
+        (0, base_1.observable)()
+    ], Datepicker.prototype, "_valueFormat", void 0);
     Datepicker = __decorate([
         (0, base_1.customElements)('i-datepicker', {
             icon: 'calendar',
@@ -26188,7 +26197,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ijstech/checkbox", "@ijstech/combo-box", "@ijstech/input", "@ijstech/modal", "@ijstech/radio", "@ijstech/switch", "@ijstech/upload", "@ijstech/application"], function (require, exports, base_1, checkbox_1, combo_box_1, input_1, modal_1, radio_1, switch_1, upload_1, application_1) {
+define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ijstech/checkbox", "@ijstech/combo-box", "@ijstech/input", "@ijstech/modal", "@ijstech/radio", "@ijstech/switch", "@ijstech/upload", "@ijstech/application", "@ijstech/datepicker"], function (require, exports, base_1, checkbox_1, combo_box_1, input_1, modal_1, radio_1, switch_1, upload_1, application_1, datepicker_1) {
     "use strict";
     var Module_1;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -26387,6 +26396,9 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
             }
             else if (elm instanceof combo_box_1.ComboBox || (elm instanceof input_1.Input && elm.inputType === 'combobox')) {
                 return elm.value;
+            }
+            else if (elm instanceof datepicker_1.Datepicker) {
+                return elm.valueFormat;
             }
             else {
                 return elm.value;

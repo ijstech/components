@@ -22038,6 +22038,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         caption?: string;
         captionWidth?: number | string;
         value?: Moment;
+        valueFormat?: string;
         minDate?: Moment;
         placeholder?: string;
         type?: dateType;
@@ -22053,6 +22054,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
     }
     export class Datepicker extends Control {
         private _value?;
+        private _valueFormat;
         private _caption;
         private _captionWidth;
         private _iconWidth;
@@ -22096,6 +22098,8 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         get type(): dateType;
         set type(value: dateType);
         set designMode(value: boolean);
+        get valueFormat(): string;
+        set valueFormat(value: string);
         private get formatString();
         private emitChange;
         private _onDatePickerChange;
