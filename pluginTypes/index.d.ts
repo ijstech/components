@@ -21978,6 +21978,9 @@ declare module "@ijstech/combo-box/combo-box.ts" {
         set selectedItem(value: IComboItem | undefined);
         get selectedItems(): IComboItem[] | undefined;
         set selectedItems(value: IComboItem[] | undefined);
+        private renderSelectedItems;
+        private renderInvalidItems;
+        private updateItems;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -22063,6 +22066,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         private _placeholder;
         private _minDate;
         private callback;
+        private _isInternalUpdate;
         private captionSpanElm;
         private labelElm;
         private inputElm;
@@ -22914,8 +22918,8 @@ declare module "@ijstech/input/input.ts" {
         get onObserverChanged(): (target: Control, event?: Event) => void;
         set checked(value: boolean);
         get checked(): boolean;
-        set selectedItem(value: any);
-        get selectedItem(): any;
+        set valueFormat(value: string);
+        get valueFormat(): string;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;

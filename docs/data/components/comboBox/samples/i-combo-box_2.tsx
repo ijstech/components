@@ -15,7 +15,6 @@ export default class IComboboxExample extends Module{
             {label: 'item 3', value: '3'}, 
             {label: 'item 4', value: '4'}
         ]
-        // this.comboBox.selectedItem = {label: 'item 2', value: '2'}
     }
     
     select(){

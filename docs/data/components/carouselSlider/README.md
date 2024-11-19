@@ -6,22 +6,22 @@ A carousel slider component provides a scalable container for image or text info
 
 ## Class Inheritance
 
-Inherited from [`Control`](components/Control/README.md)
+Inherited from [`Control`](../Control/README.md)
 
 ## Properties
 
-| Name            | Description                                                         | Type                                                                                     | Default |
-| --------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
-| slideToShow     | Define the no. of slide item in the slide for `<i-carousel-slider>` | number                                                                                   | 1       |
-| transitionSpeed | Define the transition speed of `<i-carousel-slider>`                | number                                                                                   | 500     |
-| autoplay        | Define `<i-carousel-slider>` to scroll automatically                | boolean                                                                                  |         |
-| autoplaySpeed   | Define the auto scroll speed of `<i-carousel-slider>`               | number                                                                                   | 3000    |
-| items           | Define the slide items of `<i-carousel-slider>`                     | [CarouselItem&#91;&#93;](components/customdatatype/README.md#carouselitem)               |         |
-| activeSlide     | Define the starting slide for `<i-carousel-slider>`                 | number                                                                                   | 0       |
-| type            | Define the type of `<i-carousel-slider>`                            | [CarouselType](#carouseltype)                                                            |         |
-| indicators      | Define the indicators of `<i-carousel-slider>`                      | boolean                                                                                  |         |
-| swipe           | Define the swipe of `<i-carousel-slider>`                           | boolean                                                                                  |         |
-| mediaQueries    | Define tailored style to different devices                          | [ICarouselMediaQuery&#91;&#93;](components/customdatatype/README.md#icarouselmediaquery) |         |
+| Name            | Description                                                         | Type                                                                                | Default |
+| --------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------- |
+| slidesToShow    | Define the no. of slide item in the slide for `<i-carousel-slider>` | number                                                                              | 1       |
+| transitionSpeed | Define the transition speed of `<i-carousel-slider>`                | number                                                                              | 500     |
+| autoplay        | Define `<i-carousel-slider>` to scroll automatically                | boolean                                                                             | false   |
+| autoplaySpeed   | Define the auto scroll speed of `<i-carousel-slider>`               | number                                                                              | 3000    |
+| items           | Define the slide items of `<i-carousel-slider>`                     | [CarouselItem&#91;&#93;](../customdatatype/README.md#carouselitem)               |         |
+| activeSlide     | Define the starting slide for `<i-carousel-slider>`                 | number                                                                              | 0       |
+| type            | Define the type of `<i-carousel-slider>`                            | [CarouselType](#carouseltype)                                                       | `dot`   |
+| indicators      | Define the indicators of `<i-carousel-slider>`                      | boolean                                                                             | true    |
+| swipe           | Define the swipe of `<i-carousel-slider>`                           | boolean                                                                             | false   |
+| mediaQueries    | Define tailored style to different devices                          | [ICarouselMediaQuery&#91;&#93;](../customdatatype/README.md#icarouselmediaquery) |         |
 
 ### CarouselType
 
@@ -94,7 +94,7 @@ render() {
 }
 ```
 
-**Tip**: _The properties `id`, `width`, `height`, `minHeight`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, `height`, `minHeight`, [`padding`](../customdatatype/README.md#ispace) are inherited from [`Control`](../Control/README.md)_
 
 ### Functions
 
@@ -127,14 +127,27 @@ next() {
 
 render() {
     return (
-        <i-panel height="100%" width="100%" padding={{left: 10, right: 10, top: 10, bottom: 10}}>
-            <i-carousel-slider id="carouselSlider" width="100%" minHeight='100px'
+        <i-panel height="100%" width="100%" padding={{ left: 10, right: 10, top: 10, bottom: 10 }}>
+            <i-carousel-slider
+                id="carouselSlider"
+                width="100%" minHeight='100px'
                 slidesToShow={3} transitionSpeed={600}
                 autoplay autoplaySpeed={5000}
+                indicators={true}
+                mediaQueries={
+                    [
+                        {
+                            maxWidth: 767,
+                            properties: {
+                                indicators: false
+                            }
+                        }
+                    ]
+                }
             ></i-carousel-slider>
             <i-panel>
-                <i-button height={30} width={80} left={10} icon={{name: "angle-left"}} background={{color: "red"}} onClick={() => this.prev()} />
-                <i-button height={30} width={80} left={100} icon={{name: "angle-right"}} background={{color: "blue"}} onClick={() => this.next()} />
+                <i-button height={30} width={80} left={10} icon={{ name: "angle-left" }} background={{ color: "red" }} onClick={() => this.prev()} />
+                <i-button height={30} width={80} left={100} icon={{ name: "angle-right" }} background={{ color: "blue" }} onClick={() => this.next()} />
             </i-panel>
         </i-panel>
     )
@@ -145,22 +158,24 @@ render() {
 
 ```typescript(samples/i-carousel-slider_3.tsx)
 onSlideChange(index: number) {
-        console.log('onSlideChange', index)
-    }
+    this.lblInfo.caption = `Move to slide ${index}`;
+}
 
-    render() {
-        return (
-            <i-panel height="100%" width="100%" padding={{ left: 10, right: 10, top: 10, bottom: 10 }}>
-                <i-carousel-slider
-                    id="carouselSlider"
-                    width="100%" minHeight='100px'
-                    slidesToShow={3} transitionSpeed={600}
-                    autoplay autoplaySpeed={5000}
-                    onSlideChange={this.onSlideChange}
-                ></i-carousel-slider>
-            </i-panel>
-        )
-    }
+render() {
+    return (
+        <i-panel height="100%" width="100%" padding={{ left: 10, right: 10, top: 10, bottom: 10 }}>
+            <i-carousel-slider
+                id="carouselSlider"
+                width="100%" minHeight='100px'
+                slidesToShow={3} transitionSpeed={600}
+                autoplay autoplaySpeed={5000}
+                type="arrow"
+                onSlideChange={this.onSlideChange}
+            ></i-carousel-slider>
+            <i-label id="lblInfo" caption=""></i-label>
+        </i-panel>
+    )
+}
 ```
 
-**Tip**: _The properties `id`, `width`, `minHeight` are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, `minHeight` are inherited from [`Control`](../Control/README.md)_

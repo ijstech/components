@@ -15,7 +15,7 @@ Inherited from [`Control`](components/Control/README.md)
 | data            | Define the data of the `<i-table>`                               | any[]                |         |
 | columns         | Define the table columns setting of the `<i-table>`              | [TableColumn&#91;&#93;](components/customdatatype/README.md#tablecolumn) | |
 | rows            | Define the table rows setting of the `<i-table>`                 | TableRow[]           |         |
-| pagination      | Define the pagination to `<i-table>`                             | string \| [Pagination](components/Pagination/README.md)                |         |
+| pagination      | Define the pagination to `<i-table>`                             | string \| [Pagination](components/Pagination/README.md#properties)                |         |
 | expandable      | Define the expand area to show information (such as `<i-label>`) | [ITableExpandable](components/customdatatype/README.md#itableexpandable) | |
 | mediaQueries    | Define tailored style to different devices                       | [ITableMediaQuery&#91;&#93;](components/customdatatype/README.md#itablemediaquery) | |
 | headingStyles   | Define custom styles for header                                  | [Control](components/Control/README.md#properties) | |

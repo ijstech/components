@@ -1,8 +1,9 @@
 import { Module, Control, Datepicker, Label, observable } from '@ijstech/components';
 export default class IDatepickerSample extends Module {
-    @observable()
-    private dateStr: string = new Date('2024-11-23').toUTCString();
     private label1: Label;
+
+    @observable()
+    private dateStr: string = '';
 
     onDateChanged(source: Control, event: Event) {
         this.label1.caption = "changed date: " + (source as Datepicker).value;

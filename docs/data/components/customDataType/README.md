@@ -265,6 +265,13 @@ radioItems = [
 ]
 ```
 
+### Button
+| Name      | Description                                 | Type          | Default |
+| --------- | ------------------------------------------- | ------------- | ------- |
+| caption   | Define the name of an button                | string        |         |
+| icon      | To align the icon on the left of an button  | [Icon](#icon) |         |
+| rightIcon | To align the icon on the right of an button | [Icon](#icon) |         |
+
 ### File
 | Name               | Description                                            | Type             | Default |
 | ---------------    | -------------------------------------------------      | ----------       | ------- |
@@ -353,16 +360,21 @@ interface ITableExpandable {
 | display         | Define the display behavior in grid layout                 | [DisplayType](#displaytype) | |
 
 ### IModalMediaQuery
-| Name            | Description                                                | Type                          | Default |
-| --------------- | -------------------------------------------------          | ----------                    | ------- |
-| showBackdrop    | Define the `<i-modal>` show backdrop                       | boolean                       |         |
-| popupPlacement  | Define the `<i-modal>` popup placement                     | [ModalPopupPlacementType](components/modal/README.md#modalpopupplacementtype) |         |
-| position        | Define the `<i-modal>` position                            | [ModalPositionType](components/modal/README.md#modalpositiontype) |         |
+| Name           | Description                     | Type                                                                  | Default |
+| -------------- | ------------------------------- | --------------------------------------------------------------------- | ------- |
+| showBackdrop   | Define show backdrop in modal   | boolean                                                               |         |
+| popupPlacement | Define popup placement in modal | [ModalPopupPlacementType](../modal/README.md#modalpopupplacementtype) |         |
+| position       | Define a modal position type    | [ModalPositionType](../modal/README.md#modalpositiontype)             |         |
 
 ### ITabMediaQuery
 | Name            | Description                                                | Type                          | Default |
 | --------------- | -------------------------------------------------          | ----------                    | ------- |
 | mode            | Define the `<i-tab>` display mode                          | [TabModeType](components/tab/README.md#tabmodetype) |         |
+
+### ICarouselMediaQuery
+| Name            | Description                                                | Type                          | Default |
+| --------------- | -------------------------------------------------          | ----------                    | ------- |
+| indicators      | Define indicators display in carousel                      | boolean                       |         |
 
 ### IOverflow
 | Name            | Description                                                | Type                          | Default |
@@ -388,6 +400,6 @@ interface ITableExpandable {
 
 | Name            | Description                                      | Type   | Default |
 | --------------- | ------------------------------------------------ | ------ | ------- |
-| opacity         | Define the hovered opacity style of the panel   | number |         |
+| opacity         | Define the hovered opacity style of the panel    | number |         |
 | backgroundColor | Define the hovered background style of the panel | string |         |
 | fontColor       | Define the hovered color style of the panel      | string |         |

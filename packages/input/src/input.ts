@@ -214,13 +214,16 @@ export class Input extends Control {
         return false;
     }
 
-    set selectedItem(value: any) {
+    set valueFormat(value: string) {
         if (this._inputControl) {
-            (this._inputControl as ComboBox).selectedItem = value;
+            (this._inputControl as Datepicker).valueFormat = value;
         }
     }
-    get selectedItem() {
-        return (this._inputControl as ComboBox)?.selectedItem;
+    get valueFormat() {
+        if (this._inputControl) {
+            return (this._inputControl as Datepicker).valueFormat;
+        }
+        return '';
     }
 
     get caption(): string{
@@ -487,6 +490,7 @@ export class Input extends Control {
                     value,
                     placeholder: this._placeholder,
                     type: type,
+                    valueFormat: this.getAttribute('valueFormat', true),
                     dateTimeFormat: this.getAttribute('dateTimeFormat', true),
                     width,
                     height,

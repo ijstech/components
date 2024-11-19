@@ -13,6 +13,7 @@ Inherited from `Control`
 | Name  | Description                           | Type   | Default |
 | ----- | ------------------------------------- | ------ | ------- |
 | count | Define the number of items to display | number | 0       |
+| data  | Define the items to display           | any[]  | []      |
 
 ## Events
 
@@ -63,5 +64,58 @@ render() {
       </i-hstack>
     </i-repeater>
   </i-panel>
+}
+```
+```typescript(samples/repeater-2.tsx)
+onRender(parent: Control, index: number) {
+  const item = parent.children[index]
+  const inputElm = item.querySelector('i-input') as Input;
+  inputElm.value = this._data.tags[index];
+}
+
+render() {
+  return <i-vstack
+    width='100%' gap={16}
+    padding={{ left: '1rem', right: '1rem', top: '1rem' }}
+  >
+    <i-vstack width='100%' gap={8}>
+      <i-label caption='Title'></i-label>
+      <i-input
+        value={this._data.title}
+        position='relative'
+        width='100%'
+        height='32px'
+        padding={{ "left": "8px", "right": "8px" }}
+        border={{ "width": "0px", "radius": "5px" }}
+      >
+      </i-input>
+    </i-vstack>
+    <i-vstack width='100%' gap={8}>
+      <i-label caption='About'></i-label>
+      <i-input
+        value={this._data.about}
+        position='relative'
+        width='100%'
+        height='32px'
+        padding={{ "left": "8px", "right": "8px" }}
+        border={{ "width": "0px", "radius": "5px" }}
+      >
+      </i-input>
+    </i-vstack>
+    <i-vstack width='100%' gap={8}>
+      <i-label caption='Tags'></i-label>
+      <i-repeater count={3} onRender={this.onRender}>
+        <i-input
+          position='relative'
+          width='100%'
+          height='32px'
+          margin={{bottom: 10}}
+          border={{ "width": "0px", "radius": "5px" }}
+          padding={{ "left": "8px", "right": "8px" }}
+        >
+        </i-input>
+      </i-repeater>
+    </i-vstack>
+  </i-vstack>
 }
 ```

@@ -16979,117 +16979,92 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             this.isListShown = false;
         }
         get value() {
-            // return this.mode === 'single' ? this.selectedItem : this.selectedItems;
             return this._value;
         }
         set value(value) {
             this._value = value;
-            const selectedItem = this.items.find(item => item.value === value);
-            this.selectedItem = selectedItem;
+            if (Array.isArray(this.items)) {
+                const selectedItem = this.items.find(item => item.value === value);
+                this.selectedItem = selectedItem;
+            }
         }
         get selectedItem() {
             return this._selectedItem;
         }
         set selectedItem(value) {
-            if (value === undefined) {
-                this._selectedItem = undefined;
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
+            if (!value) {
+                this.clear();
                 return;
             }
-            let validValue = value;
             const isValueValid = this.isValueValid(value);
-            if (isValueValid) {
-                this._selectedItem = validValue;
-                this._selectedItems = [validValue];
-                if (this.mode !== 'single') {
-                    this.inputElm.value = '';
-                    this.inputElm.style.display = "none";
-                    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-                    this._selectedItems.forEach(item => {
-                        const itemElm = this.createElement('div');
-                        itemElm.classList.add('selection-item');
-                        const content = this.createElement('span', itemElm);
-                        content.textContent = item.label;
-                        itemElm.appendChild(content);
-                        const closeButton = this.createElement('span', itemElm);
-                        closeButton.classList.add("close-icon");
-                        closeButton.innerHTML = "&times;";
-                        closeButton.addEventListener('click', (event) => this.handleRemove(event, item));
-                        this.inputWrapElm.appendChild(itemElm);
-                        this.inputWrapElm.insertBefore(itemElm, this.inputElm);
-                    });
-                }
-                else {
-                    this.inputElm.value = this._selectedItem?.label || '';
-                }
-                if (this.callback)
-                    this.callback(value);
-            }
-            else if (this.isMulti) {
-                this._selectedItems = [validValue];
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
-                const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-            }
+            this.updateItems(value, isValueValid);
         }
         get selectedItems() {
             return this._selectedItems;
         }
         set selectedItems(value) {
-            if (value === undefined) {
-                this._selectedItems = undefined;
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
+            if (!value || value.length === 0) {
+                this.clear();
                 return;
             }
             let isValueValid = false;
             let validValue = [];
             if (this.isMulti) {
-                const formattedValue = value;
-                validValue = formattedValue.filter(item => this.isValueValid(item));
+                validValue = [...value].filter(item => this.isValueValid(item));
                 isValueValid = !!validValue.length;
             }
             else {
                 validValue = value;
                 isValueValid = this.isValueValid(value[0]);
             }
-            if (isValueValid) {
-                this._selectedItem = validValue[0] || undefined;
-                this._selectedItems = validValue;
-                if (this.mode !== 'single') {
-                    this.inputElm.value = '';
-                    this.inputElm.style.display = "none";
-                    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-                    this._selectedItems.forEach(item => {
-                        const itemElm = this.createElement('div');
-                        itemElm.classList.add('selection-item');
-                        const content = this.createElement('span', itemElm);
-                        content.textContent = item.label;
-                        itemElm.appendChild(content);
-                        const closeButton = this.createElement('span', itemElm);
-                        closeButton.classList.add("close-icon");
-                        closeButton.innerHTML = "&times;";
-                        closeButton.addEventListener('click', (event) => this.handleRemove(event, item));
-                        this.inputWrapElm.appendChild(itemElm);
-                        this.inputWrapElm.insertBefore(itemElm, this.inputElm);
-                    });
+            this.updateItems(value, isValueValid);
+        }
+        renderSelectedItems() {
+            if (this.inputElm) {
+                this.inputElm.value = '';
+                this.inputElm.style.display = "none";
+            }
+            const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+            selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+            if (!this._selectedItems || !this._selectedItems?.length)
+                return;
+            this._selectedItems.forEach(item => {
+                const itemElm = this.createElement('div');
+                itemElm.classList.add('selection-item');
+                const content = this.createElement('span', itemElm);
+                content.textContent = item.label;
+                itemElm.appendChild(content);
+                const closeButton = this.createElement('span', itemElm);
+                closeButton.classList.add("close-icon");
+                closeButton.innerHTML = "&times;";
+                closeButton.addEventListener('click', (event) => this.handleRemove(event, item));
+                this.inputWrapElm.appendChild(itemElm);
+                this.inputWrapElm.insertBefore(itemElm, this.inputElm);
+            });
+        }
+        renderInvalidItems() {
+            this.inputElm.value = '';
+            this.inputElm.style.display = "";
+            const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+            selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+        }
+        updateItems(value, isValid) {
+            if (isValid) {
+                this._selectedItem = Array.isArray(value) ? value[0] : value;
+                this._selectedItems = Array.isArray(value) ? value : [value];
+                this._value = this._selectedItem?.value;
+                if (this.mode === 'single') {
+                    this.inputElm.value = this._selectedItem?.label || '';
                 }
                 else {
-                    this.inputElm.value = this._selectedItem?.label || '';
+                    this.renderSelectedItems();
                 }
                 if (this.callback)
                     this.callback(value);
             }
             else if (this.isMulti) {
-                this._selectedItems = validValue;
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
-                const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+                this._selectedItems = Array.isArray(value) ? value : [value];
+                this.renderInvalidItems();
             }
         }
         get caption() {
@@ -17114,7 +17089,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             return this._items;
         }
         set items(items) {
-            this._items = items;
+            this._items = Array.isArray(items) ? items : [];
             if (this.listElm) {
                 this.listElm.innerHTML = "";
                 if (this._value !== undefined) {
@@ -17144,15 +17119,13 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             return this._searchStr;
         }
         set searchStr(str) {
-            if (str === null)
-                str = "";
-            this._searchStr = str;
+            this._searchStr = str || '';
         }
         get placeholder() {
             return this.inputElm.placeholder;
         }
         set placeholder(value) {
-            this.inputElm.placeholder = value;
+            this.inputElm.placeholder = value || '';
         }
         get mode() {
             return this._mode;
@@ -17386,7 +17359,6 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             if (selectedIndex >= 0)
                 selectedItems.splice(selectedIndex, 1);
             this.selectedItems = selectedItems;
-            this._value = selectedItems[0]?.value;
             if (typeof this.onObserverChanged === 'function')
                 this.onObserverChanged(this, event);
             if (typeof this.onChanged === 'function')
@@ -17408,13 +17380,11 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                     selectedItems.push(item);
                 }
                 this.selectedItems = selectedItems;
-                this._value = selectedItems[0]?.value;
                 liElm.classList.toggle("matched");
                 this.closeList();
             }
             else {
                 this.selectedItem = item;
-                this._value = item?.value;
                 this.closeList();
             }
             if (typeof this.onObserverChanged === 'function')
@@ -17423,14 +17393,13 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 this.onChanged(this, event);
         }
         clear() {
-            if (this.isMulti) {
-                this._selectedItems = [];
-            }
-            else {
-                this._selectedItem = undefined;
-            }
+            this._selectedItems = [];
+            this._selectedItem = undefined;
             this.inputElm.style.display = "";
             this.inputElm.value = '';
+            this._value = '';
+            const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+            selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
         }
         init() {
             const _items = [];
@@ -17741,6 +17710,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 height: 25,
                 width: 100
             });
+            this._isInternalUpdate = false;
             this._onDatePickerChange = (event) => {
                 const pickerValue = this.datepickerElm.value;
                 if (!pickerValue) {
@@ -17751,7 +17721,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 }
                 // RequireJS.require(['@moment'], (moment: Moment) => {
                 let _moment = this._type === 'time' ? (0, moment_1.moment)(pickerValue, 'HH:mm:ss') : (0, moment_1.moment)(pickerValue);
-                this.valueFormat = _moment.utc().toString();
+                this.valueFormat = _moment.utc().toISOString();
                 this.emitChange(event);
                 // })
             };
@@ -17804,7 +17774,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 const temp = (0, moment_1.moment)(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
                 const _moment = (0, moment_1.moment)(temp, this.datepickerFormat, true);
                 const oldVal = this.value;
-                this.valueFormat = _moment.utc().toString();
+                this.valueFormat = _moment.utc().toISOString();
                 const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value);
                 if (isChanged)
                     this.emitChange(event);
@@ -17839,7 +17809,6 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
         }
         set height(value) {
             this.setPosition('height', value);
-            // this.inputElm.style.height = typeof value === 'string' ? value : `${value}px`;
         }
         get width() {
             return this.offsetWidth;
@@ -17870,10 +17839,18 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             return this._value;
         }
         set value(value) {
-            if (value)
-                this.updateValue(value);
-            else
+            if (this._isInternalUpdate)
+                return;
+            if (!value) {
                 this.clear();
+                return;
+            }
+            if (!value.isSame(this._value)) {
+                this._isInternalUpdate = true;
+                this._valueFormat = value.utc().toISOString();
+                this.updateValue(value);
+                this._isInternalUpdate = false;
+            }
         }
         set minDate(value) {
             if (!value) {
@@ -17963,9 +17940,18 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             return this._valueFormat;
         }
         set valueFormat(value) {
-            this._valueFormat = value || '';
-            if (this._valueFormat) {
-                this.updateValue(((0, moment_1.moment)(value)));
+            if (this._isInternalUpdate)
+                return;
+            const newMoment = (0, moment_1.moment)(value);
+            if (!newMoment.isValid()) {
+                this.clear();
+                return;
+            }
+            if (value !== this._valueFormat) {
+                this._isInternalUpdate = true;
+                this._valueFormat = value;
+                this.updateValue(newMoment);
+                this._isInternalUpdate = false;
             }
         }
         get formatString() {
@@ -18058,7 +18044,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
         }
     };
     __decorate([
-        (0, base_1.observable)()
+        (0, base_1.observable)('valueFormat')
     ], Datepicker.prototype, "_valueFormat", void 0);
     Datepicker = __decorate([
         (0, base_1.customElements)('i-datepicker', {
@@ -18684,9 +18670,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             return self;
         }
     };
-    __decorate([
-        (0, base_1.observable)('value')
-    ], Radio.prototype, "_value", void 0);
     Radio = __decorate([
         (0, base_1.customElements)('i-radio')
     ], Radio);
@@ -22236,13 +22219,16 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
             return false;
         }
-        set selectedItem(value) {
+        set valueFormat(value) {
             if (this._inputControl) {
-                this._inputControl.selectedItem = value;
+                this._inputControl.valueFormat = value;
             }
         }
-        get selectedItem() {
-            return this._inputControl?.selectedItem;
+        get valueFormat() {
+            if (this._inputControl) {
+                return this._inputControl.valueFormat;
+            }
+            return '';
         }
         get caption() {
             if (this._inputControl) {
@@ -22521,6 +22507,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                         value,
                         placeholder: this._placeholder,
                         type: type,
+                        valueFormat: this.getAttribute('valueFormat', true),
                         dateTimeFormat: this.getAttribute('dateTimeFormat', true),
                         width,
                         height,
@@ -26262,6 +26249,7 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
     }
     function bindObservable(elm, prop) {
         return function (changes) {
+            console.log(changes, elm, prop);
             const changeData = changes[0];
             const type = changeData.type;
             if (Array.isArray(changeData.object)) {
