@@ -1,6 +1,7 @@
-import { Module, CarouselSlider } from '@ijstech/components';
+import { Module, CarouselSlider, Label } from '@ijstech/components';
 export default class ICarouselSliderSample extends Module {
     private carouselSlider: CarouselSlider;
+    private lblInfo: Label;
     private sliderItems: any[] = [];
 
     async init() {
@@ -22,7 +23,7 @@ export default class ICarouselSliderSample extends Module {
     }
 
     onSlideChange(index: number) {
-        console.log('onSlideChange', index)
+        this.lblInfo.caption = `Move to slide ${index}`;
     }
 
     render() {
@@ -36,6 +37,7 @@ export default class ICarouselSliderSample extends Module {
                     type="arrow"
                     onSlideChange={this.onSlideChange}
                 ></i-carousel-slider>
+                <i-label id="lblInfo" caption=""></i-label>
             </i-panel>
         )
     }

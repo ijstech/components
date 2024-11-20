@@ -12,7 +12,7 @@ define("@modules/main", ["require", "exports", "@ijstech/components"], function 
             super.init();
         }
         render() {
-            return (this.$render("i-scom-scbook", { display: 'block', width: '100%', height: '100%', entrypoint: "data", showHeader: true, showSearch: false, themes: this.options?.themes || '', maxWidth: 1400 }));
+            return (this.$render("i-scom-scbook", { display: 'block', width: '100%', height: '100%', entrypoint: "data", showHeader: true, showSearch: false, themes: this.options?.themes || '', multilingual: this.options?.multilingual || '', maxWidth: 1400 }));
         }
     };
     DocsModule = __decorate([

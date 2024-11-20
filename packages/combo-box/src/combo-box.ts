@@ -175,118 +175,96 @@ export class ComboBox extends Control {
   }
 
   get value(): string | undefined {
-    // return this.mode === 'single' ? this.selectedItem : this.selectedItems;
     return this._value;
   }
   set value(value: string | undefined) {
     this._value = value;
-    const selectedItem = this.items.find(item => item.value === value);
-    this.selectedItem = selectedItem;
+    if (Array.isArray(this.items)) {
+      const selectedItem = this.items.find(item => item.value === value);
+      this.selectedItem = selectedItem;
+    }
   }
 
   get selectedItem(): IComboItem | undefined {
     return this._selectedItem;
   }
   set selectedItem(value: IComboItem | undefined) {
-    if (value === undefined) {
-      this._selectedItem = undefined;
-      this.inputElm.value = '';
-      this.inputElm.style.display = "";
+    if (!value) {
+      this.clear();
       return;
     }
 
-    let validValue: IComboItem = value;
     const isValueValid = this.isValueValid(value);
-
-    if (isValueValid) { 
-      this._selectedItem = validValue;
-      this._selectedItems = [validValue];
-
-      if (this.mode !== 'single') {
-        this.inputElm.value = '';
-        this.inputElm.style.display = "none";
-        const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-        selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-        this._selectedItems.forEach(item => {
-          const itemElm = this.createElement('div');
-          itemElm.classList.add('selection-item');
-          const content = this.createElement('span', itemElm);
-          content.textContent = item.label;
-          itemElm.appendChild(content);
-          const closeButton = this.createElement('span', itemElm);
-          closeButton.classList.add("close-icon");
-          closeButton.innerHTML = "&times;"
-          closeButton.addEventListener('click', (event: Event) => this.handleRemove(event, item));
-          this.inputWrapElm.appendChild(itemElm);
-          this.inputWrapElm.insertBefore(itemElm, this.inputElm);
-        })
-      } else {
-        this.inputElm.value = this._selectedItem?.label || '';
-      }
-      if (this.callback) this.callback(value);
-    } else if (this.isMulti) {
-      this._selectedItems = [validValue];
-      this.inputElm.value = '';
-      this.inputElm.style.display = "";
-      const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-      selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-    }
+    this.updateItems(value, isValueValid);
   }
 
   get selectedItems(): IComboItem[] | undefined {
     return this._selectedItems;
   }
   set selectedItems(value: IComboItem[] | undefined) {
-    if (value === undefined) {
-      this._selectedItems = undefined;
-      this.inputElm.value = '';
-      this.inputElm.style.display = "";
+    if (!value || value.length === 0) {
+      this.clear();
       return;
     }
     let isValueValid = false;
     let validValue: IComboItem[] = [];
 
     if (this.isMulti) {
-      const formattedValue = value;
-      validValue = formattedValue.filter(item => this.isValueValid(item));
+      validValue = [...value].filter(item => this.isValueValid(item));
       isValueValid = !!validValue.length;
     } else {
       validValue = value;
       isValueValid = this.isValueValid(value[0]);
     }
   
-    if (isValueValid) {
-      this._selectedItem = validValue[0] || undefined;
-      this._selectedItems = validValue;
+    this.updateItems(value, isValueValid);
+  }
 
-      if (this.mode !== 'single') {
-        this.inputElm.value = '';
-        this.inputElm.style.display = "none";
-        const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-        selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-        this._selectedItems.forEach(item => {
-          const itemElm = this.createElement('div');
-          itemElm.classList.add('selection-item');
-          const content = this.createElement('span', itemElm);
-          content.textContent = item.label;
-          itemElm.appendChild(content);
-          const closeButton = this.createElement('span', itemElm);
-          closeButton.classList.add("close-icon");
-          closeButton.innerHTML = "&times;"
-          closeButton.addEventListener('click', (event: Event) => this.handleRemove(event, item));
-          this.inputWrapElm.appendChild(itemElm);
-          this.inputWrapElm.insertBefore(itemElm, this.inputElm);
-        })
-      } else {
+  private renderSelectedItems() {
+    if (this.inputElm) {
+      this.inputElm.value = '';
+      this.inputElm.style.display = "none";
+    }
+    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+    if (!this._selectedItems || !this._selectedItems?.length) return;
+    this._selectedItems.forEach(item => {
+      const itemElm = this.createElement('div');
+      itemElm.classList.add('selection-item');
+      const content = this.createElement('span', itemElm);
+      content.textContent = item.label;
+      itemElm.appendChild(content);
+      const closeButton = this.createElement('span', itemElm);
+      closeButton.classList.add("close-icon");
+      closeButton.innerHTML = "&times;"
+      closeButton.addEventListener('click', (event: Event) => this.handleRemove(event, item));
+      this.inputWrapElm.appendChild(itemElm);
+      this.inputWrapElm.insertBefore(itemElm, this.inputElm);
+    })
+  }
+
+  private renderInvalidItems() {
+    this.inputElm.value = '';
+    this.inputElm.style.display = "";
+    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+  }
+
+  private updateItems(value: IComboItem[]|IComboItem, isValid: boolean) {
+    if (isValid) {
+      this._selectedItem = Array.isArray(value) ? value[0] : value;
+      this._selectedItems = Array.isArray(value) ? value : [value];
+      this._value = this._selectedItem?.value;
+
+      if (this.mode === 'single') {
         this.inputElm.value = this._selectedItem?.label || '';
+      } else {
+        this.renderSelectedItems();
       }
       if (this.callback) this.callback(value);
     } else if (this.isMulti) {
-      this._selectedItems = validValue;
-      this.inputElm.value = '';
-      this.inputElm.style.display = "";
-      const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-      selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+      this._selectedItems = Array.isArray(value) ? value : [value];
+      this.renderInvalidItems();
     }
   }
 
@@ -312,9 +290,12 @@ export class ComboBox extends Control {
     return this._items;
   }
   set items(items: IComboItem[]) {
-    this._items = items;
+    this._items = Array.isArray(items) ? items : [];
     if (this.listElm) {
       this.listElm.innerHTML = "";
+      if (this._value !== undefined) {
+        this.value = this._value;
+      }
       this.renderItems();
     }
   }
@@ -341,15 +322,14 @@ export class ComboBox extends Control {
     return this._searchStr;
   }
   set searchStr(str: string) {
-    if (str === null) str = "";
-    this._searchStr = str;
+    this._searchStr = str || '';
   }
 
   get placeholder(): string {
     return this.inputElm.placeholder;
   }
   set placeholder(value: string) {
-    this.inputElm.placeholder = value;
+    this.inputElm.placeholder = value || '';
   }
 
   get mode(): ModeType {
@@ -589,7 +569,6 @@ export class ComboBox extends Control {
     const selectedIndex = this.getItemIndex(selectedItems, item);
     if (selectedIndex >= 0) selectedItems.splice(selectedIndex, 1);
     this.selectedItems = selectedItems;
-    this._value = selectedItems[0]?.value;
     
     if (typeof this.onObserverChanged === 'function')
       this.onObserverChanged(this, event);
@@ -613,12 +592,10 @@ export class ComboBox extends Control {
         selectedItems.push(item);
       }
       this.selectedItems = selectedItems;
-      this._value = selectedItems[0]?.value;
       liElm.classList.toggle("matched");
       this.closeList();
     } else {
       this.selectedItem = item;
-      this._value = item?.value;
       this.closeList();
     }
     
@@ -629,13 +606,13 @@ export class ComboBox extends Control {
   }
 
   clear() {
-    if (this.isMulti) {
-      this._selectedItems = [];
-    } else {
-      (<any>this._selectedItem) = undefined;
-    }
+    this._selectedItems = [];
+    this._selectedItem = undefined;
     this.inputElm.style.display = "";
     this.inputElm.value = '';
+    this._value = '';
+    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
   }
 
   protected init() {

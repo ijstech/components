@@ -11,12 +11,14 @@ Inherited from [`Control`](components/Control/README.md)
 
 | Name            | Description                                       | Type                  | Default |
 | --------------- | ------------------------------------------------- | ----------            | ------- |
-| selectedItem    | Define the selected item of an `<i-combo-box>`    | [IComboItem \| IComboItem&#91;&#93;](components/customdatatype/README.md#icomboitem) | |
+| selectedItem    | Define the selected item of an `<i-combo-box>`    | [IComboItem](components/customdatatype/README.md#icomboitem) | |
+| selectedItems    | Define the selected items of an `<i-combo-box>`    | [IComboItem&#91;&#93;](components/customdatatype/README.md#icomboitem) | |
 | items           | Define the items of the `<i-combo-box>`           | [IComboItem&#91;&#93;](components/customdatatype/README.md#icomboitem)| |
 | icon            | Define the icon of the `<i-combo-box>`            | [Icon](components/customdatatype/README.md#icon)| |
 | mode            | Define the select mode of the `<i-combo-box>`     | [ModeType](#modetype) |    `single`    |
 | placeholder     | Define a short hint that describes the expected value of an `<i-combo-box>` before selection | string | |
-| readOnly        | Define whether the `<i-combo-box>` is read-only | boolean | false |
+| readOnly        | Define whether the `<i-combo-box>` is read-only   | boolean               | false          |
+| value           | Define a value of an `<i-combo-box>`              | string                |                |
 
 ### ModeType
 `single` \| `multiple` \| `tags`
@@ -32,22 +34,43 @@ Inherited from [`Control`](components/Control/README.md)
 
 ### Property
 ```typescript(samples/i-combo-box_1.tsx)
+@observable()
+private _value: string = '4';
+
 init() {
     super.init();
-    this.comboBox.items = [
-        {label: 'item 1', value: '1'}, 
-        {label: 'item 2', value: '2'}, 
-        {label: 'item 3', value: '3'}, 
-        {label: 'item 4', value: '4'}
-    ]
-    this.comboBox.selectedItem = {label: 'item 2', value: '2'}
+    this.comboBox2.selectedItems = [{ label: 'item 2', value: '2' }, { label: 'item 3', value: '3' }]
+    this.comboBox3.selectedItems = [{ label: 'item 2', value: '2' }, { label: 'item 3', value: '3' }]
 }
 
 render() {
     return (
-        <i-panel height="100%" width="100%" padding={{left: 10, right: 10, top: 10, bottom: 10}}>
-            <i-combo-box id="comboBox" icon={{ name: "address-card" }} placeholder="Selection" padding={{left: 10, top: 10}}></i-combo-box>
-        </i-panel>
+        <i-vstack height="100%" width="100%" padding={{ left: 10, right: 10, top: 10, bottom: 10 }} gap={'1rem'}>
+            <i-combo-box
+                id="comboBox"
+                icon={{ name: "address-card" }}
+                placeholder="Selection"
+                margin={{ left: 10, top: 10 }}
+                items={items}
+                value={this._value}
+            ></i-combo-box>
+            <i-combo-box
+                id="comboBox2"
+                icon={{ name: "address-card" }}
+                placeholder="Selection"
+                margin={{ left: 10, top: 10 }}
+                mode="multiple"
+                items={items}
+            ></i-combo-box>
+            <i-combo-box
+                id="comboBox3"
+                icon={{ name: "address-card" }}
+                placeholder="Selection"
+                margin={{ left: 10, top: 10 }}
+                mode="tags"
+                items={items}
+            ></i-combo-box>
+        </i-vstack>
     )
 }
 ```
@@ -63,7 +86,6 @@ init() {
         {label: 'item 3', value: '3'}, 
         {label: 'item 4', value: '4'}
     ]
-    this.comboBox.selectedItem = {label: 'item 2', value: '2'}
 }
 
 select(){
@@ -75,8 +97,13 @@ render() {
     return (
         <i-panel height="100%" width="100%" padding={{left: 10, right: 10, top: 10, bottom: 10}}>
             <i-label id='label' caption='Selection counter: 0' padding={{left: 10}}></i-label>
-            <i-combo-box id="comboBox" icon={{ name: "address-card" }} placeholder="Selection"
-                padding={{left: 10, top: 10}} onChanged={this.select}
+            <i-combo-box
+                id="comboBox"
+                icon={{ name: "address-card" }}
+                placeholder="Selection"
+                value={this.selected}
+                margin={{ left: 10, top: 10 }}
+                onChanged={this.select}
             ></i-combo-box>
         </i-panel>
     )

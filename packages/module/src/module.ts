@@ -1,5 +1,5 @@
 // import application from '@ijstech/application';
-import {Container, customElements, isObservable, ContainerElement, Observe, Control, Types, I18n} from '@ijstech/base';
+import {Container, customElements, isObservable, ContainerElement, Observe, Control, I18n} from '@ijstech/base';
 import { Checkbox } from '@ijstech/checkbox';
 import { ComboBox } from '@ijstech/combo-box';
 import { IconElement } from '@ijstech/icon';
@@ -10,6 +10,7 @@ import { Switch } from '@ijstech/switch';
 import { Upload } from '@ijstech/upload';
 import { IModule} from '@ijstech/types';
 import { Application } from '@ijstech/application';
+import { Datepicker } from '@ijstech/datepicker';
 function ProxySetter(obj: any, prop: string, value: any){
     obj['__target'][prop] = value;
     return true
@@ -82,6 +83,7 @@ declare global {
 }
 function bindObservable(elm: any, prop: string): any{
     return function(changes: any){
+        console.log(changes, elm, prop)
         const changeData = changes[0];
         const type = changeData.type;
         if (Array.isArray(changeData.object)) {
@@ -227,6 +229,8 @@ export class Module extends Container implements IModule{
         }
         else if (elm instanceof ComboBox || (elm instanceof Input && elm.inputType === 'combobox')) {
             return (elm as ComboBox).value;
+        } else if (elm instanceof Datepicker) {
+            return (elm as Datepicker).valueFormat;
         }
         else {
             return (elm as any).value;

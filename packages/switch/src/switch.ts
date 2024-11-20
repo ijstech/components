@@ -1,4 +1,4 @@
-import { Control, ControlElement, customElements, notifyEventCallback } from "@ijstech/base";
+import { Control, ControlElement, customElements, notifyEventCallback, observable } from "@ijstech/base";
 import "./style/switch.css";
 import { GroupType } from "@ijstech/types";
 
@@ -62,7 +62,8 @@ export class Switch extends Control {
   private rippleElm: HTMLElement;
   private trackElm: HTMLElement;
 
-  private _checked: boolean;
+  @observable('schecked')
+  private _checked: boolean = false;
   private _checkedThumbColor: string;
   private _uncheckedThumbColor: string;
   private _checkedTrackColor: string;
@@ -74,7 +75,11 @@ export class Switch extends Control {
   public onChanged: notifyEventCallback;
 
   constructor(parent?: Control, options?: any) {
-    super(parent, options);
+    super(parent, options, {
+      width: "48px",
+      height: "22px",
+      border: {radius: '11px'}
+    });
   }
 
   get checked(): boolean {
@@ -174,10 +179,10 @@ export class Switch extends Control {
     if (this._designMode) return false;
     if (!this.onClick){
       this.checked = !this.checked;
-      if (typeof this.onChanged === 'function')
-        this.onChanged(this, event)
       if (typeof this.onObserverChanged === 'function')
         this.onObserverChanged(this, event);
+      if (typeof this.onChanged === 'function')
+        this.onChanged(this, event)
     }
     return super._handleClick(event, true);
   }

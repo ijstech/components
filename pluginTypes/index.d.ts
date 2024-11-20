@@ -20049,10 +20049,6 @@ declare module "@ijstech/base/types.ts" {
         right?: IBorderSideStyles;
         bottom?: IBorderSideStyles;
         left?: IBorderSideStyles;
-        topLeft?: IBorderCornerStyles;
-        topRight?: IBorderCornerStyles;
-        bottomLeft?: IBorderCornerStyles;
-        bottomRight?: IBorderCornerStyles;
     }
     export interface IAnchor {
         top?: boolean;
@@ -20069,10 +20065,8 @@ declare module "@ijstech/base/types.ts" {
         size?: string;
         color?: string;
         bold?: boolean;
-        italic?: boolean;
         style?: FontStyle;
         transform?: TextTransform;
-        underline?: boolean;
         weight?: number | string;
         shadow?: string;
     }
@@ -20327,7 +20321,7 @@ declare module "@ijstech/base/control.ts" {
     import { Component } from "@ijstech/base/component.ts";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, CursorType } from "@ijstech/base/types.ts";
     import { ICustomProperties, IAnchor, IBackground, IBorderSideStyles, BorderStyleType, IBorder, BorderStylesSideType } from "@ijstech/base/types.ts";
-    import { IGrid, LineHeightType, DockStyle, DisplayType, PositionType } from "@ijstech/base/types.ts";
+    import { IGrid, LineHeightType, DockStyle, DisplayType, IControlMediaQuery, PositionType } from "@ijstech/base/types.ts";
     import { I18n } from "@ijstech/base/i18n.ts";
     import { IModule } from '@ijstech/types';
     export type SpaceProps = 'margin' | 'padding';
@@ -20358,10 +20352,6 @@ declare module "@ijstech/base/control.ts" {
         private _right;
         private _bottom;
         private _left;
-        private _topLeft;
-        private _topRight;
-        private _bottomLeft;
-        private _bottomRight;
         constructor(target: Control, options?: IBorder);
         updateValue(options: IBorder): void;
         private isNumber;
@@ -20586,8 +20576,8 @@ declare module "@ijstech/base/control.ts" {
         set letterSpacing(value: string | number);
         get boxShadow(): string;
         set boxShadow(value: string);
-        get mediaQueries(): any[];
-        set mediaQueries(value: any[]);
+        get mediaQueries(): IControlMediaQuery[];
+        set mediaQueries(value: IControlMediaQuery[]);
         protected removeStyle<P extends keyof Control>(propertyName: P): void;
         protected setStyle<P extends keyof Control>(propertyName: P, value: string): void;
         updateLocale(i18n: I18n): void;
@@ -21769,10 +21759,10 @@ declare module "@ijstech/checkbox/checkbox.ts" {
         }
     }
     export class Checkbox extends Control {
+        private _checked;
         private _caption;
         private _captionWidth;
         private _indeterminate;
-        private _checked;
         private _readOnly;
         private wrapperElm;
         private inputSpanElm;
@@ -21988,6 +21978,9 @@ declare module "@ijstech/combo-box/combo-box.ts" {
         set selectedItem(value: IComboItem | undefined);
         get selectedItems(): IComboItem[] | undefined;
         set selectedItems(value: IComboItem[] | undefined);
+        private renderSelectedItems;
+        private renderInvalidItems;
+        private updateItems;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -22048,6 +22041,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         caption?: string;
         captionWidth?: number | string;
         value?: Moment;
+        valueFormat?: string;
         minDate?: Moment;
         placeholder?: string;
         type?: dateType;
@@ -22063,6 +22057,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
     }
     export class Datepicker extends Control {
         private _value?;
+        private _valueFormat;
         private _caption;
         private _captionWidth;
         private _iconWidth;
@@ -22071,6 +22066,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         private _placeholder;
         private _minDate;
         private callback;
+        private _isInternalUpdate;
         private captionSpanElm;
         private labelElm;
         private inputElm;
@@ -22106,6 +22102,8 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         get type(): dateType;
         set type(value: dateType);
         set designMode(value: boolean);
+        get valueFormat(): string;
+        set valueFormat(value: string);
         private get formatString();
         private emitChange;
         private _onDatePickerChange;
@@ -22923,8 +22921,8 @@ declare module "@ijstech/input/input.ts" {
         get onObserverChanged(): (target: Control, event?: Event) => void;
         set checked(value: boolean);
         get checked(): boolean;
-        set selectedItem(value: any);
-        get selectedItem(): any;
+        set valueFormat(value: string);
+        get valueFormat(): string;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;

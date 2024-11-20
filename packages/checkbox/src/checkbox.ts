@@ -1,4 +1,4 @@
-import { customElements, ControlElement, Control, notifyEventCallback } from '@ijstech/base';
+import { customElements, ControlElement, Control, notifyEventCallback, observable } from '@ijstech/base';
 import './style/checkbox.css';
 import { GroupType } from '@ijstech/types';
 
@@ -80,10 +80,11 @@ const DEFAULT_VALUES = {
     }
 })
 export class Checkbox extends Control {
+    @observable('cchecked')
+    private _checked: boolean;
     private _caption: string;
     private _captionWidth: number | string;
     private _indeterminate: boolean;
-    private _checked: boolean;
     private _readOnly: boolean;
 
     private wrapperElm: HTMLElement;
@@ -142,6 +143,7 @@ export class Checkbox extends Control {
     }
     set checked(value: boolean) {
         this._checked = value;
+        console.log('checkbox change', value, this._checked)
         this.addClass(value, 'is-checked');
         this.inputElm && (this.inputElm.checked = value);
     }

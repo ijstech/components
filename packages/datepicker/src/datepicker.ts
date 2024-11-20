@@ -1,4 +1,4 @@
-import { customElements, ControlElement, Control, RequireJS, LibPath, notifyEventCallback, IBorder, Border } from '@ijstech/base';
+import { customElements, ControlElement, Control, RequireJS, LibPath, notifyEventCallback, IBorder, Border, observable } from '@ijstech/base';
 import { Icon } from '@ijstech/icon';
 import './style/datepicker.css';
 import {moment, Moment} from '@ijstech/moment';
@@ -11,6 +11,7 @@ export interface DatepickerElement extends ControlElement {
     caption?: string;
     captionWidth?: number | string;
     value?: Moment;
+    valueFormat?: string;
     minDate?: Moment;
     placeholder?: string;
     type?: dateType;
@@ -71,6 +72,8 @@ const DEFAULT_VALUES = {
 })
 export class Datepicker extends Control {
     private _value?: Moment;
+    @observable('valueFormat')
+    private _valueFormat: string;
     private _caption: string;
     private _captionWidth: number | string;
     private _iconWidth: number;
@@ -79,6 +82,7 @@ export class Datepicker extends Control {
     private _placeholder: string;
     private _minDate: string;
     private callback: (value: any) => void;
+    private _isInternalUpdate = false; 
 
     private captionSpanElm: HTMLElement;
     private labelElm: HTMLLabelElement;
@@ -126,7 +130,6 @@ export class Datepicker extends Control {
     }
     set height(value: number | string) {
         this.setPosition('height', value);
-        // this.inputElm.style.height = typeof value === 'string' ? value : `${value}px`;
     }
     get width(): number {
         return this.offsetWidth
@@ -157,10 +160,18 @@ export class Datepicker extends Control {
         return this._value;
     }
     set value(value: Moment | undefined) {
-        if (value)
-            this.updateValue(value);
-        else
+        if (this._isInternalUpdate) return;
+        if (!value) {
             this.clear();
+            return;
+        }
+    
+        if (!value.isSame(this._value)) {
+            this._isInternalUpdate = true;
+            this._valueFormat = value.utc().toISOString();
+            this.updateValue(value);
+            this._isInternalUpdate = false;
+        }
     }
     set minDate(value: Moment | undefined) {
         if (!value) {
@@ -246,6 +257,26 @@ export class Datepicker extends Control {
         }
     }
 
+    get valueFormat(): string {
+        return this._valueFormat;
+    }
+    set valueFormat(value: string) {
+        if (this._isInternalUpdate) return;
+
+        const newMoment = moment(value);
+        if (!newMoment.isValid()) {
+            this.clear();
+            return;
+        }
+
+        if (value !== this._valueFormat) {
+            this._isInternalUpdate = true;
+            this._valueFormat = value;
+            this.updateValue(newMoment);
+            this._isInternalUpdate = false;
+        }
+    }
+
     private get formatString() {
         return this.dateTimeFormat || this.defaultDateTimeFormat;
     }
@@ -267,7 +298,7 @@ export class Datepicker extends Control {
         }
         // RequireJS.require(['@moment'], (moment: Moment) => {
             let _moment = this._type === 'time' ? moment(pickerValue, 'HH:mm:ss') : moment(pickerValue);
-            this.updateValue(_moment);
+            this.valueFormat = _moment.utc().toISOString();
             this.emitChange(event);
         // })
     }
@@ -327,13 +358,15 @@ export class Datepicker extends Control {
         // RequireJS.require(['@moment'], (moment: typeof Moment) => {
             const temp = moment(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
             const _moment = moment(temp, this.datepickerFormat, true);
-            this.updateValue(_moment, event);
+            const oldVal = this.value;
+            this.valueFormat = _moment.utc().toISOString();
+            const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value)
+            if (isChanged) this.emitChange(event);
         // })
     }
 
-    private updateValue(value: Moment, event?: Event) {
+    private updateValue(value: Moment) {
         this.inputElm.placeholder = this._placeholder || '';
-        const oldVal = this.value;
         if (value.isValid()) {
             this._value = value;
             this.inputElm.value = value.format(this.formatString);
@@ -344,15 +377,12 @@ export class Datepicker extends Control {
             this.inputElm.value = this.value.format(this.formatString);
             this.datepickerElm.value = this.value.format(this.datepickerFormat);
         }
-        const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value)
-        if (event && isChanged) {
-            this.emitChange(event);
-        }
     }
 
     private clear() {
         this._value = undefined;
         this.inputElm.value = '';
+        this._valueFormat = '';
         this.datepickerElm.value = '';
         this.callback && this.callback('');
     }
@@ -375,10 +405,6 @@ export class Datepicker extends Control {
             this.inputElm = <HTMLInputElement>this.createElement('input', this);
             this.inputElm.setAttribute('type', 'text');
             this.inputElm.setAttribute('autocomplete', 'disabled');
-            // this.inputElm.style.height = this.height + 'px';
-            // this.inputElm.maxLength = this.maxLength;
-            // this.inputElm.addEventListener('keypress', this._dateInputMask);
-            // this.inputElm.onfocus = this._onFocus;
             this.inputElm.pattern = this.formatString;
 
             this.placeholder = this.getAttribute('placeholder', true);
@@ -408,6 +434,7 @@ export class Datepicker extends Control {
             this.caption = this.getAttribute('caption', true);
             this.captionWidth = this.getAttribute('captionWidth', true, this._caption ? defaultCaptionWidth : 0);
             super.init();
+            this.valueFormat = this.getAttribute('valueFormat', true);
         }
     }
 

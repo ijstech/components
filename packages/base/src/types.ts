@@ -28,10 +28,10 @@ export interface IBorder extends IBorderSideStyles, IBorderCornerStyles {
     right?: IBorderSideStyles;
     bottom?: IBorderSideStyles;
     left?: IBorderSideStyles;
-    topLeft?: IBorderCornerStyles;
-    topRight?: IBorderCornerStyles;
-    bottomLeft?: IBorderCornerStyles;
-    bottomRight?: IBorderCornerStyles;
+    // topLeft?: IBorderCornerStyles;
+    // topRight?: IBorderCornerStyles;
+    // bottomLeft?: IBorderCornerStyles;
+    // bottomRight?: IBorderCornerStyles;
 }
 export interface IAnchor {
     top?: boolean;
@@ -48,10 +48,10 @@ export interface IFont{
     size?: string;
     color?: string;
     bold?: boolean;
-    italic?: boolean;
+    // italic?: boolean;
     style?: FontStyle;
     transform?: TextTransform;
-    underline?: boolean;
+    // underline?: boolean;
     weight?: number|string;
     shadow?: string;
 };

@@ -11998,9 +11998,9 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
     }
     exports.SpaceValue = SpaceValue;
     ;
-    const DefaultBorderCornerStyles = {
-        radius: undefined
-    };
+    // const DefaultBorderCornerStyles: IBorderCornerStyles = {
+    //     radius: undefined
+    // }
     const DefaultBorderSideStyles = {
         width: undefined,
         style: undefined,
@@ -12008,6 +12008,10 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
     };
     const DefaultAnchor = { top: true, left: true, right: false, bottom: false };
     class Border {
+        // private _topLeft: IBorderCornerStyles;
+        // private _topRight: IBorderCornerStyles;
+        // private _bottomLeft: IBorderCornerStyles;
+        // private _bottomRight: IBorderCornerStyles;
         constructor(target, options) {
             this._styleClassMap = {};
             this._target = target;
@@ -16214,6 +16218,7 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
         }
         set checked(value) {
             this._checked = value;
+            console.log('checkbox change', value, this._checked);
             this.addClass(value, 'is-checked');
             this.inputElm && (this.inputElm.checked = value);
         }
@@ -16291,6 +16296,9 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
             return self;
         }
     };
+    __decorate([
+        (0, base_1.observable)('cchecked')
+    ], Checkbox.prototype, "_checked", void 0);
     Checkbox = __decorate([
         (0, base_1.customElements)('i-checkbox', {
             icon: 'check-square',
@@ -16971,117 +16979,92 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             this.isListShown = false;
         }
         get value() {
-            // return this.mode === 'single' ? this.selectedItem : this.selectedItems;
             return this._value;
         }
         set value(value) {
             this._value = value;
-            const selectedItem = this.items.find(item => item.value === value);
-            this.selectedItem = selectedItem;
+            if (Array.isArray(this.items)) {
+                const selectedItem = this.items.find(item => item.value === value);
+                this.selectedItem = selectedItem;
+            }
         }
         get selectedItem() {
             return this._selectedItem;
         }
         set selectedItem(value) {
-            if (value === undefined) {
-                this._selectedItem = undefined;
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
+            if (!value) {
+                this.clear();
                 return;
             }
-            let validValue = value;
             const isValueValid = this.isValueValid(value);
-            if (isValueValid) {
-                this._selectedItem = validValue;
-                this._selectedItems = [validValue];
-                if (this.mode !== 'single') {
-                    this.inputElm.value = '';
-                    this.inputElm.style.display = "none";
-                    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-                    this._selectedItems.forEach(item => {
-                        const itemElm = this.createElement('div');
-                        itemElm.classList.add('selection-item');
-                        const content = this.createElement('span', itemElm);
-                        content.textContent = item.label;
-                        itemElm.appendChild(content);
-                        const closeButton = this.createElement('span', itemElm);
-                        closeButton.classList.add("close-icon");
-                        closeButton.innerHTML = "&times;";
-                        closeButton.addEventListener('click', (event) => this.handleRemove(event, item));
-                        this.inputWrapElm.appendChild(itemElm);
-                        this.inputWrapElm.insertBefore(itemElm, this.inputElm);
-                    });
-                }
-                else {
-                    this.inputElm.value = this._selectedItem?.label || '';
-                }
-                if (this.callback)
-                    this.callback(value);
-            }
-            else if (this.isMulti) {
-                this._selectedItems = [validValue];
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
-                const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-            }
+            this.updateItems(value, isValueValid);
         }
         get selectedItems() {
             return this._selectedItems;
         }
         set selectedItems(value) {
-            if (value === undefined) {
-                this._selectedItems = undefined;
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
+            if (!value || value.length === 0) {
+                this.clear();
                 return;
             }
             let isValueValid = false;
             let validValue = [];
             if (this.isMulti) {
-                const formattedValue = value;
-                validValue = formattedValue.filter(item => this.isValueValid(item));
+                validValue = [...value].filter(item => this.isValueValid(item));
                 isValueValid = !!validValue.length;
             }
             else {
                 validValue = value;
                 isValueValid = this.isValueValid(value[0]);
             }
-            if (isValueValid) {
-                this._selectedItem = validValue[0] || undefined;
-                this._selectedItems = validValue;
-                if (this.mode !== 'single') {
-                    this.inputElm.value = '';
-                    this.inputElm.style.display = "none";
-                    const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                    selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
-                    this._selectedItems.forEach(item => {
-                        const itemElm = this.createElement('div');
-                        itemElm.classList.add('selection-item');
-                        const content = this.createElement('span', itemElm);
-                        content.textContent = item.label;
-                        itemElm.appendChild(content);
-                        const closeButton = this.createElement('span', itemElm);
-                        closeButton.classList.add("close-icon");
-                        closeButton.innerHTML = "&times;";
-                        closeButton.addEventListener('click', (event) => this.handleRemove(event, item));
-                        this.inputWrapElm.appendChild(itemElm);
-                        this.inputWrapElm.insertBefore(itemElm, this.inputElm);
-                    });
+            this.updateItems(value, isValueValid);
+        }
+        renderSelectedItems() {
+            if (this.inputElm) {
+                this.inputElm.value = '';
+                this.inputElm.style.display = "none";
+            }
+            const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+            selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+            if (!this._selectedItems || !this._selectedItems?.length)
+                return;
+            this._selectedItems.forEach(item => {
+                const itemElm = this.createElement('div');
+                itemElm.classList.add('selection-item');
+                const content = this.createElement('span', itemElm);
+                content.textContent = item.label;
+                itemElm.appendChild(content);
+                const closeButton = this.createElement('span', itemElm);
+                closeButton.classList.add("close-icon");
+                closeButton.innerHTML = "&times;";
+                closeButton.addEventListener('click', (event) => this.handleRemove(event, item));
+                this.inputWrapElm.appendChild(itemElm);
+                this.inputWrapElm.insertBefore(itemElm, this.inputElm);
+            });
+        }
+        renderInvalidItems() {
+            this.inputElm.value = '';
+            this.inputElm.style.display = "";
+            const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+            selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+        }
+        updateItems(value, isValid) {
+            if (isValid) {
+                this._selectedItem = Array.isArray(value) ? value[0] : value;
+                this._selectedItems = Array.isArray(value) ? value : [value];
+                this._value = this._selectedItem?.value;
+                if (this.mode === 'single') {
+                    this.inputElm.value = this._selectedItem?.label || '';
                 }
                 else {
-                    this.inputElm.value = this._selectedItem?.label || '';
+                    this.renderSelectedItems();
                 }
                 if (this.callback)
                     this.callback(value);
             }
             else if (this.isMulti) {
-                this._selectedItems = validValue;
-                this.inputElm.value = '';
-                this.inputElm.style.display = "";
-                const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
-                selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
+                this._selectedItems = Array.isArray(value) ? value : [value];
+                this.renderInvalidItems();
             }
         }
         get caption() {
@@ -17106,9 +17089,12 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             return this._items;
         }
         set items(items) {
-            this._items = items;
+            this._items = Array.isArray(items) ? items : [];
             if (this.listElm) {
                 this.listElm.innerHTML = "";
+                if (this._value !== undefined) {
+                    this.value = this._value;
+                }
                 this.renderItems();
             }
         }
@@ -17133,15 +17119,13 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             return this._searchStr;
         }
         set searchStr(str) {
-            if (str === null)
-                str = "";
-            this._searchStr = str;
+            this._searchStr = str || '';
         }
         get placeholder() {
             return this.inputElm.placeholder;
         }
         set placeholder(value) {
-            this.inputElm.placeholder = value;
+            this.inputElm.placeholder = value || '';
         }
         get mode() {
             return this._mode;
@@ -17375,7 +17359,6 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             if (selectedIndex >= 0)
                 selectedItems.splice(selectedIndex, 1);
             this.selectedItems = selectedItems;
-            this._value = selectedItems[0]?.value;
             if (typeof this.onObserverChanged === 'function')
                 this.onObserverChanged(this, event);
             if (typeof this.onChanged === 'function')
@@ -17397,13 +17380,11 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                     selectedItems.push(item);
                 }
                 this.selectedItems = selectedItems;
-                this._value = selectedItems[0]?.value;
                 liElm.classList.toggle("matched");
                 this.closeList();
             }
             else {
                 this.selectedItem = item;
-                this._value = item?.value;
                 this.closeList();
             }
             if (typeof this.onObserverChanged === 'function')
@@ -17412,14 +17393,13 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 this.onChanged(this, event);
         }
         clear() {
-            if (this.isMulti) {
-                this._selectedItems = [];
-            }
-            else {
-                this._selectedItem = undefined;
-            }
+            this._selectedItems = [];
+            this._selectedItem = undefined;
             this.inputElm.style.display = "";
             this.inputElm.value = '';
+            this._value = '';
+            const selectionItems = Array.from(this.inputWrapElm.querySelectorAll('.selection-item'));
+            selectionItems.forEach(elm => this.inputWrapElm.removeChild(elm));
         }
         init() {
             const _items = [];
@@ -17730,6 +17710,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 height: 25,
                 width: 100
             });
+            this._isInternalUpdate = false;
             this._onDatePickerChange = (event) => {
                 const pickerValue = this.datepickerElm.value;
                 if (!pickerValue) {
@@ -17740,7 +17721,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 }
                 // RequireJS.require(['@moment'], (moment: Moment) => {
                 let _moment = this._type === 'time' ? (0, moment_1.moment)(pickerValue, 'HH:mm:ss') : (0, moment_1.moment)(pickerValue);
-                this.updateValue(_moment);
+                this.valueFormat = _moment.utc().toISOString();
                 this.emitChange(event);
                 // })
             };
@@ -17792,7 +17773,11 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 // RequireJS.require(['@moment'], (moment: typeof Moment) => {
                 const temp = (0, moment_1.moment)(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
                 const _moment = (0, moment_1.moment)(temp, this.datepickerFormat, true);
-                this.updateValue(_moment, event);
+                const oldVal = this.value;
+                this.valueFormat = _moment.utc().toISOString();
+                const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value);
+                if (isChanged)
+                    this.emitChange(event);
                 // })
             };
         }
@@ -17824,7 +17809,6 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
         }
         set height(value) {
             this.setPosition('height', value);
-            // this.inputElm.style.height = typeof value === 'string' ? value : `${value}px`;
         }
         get width() {
             return this.offsetWidth;
@@ -17855,10 +17839,18 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             return this._value;
         }
         set value(value) {
-            if (value)
-                this.updateValue(value);
-            else
+            if (this._isInternalUpdate)
+                return;
+            if (!value) {
                 this.clear();
+                return;
+            }
+            if (!value.isSame(this._value)) {
+                this._isInternalUpdate = true;
+                this._valueFormat = value.utc().toISOString();
+                this.updateValue(value);
+                this._isInternalUpdate = false;
+            }
         }
         set minDate(value) {
             if (!value) {
@@ -17944,6 +17936,24 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.datepickerElm.readOnly = value;
             }
         }
+        get valueFormat() {
+            return this._valueFormat;
+        }
+        set valueFormat(value) {
+            if (this._isInternalUpdate)
+                return;
+            const newMoment = (0, moment_1.moment)(value);
+            if (!newMoment.isValid()) {
+                this.clear();
+                return;
+            }
+            if (value !== this._valueFormat) {
+                this._isInternalUpdate = true;
+                this._valueFormat = value;
+                this.updateValue(newMoment);
+                this._isInternalUpdate = false;
+            }
+        }
         get formatString() {
             return this.dateTimeFormat || this.defaultDateTimeFormat;
         }
@@ -17953,9 +17963,8 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             if (typeof this.onChanged === 'function')
                 this.onChanged(this, event);
         }
-        updateValue(value, event) {
+        updateValue(value) {
             this.inputElm.placeholder = this._placeholder || '';
-            const oldVal = this.value;
             if (value.isValid()) {
                 this._value = value;
                 this.inputElm.value = value.format(this.formatString);
@@ -17967,14 +17976,11 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.inputElm.value = this.value.format(this.formatString);
                 this.datepickerElm.value = this.value.format(this.datepickerFormat);
             }
-            const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value);
-            if (event && isChanged) {
-                this.emitChange(event);
-            }
         }
         clear() {
             this._value = undefined;
             this.inputElm.value = '';
+            this._valueFormat = '';
             this.datepickerElm.value = '';
             this.callback && this.callback('');
         }
@@ -17995,10 +18001,6 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.inputElm = this.createElement('input', this);
                 this.inputElm.setAttribute('type', 'text');
                 this.inputElm.setAttribute('autocomplete', 'disabled');
-                // this.inputElm.style.height = this.height + 'px';
-                // this.inputElm.maxLength = this.maxLength;
-                // this.inputElm.addEventListener('keypress', this._dateInputMask);
-                // this.inputElm.onfocus = this._onFocus;
                 this.inputElm.pattern = this.formatString;
                 this.placeholder = this.getAttribute('placeholder', true);
                 this.toggleElm = this.createElement('span', this);
@@ -18025,6 +18027,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.caption = this.getAttribute('caption', true);
                 this.captionWidth = this.getAttribute('captionWidth', true, this._caption ? defaultCaptionWidth : 0);
                 super.init();
+                this.valueFormat = this.getAttribute('valueFormat', true);
             }
         }
         _handleBlur(event, stopPropagation) {
@@ -18040,6 +18043,9 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             return self;
         }
     };
+    __decorate([
+        (0, base_1.observable)('valueFormat')
+    ], Datepicker.prototype, "_valueFormat", void 0);
     Datepicker = __decorate([
         (0, base_1.customElements)('i-datepicker', {
             icon: 'calendar',
@@ -18664,9 +18670,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             return self;
         }
     };
-    __decorate([
-        (0, base_1.observable)('value')
-    ], Radio.prototype, "_value", void 0);
     Radio = __decorate([
         (0, base_1.customElements)('i-radio')
     ], Radio);
@@ -22216,13 +22219,16 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
             return false;
         }
-        set selectedItem(value) {
+        set valueFormat(value) {
             if (this._inputControl) {
-                this._inputControl.selectedItem = value;
+                this._inputControl.valueFormat = value;
             }
         }
-        get selectedItem() {
-            return this._inputControl?.selectedItem;
+        get valueFormat() {
+            if (this._inputControl) {
+                return this._inputControl.valueFormat;
+            }
+            return '';
         }
         get caption() {
             if (this._inputControl) {
@@ -22510,6 +22516,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                         value,
                         placeholder: this._placeholder,
                         type: type,
+                        valueFormat: this.getAttribute('valueFormat', true),
                         dateTimeFormat: this.getAttribute('dateTimeFormat', true),
                         width,
                         height,
@@ -22863,21 +22870,20 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
         fontSize: Theme.typography.fontSize,
         $nest: {
             ".wrapper": {
-                // width: "62px",
-                // height: "34px",
-                width: "48px",
-                height: "22px",
+                width: "100%",
+                height: "100%",
                 position: "relative",
                 display: "inline-flex",
                 flexShrink: 0,
                 overflow: "hidden",
                 zIndex: 0,
                 verticalAlign: "middle",
+                borderRadius: 'inherit'
             },
             ".switch-base": {
                 display: "inline-flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "start",
                 outline: 0,
                 border: 0,
                 margin: 0,
@@ -22892,12 +22898,15 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 bottom: 0,
                 left: 0,
                 zIndex: 1,
+                width: '100%',
+                height: '100%',
                 color: "#fff",
-                transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
+                transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, justify-content 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 $nest: {
                     "&.checked": {
                         // color: "#1976d2",
-                        transform: "translateX(26px)",
+                        // transform: "translateX(26px)",
+                        justifyContent: 'flex-end',
                         $nest: {
                             ".thumb:before": {
                                 backgroundImage: "var(--checked-background)",
@@ -22924,7 +22933,7 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 position: "absolute",
                 top: 0,
                 left: "-100%",
-                width: "300%",
+                width: "100%",
                 height: "100%",
                 opacity: 0,
                 margin: 0,
@@ -22968,7 +22977,6 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 width: "100%",
                 height: "100%",
                 zIndex: -1,
-                borderRadius: "11px",
                 backgroundColor: "#000",
                 transition: "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,background-color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 $nest: {
@@ -23003,7 +23011,12 @@ define("@ijstech/switch/switch.ts", ["require", "exports", "@ijstech/base", "@ij
     exports.Switch = void 0;
     let Switch = class Switch extends base_1.Control {
         constructor(parent, options) {
-            super(parent, options);
+            super(parent, options, {
+                width: "48px",
+                height: "22px",
+                border: { radius: '11px' }
+            });
+            this._checked = false;
         }
         get checked() {
             return this._checked;
@@ -23110,10 +23123,10 @@ define("@ijstech/switch/switch.ts", ["require", "exports", "@ijstech/base", "@ij
                 return false;
             if (!this.onClick) {
                 this.checked = !this.checked;
-                if (typeof this.onChanged === 'function')
-                    this.onChanged(this, event);
                 if (typeof this.onObserverChanged === 'function')
                     this.onObserverChanged(this, event);
+                if (typeof this.onChanged === 'function')
+                    this.onChanged(this, event);
             }
             return super._handleClick(event, true);
         }
@@ -23155,6 +23168,9 @@ define("@ijstech/switch/switch.ts", ["require", "exports", "@ijstech/base", "@ij
             return self;
         }
     };
+    __decorate([
+        (0, base_1.observable)('schecked')
+    ], Switch.prototype, "_checked", void 0);
     Switch = __decorate([
         (0, base_1.customElements)("i-switch", {
             icon: 'toggle-on',
@@ -26181,7 +26197,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ijstech/checkbox", "@ijstech/combo-box", "@ijstech/input", "@ijstech/modal", "@ijstech/radio", "@ijstech/switch", "@ijstech/upload", "@ijstech/application"], function (require, exports, base_1, checkbox_1, combo_box_1, input_1, modal_1, radio_1, switch_1, upload_1, application_1) {
+define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ijstech/checkbox", "@ijstech/combo-box", "@ijstech/input", "@ijstech/modal", "@ijstech/radio", "@ijstech/switch", "@ijstech/upload", "@ijstech/application", "@ijstech/datepicker"], function (require, exports, base_1, checkbox_1, combo_box_1, input_1, modal_1, radio_1, switch_1, upload_1, application_1, datepicker_1) {
     "use strict";
     var Module_1;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -26246,6 +26262,7 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
     }
     function bindObservable(elm, prop) {
         return function (changes) {
+            console.log(changes, elm, prop);
             const changeData = changes[0];
             const type = changeData.type;
             if (Array.isArray(changeData.object)) {
@@ -26380,6 +26397,9 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
             }
             else if (elm instanceof combo_box_1.ComboBox || (elm instanceof input_1.Input && elm.inputType === 'combobox')) {
                 return elm.value;
+            }
+            else if (elm instanceof datepicker_1.Datepicker) {
+                return elm.valueFormat;
             }
             else {
                 return elm.value;
@@ -26662,6 +26682,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Tooltip = void 0;
+    const DEFAULT_DURATION = 2000;
     let Tooltip = class Tooltip extends base_1.Control {
         constructor(parent) {
             super(parent);
@@ -26846,7 +26867,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 clearTimeout(this.timeout);
                 if (this.tooltipElm && document.body.contains(this.tooltipElm))
                     document.body.removeChild(this.tooltipElm);
-            }, this.duration || 2000);
+            }, this.duration || DEFAULT_DURATION);
         }
         renderTooltip() {
             this.tooltipElm = document.createElement("div");
@@ -33394,10 +33415,14 @@ define("@ijstech/data-grid/dataGrid.ts", ["require", "exports", "@ijstech/base",
                     let font = {
                         'bold': this.font.bold,
                         'color': this.font.color,
-                        'italic': this.font.italic,
+                        // 'italic': this.font.italic,
                         'name': this.font.name,
                         'size': this.font.size,
-                        'underline': this.font.underline
+                        'style': this.font.style,
+                        'transform': this.font.transform,
+                        'weight': this.font.weight,
+                        'shadow': this.font.shadow
+                        // 'underline': this.font.underline
                     };
                     let value;
                     if (this.onDisplayCell) {
@@ -34448,7 +34473,7 @@ define("@ijstech/markdown/markdown.ts", ["require", "exports", "@ijstech/base", 
                         breaks: true
                     });
                     if (child !== '\n') {
-                        splittedArr[i] = child.replace(/\n/g, '').replace("|", "&#124;");
+                        splittedArr[i] = child.replace(/\n/g, '').replace(/\|/g, '&#124;');
                     }
                 }
             }

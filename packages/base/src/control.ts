@@ -1,7 +1,7 @@
 import { Component} from './component';
 import { Observe } from './observable';
 import {FontStyle, IStack, IFont, ISpace, IOverflow, OverflowType, TextTransform, ComponentProperty, notifyEventParams, CursorType} from './types';
-import {ICustomProperties, IControl, IAnchor, IBackground, IBorderCornerStyles, IBorderSideStyles, BorderStyleType, IBorder, BorderStylesSideType} from './types';
+import {ICustomProperties, IAnchor, IBackground, IBorderCornerStyles, IBorderSideStyles, BorderStyleType, IBorder, BorderStylesSideType} from './types';
 // import {notifyEventCallback, notifyMouseEventCallback, notifyKeyboardEventCallback, notifyGestureEventCallback} from './types';
 import {IGrid, LineHeightType, DockStyle, DisplayType, IControlMediaQuery, PositionType} from './types';
 import { getCustomElementProperties} from './utils';
@@ -138,9 +138,9 @@ export class SpaceValue implements ISpace {
     };
 };
 
-const DefaultBorderCornerStyles: IBorderCornerStyles = {
-    radius: undefined
-}
+// const DefaultBorderCornerStyles: IBorderCornerStyles = {
+//     radius: undefined
+// }
 const DefaultBorderSideStyles: IBorderSideStyles = {
     width: undefined,
     style: undefined,
@@ -158,10 +158,10 @@ export class Border {
     private _right: IBorderSideStyles;
     private _bottom: IBorderSideStyles;
     private _left: IBorderSideStyles;
-    private _topLeft: IBorderCornerStyles;
-    private _topRight: IBorderCornerStyles;
-    private _bottomLeft: IBorderCornerStyles;
-    private _bottomRight: IBorderCornerStyles;
+    // private _topLeft: IBorderCornerStyles;
+    // private _topRight: IBorderCornerStyles;
+    // private _bottomLeft: IBorderCornerStyles;
+    // private _bottomRight: IBorderCornerStyles;
 
     constructor(target: Control, options?: IBorder) {
         this._target = target;
@@ -1471,7 +1471,7 @@ export class Control extends Component {
     get mediaQueries(){
         return this._cmediaQueries;
     }
-    set mediaQueries(value: any[]){
+    set mediaQueries(value: IControlMediaQuery[]){
         this._cmediaQueries = value;
         let style = getControlMediaQueriesStyleClass(this._cmediaQueries, {display: this.display});
         this._mediaStyle && this.classList.remove(this._mediaStyle);

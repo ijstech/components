@@ -3458,10 +3458,14 @@ export class DataGrid extends Control {
 				let font = {
 					'bold': this.font.bold,
 					'color': this.font.color,
-					'italic': this.font.italic,
+					// 'italic': this.font.italic,
 					'name': this.font.name,
 					'size': this.font.size,
-					'underline': this.font.underline
+					'style': this.font.style,
+					'transform': this.font.transform,
+					'weight': this.font.weight,
+					'shadow': this.font.shadow
+					// 'underline': this.font.underline
 				};
 				let value: any;
 				if (this.onDisplayCell) {

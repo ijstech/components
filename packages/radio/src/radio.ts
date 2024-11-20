@@ -28,7 +28,6 @@ declare global {
 
 @customElements('i-radio')
 export class Radio extends Control {
-    @observable('value')
     private _value: string;
     private _caption: string;
     private _captionWidth: number | string;

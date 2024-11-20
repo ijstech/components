@@ -12,10 +12,10 @@ Inherited from [`Control`](components/Control/README.md)
 
 | Name            | Description                                            | Type       | Default |
 | --------------- | -------------------------------------------------      | ---------- | ------- |
-| activeItem      | Define the a TreeNode as active                        | [TreeNode](components/customdatatype/README.md#itreenode) | |
-| data            | Define the contents of the TreeNodes                   | [ITreeNode&#91;&#93;](components/customdatatype/README.md#itreenode) | |
+| activeItem      | Define the a TreeNode as active                        | [TreeNode](../customdatatype/README.md#itreenode) | |
+| data            | Define the contents of the TreeNodes                   | [ITreeNode&#91;&#93;](../customdatatype/README.md#itreenode) | |
 | editable        | Allow the TreeView to be edited                        | boolean    | false   |
-| actionButtons   | Define the action buttons associated with the TreeView | [Button&#91;&#93;](components/Button/README.md) | |
+| actionButtons   | Define the action buttons associated with the TreeView | [Button&#91;&#93;](../customdatatype/README.md#button) | |
 | alwaysExpanded  | Define the TreeNode always expanded                    | boolean    | false   |
 | deleteNodeOnEmptyCaption | Define the TreeNode delete when caption is empty | boolean    | false   |
 
