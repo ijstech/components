@@ -35283,6 +35283,11 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
             super(...arguments);
             this._oldWidth = 0;
         }
+        updateLocale(i18n) {
+            for (let item of this._items) {
+                item.updateLocale(i18n);
+            }
+        }
         add(options) {
             const newItem = new MenuItem(this, { ...(options || {}), linkTo: this, level: 0 });
             this.menuElm.appendChild(newItem);
@@ -35399,6 +35404,8 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
             this._items = _items;
             if (this._mode === 'horizontal')
                 this.handleResize();
+            if (this.parentModule?.i18n)
+                this.updateLocale(this.parentModule.i18n);
         }
         async handleUpdateMode(mode) {
             if (this._mode === 'horizontal') {
@@ -35654,11 +35661,28 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
             }
         }
         ;
+        updateLocale(i18n) {
+            if (this.captionElm && this._caption?.startsWith('$'))
+                this.captionElm.innerHTML = i18n.get(this._caption) || '';
+        }
         get title() {
-            return this.captionElm.innerHTML;
+            return this._caption;
         }
         set title(value) {
-            this.captionElm.innerHTML = value || "";
+            this._caption = value;
+            if (this.captionElm) {
+                if (value?.startsWith('$')) {
+                    if (this.linkTo?.parentModule?.i18n) {
+                        this.captionElm.innerHTML = this.linkTo.parentModule.i18n.get(value) || '';
+                    }
+                    else {
+                        const caption = value.replace('$', '');
+                        this.captionElm.innerHTML = caption.charAt(0).toUpperCase() + caption.slice(1);
+                    }
+                }
+                else
+                    this.captionElm.innerHTML = value || '';
+            }
         }
         set font(value) {
             if (!this.itemWrapperElm)
@@ -36440,6 +36464,11 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
                 });
             }
         }
+        updateLocale(i18n) {
+            for (let node of this._items) {
+                node.updateLocale(i18n);
+            }
+        }
         add(parentNode, caption) {
             const childData = { caption, children: [] };
             const childNode = new TreeNode(this, { ...childData });
@@ -36713,8 +36742,16 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
         }
         set caption(value) {
             this._caption = value;
-            if (this._captionElm)
-                this._captionElm.innerHTML = value;
+            if (this._captionElm) {
+                if (value?.startsWith('$') && this.rootParent?.parentModule?.i18n)
+                    this._captionElm.innerHTML = this.rootParent.parentModule.i18n.get(value) || '';
+                else
+                    this._captionElm.innerHTML = value || '';
+            }
+        }
+        updateLocale(i18n) {
+            if (this._captionElm && this._caption?.startsWith('$'))
+                this._captionElm.innerHTML = i18n.get(this._caption) || '';
         }
         get collapsible() {
             return this._collapsible;

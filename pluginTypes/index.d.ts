@@ -24455,7 +24455,7 @@ declare module "@ijstech/menu/style/menu.css.ts" {
 }
 /// <amd-module name="@ijstech/menu/menu.ts" />
 declare module "@ijstech/menu/menu.ts" {
-    import { Control, ControlElement, IContextMenu, IFont, ISpace } from "@ijstech/base";
+    import { Control, ControlElement, I18n, IContextMenu, IFont, ISpace } from "@ijstech/base";
     import { Link, LinkElement } from '@ijstech/link';
     import { Icon, IconElement } from '@ijstech/icon';
     export type MenuMode = "horizontal" | "vertical" | "inline";
@@ -24501,6 +24501,7 @@ declare module "@ijstech/menu/menu.ts" {
         private itemsWidth;
         private resizeTimeout;
         private _selectedItem;
+        updateLocale(i18n: I18n): void;
         add(options?: IMenuItem): MenuItem;
         delete(item: MenuItem): void;
         get mode(): MenuMode;
@@ -24552,9 +24553,11 @@ declare module "@ijstech/menu/menu.ts" {
         private closeTimeout;
         private _level;
         private _textAlign;
+        private _caption;
         constructor(parent?: Control, options?: MenuItemElement);
         add(options?: IMenuItem): MenuItem;
         delete(item: MenuItem): void;
+        updateLocale(i18n: I18n): void;
         get title(): string;
         set title(value: string);
         set font(value: IFont);
@@ -24597,7 +24600,7 @@ declare module "@ijstech/menu" {
 declare module "@ijstech/tree-view/style/treeView.css.ts" { }
 /// <amd-module name="@ijstech/tree-view/treeView.ts" />
 declare module "@ijstech/tree-view/treeView.ts" {
-    import { Control, ControlElement } from '@ijstech/base';
+    import { Control, ControlElement, I18n } from '@ijstech/base';
     import { Icon, IconElement } from '@ijstech/icon';
     import { Button, ButtonElement } from '@ijstech/button';
     import "@ijstech/tree-view/style/treeView.css.ts";
@@ -24681,6 +24684,7 @@ declare module "@ijstech/tree-view/treeView.ts" {
         set editable(value: boolean);
         get actionButtons(): ButtonElement[];
         set actionButtons(value: ButtonElement[]);
+        updateLocale(i18n: I18n): void;
         add(parentNode?: TreeNode | null, caption?: string): TreeNode;
         appendNode(childNode: TreeNode): void;
         delete(node: TreeNode): void;
@@ -24717,6 +24721,7 @@ declare module "@ijstech/tree-view/treeView.ts" {
         set data(value: ITreeNode);
         get caption(): string;
         set caption(value: string);
+        updateLocale(i18n: I18n): void;
         get collapsible(): boolean;
         set collapsible(value: any);
         get expanded(): boolean;

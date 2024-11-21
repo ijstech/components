@@ -1,4 +1,4 @@
-import { Control, customElements, ControlElement } from '@ijstech/base'
+import { Control, customElements, ControlElement, I18n } from '@ijstech/base'
 import { Icon, IconElement } from '@ijstech/icon'
 import { Button, ButtonElement } from '@ijstech/button'
 import * as Styles from '@ijstech/style'
@@ -205,6 +205,12 @@ export class TreeView extends Control {
       groups.forEach(group => {
         this.renderActions(group as HTMLElement)
       })
+    }
+  }
+
+  updateLocale(i18n: I18n): void {
+    for (let node of this._items) {
+      node.updateLocale(i18n);
     }
   }
 
@@ -450,8 +456,17 @@ export class TreeNode extends Control {
   }
   set caption(value: string) {
     this._caption = value
-    if (this._captionElm)
-      this._captionElm.innerHTML = value;
+    if (this._captionElm){
+      if (value?.startsWith('$') && this.rootParent?.parentModule?.i18n)
+        this._captionElm.innerHTML = this.rootParent.parentModule.i18n.get(value) || ''
+      else
+        this._captionElm.innerHTML = value || '';
+    }
+  }
+
+  updateLocale(i18n: I18n): void {
+    if (this._captionElm && this._caption?.startsWith('$'))
+      this._captionElm.innerHTML = i18n.get(this._caption) || '';
   }
 
   get collapsible(): boolean {

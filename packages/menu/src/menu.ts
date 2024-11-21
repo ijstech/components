@@ -1,4 +1,4 @@
-import { Control, ControlElement, customElements, FontStyle, IContextMenu, IFont, ISpace, SpaceValue, TextTransform } from "@ijstech/base";
+import { Control, ControlElement, customElements, FontStyle, I18n, IContextMenu, IFont, ISpace, SpaceValue, TextTransform } from "@ijstech/base";
 import { Link, LinkElement } from '@ijstech/link';
 import { Icon, IconElement } from '@ijstech/icon';
 import { Modal, ModalPopupPlacementType } from '@ijstech/modal';
@@ -87,6 +87,12 @@ export class Menu extends Control {
   private itemsWidth: number[];
   private resizeTimeout: any;
   private _selectedItem: MenuItem | undefined;
+
+  updateLocale(i18n: I18n): void {
+    for (let item of this._items) {
+      item.updateLocale(i18n);
+    }
+  }
 
   add(options?: IMenuItem): MenuItem{
     const newItem = new MenuItem(this, {...(options || {}), linkTo: this, level: 0});
@@ -202,6 +208,7 @@ export class Menu extends Control {
     this.menuElm.append(...menuItemElm);
     this._items = _items;
     if (this._mode === 'horizontal') this.handleResize();
+    if (this.parentModule?.i18n) this.updateLocale(this.parentModule.i18n as I18n);
   }
 
   private async handleUpdateMode(mode: MenuMode) {
@@ -489,6 +496,7 @@ export class MenuItem extends Control {
   private closeTimeout: any;
   private _level: number = 0;
   private _textAlign: AlignType = DEFAULT_ITEM.textAlign as AlignType;
+  private _caption: string;
 
   constructor(parent?: Control, options?: MenuItemElement) {
     super(parent, options);
@@ -513,11 +521,29 @@ export class MenuItem extends Control {
       item.remove();
     }
   };
+
+  updateLocale(i18n: I18n): void {
+    if (this.captionElm && this._caption?.startsWith('$'))
+      this.captionElm.innerHTML = i18n.get(this._caption) || '';
+  }
+
   get title(): string {
-    return this.captionElm.innerHTML;
+    return this._caption;
   }
   set title(value: string) {
-    this.captionElm.innerHTML = value || "";
+    this._caption = value;
+    if (this.captionElm){
+      if (value?.startsWith('$')) {
+        if (this.linkTo?.parentModule?.i18n) {
+          this.captionElm.innerHTML = this.linkTo.parentModule.i18n.get(value) || '';
+        } else {
+          const caption = value.replace('$', '');
+          this.captionElm.innerHTML = caption.charAt(0).toUpperCase() + caption.slice(1);
+        }
+      }
+      else
+        this.captionElm.innerHTML = value || '';
+    }
   }
 
   set font(value: IFont) {
