@@ -1,7 +1,8 @@
-import { Control, customElements } from '@ijstech/base';
+import { Control, customElements, I18n } from '@ijstech/base';
 import "./style/tooltip.css";
-import {PlacementType, TriggerType, ITooltipImpl, ITooltip} from '@ijstech/types';
-export {ITooltip};
+import { PlacementType, TriggerType, ITooltipImpl, ITooltip } from '@ijstech/types';
+import { application } from '@ijstech/application';
+export { ITooltip };
 
 const DEFAULT_DURATION = 2000;
 @customElements('i-tooltip')
@@ -150,13 +151,28 @@ export class Tooltip extends Control implements ITooltipImpl {
     }
   }
 
+  updateLocale(i18n: I18n): void {
+    if (this.tooltipElm && this.content?.startsWith('$'))
+      this.tooltipElm.innerHTML = i18n.get(this.content) || '';
+  }
+
   get content(): string {
-    return this._content;
+    let value = this._content || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
   }
   set content(value: string) {
+    if (typeof value !== 'string') value = String(value);
     this._content = value;
-    if (this.tooltipElm)
+    if (this.tooltipElm){
       this.tooltipElm.innerHTML = this.content;
+    }
   }
 
   get placement(): PlacementType {

@@ -1,4 +1,4 @@
-import { customElements, ControlElement, Control, notifyEventCallback } from '@ijstech/base';
+import { customElements, ControlElement, Control, notifyEventCallback, I18n } from '@ijstech/base';
 import { Modal } from '@ijstech/modal';
 import { GridLayout, HStack, Panel, VStack } from '@ijstech/layout';
 import { Range } from '@ijstech/range';
@@ -7,6 +7,7 @@ import { stringToArr, getUnitValues, hslaToHex, convertColor, isRgbValid, rgbaTo
 import './style/color.css';
 import * as Styles from "@ijstech/style";
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 let Theme = Styles.Theme.ThemeVars;
 
 export interface ColorPickerElement extends ControlElement {
@@ -117,16 +118,28 @@ export class ColorPicker extends Control {
     this.updateIconPointer();
   }
 
-  get caption(): string {
-    return this._caption;
+  updateLocale(i18n: I18n): void {
+    if (this.captionSpanElm && this._caption?.startsWith('$'))
+      this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+  }
+
+  get caption(): string{
+    const value = this._caption || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parentModule?.i18n?.get(this._caption) ||
+        application.i18n?.get(this._caption) ||
+        '';
+      return translated;
+    }
+    return value;
   }
   set caption(value: string) {
-    this._caption = value;
-    if (!value)
-      this.captionSpanElm.style.display = 'none';
-    else
-      this.captionSpanElm.style.display = '';
-    this.captionSpanElm && (this.captionSpanElm.innerHTML = value);
+    if (typeof value !== 'string') value = String(value);
+    this._caption = value || '';
+    this.captionSpanElm.style.display = !value ? 'none' : '';
+    if (!this.captionSpanElm) return;
+    this.captionSpanElm.innerHTML = this.caption;
   }
 
   get captionWidth(): number | string {

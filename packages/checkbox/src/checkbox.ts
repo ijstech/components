@@ -1,6 +1,7 @@
-import { customElements, ControlElement, Control, notifyEventCallback, observable } from '@ijstech/base';
+import { customElements, ControlElement, Control, notifyEventCallback, observable, I18n } from '@ijstech/base';
 import './style/checkbox.css';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 
 export interface CheckboxElement extends ControlElement {
     checked?: boolean;
@@ -101,17 +102,28 @@ export class Checkbox extends Control {
         });
     }
 
-    get caption(): string {
-        return this._caption;
+    updateLocale(i18n: I18n): void {
+        if (this.captionSpanElm && this._caption?.startsWith('$'))
+            this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+    }
+
+    get caption(): string{
+        const value = this._caption || '';
+        if (value?.startsWith('$')) {
+            const translated =
+                this.parentModule?.i18n?.get(this._caption) ||
+                application.i18n?.get(this._caption) ||
+                '';
+            return translated;
+        }
+        return value;
     }
     set caption(value: string) {
-        this._caption = value;
-        if (!value)
-            this.captionSpanElm.style.display = 'none';
-        else
-            this.captionSpanElm.style.display = '';
-            this.captionSpanElm
-                && (this.captionSpanElm.innerHTML = value);
+        if (typeof value !== 'string') value = String(value);
+        this._caption = value || '';
+        this.captionSpanElm.style.display = !value ? 'none' : '';
+        if (!this.captionSpanElm) return;
+        this.captionSpanElm.innerHTML = this.caption;
     }
     get captionWidth(): number | string {
         return this._captionWidth;

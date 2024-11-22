@@ -1,10 +1,11 @@
-import { Control, ControlElement, customElements, notifyEventCallback, IBorder, Border, IFont, IBackground, Background, observable } from "@ijstech/base";
+import { Control, ControlElement, customElements, notifyEventCallback, IBorder, Border, IFont, IBackground, Background, observable, I18n } from "@ijstech/base";
 import { Icon, IconElement } from "@ijstech/icon";
 import { Theme } from "@ijstech/style";
 import "./style/combo-box.css";
 import {ItemListStyle} from './style/combo-box.css'
 import { GroupType } from "@ijstech/types";
 import { ComboBoxItem } from "./combo-box-item";
+import { application } from "@ijstech/application";
 
 export interface IComboItem {
   value: string;
@@ -153,6 +154,7 @@ export class ComboBox extends Control {
   private _icon: Icon;
   private _mode: ModeType;
   private _readOnly: boolean;
+  private _placeholder: string;
 
   private _searchStr: string;
   private newItem: IComboItem | null = null;
@@ -268,14 +270,22 @@ export class ComboBox extends Control {
     }
   }
 
-  get caption(): string {
-    return this._caption;
+  updateLocale(i18n: I18n): void {
+    if (this.labelElm && this._caption?.startsWith('$'))
+      this.labelElm.innerHTML = i18n.get(this._caption) || '';
+    if (this.inputElm && this._placeholder?.startsWith('$'))
+      this.inputElm.placeholder = i18n.get(this._placeholder) || '';
+  }
+
+  get caption(): string{
+    return this.getTranslatedText(this._caption || '');
   }
   set caption(value: string) {
-    this._caption = value;
-    this.labelElm.innerHTML = this._caption || "";
-    if (!value) this.labelElm.style.display = "none";
-    else this.labelElm.style.display = "";
+    if (typeof value !== 'string') value = String(value);
+    this._caption = value || '';
+    this.labelElm.style.display = !value ? 'none' : '';
+    if (!this.labelElm) return;
+    this.labelElm.innerHTML = this.caption;
   }
 
   get captionWidth(): number | string {
@@ -326,10 +336,23 @@ export class ComboBox extends Control {
   }
 
   get placeholder(): string {
-    return this.inputElm.placeholder;
+    return this.getTranslatedText(this._placeholder || '');
   }
   set placeholder(value: string) {
-    this.inputElm.placeholder = value || '';
+    if (typeof value !== 'string') value = String(value || '');
+    this._placeholder = value;
+    if (this.inputElm) this.inputElm.placeholder = this.placeholder;
+  }
+
+  private getTranslatedText(value: string): string {
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
   }
 
   get mode(): ModeType {

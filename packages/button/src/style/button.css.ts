@@ -14,7 +14,6 @@ Styles.cssRule('i-button', {
     borderRadius: 4,    
     fontFamily: Theme.typography.fontFamily,
     fontSize: Theme.typography.fontSize,
-    gap: 5,
     cursor: 'pointer',
     userSelect: 'none',
     $nest: {
@@ -43,6 +42,9 @@ Styles.cssRule('i-button', {
             boxShadow: Theme.shadows[0],
             background: Theme.action.disabledBackground,
             cursor: 'default'
+        },
+        "&.has-caption": {
+            gap: 5
         }
     }
 })

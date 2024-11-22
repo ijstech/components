@@ -6,6 +6,7 @@ import { Panel } from '@ijstech/layout';
 import { menuStyle, meunItemStyle, modalStyle } from "./style/menu.css";
 import { GroupType } from "@ijstech/types";
 import * as Styles from '@ijstech/style';
+import { application } from '@ijstech/application';
 
 const Theme = Styles.Theme.ThemeVars;
 export type MenuMode = "horizontal" | "vertical" | "inline";
@@ -531,15 +532,15 @@ export class MenuItem extends Control {
     return this._caption;
   }
   set title(value: string) {
+    if (typeof value !== 'string') value = String(value || '');
     this._caption = value;
     if (this.captionElm){
       if (value?.startsWith('$')) {
-        if (this.linkTo?.parentModule?.i18n) {
-          this.captionElm.innerHTML = this.linkTo.parentModule.i18n.get(value) || '';
-        } else {
-          const caption = value.replace('$', '');
-          this.captionElm.innerHTML = caption.charAt(0).toUpperCase() + caption.slice(1);
-        }
+        const translated =
+          this.linkTo?.parentModule?.i18n?.get(value) ||
+          application.i18n?.get(value) ||
+          '';
+        this.captionElm.innerHTML = translated;
       }
       else
         this.captionElm.innerHTML = value || '';

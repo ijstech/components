@@ -1,7 +1,8 @@
-import {Control, customElements, ControlElement, observable, notifyEventCallback, setAttributeToProperty, IFont, FontStyle, TextTransform} from '@ijstech/base';
+import {Control, customElements, ControlElement, observable, notifyEventCallback, setAttributeToProperty, IFont, FontStyle, TextTransform, I18n} from '@ijstech/base';
 import { Theme } from '@ijstech/style';
 import {captionStyle} from './radio.css';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 
 export interface RadioElement extends ControlElement{
     caption?: string;
@@ -46,17 +47,27 @@ export class Radio extends Control {
         this._value = value || '';
         this.inputElm.value = value;
     }
-    get caption(): string {
-        return this._caption;
+    updateLocale(i18n: I18n): void {
+        if (this.captionSpanElm && this._caption?.startsWith('$'))
+            this.captionSpanElm.textContent = i18n.get(this._caption) || '';
+    }
+    get caption(): string{
+        const value = this._caption || '';
+        if (value?.startsWith('$')) {
+            const translated =
+                this.parentModule?.i18n?.get(this._caption) ||
+                application.i18n?.get(this._caption) ||
+                '';
+            return translated;
+        }
+        return value;
     }
     set caption(value: string) {
-        this._caption = value;
-        if (!value)
-            this.captionSpanElm.style.display = 'none';
-        else
-            this.captionSpanElm.style.display = '';
-            this.captionSpanElm
-                && (this.captionSpanElm.textContent = value);
+        if (typeof value !== 'string') value = String(value);
+        this._caption = value || '';
+        this.captionSpanElm.style.display = !value ? 'none' : '';
+        if (!this.captionSpanElm) return;
+        this.captionSpanElm.textContent = this.caption;
     }
     get captionWidth(): number | string {
       return this._captionWidth;

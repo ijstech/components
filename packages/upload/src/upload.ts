@@ -1,4 +1,4 @@
-import { Control, customElements, ControlElement } from '@ijstech/base';
+import { Control, customElements, ControlElement, I18n } from '@ijstech/base';
 import { application } from '@ijstech/application';
 import { Icon } from '@ijstech/icon';
 import {Label} from '@ijstech/label';
@@ -86,14 +86,28 @@ class UploadDrag extends Control {
     super(parent, options);
   }
 
+  updateLocale(i18n: I18n): void {
+    if (this._labelElm && this._caption?.startsWith('$'))
+      this._labelElm.textContent = i18n.get(this._caption) || '';
+  }
+
   get caption(): string {
-    return this._caption;
+    let value = this._caption || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parent?.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
   }
   set caption(value: string) {
+    if (typeof value !== 'string') value = String(value);
     this._caption = value;
-    this._labelElm.textContent = this._caption || '';
-    if (!value) this._labelElm.style.display = 'none';
-    else this._labelElm.style.display = '';
+    this._labelElm.style.display = !value ? 'none' : '';
+    if (!this._labelElm) return;
+    this._labelElm.textContent = this.caption;
   }
 
   get disabled(): boolean {
@@ -368,6 +382,7 @@ export class Upload extends Control {
     return this._caption;
   }
   set caption(value: string) {
+    if (typeof value !== 'string') value = String(value);
     this._caption = value;
     if (this.lblCaption)
       this.lblCaption.caption = this.caption || (this.draggable ? 'Drag a file or click to upload' : 'Click to upload')

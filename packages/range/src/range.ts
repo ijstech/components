@@ -1,5 +1,6 @@
-import { Control, customElements, ControlElement, observable, notifyEventCallback, Types } from '@ijstech/base';
+import { Control, customElements, ControlElement, observable, notifyEventCallback, Types, I18n } from '@ijstech/base';
 import './style/range.css'
+import { application } from '@ijstech/application';
 import { GroupType } from '@ijstech/types';
 
 type tooltipFormatterCallback = (value: number) => string;
@@ -100,18 +101,29 @@ export class Range extends Control {
     });
   }
 
-  get caption(): string {
-    return this._caption;
-  }
-  set caption(value: string) {
-    this._caption = value;
-    this.labelElm.textContent = this._caption || '';
-    if (!value)
-      this.labelElm.style.display = 'none'
-    else
-      this.labelElm.style.display = '';
+  updateLocale(i18n: I18n): void {
+    if (this.labelElm && this._caption?.startsWith('$'))
+      this.labelElm.textContent = i18n.get(this._caption) || '';
   }
 
+  get caption(): string{
+    const value = this._caption || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parentModule?.i18n?.get(this._caption) ||
+        application.i18n?.get(this._caption) ||
+        '';
+      return translated;
+    }
+    return value;
+  }
+  set caption(value: string) {
+    if (typeof value !== 'string') value = String(value);
+    this._caption = value || '';
+    this.labelElm.style.display = !value ? 'none' : '';
+    if (!this.labelElm) return;
+    this.labelElm.textContent = this.caption;
+  }
   get captionWidth(): number {
     return this.labelElm.offsetWidth;
   }

@@ -1,9 +1,10 @@
-import { Border, Container, Control, customElements, getSpacingValue, IBorder, IFont, ISpace, LibPath, notifyEventCallback, RequireJS, SpaceValue } from "@ijstech/base";
+import { Border, Container, Control, customElements, getSpacingValue, I18n, IBorder, IFont, ISpace, LibPath, notifyEventCallback, RequireJS, SpaceValue } from "@ijstech/base";
 import { Markdown } from '@ijstech/markdown';
 import { Text, TextElement } from '@ijstech/text';
 import './styles/index.css';
 import { GroupType } from "@ijstech/types";
 import { textDataSchema, textPropsConfig } from "@ijstech/text";
+import { application } from "@ijstech/application";
 
 export interface MarkdownEditorElement extends TextElement {
     mode?: 'wysiwyg' | 'markdown';
@@ -280,12 +281,24 @@ export class MarkdownEditor extends Text {
     }
 
     get placeholder() {
-        return this._placeholder ?? '';
+        return this.getTranslatedText(this._placeholder || '');
     }
 
     set placeholder(value: string) {
-        this._placeholder = value ?? '';
+        if (typeof value !== 'string') value = String(value || '');
+        this._placeholder = value;
         if (this.editorObj) this.renderEditor(true);
+    }
+
+    private getTranslatedText(value: string): string {
+        if (value?.startsWith('$')) {
+          const translated =
+            this.parentModule?.i18n?.get(value) ||
+            application.i18n?.get(value) ||
+            ''
+          return translated;
+        }
+        return value;
     }
 
     get padding(): ISpace {

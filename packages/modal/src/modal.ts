@@ -1,9 +1,10 @@
-import { Control, customElements, ControlElement, Container, IBackground, IBorder, Background, Border, SpaceValue, IMediaQuery, IControlMediaQueryProps, ISpace, Overflow, IOverflow, OverflowType } from '@ijstech/base';
+import { Control, customElements, ControlElement, Container, IBackground, IBorder, Background, Border, SpaceValue, IMediaQuery, IControlMediaQueryProps, ISpace, Overflow, IOverflow, OverflowType, I18n } from '@ijstech/base';
 import { IdUtils } from '@ijstech/base';
 import { Icon, IconElement } from '@ijstech/icon';
 import * as Styles from "@ijstech/style";
 import { getWrapperStyle, modalStyle, titleStyle, getNoBackdropStyle, getOverlayStyle, getModalMediaQueriesStyleClass, getAbsoluteWrapperStyle, getFixedWrapperStyle, getModalStyle, getBodyStyle } from './style/modal.css';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 const Theme = Styles.Theme.ThemeVars;
 
 const showEvent = new Event('show');
@@ -151,6 +152,7 @@ export class Modal extends Container {
     private _isChildFixed: boolean;
     private _closeOnScrollChildFixed: boolean;
     private _mediaQueries: IModalMediaQuery[];
+    private _title: string = '';
     private hasInitializedChildFixed: boolean = false;
     private mapScrollTop: { [key: string]: number } = {};
     private insideClick: boolean;
@@ -222,12 +224,31 @@ export class Modal extends Container {
     }
 
     get title(): string {
-        const titleElm = this.titleSpan.querySelector('span');
-        return titleElm?.innerHTML || '';
+        return this.getTranslatedText(this._title || '');
     }
     set title(value: string) {
+        if (typeof value !== 'string') value = String(value || '');
+        this._title = value;
         const titleElm = this.titleSpan.querySelector('span');
-        titleElm && (titleElm.innerHTML = value || '');
+        titleElm && (titleElm.innerHTML = this.title);
+    }
+
+    updateLocale(i18n: I18n): void {
+        const titleElm = this.titleSpan.querySelector('span');
+        if (titleElm && this._title?.startsWith('$'))
+            titleElm.innerHTML = i18n.get(this._title) || '';
+    }
+
+    private getTranslatedText(value: string): string {
+        if (!value) return '';
+        if (value?.startsWith('$')) {
+            const translated =
+                this.parentModule?.i18n?.get(value) ||
+                application.i18n?.get(value) ||
+                ''
+            return translated;
+        }
+        return value;
     }
 
     get popupPlacement(): ModalPopupPlacementType {

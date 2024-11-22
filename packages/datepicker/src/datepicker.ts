@@ -1,9 +1,10 @@
-import { customElements, ControlElement, Control, RequireJS, LibPath, notifyEventCallback, IBorder, Border, observable } from '@ijstech/base';
+import { customElements, ControlElement, Control, RequireJS, LibPath, notifyEventCallback, IBorder, Border, observable, I18n } from '@ijstech/base';
 import { Icon } from '@ijstech/icon';
 import './style/datepicker.css';
 import {moment, Moment} from '@ijstech/moment';
 import { Theme } from '@ijstech/style';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 
 type actionCallback = (target: Datepicker) => void;
 type dateType = 'date' | 'dateTime' | 'time';
@@ -105,17 +106,24 @@ export class Datepicker extends Control {
         return super._handleClick(event, true)
     }
 
-    get caption(): string {
-        return this._caption;
+    updateLocale(i18n: I18n): void {
+        if (this.labelElm && this._caption?.startsWith('$'))
+            this.labelElm.textContent = i18n.get(this._caption) || '';
+        if (this.inputElm && this._placeholder?.startsWith('$'))
+            this.inputElm.placeholder = i18n.get(this._placeholder) || '';
+    }
+
+    get caption(): string{
+        return this.getTranslatedText(this._caption || '');
     }
     set caption(value: string) {
-        this._caption = value;
-        this.labelElm.textContent = this._caption || '';
-        if (!value)
-            this.labelElm.style.display = 'none'
-        else
-            this.labelElm.style.display = '';
+        if (typeof value !== 'string') value = String(value);
+        this._caption = value || '';
+        this.labelElm.style.display = !value ? 'none' : '';
+        if (!this.labelElm) return;
+        this.labelElm.textContent = this.caption;
     }
+
     get captionWidth(): number {
         return this.labelElm.offsetWidth;
     }
@@ -226,12 +234,24 @@ export class Datepicker extends Control {
         this.datepickerElm.disabled = !value;
     }
     get placeholder(): string {
-        return this._placeholder ?? '';
+        return this.getTranslatedText(this._placeholder || '');
     }
     set placeholder(value: string) {
-        this._placeholder = value ?? '';
+        if (typeof value !== 'string') value = String(value || '');
+        this._placeholder = value;
         if (this.inputElm)
-            this.inputElm.placeholder = this._placeholder;
+            this.inputElm.placeholder = this.placeholder;
+    }
+
+    private getTranslatedText(value: string): string {
+        if (value?.startsWith('$')) {
+            const translated =
+                this.parentModule?.i18n?.get(value) ||
+                application.i18n?.get(value) ||
+                ''
+            return translated;
+        }
+        return value;
     }
 
     get type() {
