@@ -1,4 +1,4 @@
-import { Control, customElements, ControlElement, IMediaQuery, IControlMediaQueryProps, observable} from '@ijstech/base';
+import { Control, customElements, ControlElement, IMediaQuery, IControlMediaQueryProps, observable, I18n} from '@ijstech/base';
 import { TableColumn, SortDirection, TableColumnElement } from './tableColumn';
 import { Pagination } from '@ijstech/pagination';
 import { paginate, orderBy, getSorter, getColumnKey, filterBy, getColumnIndex } from './utils';
@@ -6,7 +6,6 @@ import { getTableMediaQueriesStyleClass, tableStyle, getCustomStylesClass } from
 import { TableRow } from './tableRow';
 import { Icon } from '@ijstech/icon';
 import { TableCell } from './tableCell';
-import { GroupType } from '@ijstech/types';
 
 type cellClickCallback = (target: Table, rowIndex: number, columnIdx: number, record: any) => void
 type emptyCallback = (target: Table) => void
@@ -328,7 +327,7 @@ export class Table extends Control {
       const thElm = this.createElement('th', rowElm);
       thElm.classList.add('i-table-cell', 'i-table-cell--expand', 'text-center', this._headingStyle);
     }
-
+    if (!Array.isArray(this.columns)) return;
     this.columns.forEach((column: TableColumnElement, colIndex: number) => {
       const thElm = this.createElement('th', rowElm);
       column.visible === false && (thElm.style.display = 'none');
@@ -343,6 +342,15 @@ export class Table extends Control {
       thElm.appendChild(columnElm);
       rowElm.appendChild(thElm);
     })
+  }
+
+  updateLocale(i18n: I18n): void {
+    if (this.tHeadElm) {
+      const columns = this.tHeadElm.querySelectorAll('i-table-column');
+      for (const column of columns) {
+        (column as TableColumn).updateLocale(i18n);
+      }
+    }
   }
 
   _handleClick(event: MouseEvent): boolean {

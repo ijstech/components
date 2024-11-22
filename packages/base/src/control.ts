@@ -1490,6 +1490,9 @@ export class Control extends Component {
         }
     }
     updateLocale(i18n: I18n): void{
+        if (this._tooltip) {
+            this._tooltip.updateLocale(i18n);
+        }
     };
 };
 export class ContainerResizer {

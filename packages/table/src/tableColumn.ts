@@ -1,8 +1,9 @@
-import {Control, customElements, ControlElement} from '@ijstech/base';
+import {Control, customElements, ControlElement, I18n} from '@ijstech/base';
 import { Icon } from '@ijstech/icon';
 import { TableCell } from './tableCell';
 import * as Styles from '@ijstech/style';
 import './style/table.css';
+import { application } from '@ijstech/application';
 const Theme = Styles.Theme.ThemeVars;
 
 export type SortDirection = 'asc' | 'desc' | 'none';
@@ -22,7 +23,6 @@ export interface TableColumnElement extends ControlElement {
 
 @customElements('i-table-column')
 export class TableColumn extends Control {
-  caption: string;
   fieldName: string;
   key?: string | number;
   sortable?: boolean;
@@ -37,6 +37,7 @@ export class TableColumn extends Control {
   private _data: number | string;
   private _textAlign: TextAlign;
   private _rowData: any; 
+  private _caption: string;
 
   public onSortChange: (source: Control, key: string, value: SortDirection) => void;
   public onRenderCell: renderCallback;
@@ -86,6 +87,28 @@ export class TableColumn extends Control {
   set textAlign(value: TextAlign) {
     this._textAlign = value || 'left';
     this.style.textAlign = value;
+  }
+
+  get caption(): string {
+    let value = this._caption || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
+  }
+  set caption(value: string) {
+    if (typeof value !== 'string') value = String(value);
+    this._caption = value || '';
+    this.columnElm && (this.columnElm.innerHTML = this.caption);
+  }
+
+  updateLocale(i18n: I18n): void {
+    if (this.columnElm && this._caption?.startsWith('$'))
+      this.columnElm.innerHTML = i18n.get(this._caption) || '';
   }
 
   private renderSort() {
@@ -144,7 +167,7 @@ export class TableColumn extends Control {
 
   init() {
     if (!this.columnElm) {
-      this.caption = this.options.title;
+      this._caption = this.options.title;
       this.fieldName = this.options.fieldName;
       if (this.options.key)
         this.key = this.options.key;

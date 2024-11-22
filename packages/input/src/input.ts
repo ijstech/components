@@ -1,4 +1,4 @@
-import { Control, customElements, ControlElement, observable, notifyEventCallback, IBorder, Border, IBackground, Background, IFont } from '@ijstech/base';
+import { Control, customElements, ControlElement, observable, notifyEventCallback, IBorder, Border, IBackground, Background, IFont, I18n } from '@ijstech/base';
 import { Checkbox, CheckboxElement } from "@ijstech/checkbox";
 import { ComboBox, ComboBoxElement } from "@ijstech/combo-box";
 import { Datepicker, DatepickerElement } from '@ijstech/datepicker';
@@ -9,6 +9,7 @@ import { Icon } from '@ijstech/icon';
 import './style/input.css'
 import { Theme } from '@ijstech/style';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 
 export type InputType = 'checkbox'|'radio'|'range'|'date'|'time'|'dateTime'|'password'|'combobox'|'number'|'textarea'|'text'|'color';
 type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio | ColorPicker;
@@ -232,18 +233,30 @@ export class Input extends Control {
         return '';
     }
 
+    updateLocale(i18n: I18n): void {
+        if (this._caption?.startsWith('$')) {
+            if (this._inputControl)
+                this._inputControl.caption = i18n.get(this._caption) || '';
+            else if (this.labelElm)
+                this.labelElm.innerHTML = i18n.get(this._caption) || '';
+        }
+        if (this.inputElm && this._placeholder?.startsWith('$'))
+            this.inputElm.placeholder = i18n.get(this._placeholder) || '';
+    }
+
     get caption(): string{
         if (this._inputControl){
             return this._inputControl.caption;
         }
-        return this._caption;
+        return this.getTranslatedText(this._caption || '');
     }
     set caption(value: string){
+        if (typeof value !== 'string') value = String(value);
+        this._caption = value || '';
         if (this._inputControl){
-            this._inputControl.caption = value;
+            this._inputControl.caption = this.caption;
         } else {
-            this._caption = value || '';
-            this.labelElm.innerHTML = this._caption;
+            this.labelElm.innerHTML = this.caption;
             this.captionSpanElm.style.display = value ? 'inline-block' : 'none';
         }
     }
@@ -349,9 +362,26 @@ export class Input extends Control {
             this.inputElm.disabled = !value;
         }
     }
-    set placeholder(value: string) {
-        this.inputElm.placeholder = value;
+    get placeholder(): string {
+       return this.getTranslatedText(this._placeholder || '');
     }
+    set placeholder(value: string) {
+        if (typeof value !== 'string') value = String(value || '');
+        this._placeholder = value;
+        if (this.inputElm) this.inputElm.placeholder = this.placeholder;
+    }
+
+    private getTranslatedText(value: string): string {
+        if (value?.startsWith('$')) {
+          const translated =
+            this.parentModule?.i18n?.get(value) ||
+            application.i18n?.get(value) ||
+            ''
+          return translated;
+        }
+        return value;
+    }
+
     get rows(): number {
         return this._rows;
     }
@@ -461,7 +491,7 @@ export class Input extends Control {
         const enabled = this.getAttribute('enabled', true);
         const background = this.getAttribute('background', true);
         const designMode = this.getAttribute('designMode', true);
-        const caption = this._caption;
+        const caption = this.caption;
         this._clearBtnWidth = height - 2 || CLEAR_BTN_WIDTH;
         let cursor = 'text';
         switch (type) {
@@ -491,7 +521,7 @@ export class Input extends Control {
                     designMode,
                     icon: this.getAttribute('icon', true),
                     mode: this.getAttribute('mode', true),
-                    placeholder: this.getAttribute('placeholder', true),
+                    placeholder: this._placeholder,
                     parentCallback: this._inputCallback,
                 });
                 if (typeof this.onChanged === 'function') this._inputControl.onChanged = this.onChanged;
@@ -565,7 +595,7 @@ export class Input extends Control {
                 const rows = this.getAttribute('rows', true) || defaultRows;
                 this.rows = rows;
                 if (this._placeholder) {
-                    this.inputElm.placeholder = this._placeholder;
+                    this.inputElm.placeholder = this.placeholder;
                 }
                 this.inputElm.style.resize = value === 'auto-grow' ? 'none' : value;
                 this.inputElm.disabled = enabled === false;
@@ -573,7 +603,9 @@ export class Input extends Control {
                 this.inputElm.addEventListener('keydown', this._handleInputKeyDown.bind(this));
                 this.inputElm.addEventListener('keyup', this._handleInputKeyUp.bind(this));
                 this.inputElm.addEventListener('focus', this._handleOnFocus.bind(this));
-                if (caption) this.caption = caption;
+                if (caption && this.labelElm) {
+                    this.labelElm.innerHTML = caption;
+                }
                 break;
             case "color":
                 this._inputControl = new ColorPicker(this, {
@@ -603,7 +635,7 @@ export class Input extends Control {
                 this.inputElm.style.height = this.height + 'px';
                 this.inputElm.type = inputType;
                 if (this._placeholder)
-                    this.inputElm.placeholder = this._placeholder;
+                    this.inputElm.placeholder = this.placeholder;
 
                 this.inputElm.disabled = enabled === false;
                 this.inputElm.addEventListener('input', this._handleChange.bind(this));
@@ -623,7 +655,9 @@ export class Input extends Control {
                     const clearIcon = new Icon(this, { name: 'times', width: 12, height: 12, fill: Theme.ThemeVars.text.primary });
                     this.clearIconElm.appendChild(clearIcon);
                 }
-                if (caption) this.caption = caption;
+                if (caption && this.labelElm) {
+                    this.labelElm.innerHTML = caption;
+                }
                 break
         }
         if (this.inputElm) {

@@ -5,6 +5,7 @@ import * as Styles from '@ijstech/style'
 const Theme = Styles.Theme.ThemeVars
 import './style/treeView.css'
 import { GroupType } from '@ijstech/types'
+import { application } from '@ijstech/application'
 
 type activedChangeCallback = (target: TreeView, prevNode?: TreeNode, event?: Event) => void
 type changeCallback = (target: TreeView, node: TreeNode, oldValue: string, newValue: string) => void
@@ -452,16 +453,21 @@ export class TreeNode extends Control {
   }
 
   get caption(): string {
-    return this._caption
+    let value = this._caption || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.rootParent?.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
   }
   set caption(value: string) {
+    if (typeof value !== 'string') value = String(value);
     this._caption = value
-    if (this._captionElm){
-      if (value?.startsWith('$') && this.rootParent?.parentModule?.i18n)
-        this._captionElm.innerHTML = this.rootParent.parentModule.i18n.get(value) || ''
-      else
-        this._captionElm.innerHTML = value || '';
-    }
+    if (!this._captionElm) return;
+    this._captionElm.innerHTML = this.caption;
   }
 
   updateLocale(i18n: I18n): void {

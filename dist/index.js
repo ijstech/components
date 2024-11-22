@@ -8006,12 +8006,6 @@ define("@ijstech/types/jsonSchema.ts", ["require", "exports"], function (require
     Object.defineProperty(exports, "__esModule", { value: true });
     ;
 });
-define("@ijstech/types/tooltip.ts", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    ;
-    ;
-});
 define("@ijstech/types/i18n.ts", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -8773,6 +8767,12 @@ define("@ijstech/types/i18n.ts", ["require", "exports"], function (require, expo
             native: 'isiZulu',
         },
     };
+});
+define("@ijstech/types/tooltip.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ;
+    ;
 });
 define("@ijstech/types", ["require", "exports", "@ijstech/types/jsonSchema.ts", "@ijstech/types/i18n.ts"], function (require, exports, JSONSchema, i18n_1) {
     "use strict";
@@ -13357,6 +13357,9 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
             }
         }
         updateLocale(i18n) {
+            if (this._tooltip) {
+                this._tooltip.updateLocale(i18n);
+            }
         }
         ;
     }
@@ -16158,7 +16161,7 @@ define("@ijstech/checkbox/style/checkbox.css.ts", ["require", "exports", "@ijste
         }
     });
 });
-define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", "@ijstech/types", "@ijstech/checkbox/style/checkbox.css.ts"], function (require, exports, base_1, types_1) {
+define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", "@ijstech/types", "@ijstech/application", "@ijstech/checkbox/style/checkbox.css.ts"], function (require, exports, base_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Checkbox = void 0;
@@ -16175,17 +16178,28 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
                 height: 30
             });
         }
+        updateLocale(i18n) {
+            if (this.captionSpanElm && this._caption?.startsWith('$'))
+                this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+        }
         get caption() {
-            return this._caption;
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
-            this._caption = value;
-            if (!value)
-                this.captionSpanElm.style.display = 'none';
-            else
-                this.captionSpanElm.style.display = '';
-            this.captionSpanElm
-                && (this.captionSpanElm.innerHTML = value);
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.captionSpanElm.style.display = !value ? 'none' : '';
+            if (!this.captionSpanElm)
+                return;
+            this.captionSpanElm.innerHTML = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -16956,7 +16970,7 @@ define("@ijstech/combo-box/combo-box-item.ts", ["require", "exports", "@ijstech/
     ], ComboBoxItem);
     exports.ComboBoxItem = ComboBoxItem;
 });
-define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/combo-box/style/combo-box.css.ts", "@ijstech/types", "@ijstech/combo-box/combo-box-item.ts", "@ijstech/combo-box/style/combo-box.css.ts"], function (require, exports, base_2, icon_1, style_1, combo_box_css_1, types_1, combo_box_item_1) {
+define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/combo-box/style/combo-box.css.ts", "@ijstech/types", "@ijstech/combo-box/combo-box-item.ts", "@ijstech/application", "@ijstech/combo-box/style/combo-box.css.ts"], function (require, exports, base_2, icon_1, style_1, combo_box_css_1, types_1, combo_box_item_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ComboBox = void 0;
@@ -17067,16 +17081,23 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 this.renderInvalidItems();
             }
         }
+        updateLocale(i18n) {
+            if (this.labelElm && this._caption?.startsWith('$'))
+                this.labelElm.innerHTML = i18n.get(this._caption) || '';
+            if (this.inputElm && this._placeholder?.startsWith('$'))
+                this.inputElm.placeholder = i18n.get(this._placeholder) || '';
+        }
         get caption() {
-            return this._caption;
+            return this.getTranslatedText(this._caption || '');
         }
         set caption(value) {
-            this._caption = value;
-            this.labelElm.innerHTML = this._caption || "";
-            if (!value)
-                this.labelElm.style.display = "none";
-            else
-                this.labelElm.style.display = "";
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.labelElm.style.display = !value ? 'none' : '';
+            if (!this.labelElm)
+                return;
+            this.labelElm.innerHTML = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -17122,10 +17143,23 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             this._searchStr = str || '';
         }
         get placeholder() {
-            return this.inputElm.placeholder;
+            return this.getTranslatedText(this._placeholder || '');
         }
         set placeholder(value) {
-            this.inputElm.placeholder = value || '';
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._placeholder = value;
+            if (this.inputElm)
+                this.inputElm.placeholder = this.placeholder;
+        }
+        getTranslatedText(value) {
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         get mode() {
             return this._mode;
@@ -17695,7 +17729,7 @@ define("@ijstech/datepicker/style/datepicker.css.ts", ["require", "exports", "@i
         }
     });
 });
-define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/moment", "@ijstech/style", "@ijstech/types", "@ijstech/datepicker/style/datepicker.css.ts"], function (require, exports, base_1, icon_1, moment_1, style_1, types_1) {
+define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/moment", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/datepicker/style/datepicker.css.ts"], function (require, exports, base_1, icon_1, moment_1, style_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Datepicker = void 0;
@@ -17784,16 +17818,23 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
         _handleClick(event) {
             return super._handleClick(event, true);
         }
+        updateLocale(i18n) {
+            if (this.labelElm && this._caption?.startsWith('$'))
+                this.labelElm.textContent = i18n.get(this._caption) || '';
+            if (this.inputElm && this._placeholder?.startsWith('$'))
+                this.inputElm.placeholder = i18n.get(this._placeholder) || '';
+        }
         get caption() {
-            return this._caption;
+            return this.getTranslatedText(this._caption || '');
         }
         set caption(value) {
-            this._caption = value;
-            this.labelElm.textContent = this._caption || '';
-            if (!value)
-                this.labelElm.style.display = 'none';
-            else
-                this.labelElm.style.display = '';
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.labelElm.style.display = !value ? 'none' : '';
+            if (!this.labelElm)
+                return;
+            this.labelElm.textContent = this.caption;
         }
         get captionWidth() {
             return this.labelElm.offsetWidth;
@@ -17907,12 +17948,23 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             this.datepickerElm.disabled = !value;
         }
         get placeholder() {
-            return this._placeholder ?? '';
+            return this.getTranslatedText(this._placeholder || '');
         }
         set placeholder(value) {
-            this._placeholder = value ?? '';
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._placeholder = value;
             if (this.inputElm)
-                this.inputElm.placeholder = this._placeholder;
+                this.inputElm.placeholder = this.placeholder;
+        }
+        getTranslatedText(value) {
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         get type() {
             return this._type;
@@ -18254,7 +18306,7 @@ define("@ijstech/range/style/range.css.ts", ["require", "exports", "@ijstech/sty
         }
     });
 });
-define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijstech/types", "@ijstech/range/style/range.css.ts"], function (require, exports, base_1, types_1) {
+define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijstech/application", "@ijstech/types", "@ijstech/range/style/range.css.ts"], function (require, exports, base_1, application_1, types_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Range = void 0;
@@ -18274,16 +18326,28 @@ define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijst
                 width: 100
             });
         }
+        updateLocale(i18n) {
+            if (this.labelElm && this._caption?.startsWith('$'))
+                this.labelElm.textContent = i18n.get(this._caption) || '';
+        }
         get caption() {
-            return this._caption;
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
-            this._caption = value;
-            this.labelElm.textContent = this._caption || '';
-            if (!value)
-                this.labelElm.style.display = 'none';
-            else
-                this.labelElm.style.display = '';
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.labelElm.style.display = !value ? 'none' : '';
+            if (!this.labelElm)
+                return;
+            this.labelElm.textContent = this.caption;
         }
         get captionWidth() {
             return this.labelElm.offsetWidth;
@@ -18569,7 +18633,7 @@ define("@ijstech/radio/radio.css.ts", ["require", "exports", "@ijstech/style"], 
         },
     });
 });
-define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijstech/style", "@ijstech/radio/radio.css.ts", "@ijstech/types"], function (require, exports, base_1, style_1, radio_css_1, types_1) {
+define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijstech/style", "@ijstech/radio/radio.css.ts", "@ijstech/types", "@ijstech/application"], function (require, exports, base_1, style_1, radio_css_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RadioGroup = exports.Radio = void 0;
@@ -18584,17 +18648,28 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             this._value = value || '';
             this.inputElm.value = value;
         }
+        updateLocale(i18n) {
+            if (this.captionSpanElm && this._caption?.startsWith('$'))
+                this.captionSpanElm.textContent = i18n.get(this._caption) || '';
+        }
         get caption() {
-            return this._caption;
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
-            this._caption = value;
-            if (!value)
-                this.captionSpanElm.style.display = 'none';
-            else
-                this.captionSpanElm.style.display = '';
-            this.captionSpanElm
-                && (this.captionSpanElm.textContent = value);
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.captionSpanElm.style.display = !value ? 'none' : '';
+            if (!this.captionSpanElm)
+                return;
+            this.captionSpanElm.textContent = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -19103,7 +19178,7 @@ define("@ijstech/modal/style/modal.css.ts", ["require", "exports", "@ijstech/bas
     };
     exports.getModalMediaQueriesStyleClass = getModalMediaQueriesStyleClass;
 });
-define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/modal/style/modal.css.ts", "@ijstech/types"], function (require, exports, base_2, base_3, icon_1, Styles, modal_css_1, types_1) {
+define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/modal/style/modal.css.ts", "@ijstech/types", "@ijstech/application"], function (require, exports, base_2, base_3, icon_1, Styles, modal_css_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Modal = void 0;
@@ -19124,6 +19199,7 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
                 popupPlacement: 'center'
             });
             this._visible = false;
+            this._title = '';
             this.hasInitializedChildFixed = false;
             this.mapScrollTop = {};
             this.boundHandleModalMouseDown = this.handleModalMouseDown.bind(this);
@@ -19184,12 +19260,30 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
             this._onOpen = callback;
         }
         get title() {
-            const titleElm = this.titleSpan.querySelector('span');
-            return titleElm?.innerHTML || '';
+            return this.getTranslatedText(this._title || '');
         }
         set title(value) {
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._title = value;
             const titleElm = this.titleSpan.querySelector('span');
-            titleElm && (titleElm.innerHTML = value || '');
+            titleElm && (titleElm.innerHTML = this.title);
+        }
+        updateLocale(i18n) {
+            const titleElm = this.titleSpan.querySelector('span');
+            if (titleElm && this._title?.startsWith('$'))
+                titleElm.innerHTML = i18n.get(this._title) || '';
+        }
+        getTranslatedText(value) {
+            if (!value)
+                return '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         get popupPlacement() {
             return this._placement;
@@ -21575,7 +21669,7 @@ define("@ijstech/color/style/color.css.ts", ["require", "exports", "@ijstech/sty
         }
     });
 });
-define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijstech/modal", "@ijstech/layout", "@ijstech/range", "@ijstech/icon", "@ijstech/color/utils.ts", "@ijstech/style", "@ijstech/types", "@ijstech/color/style/color.css.ts"], function (require, exports, base_1, modal_1, layout_1, range_1, icon_1, utils_1, Styles, types_1) {
+define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijstech/modal", "@ijstech/layout", "@ijstech/range", "@ijstech/icon", "@ijstech/color/utils.ts", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/color/style/color.css.ts"], function (require, exports, base_1, modal_1, layout_1, range_1, icon_1, utils_1, Styles, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ColorPicker = void 0;
@@ -21612,16 +21706,28 @@ define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijst
             this.updateUI(true);
             this.updateIconPointer();
         }
+        updateLocale(i18n) {
+            if (this.captionSpanElm && this._caption?.startsWith('$'))
+                this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+        }
         get caption() {
-            return this._caption;
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
-            this._caption = value;
-            if (!value)
-                this.captionSpanElm.style.display = 'none';
-            else
-                this.captionSpanElm.style.display = '';
-            this.captionSpanElm && (this.captionSpanElm.innerHTML = value);
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.captionSpanElm.style.display = !value ? 'none' : '';
+            if (!this.captionSpanElm)
+                return;
+            this.captionSpanElm.innerHTML = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -22177,7 +22283,7 @@ define("@ijstech/input/style/input.css.ts", ["require", "exports", "@ijstech/sty
         }
     });
 });
-define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijstech/checkbox", "@ijstech/combo-box", "@ijstech/datepicker", "@ijstech/range", "@ijstech/radio", "@ijstech/color", "@ijstech/icon", "@ijstech/style", "@ijstech/types", "@ijstech/input/style/input.css.ts"], function (require, exports, base_1, checkbox_1, combo_box_1, datepicker_1, range_1, radio_1, color_1, icon_1, style_1, types_1) {
+define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijstech/checkbox", "@ijstech/combo-box", "@ijstech/datepicker", "@ijstech/range", "@ijstech/radio", "@ijstech/color", "@ijstech/icon", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/input/style/input.css.ts"], function (require, exports, base_1, checkbox_1, combo_box_1, datepicker_1, range_1, radio_1, color_1, icon_1, style_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Input = void 0;
@@ -22230,19 +22336,31 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
             return '';
         }
+        updateLocale(i18n) {
+            if (this._caption?.startsWith('$')) {
+                if (this._inputControl)
+                    this._inputControl.caption = i18n.get(this._caption) || '';
+                else if (this.labelElm)
+                    this.labelElm.innerHTML = i18n.get(this._caption) || '';
+            }
+            if (this.inputElm && this._placeholder?.startsWith('$'))
+                this.inputElm.placeholder = i18n.get(this._placeholder) || '';
+        }
         get caption() {
             if (this._inputControl) {
                 return this._inputControl.caption;
             }
-            return this._caption;
+            return this.getTranslatedText(this._caption || '');
         }
         set caption(value) {
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
             if (this._inputControl) {
-                this._inputControl.caption = value;
+                this._inputControl.caption = this.caption;
             }
             else {
-                this._caption = value || '';
-                this.labelElm.innerHTML = this._caption;
+                this.labelElm.innerHTML = this.caption;
                 this.captionSpanElm.style.display = value ? 'inline-block' : 'none';
             }
         }
@@ -22355,8 +22473,24 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                 this.inputElm.disabled = !value;
             }
         }
+        get placeholder() {
+            return this.getTranslatedText(this._placeholder || '');
+        }
         set placeholder(value) {
-            this.inputElm.placeholder = value;
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._placeholder = value;
+            if (this.inputElm)
+                this.inputElm.placeholder = this.placeholder;
+        }
+        getTranslatedText(value) {
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         get rows() {
             return this._rows;
@@ -22469,7 +22603,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
             const enabled = this.getAttribute('enabled', true);
             const background = this.getAttribute('background', true);
             const designMode = this.getAttribute('designMode', true);
-            const caption = this._caption;
+            const caption = this.caption;
             this._clearBtnWidth = height - 2 || CLEAR_BTN_WIDTH;
             let cursor = 'text';
             switch (type) {
@@ -22500,7 +22634,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                         designMode,
                         icon: this.getAttribute('icon', true),
                         mode: this.getAttribute('mode', true),
-                        placeholder: this.getAttribute('placeholder', true),
+                        placeholder: this._placeholder,
                         parentCallback: this._inputCallback,
                     });
                     if (typeof this.onChanged === 'function')
@@ -22576,7 +22710,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                     const rows = this.getAttribute('rows', true) || defaultRows;
                     this.rows = rows;
                     if (this._placeholder) {
-                        this.inputElm.placeholder = this._placeholder;
+                        this.inputElm.placeholder = this.placeholder;
                     }
                     this.inputElm.style.resize = value === 'auto-grow' ? 'none' : value;
                     this.inputElm.disabled = enabled === false;
@@ -22584,8 +22718,9 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                     this.inputElm.addEventListener('keydown', this._handleInputKeyDown.bind(this));
                     this.inputElm.addEventListener('keyup', this._handleInputKeyUp.bind(this));
                     this.inputElm.addEventListener('focus', this._handleOnFocus.bind(this));
-                    if (caption)
-                        this.caption = caption;
+                    if (caption && this.labelElm) {
+                        this.labelElm.innerHTML = caption;
+                    }
                     break;
                 case "color":
                     this._inputControl = new color_1.ColorPicker(this, {
@@ -22617,7 +22752,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                     this.inputElm.style.height = this.height + 'px';
                     this.inputElm.type = inputType;
                     if (this._placeholder)
-                        this.inputElm.placeholder = this._placeholder;
+                        this.inputElm.placeholder = this.placeholder;
                     this.inputElm.disabled = enabled === false;
                     this.inputElm.addEventListener('input', this._handleChange.bind(this));
                     this.inputElm.addEventListener('keydown', this._handleInputKeyDown.bind(this));
@@ -22637,8 +22772,9 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                         const clearIcon = new icon_1.Icon(this, { name: 'times', width: 12, height: 12, fill: style_1.Theme.ThemeVars.text.primary });
                         this.clearIconElm.appendChild(clearIcon);
                     }
-                    if (caption)
-                        this.caption = caption;
+                    if (caption && this.labelElm) {
+                        this.labelElm.innerHTML = caption;
+                    }
                     break;
             }
             if (this.inputElm) {
@@ -23478,7 +23614,7 @@ define("@ijstech/label/style/label.css.ts", ["require", "exports", "@ijstech/sty
         fontSize: Theme.typography.fontSize
     });
 });
-define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijstech/link", "@ijstech/text", "@ijstech/types", "@ijstech/text", "@ijstech/label/style/label.css.ts"], function (require, exports, base_1, link_1, text_1, types_1, text_2) {
+define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijstech/link", "@ijstech/text", "@ijstech/types", "@ijstech/text", "@ijstech/application", "@ijstech/label/style/label.css.ts"], function (require, exports, base_1, link_1, text_1, types_1, text_2, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Label = void 0;
@@ -23495,18 +23631,22 @@ define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijst
                 this.captionSpan.innerHTML = i18n.get(this._caption) || '';
         }
         get caption() {
-            return this.captionSpan?.innerHTML || '';
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
             if (typeof value !== 'string')
                 value = String(value);
-            this._caption = value;
-            if (this.captionSpan) {
-                if (value?.startsWith('$') && this.parentModule)
-                    this.captionSpan.innerHTML = this.parentModule.i18n.get(value) || '';
-                else
-                    this.captionSpan.innerHTML = value || '';
-            }
+            this._caption = value || '';
+            if (!this.captionSpan)
+                return;
+            this.captionSpan.innerHTML = this.caption;
         }
         get link() {
             if (!this._link) {
@@ -23670,7 +23810,6 @@ define("@ijstech/button/style/button.css.ts", ["require", "exports", "@ijstech/s
         borderRadius: 4,
         fontFamily: Theme.typography.fontFamily,
         fontSize: Theme.typography.fontSize,
-        gap: 5,
         cursor: 'pointer',
         userSelect: 'none',
         $nest: {
@@ -23699,11 +23838,14 @@ define("@ijstech/button/style/button.css.ts", ["require", "exports", "@ijstech/s
                 boxShadow: Theme.shadows[0],
                 background: Theme.action.disabledBackground,
                 cursor: 'default'
+            },
+            "&.has-caption": {
+                gap: 5
             }
         }
     });
 });
-define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/types", "@ijstech/button/style/button.css.ts"], function (require, exports, base_1, icon_1, style_1, types_1) {
+define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/button/style/button.css.ts"], function (require, exports, base_1, icon_1, style_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Button = void 0;
@@ -23726,16 +23868,22 @@ define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ij
                 this.captionElm.innerHTML = i18n.get(this._caption) || '';
         }
         get caption() {
-            return this.captionElm?.innerHTML || '';
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
-            this._caption = value;
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
             if (!this.captionElm)
                 return;
-            if (value.startsWith('$') && this.parentModule)
-                this.captionElm.innerHTML = this.parentModule.i18n.get(this._caption);
-            else
-                this.captionElm.innerHTML = value;
+            this.captionElm.innerHTML = this.caption;
             this.captionElm.style.display = value ? "" : "none";
         }
         get icon() {
@@ -23812,6 +23960,10 @@ define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ij
                 this._background?.color && (bg += `${this._background?.color}`);
                 this.style.background = bg;
             }
+            if (this._caption)
+                this.classList.add('has-caption');
+            else
+                this.classList.remove('has-caption');
         }
         _handleClick(event) {
             if (this.isSpinning || !this.enabled || this._designMode)
@@ -24700,16 +24852,28 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
             super(parent, options);
             this.counter = 0;
         }
+        updateLocale(i18n) {
+            if (this._labelElm && this._caption?.startsWith('$'))
+                this._labelElm.textContent = i18n.get(this._caption) || '';
+        }
         get caption() {
-            return this._caption;
+            let value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parent?.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
+            if (typeof value !== 'string')
+                value = String(value);
             this._caption = value;
-            this._labelElm.textContent = this._caption || '';
-            if (!value)
-                this._labelElm.style.display = 'none';
-            else
-                this._labelElm.style.display = '';
+            this._labelElm.style.display = !value ? 'none' : '';
+            if (!this._labelElm)
+                return;
+            this._labelElm.textContent = this.caption;
         }
         get disabled() {
             return this._disabled;
@@ -24883,6 +25047,8 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
             return this._caption;
         }
         set caption(value) {
+            if (typeof value !== 'string')
+                value = String(value);
             this._caption = value;
             if (this.lblCaption)
                 this.lblCaption.caption = this.caption || (this.draggable ? 'Drag a file or click to upload' : 'Click to upload');
@@ -26678,7 +26844,7 @@ define("@ijstech/tooltip/style/tooltip.css.ts", ["require", "exports", "@ijstech
         },
     });
 });
-define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@ijstech/tooltip/style/tooltip.css.ts"], function (require, exports, base_1) {
+define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@ijstech/application", "@ijstech/tooltip/style/tooltip.css.ts"], function (require, exports, base_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Tooltip = void 0;
@@ -26810,13 +26976,27 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 this.tooltipElm.style.setProperty("--tooltips-arrow-background", this.color);
             }
         }
+        updateLocale(i18n) {
+            if (this.tooltipElm && this.content?.startsWith('$'))
+                this.tooltipElm.innerHTML = i18n.get(this.content) || '';
+        }
         get content() {
-            return this._content;
+            let value = this._content || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set content(value) {
+            if (typeof value !== 'string')
+                value = String(value);
             this._content = value;
-            if (this.tooltipElm)
+            if (this.tooltipElm) {
                 this.tooltipElm.innerHTML = this.content;
+            }
         }
         get placement() {
             return this._placement;
@@ -27122,7 +27302,7 @@ define("@ijstech/tab/style/tab.css.ts", ["require", "exports", "@ijstech/base", 
     };
     exports.getTabMediaQueriesStyleClass = getTabMediaQueriesStyleClass;
 });
-define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/tab/style/tab.css.ts", "@ijstech/types", "@ijstech/tab/style/tab.css.ts"], function (require, exports, base_3, icon_1, tab_css_1, types_1) {
+define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/tab/style/tab.css.ts", "@ijstech/types", "@ijstech/application", "@ijstech/tab/style/tab.css.ts"], function (require, exports, base_3, icon_1, tab_css_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Tab = exports.Tabs = void 0;
@@ -27139,6 +27319,11 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
             this.dragStartHandler = this.dragStartHandler.bind(this);
             this.dragOverHandler = this.dragOverHandler.bind(this);
             this.dropHandler = this.dropHandler.bind(this);
+        }
+        updateLocale(i18n) {
+            for (const tab of this._tabs) {
+                tab.updateLocale(i18n);
+            }
         }
         get activeTab() {
             return this._tabs[this.activeTabIndex];
@@ -27451,11 +27636,27 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
             if (this._contentElm && this._contentElm.contains(control))
                 this._contentElm.removeChild(control);
         }
+        updateLocale(i18n) {
+            if (this.captionElm && this._caption?.startsWith('$'))
+                this.captionElm.innerHTML = i18n.get(this._caption) || '';
+        }
         get caption() {
-            return this.captionElm.innerHTML;
+            let value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parent?.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
-            this.captionElm.innerHTML = value;
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            if (!this.captionElm)
+                return;
+            this.captionElm.innerHTML = this.caption;
         }
         close() {
             this.handleDefaultClose();
@@ -29478,7 +29679,7 @@ define("@ijstech/alert/style/alert.css.ts", ["require", "exports", "@ijstech/sty
         },
     });
 });
-define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijstech/button", "@ijstech/icon", "@ijstech/label", "@ijstech/modal", "@ijstech/layout", "@ijstech/style", "@ijstech/types", "@ijstech/alert/style/alert.css.ts"], function (require, exports, base_1, button_1, icon_1, label_1, modal_1, layout_1, style_1, types_1) {
+define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijstech/button", "@ijstech/icon", "@ijstech/label", "@ijstech/modal", "@ijstech/layout", "@ijstech/style", "@ijstech/application", "@ijstech/types", "@ijstech/alert/style/alert.css.ts"], function (require, exports, base_1, button_1, icon_1, label_1, modal_1, layout_1, style_1, application_1, types_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Alert = void 0;
@@ -29488,6 +29689,9 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
     let Alert = class Alert extends base_1.Control {
         constructor(parent, options) {
             super(parent, options);
+            this.contentElm = null;
+            this.titleElm = null;
+            this.linkElm = null;
             this.closeModal = () => {
                 this.mdAlert.visible = false;
             };
@@ -29504,16 +29708,37 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
             this._status = value;
         }
         get title() {
-            return this._title;
+            return this.getTranslatedText(this._title || '');
         }
         set title(value) {
+            if (typeof value !== 'string')
+                value = String(value || '');
             this._title = value;
         }
         get content() {
-            return this._content;
+            return this.getTranslatedText(this._content || '');
         }
         set content(value) {
+            if (typeof value !== 'string')
+                value = String(value || '');
             this._content = value;
+        }
+        updateLocale(i18n) {
+            if (this.titleElm && this._title?.startsWith('$'))
+                this.titleElm.innerHTML = i18n.get(this._title) || '';
+            if (this.contentElm && this._content?.startsWith('$'))
+                this.contentElm.innerHTML = i18n.get(this._content) || '';
+            if (this.linkElm)
+                this.linkElm.updateLocale(i18n);
+        }
+        getTranslatedText(value) {
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         get link() {
             return this._link;
@@ -29590,13 +29815,13 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                 gap: "0.75rem",
                 lineHeight: 1.5,
             });
-            this.title
+            this.titleElm = this.title
                 ? new label_1.Label(contentElm, {
                     caption: this.title,
                     font: { size: "1.25rem", bold: true },
                 })
                 : null;
-            this.content
+            this.contentElm = this.content
                 ? new label_1.Label(contentElm, {
                     caption: this.content,
                     overflowWrap: "anywhere",
@@ -29605,7 +29830,7 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         renderLink(wrapperElm) {
             if (this.link)
-                new label_1.Label(wrapperElm, {
+                this.linkElm = new label_1.Label(wrapperElm, {
                     class: "text-center",
                     caption: this.link.caption,
                     font: { size: "0.875rem" },
@@ -34570,7 +34795,7 @@ define("@ijstech/markdown-editor/styles/index.css.ts", ["require", "exports", "@
         },
     });
 });
-define("@ijstech/markdown-editor/markdown-editor.ts", ["require", "exports", "@ijstech/base", "@ijstech/markdown", "@ijstech/text", "@ijstech/types", "@ijstech/text", "@ijstech/markdown-editor/styles/index.css.ts"], function (require, exports, base_1, markdown_1, text_1, types_1, text_2) {
+define("@ijstech/markdown-editor/markdown-editor.ts", ["require", "exports", "@ijstech/base", "@ijstech/markdown", "@ijstech/text", "@ijstech/types", "@ijstech/text", "@ijstech/application", "@ijstech/markdown-editor/styles/index.css.ts"], function (require, exports, base_1, markdown_1, text_1, types_1, text_2, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MarkdownEditor = void 0;
@@ -34734,12 +34959,23 @@ define("@ijstech/markdown-editor/markdown-editor.ts", ["require", "exports", "@i
             this._autoFocus = value ?? false;
         }
         get placeholder() {
-            return this._placeholder ?? '';
+            return this.getTranslatedText(this._placeholder || '');
         }
         set placeholder(value) {
-            this._placeholder = value ?? '';
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._placeholder = value;
             if (this.editorObj)
                 this.renderEditor(true);
+        }
+        getTranslatedText(value) {
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         get padding() {
             return this._padding;
@@ -35264,7 +35500,7 @@ define("@ijstech/menu/style/menu.css.ts", ["require", "exports", "@ijstech/style
         }
     });
 });
-define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstech/link", "@ijstech/icon", "@ijstech/modal", "@ijstech/layout", "@ijstech/menu/style/menu.css.ts", "@ijstech/types", "@ijstech/style"], function (require, exports, base_1, link_1, icon_1, modal_1, layout_1, menu_css_1, types_1, Styles) {
+define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstech/link", "@ijstech/icon", "@ijstech/modal", "@ijstech/layout", "@ijstech/menu/style/menu.css.ts", "@ijstech/types", "@ijstech/style", "@ijstech/application"], function (require, exports, base_1, link_1, icon_1, modal_1, layout_1, menu_css_1, types_1, Styles, application_1) {
     "use strict";
     var MenuItem_1;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -35669,16 +35905,15 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
             return this._caption;
         }
         set title(value) {
+            if (typeof value !== 'string')
+                value = String(value || '');
             this._caption = value;
             if (this.captionElm) {
                 if (value?.startsWith('$')) {
-                    if (this.linkTo?.parentModule?.i18n) {
-                        this.captionElm.innerHTML = this.linkTo.parentModule.i18n.get(value) || '';
-                    }
-                    else {
-                        const caption = value.replace('$', '');
-                        this.captionElm.innerHTML = caption.charAt(0).toUpperCase() + caption.slice(1);
-                    }
+                    const translated = this.linkTo?.parentModule?.i18n?.get(value) ||
+                        application_1.application.i18n?.get(value) ||
+                        '';
+                    this.captionElm.innerHTML = translated;
                 }
                 else
                     this.captionElm.innerHTML = value || '';
@@ -36398,7 +36633,7 @@ define("@ijstech/tree-view/style/treeView.css.ts", ["require", "exports", "@ijst
         }
     });
 });
-define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/button", "@ijstech/style", "@ijstech/types", "@ijstech/tree-view/style/treeView.css.ts"], function (require, exports, base_1, icon_1, button_1, Styles, types_1) {
+define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/button", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/tree-view/style/treeView.css.ts"], function (require, exports, base_1, icon_1, button_1, Styles, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TreeNode = exports.TreeView = void 0;
@@ -36738,16 +36973,22 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
             this._data = value;
         }
         get caption() {
-            return this._caption;
+            let value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.rootParent?.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
         }
         set caption(value) {
+            if (typeof value !== 'string')
+                value = String(value);
             this._caption = value;
-            if (this._captionElm) {
-                if (value?.startsWith('$') && this.rootParent?.parentModule?.i18n)
-                    this._captionElm.innerHTML = this.rootParent.parentModule.i18n.get(value) || '';
-                else
-                    this._captionElm.innerHTML = value || '';
-            }
+            if (!this._captionElm)
+                return;
+            this._captionElm.innerHTML = this.caption;
         }
         updateLocale(i18n) {
             if (this._captionElm && this._caption?.startsWith('$'))
@@ -38197,7 +38438,7 @@ define("@ijstech/table/tableCell.ts", ["require", "exports", "@ijstech/table/sty
     }
     exports.TableCell = TableCell;
 });
-define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/table/style/table.css.ts"], function (require, exports, base_3, icon_1, Styles) {
+define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/application", "@ijstech/table/style/table.css.ts"], function (require, exports, base_3, icon_1, Styles, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TableColumn = void 0;
@@ -38245,6 +38486,26 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
         set textAlign(value) {
             this._textAlign = value || 'left';
             this.style.textAlign = value;
+        }
+        get caption() {
+            let value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.application.i18n?.get(value) ||
+                    '';
+                return translated;
+            }
+            return value;
+        }
+        set caption(value) {
+            if (typeof value !== 'string')
+                value = String(value);
+            this._caption = value || '';
+            this.columnElm && (this.columnElm.innerHTML = this.caption);
+        }
+        updateLocale(i18n) {
+            if (this.columnElm && this._caption?.startsWith('$'))
+                this.columnElm.innerHTML = i18n.get(this._caption) || '';
         }
         renderSort() {
             if (!this.sortable) {
@@ -38302,7 +38563,7 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
         }
         init() {
             if (!this.columnElm) {
-                this.caption = this.options.title;
+                this._caption = this.options.title;
                 this.fieldName = this.options.fieldName;
                 if (this.options.key)
                     this.key = this.options.key;
@@ -38678,6 +38939,8 @@ define("@ijstech/table/table.ts", ["require", "exports", "@ijstech/base", "@ijst
                 const thElm = this.createElement('th', rowElm);
                 thElm.classList.add('i-table-cell', 'i-table-cell--expand', 'text-center', this._headingStyle);
             }
+            if (!Array.isArray(this.columns))
+                return;
             this.columns.forEach((column, colIndex) => {
                 const thElm = this.createElement('th', rowElm);
                 column.visible === false && (thElm.style.display = 'none');
@@ -38691,6 +38954,14 @@ define("@ijstech/table/table.ts", ["require", "exports", "@ijstech/base", "@ijst
                 thElm.appendChild(columnElm);
                 rowElm.appendChild(thElm);
             });
+        }
+        updateLocale(i18n) {
+            if (this.tHeadElm) {
+                const columns = this.tHeadElm.querySelectorAll('i-table-column');
+                for (const column of columns) {
+                    column.updateLocale(i18n);
+                }
+            }
         }
         _handleClick(event) {
             const target = event.target;

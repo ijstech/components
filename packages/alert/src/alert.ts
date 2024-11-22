@@ -3,6 +3,7 @@ import {
   Container,
   customElements,
   ControlElement,
+  I18n,
 } from "@ijstech/base";
 import { Button } from "@ijstech/button";
 import { Icon, IconName } from "@ijstech/icon";
@@ -10,6 +11,7 @@ import { Label } from "@ijstech/label";
 import { Modal } from "@ijstech/modal";
 import { HStack, Panel, VStack } from "@ijstech/layout";
 import { Theme } from "@ijstech/style";
+import { application } from "@ijstech/application";
 
 import "./style/alert.css";
 import { GroupType } from "@ijstech/types";
@@ -97,6 +99,9 @@ const DEFAULT_VALUES = {
 export class Alert extends Control {
   private mdAlert: Modal;
   private pnlMain: Panel;
+  private contentElm: Label|null = null;
+  private titleElm: Label|null = null;
+  private linkElm: Label|null = null;
   private _status:
     | "warning"
     | "success"
@@ -126,17 +131,38 @@ export class Alert extends Control {
   }
 
   get title(): string {
-    return this._title;
+    return this.getTranslatedText(this._title || '');
   }
   set title(value: string) {
+    if (typeof value !== 'string') value = String(value || '');
     this._title = value;
   }
 
   get content(): string {
-    return this._content;
+    return this.getTranslatedText(this._content || '');
   }
   set content(value: string) {
+    if (typeof value !== 'string') value = String(value || '');
     this._content = value;
+  }
+
+  updateLocale(i18n: I18n): void {
+      if (this.titleElm && this._title?.startsWith('$'))
+        this.titleElm.innerHTML = i18n.get(this._title) || '';
+      if (this.contentElm && this._content?.startsWith('$'))
+        this.contentElm.innerHTML = i18n.get(this._content) || '';
+      if (this.linkElm) this.linkElm.updateLocale(i18n);
+  }
+
+  private getTranslatedText(value: string): string {
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
   }
 
   get link(): {
@@ -234,14 +260,14 @@ export class Alert extends Control {
       lineHeight: 1.5,
     });
 
-    this.title
+    this.titleElm = this.title
       ? new Label(contentElm, {
           caption: this.title,
           font: { size: "1.25rem", bold: true },
         })
       : null;
 
-    this.content
+      this.contentElm = this.content
       ? new Label(contentElm, {
           caption: this.content,
           overflowWrap: "anywhere",
@@ -251,7 +277,7 @@ export class Alert extends Control {
 
   private renderLink(wrapperElm: Container) {
     if (this.link)
-      new Label(wrapperElm, {
+      this.linkElm = new Label(wrapperElm, {
         class: "text-center",
         caption: (this.link as any).caption,
         font: { size: "0.875rem" },

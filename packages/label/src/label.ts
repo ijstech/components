@@ -4,6 +4,7 @@ import {Text, TextElement} from '@ijstech/text';
 import './style/label.css';
 import { GroupType } from '@ijstech/types';
 import { textDataSchema, textPropsConfig } from '@ijstech/text';
+import { application } from '@ijstech/application';
 
 type TextDecorationType = 'none'|'underline'|'overline'|'line-through';
 
@@ -89,18 +90,23 @@ export class Label extends Text {
             this.captionSpan.innerHTML = i18n.get(this._caption) || '';
     }
     get caption(): string{
-        return this.captionSpan?.innerHTML || '';
-    }
-    set caption(value: string){
-        if (typeof value !== 'string') value = String(value);
-        this._caption = value;
-        if (this.captionSpan){
-            if (value?.startsWith('$') && this.parentModule)
-                this.captionSpan.innerHTML = this.parentModule.i18n.get(value) || ''
-            else
-                this.captionSpan.innerHTML = value || '';
+        const value = this._caption || '';
+        if (value?.startsWith('$')) {
+            const translated =
+                this.parentModule?.i18n?.get(this._caption) ||
+                application.i18n?.get(this._caption) ||
+                '';
+            return translated;
         }
+        return value;
     }
+    set caption(value: string) {
+        if (typeof value !== 'string') value = String(value);
+        this._caption = value || '';
+        if (!this.captionSpan) return;
+        this.captionSpan.innerHTML = this.caption;
+    }
+
     get link(): Link {
         if (!this._link) {
             this._link = new Link(this, {

@@ -1,8 +1,9 @@
-import { Control, Container, customElements, ContainerElement, IFont, FontStyle, TextTransform, IMediaQuery, IControlMediaQueryProps } from '@ijstech/base';
+import { Control, Container, customElements, ContainerElement, IFont, FontStyle, TextTransform, IMediaQuery, IControlMediaQueryProps, I18n } from '@ijstech/base';
 import { Icon, IconElement } from "@ijstech/icon";
 import './style/tab.css';
 import { getTabMediaQueriesStyleClass } from './style/tab.css';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 
 type TabModeType = "horizontal" | "vertical";
 type TabsEventCallback = (target: Tabs, activeTab: Tab, oldActiveTab?: Tab) => void;
@@ -118,6 +119,12 @@ export class Tabs extends Container {
     this.dragStartHandler = this.dragStartHandler.bind(this);
     this.dragOverHandler = this.dragOverHandler.bind(this);
     this.dropHandler = this.dropHandler.bind(this);
+  }
+
+  updateLocale(i18n: I18n): void {
+    for (const tab of this._tabs) {
+      tab.updateLocale(i18n);
+    }
   }
 
   get activeTab(): Tab {
@@ -425,22 +432,43 @@ export class Tab extends Container {
   private _closeBtn: HTMLSpanElement;
   protected _parent: Tabs;
 
+  private _caption: string;
+
   active(){
     this._parent.activeTabIndex = this.index;
   }
+
   protected addChildControl(control: Control) {
     if (this._contentElm)
       this._contentElm.appendChild(control)
   }
+
   protected removeChildControl(control: Control) {
     if (this._contentElm && this._contentElm.contains(control))
       this._contentElm.removeChild(control)
   }
+
+  updateLocale(i18n: I18n): void {
+    if (this.captionElm && this._caption?.startsWith('$'))
+      this.captionElm.innerHTML = i18n.get(this._caption) || '';
+  }
+
   get caption(): string {
-    return this.captionElm.innerHTML
+    let value = this._caption || '';
+    if (value?.startsWith('$')) {
+      const translated =
+        this.parent?.parentModule?.i18n?.get(value) ||
+        application.i18n?.get(value) ||
+        ''
+      return translated;
+    }
+    return value;
   }
   set caption(value: string) {
-    this.captionElm.innerHTML = value;
+    if (typeof value !== 'string') value = String(value);
+    this._caption = value || '';
+    if (!this.captionElm) return;
+    this.captionElm.innerHTML = this.caption;
   }
   close(){
     this.handleDefaultClose();

@@ -3,6 +3,7 @@ import {Icon, IconElement} from '@ijstech/icon';
 import { Theme } from '@ijstech/style';
 import './style/button.css';
 import { GroupType } from '@ijstech/types';
+import { application } from '@ijstech/application';
 
 export interface ButtonElement extends ControlElement{
     caption?: string;    
@@ -121,16 +122,23 @@ export class Button extends Control {
         if (this.captionElm && this._caption?.startsWith('$'))
             this.captionElm.innerHTML = i18n.get(this._caption) || '';
     }
+
     get caption(): string{
-        return this.captionElm?.innerHTML || '';
+        const value = this._caption || '';
+        if (value?.startsWith('$')) {
+            const translated =
+                this.parentModule?.i18n?.get(this._caption) ||
+                application.i18n?.get(this._caption) ||
+                '';
+            return translated;
+        }
+        return value;
     }
     set caption(value: string){
-        this._caption = value;
+        if (typeof value !== 'string') value = String(value);
+        this._caption = value || '';
         if (!this.captionElm) return;
-        if (value.startsWith('$') && this.parentModule)
-            this.captionElm.innerHTML = this.parentModule.i18n.get(this._caption)
-        else
-            this.captionElm.innerHTML = value;
+        this.captionElm.innerHTML = this.caption;
         this.captionElm.style.display = value ? "" : "none";
     }
     get icon(): Icon{
@@ -207,6 +215,10 @@ export class Button extends Control {
             this._background?.color && (bg += `${this._background?.color}`);
             this.style.background = bg;
         }
+        if (this._caption)
+            this.classList.add('has-caption');
+        else
+            this.classList.remove('has-caption');
     }
    
     _handleClick(event: MouseEvent): boolean{

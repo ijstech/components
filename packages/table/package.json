@@ -2,6 +2,7 @@
   "name": "@ijstech/table",
   "dependencies": {
     "@ijstech/base": "^0.1.0",
-    "@ijstech/pagination": "^0.1.0" 
+    "@ijstech/pagination": "^0.1.0",
+    "@ijstech/application": "^0.1.0"
   }
 }
