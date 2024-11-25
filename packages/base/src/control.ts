@@ -1166,7 +1166,7 @@ export class Control extends Component {
         if (tooltip && !this._tooltip){
             let constructor = window.customElements.get('i-tooltip');
             if (constructor){
-                let t: any = new constructor(this);
+                let t: any = new constructor(this, this.parentModule?.i18n);
                 this._tooltip = t;
             }
         };        
@@ -1389,7 +1389,7 @@ export class Control extends Component {
         if (!this._tooltip) {
             let constructor = window.customElements.get('i-tooltip');
             if (constructor){
-                let t: any = new constructor(this);
+                let t: any = new constructor(this, this.parentModule?.i18n);
                 this._tooltip = t;
             };
             // this._tooltip = new Tooltip(this);

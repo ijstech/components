@@ -15,11 +15,13 @@ export class Tooltip extends Control implements ITooltipImpl {
   private _trigger: TriggerType;
   private _duration: number;
   private timeout: any;
+  private _parentI18n: I18n;
 
   private tooltipElm: HTMLElement;
 
-  constructor(parent: Control) {
+  constructor(parent: Control, parentI18n?: I18n) {
     super(parent);
+    if (parentI18n) this._parentI18n = parentI18n;
     this.initData(parent);
     this.initEvents(parent);
   }
@@ -152,15 +154,15 @@ export class Tooltip extends Control implements ITooltipImpl {
   }
 
   updateLocale(i18n: I18n): void {
-    if (this.tooltipElm && this.content?.startsWith('$'))
-      this.tooltipElm.innerHTML = i18n.get(this.content) || '';
+    if (this.tooltipElm && this._content?.startsWith('$'))
+      this.tooltipElm.innerHTML = i18n.get(this._content) || '';
   }
 
   get content(): string {
     let value = this._content || '';
     if (value?.startsWith('$')) {
       const translated =
-        this.parentModule?.i18n?.get(value) ||
+      this._parentI18n?.get(value) ||
         application.i18n?.get(value) ||
         ''
       return translated;
@@ -249,7 +251,7 @@ export class Tooltip extends Control implements ITooltipImpl {
 
   private initEvents(source: Control) {
     source.addEventListener('mouseover', e => {
-      if (!this.content || this._designMode) return
+      if (!this._content || this._designMode) return
       if (this.trigger === 'hover') {
         e.preventDefault()
         e.stopImmediatePropagation()
@@ -260,7 +262,7 @@ export class Tooltip extends Control implements ITooltipImpl {
       }
     })
     source.addEventListener("mousedown", (e: Event) => {
-      if (!this.content || this._designMode) return
+      if (!this._content || this._designMode) return
       if (this.trigger === 'click' || this.isSmallScreen) {
         this.onHandleClick(source);
       } else {

@@ -23623,8 +23623,9 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         private _trigger;
         private _duration;
         private timeout;
+        private _parentI18n;
         private tooltipElm;
-        constructor(parent: Control);
+        constructor(parent: Control, parentI18n?: I18n);
         private initData;
         private positionAt;
         get trigger(): TriggerType;
@@ -26096,7 +26097,7 @@ declare module "@ijstech/accordion/accordion-item.ts" {
 }
 /// <amd-module name="@ijstech/accordion/accordion.ts" />
 declare module "@ijstech/accordion/accordion.ts" {
-    import { Control, Container, ControlElement } from "@ijstech/base";
+    import { Control, Container, ControlElement, I18n } from "@ijstech/base";
     import { AccordionItem, AccordionItemElement } from "@ijstech/accordion/accordion-item.ts";
     import { IAccordionItem } from "@ijstech/accordion/interface.ts";
     export { AccordionItem, AccordionItemElement };
@@ -26123,6 +26124,7 @@ declare module "@ijstech/accordion/accordion.ts" {
         onCustomItemRemoved: onCustomItemRemovedCallback;
         static create(options?: AccordionElement, parent?: Container): Promise<Accordion>;
         constructor(parent?: Container, options?: any);
+        updateLocale(i18n: I18n): void;
         get isFlush(): boolean;
         set isFlush(value: boolean);
         get items(): IAccordionItem[];

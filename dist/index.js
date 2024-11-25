@@ -13015,7 +13015,7 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
             if (tooltip && !this._tooltip) {
                 let constructor = window.customElements.get('i-tooltip');
                 if (constructor) {
-                    let t = new constructor(this);
+                    let t = new constructor(this, this.parentModule?.i18n);
                     this._tooltip = t;
                 }
             }
@@ -13254,7 +13254,7 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
             if (!this._tooltip) {
                 let constructor = window.customElements.get('i-tooltip');
                 if (constructor) {
-                    let t = new constructor(this);
+                    let t = new constructor(this, this.parentModule?.i18n);
                     this._tooltip = t;
                 }
                 ;
@@ -23627,6 +23627,7 @@ define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijst
             super(parent, options);
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionSpan && this._caption?.startsWith('$'))
                 this.captionSpan.innerHTML = i18n.get(this._caption) || '';
         }
@@ -23864,6 +23865,7 @@ define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ij
             super(parent, options);
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionElm && this._caption?.startsWith('$'))
                 this.captionElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -26850,8 +26852,10 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
     exports.Tooltip = void 0;
     const DEFAULT_DURATION = 2000;
     let Tooltip = class Tooltip extends base_1.Control {
-        constructor(parent) {
+        constructor(parent, parentI18n) {
             super(parent);
+            if (parentI18n)
+                this._parentI18n = parentI18n;
             this.initData(parent);
             this.initEvents(parent);
         }
@@ -26977,13 +26981,13 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
             }
         }
         updateLocale(i18n) {
-            if (this.tooltipElm && this.content?.startsWith('$'))
-                this.tooltipElm.innerHTML = i18n.get(this.content) || '';
+            if (this.tooltipElm && this._content?.startsWith('$'))
+                this.tooltipElm.innerHTML = i18n.get(this._content) || '';
         }
         get content() {
             let value = this._content || '';
             if (value?.startsWith('$')) {
-                const translated = this.parentModule?.i18n?.get(value) ||
+                const translated = this._parentI18n?.get(value) ||
                     application_1.application.i18n?.get(value) ||
                     '';
                 return translated;
@@ -27064,7 +27068,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         }
         initEvents(source) {
             source.addEventListener('mouseover', e => {
-                if (!this.content || this._designMode)
+                if (!this._content || this._designMode)
                     return;
                 if (this.trigger === 'hover') {
                     e.preventDefault();
@@ -27076,7 +27080,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 }
             });
             source.addEventListener("mousedown", (e) => {
-                if (!this.content || this._designMode)
+                if (!this._content || this._designMode)
                     return;
                 if (this.trigger === 'click' || this.isSmallScreen) {
                     this.onHandleClick(source);
@@ -46358,7 +46362,7 @@ define("@ijstech/accordion/style/accordion.css.ts", ["require", "exports", "@ijs
         }
     });
 });
-define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/base", "@ijstech/layout", "@ijstech/label", "@ijstech/icon", "@ijstech/style", "@ijstech/accordion/style/accordion.css.ts", "@ijstech/types"], function (require, exports, base_1, layout_1, label_1, icon_1, style_1, accordion_css_1, types_1) {
+define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/base", "@ijstech/layout", "@ijstech/label", "@ijstech/icon", "@ijstech/style", "@ijstech/accordion/style/accordion.css.ts", "@ijstech/types", "@ijstech/application"], function (require, exports, base_1, layout_1, label_1, icon_1, style_1, accordion_css_1, types_1, application_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AccordionItem = void 0;
@@ -46372,12 +46376,19 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
             return self;
         }
         get name() {
-            return this._name ?? '';
+            const name = this._name || '';
+            if (name?.startsWith('$')) {
+                const translated = this.parent?.parentModule?.i18n?.get(name) ||
+                    application_1.application.i18n?.get(name) ||
+                    '';
+                return translated;
+            }
+            return name;
         }
         set name(value) {
-            this._name = value ?? '';
+            this._name = value || '';
             if (this.lbTitle) {
-                this.lbTitle.caption = value;
+                this.lbTitle.caption = this.name;
             }
         }
         get defaultExpanded() {
@@ -46566,6 +46577,11 @@ define("@ijstech/accordion/accordion.ts", ["require", "exports", "@ijstech/base"
             this.accordionItemMapper = new Map();
             this.onItemClick = this.onItemClick.bind(this);
             this.onRemoveClick = this.onRemoveClick.bind(this);
+        }
+        updateLocale(i18n) {
+            super.updateLocale(i18n);
+            const items = Array.from(this.accordionItemMapper).map(item => item[1]);
+            items.forEach(item => item.updateLocale(i18n));
         }
         get isFlush() {
             return this._isFlush ?? false;

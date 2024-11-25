@@ -11,6 +11,7 @@ import { Theme } from '@ijstech/style';
 import { IAccordionItem } from './interface';
 import { customStyles, expandablePanelStyle } from './style/accordion.css';
 import { GroupType } from "@ijstech/types";
+import { application } from '@ijstech/application';
 
 type onSelectedFn = (target: AccordionItem) => void;
 export interface AccordionItemElement extends IAccordionItem {
@@ -82,12 +83,20 @@ export class AccordionItem extends Container {
   }
 
   get name() {
-    return this._name ?? '';
+    const name = this._name || '';
+    if (name?.startsWith('$')) {
+      const translated =
+        this.parent?.parentModule?.i18n?.get(name) ||
+        application.i18n?.get(name) ||
+        '';
+      return translated;
+    }
+    return name;
   }
   set name(value: string) {
-    this._name = value ?? '';
+    this._name = value || '';
     if (this.lbTitle) {
-      this.lbTitle.caption = value;
+      this.lbTitle.caption = this.name;
     }
   }
 

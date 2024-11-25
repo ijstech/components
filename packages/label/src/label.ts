@@ -86,6 +86,7 @@ export class Label extends Text {
         super(parent, options);
     }
     updateLocale(i18n: I18n): void {
+        super.updateLocale(i18n);
         if (this.captionSpan && this._caption?.startsWith('$'))
             this.captionSpan.innerHTML = i18n.get(this._caption) || '';
     }
