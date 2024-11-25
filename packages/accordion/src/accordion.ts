@@ -3,6 +3,7 @@ import {
   Container,
   customElements,
   ControlElement,
+  I18n,
 } from "@ijstech/base";
 import { VStack } from '@ijstech/layout';
 import { Label } from '@ijstech/label';
@@ -74,6 +75,12 @@ export class Accordion extends Control {
     super(parent, options);
     this.onItemClick = this.onItemClick.bind(this);
     this.onRemoveClick = this.onRemoveClick.bind(this);
+  }
+
+  updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
+    const items = Array.from(this.accordionItemMapper).map(item => item[1]);
+    items.forEach(item => item.updateLocale(i18n));
   }
 
   get isFlush() {
