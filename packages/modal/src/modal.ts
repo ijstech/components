@@ -240,10 +240,12 @@ export class Modal extends Container {
     }
 
     private getTranslatedText(value: string): string {
+        const parent: any = this._parent || this.linkTo || this.parentElement;
         if (!value) return '';
         if (value?.startsWith('$')) {
             const translated =
-                this.parentModule?.i18n?.get(value) ||
+                parent?.parentModule?.i18n?.get(value) ||
+                (this.body as any)?.i18n?.get(value) ||
                 application.i18n?.get(value) ||
                 ''
             return translated;
@@ -319,7 +321,7 @@ export class Modal extends Container {
     }
 
     get body(): Control {
-        return this.modalDiv.children[0] as Control;
+        return this.bodyDiv?.children?.[0] as Control;
     }
     set body(value: Control) {
         if (value instanceof Control) {
@@ -843,6 +845,12 @@ export class Modal extends Container {
     protected _handleOnShow(event: Event) {
         if (this.popupPlacement && this.enabled)
             this.positionAt(this.popupPlacement)
+        const parent: any = this._parent || this.linkTo || this.parentElement;
+        const i18nData = parent?.parentModule?.i18n || (this.body as any)?.i18n || application.i18n;
+        i18nData && this.updateLocale(i18nData);
+        if (i18nData &&this.body) {
+            this.body.updateLocale(i18nData);
+        }
         if (this.enabled && this._onOpen) {
             event.preventDefault();
             this._onOpen(this)

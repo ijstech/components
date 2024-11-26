@@ -16194,8 +16194,8 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
@@ -16232,7 +16232,6 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
         }
         set checked(value) {
             this._checked = value;
-            console.log('checkbox change', value, this._checked);
             this.addClass(value, 'is-checked');
             this.inputElm && (this.inputElm.checked = value);
         }
@@ -17046,7 +17045,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 const itemElm = this.createElement('div');
                 itemElm.classList.add('selection-item');
                 const content = this.createElement('span', itemElm);
-                content.textContent = item.label;
+                content.textContent = this.getTranslatedText(item.label || '');
                 itemElm.appendChild(content);
                 const closeButton = this.createElement('span', itemElm);
                 closeButton.classList.add("close-icon");
@@ -17068,7 +17067,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 this._selectedItems = Array.isArray(value) ? value : [value];
                 this._value = this._selectedItem?.value;
                 if (this.mode === 'single') {
-                    this.inputElm.value = this._selectedItem?.label || '';
+                    this.inputElm.value = this.getTranslatedText(this._selectedItem?.label || '');
                 }
                 else {
                     this.renderSelectedItems();
@@ -17092,8 +17091,8 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             this.labelElm.style.display = !value ? 'none' : '';
             if (!this.labelElm)
                 return;
@@ -17271,7 +17270,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             this.searchStr = "";
             if (this.isMulti)
                 return;
-            const label = this.selectedItem?.label;
+            const label = this.getTranslatedText(this.selectedItem?.label || '');
             if (label && this.inputElm)
                 this.inputElm.value = label;
         }
@@ -17309,7 +17308,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             const ulElm = this.createElement("ul", this.listElm);
             let creatingNew = false;
             for (let item of this.items) {
-                const label = item.label || '';
+                const label = this.getTranslatedText(item.label || '');
                 const isMatchedPart = this.searchStr && label.toLowerCase().includes(this.searchStr.toLowerCase());
                 const isMatchedDone = this.searchStr && label.toLowerCase() === this.searchStr.toLowerCase();
                 if (item.isNew && isMatchedPart && !isMatchedDone)
@@ -17744,6 +17743,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 height: 25,
                 width: 100
             });
+            this._caption = '';
             this._isInternalUpdate = false;
             this._onDatePickerChange = (event) => {
                 const pickerValue = this.datepickerElm.value;
@@ -17829,8 +17829,8 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             this.labelElm.style.display = !value ? 'none' : '';
             if (!this.labelElm)
                 return;
@@ -18342,8 +18342,8 @@ define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             this.labelElm.style.display = !value ? 'none' : '';
             if (!this.labelElm)
                 return;
@@ -19275,10 +19275,12 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
                 titleElm.innerHTML = i18n.get(this._title) || '';
         }
         getTranslatedText(value) {
+            const parent = this._parent || this.linkTo || this.parentElement;
             if (!value)
                 return '';
             if (value?.startsWith('$')) {
-                const translated = this.parentModule?.i18n?.get(value) ||
+                const translated = parent?.parentModule?.i18n?.get(value) ||
+                    this.body?.i18n?.get(value) ||
                     application_1.application.i18n?.get(value) ||
                     '';
                 return translated;
@@ -19346,7 +19348,7 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
         }
         get body() {
-            return this.modalDiv.children[0];
+            return this.bodyDiv?.children?.[0];
         }
         set body(value) {
             if (value instanceof base_2.Control) {
@@ -19857,6 +19859,12 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
         _handleOnShow(event) {
             if (this.popupPlacement && this.enabled)
                 this.positionAt(this.popupPlacement);
+            const parent = this._parent || this.linkTo || this.parentElement;
+            const i18nData = parent?.parentModule?.i18n || this.body?.i18n || application_1.application.i18n;
+            i18nData && this.updateLocale(i18nData);
+            if (i18nData && this.body) {
+                this.body.updateLocale(i18nData);
+            }
             if (this.enabled && this._onOpen) {
                 event.preventDefault();
                 this._onOpen(this);
@@ -21722,8 +21730,8 @@ define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
@@ -22354,8 +22362,8 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             if (this._inputControl) {
                 this._inputControl.caption = this.caption;
             }
@@ -23643,8 +23651,8 @@ define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             if (!this.captionSpan)
                 return;
             this.captionSpan.innerHTML = this.caption;
@@ -23881,8 +23889,8 @@ define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ij
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             if (!this.captionElm)
                 return;
             this.captionElm.innerHTML = this.caption;
@@ -24870,7 +24878,7 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
+                value = String(value || '');
             this._caption = value;
             this._labelElm.style.display = !value ? 'none' : '';
             if (!this._labelElm)
@@ -25050,7 +25058,7 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
+                value = String(value || '');
             this._caption = value;
             if (this.lblCaption)
                 this.lblCaption.caption = this.caption || (this.draggable ? 'Drag a file or click to upload' : 'Click to upload');
@@ -26430,7 +26438,6 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
     }
     function bindObservable(elm, prop) {
         return function (changes) {
-            console.log(changes, elm, prop);
             const changeData = changes[0];
             const type = changeData.type;
             if (Array.isArray(changeData.object)) {
@@ -26996,7 +27003,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         }
         set content(value) {
             if (typeof value !== 'string')
-                value = String(value);
+                value = String(value || '');
             this._content = value;
             if (this.tooltipElm) {
                 this.tooltipElm.innerHTML = this.content;
@@ -27656,8 +27663,8 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             if (!this.captionElm)
                 return;
             this.captionElm.innerHTML = this.caption;
@@ -36988,7 +36995,7 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
+                value = String(value || '');
             this._caption = value;
             if (!this._captionElm)
                 return;
@@ -38503,8 +38510,8 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
         }
         set caption(value) {
             if (typeof value !== 'string')
-                value = String(value);
-            this._caption = value || '';
+                value = String(value || '');
+            this._caption = value;
             this.columnElm && (this.columnElm.innerHTML = this.caption);
         }
         updateLocale(i18n) {
@@ -46386,7 +46393,9 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
             return name;
         }
         set name(value) {
-            this._name = value || '';
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._name = value;
             if (this.lbTitle) {
                 this.lbTitle.caption = this.name;
             }

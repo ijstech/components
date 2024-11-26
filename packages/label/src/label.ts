@@ -90,7 +90,7 @@ export class Label extends Text {
         if (this.captionSpan && this._caption?.startsWith('$'))
             this.captionSpan.innerHTML = i18n.get(this._caption) || '';
     }
-    get caption(): string{
+    get caption(): string {
         const value = this._caption || '';
         if (value?.startsWith('$')) {
             const translated =
@@ -102,8 +102,8 @@ export class Label extends Text {
         return value;
     }
     set caption(value: string) {
-        if (typeof value !== 'string') value = String(value);
-        this._caption = value || '';
+        if (typeof value !== 'string') value = String(value || '');
+        this._caption = value;
         if (!this.captionSpan) return;
         this.captionSpan.innerHTML = this.caption;
     }

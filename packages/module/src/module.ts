@@ -83,7 +83,6 @@ declare global {
 }
 function bindObservable(elm: any, prop: string): any{
     return function(changes: any){
-        console.log(changes, elm, prop)
         const changeData = changes[0];
         const type = changeData.type;
         if (Array.isArray(changeData.object)) {

@@ -234,7 +234,7 @@ export class ComboBox extends Control {
       const itemElm = this.createElement('div');
       itemElm.classList.add('selection-item');
       const content = this.createElement('span', itemElm);
-      content.textContent = item.label;
+      content.textContent = this.getTranslatedText(item.label || '');
       itemElm.appendChild(content);
       const closeButton = this.createElement('span', itemElm);
       closeButton.classList.add("close-icon");
@@ -259,7 +259,7 @@ export class ComboBox extends Control {
       this._value = this._selectedItem?.value;
 
       if (this.mode === 'single') {
-        this.inputElm.value = this._selectedItem?.label || '';
+        this.inputElm.value = this.getTranslatedText(this._selectedItem?.label || '');
       } else {
         this.renderSelectedItems();
       }
@@ -281,8 +281,8 @@ export class ComboBox extends Control {
     return this.getTranslatedText(this._caption || '');
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
-    this._caption = value || '';
+    if (typeof value !== 'string') value = String(value || '');
+    this._caption = value;
     this.labelElm.style.display = !value ? 'none' : '';
     if (!this.labelElm) return;
     this.labelElm.innerHTML = this.caption;
@@ -472,7 +472,7 @@ export class ComboBox extends Control {
     this.listElm.classList.remove("show");
     this.searchStr = "";
     if (this.isMulti) return;
-    const label = this.selectedItem?.label;
+    const label = this.getTranslatedText(this.selectedItem?.label || '');
     if (label && this.inputElm)
       this.inputElm.value = label;
   }
@@ -511,7 +511,7 @@ export class ComboBox extends Control {
     const ulElm = this.createElement("ul", this.listElm);
     let creatingNew = false;
     for (let item of this.items) {
-      const label = item.label || '';
+      const label = this.getTranslatedText(item.label || '');
       const isMatchedPart = this.searchStr && label.toLowerCase().includes(this.searchStr.toLowerCase());
       const isMatchedDone = this.searchStr && label.toLowerCase() === this.searchStr.toLowerCase();
       if (item.isNew && isMatchedPart && !isMatchedDone) creatingNew = true;

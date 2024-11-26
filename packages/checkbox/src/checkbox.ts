@@ -119,8 +119,8 @@ export class Checkbox extends Control {
         return value;
     }
     set caption(value: string) {
-        if (typeof value !== 'string') value = String(value);
-        this._caption = value || '';
+        if (typeof value !== 'string') value = String(value || '');
+        this._caption = value;
         this.captionSpanElm.style.display = !value ? 'none' : '';
         if (!this.captionSpanElm) return;
         this.captionSpanElm.innerHTML = this.caption;
@@ -155,7 +155,6 @@ export class Checkbox extends Control {
     }
     set checked(value: boolean) {
         this._checked = value;
-        console.log('checkbox change', value, this._checked)
         this.addClass(value, 'is-checked');
         this.inputElm && (this.inputElm.checked = value);
     }

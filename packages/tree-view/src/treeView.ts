@@ -464,7 +464,7 @@ export class TreeNode extends Control {
     return value;
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
+    if (typeof value !== 'string') value = String(value || '');
     this._caption = value
     if (!this._captionElm) return;
     this._captionElm.innerHTML = this.caption;

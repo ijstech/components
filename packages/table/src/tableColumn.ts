@@ -101,8 +101,8 @@ export class TableColumn extends Control {
     return value;
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
-    this._caption = value || '';
+    if (typeof value !== 'string') value = String(value || '');
+    this._caption = value;
     this.columnElm && (this.columnElm.innerHTML = this.caption);
   }
 

@@ -170,7 +170,7 @@ export class Tooltip extends Control implements ITooltipImpl {
     return value;
   }
   set content(value: string) {
-    if (typeof value !== 'string') value = String(value);
+    if (typeof value !== 'string') value = String(value || '');
     this._content = value;
     if (this.tooltipElm){
       this.tooltipElm.innerHTML = this.content;
