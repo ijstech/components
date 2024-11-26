@@ -118,8 +118,8 @@ export class Range extends Control {
     return value;
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
-    this._caption = value || '';
+    if (typeof value !== 'string') value = String(value || '');
+    this._caption = value;
     this.labelElm.style.display = !value ? 'none' : '';
     if (!this.labelElm) return;
     this.labelElm.textContent = this.caption;

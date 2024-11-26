@@ -75,7 +75,7 @@ export class Datepicker extends Control {
     private _value?: Moment;
     @observable('valueFormat')
     private _valueFormat: string;
-    private _caption: string;
+    private _caption: string = '';
     private _captionWidth: number | string;
     private _iconWidth: number;
     private _dateTimeFormat: string;
@@ -117,8 +117,8 @@ export class Datepicker extends Control {
         return this.getTranslatedText(this._caption || '');
     }
     set caption(value: string) {
-        if (typeof value !== 'string') value = String(value);
-        this._caption = value || '';
+        if (typeof value !== 'string') value = String(value || '');
+        this._caption = value;
         this.labelElm.style.display = !value ? 'none' : '';
         if (!this.labelElm) return;
         this.labelElm.textContent = this.caption;

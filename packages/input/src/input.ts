@@ -251,8 +251,8 @@ export class Input extends Control {
         return this.getTranslatedText(this._caption || '');
     }
     set caption(value: string){
-        if (typeof value !== 'string') value = String(value);
-        this._caption = value || '';
+        if (typeof value !== 'string') value = String(value || '');
+        this._caption = value;
         if (this._inputControl){
             this._inputControl.caption = this.caption;
         } else {

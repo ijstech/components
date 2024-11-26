@@ -94,7 +94,8 @@ export class AccordionItem extends Container {
     return name;
   }
   set name(value: string) {
-    this._name = value || '';
+    if (typeof value !== 'string') value = String(value || '');
+    this._name = value;
     if (this.lbTitle) {
       this.lbTitle.caption = this.name;
     }

@@ -103,7 +103,7 @@ class UploadDrag extends Control {
     return value;
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
+    if (typeof value !== 'string') value = String(value || '');
     this._caption = value;
     this._labelElm.style.display = !value ? 'none' : '';
     if (!this._labelElm) return;
@@ -382,7 +382,7 @@ export class Upload extends Control {
     return this._caption;
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
+    if (typeof value !== 'string') value = String(value || '');
     this._caption = value;
     if (this.lblCaption)
       this.lblCaption.caption = this.caption || (this.draggable ? 'Drag a file or click to upload' : 'Click to upload')

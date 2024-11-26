@@ -135,8 +135,8 @@ export class ColorPicker extends Control {
     return value;
   }
   set caption(value: string) {
-    if (typeof value !== 'string') value = String(value);
-    this._caption = value || '';
+    if (typeof value !== 'string') value = String(value || '');
+    this._caption = value;
     this.captionSpanElm.style.display = !value ? 'none' : '';
     if (!this.captionSpanElm) return;
     this.captionSpanElm.innerHTML = this.caption;
