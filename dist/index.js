@@ -16896,7 +16896,7 @@ define("@ijstech/combo-box/style/combo-box.css.ts", ["require", "exports", "@ijs
                     '.selection-item': {
                         border: `1px solid ${Theme.divider}`,
                         backgroundColor: 'rgba(0, 0, 0, 0.12)',
-                        color: '#000',
+                        color: Theme.combobox.fontColor,
                         borderRadius: 3,
                         display: 'inline-flex',
                         alignItems: 'center',
