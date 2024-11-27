@@ -103,6 +103,7 @@ export class Checkbox extends Control {
     }
 
     updateLocale(i18n: I18n): void {
+        super.updateLocale(i18n);
         if (this.captionSpanElm && this._caption?.startsWith('$'))
             this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
     }

@@ -271,6 +271,7 @@ export class ComboBox extends Control {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this.labelElm && this._caption?.startsWith('$'))
       this.labelElm.innerHTML = i18n.get(this._caption) || '';
     if (this.inputElm && this._placeholder?.startsWith('$'))

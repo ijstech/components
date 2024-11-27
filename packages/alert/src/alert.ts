@@ -147,11 +147,12 @@ export class Alert extends Control {
   }
 
   updateLocale(i18n: I18n): void {
-      if (this.titleElm && this._title?.startsWith('$'))
-        this.titleElm.innerHTML = i18n.get(this._title) || '';
-      if (this.contentElm && this._content?.startsWith('$'))
-        this.contentElm.innerHTML = i18n.get(this._content) || '';
-      if (this.linkElm) this.linkElm.updateLocale(i18n);
+    super.updateLocale(i18n);
+    if (this.titleElm && this._title?.startsWith('$'))
+      this.titleElm.innerHTML = i18n.get(this._title) || '';
+    if (this.contentElm && this._content?.startsWith('$'))
+      this.contentElm.innerHTML = i18n.get(this._content) || '';
+    if (this.linkElm) this.linkElm.updateLocale(i18n);
   }
 
   private getTranslatedText(value: string): string {

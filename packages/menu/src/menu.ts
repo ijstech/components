@@ -90,6 +90,7 @@ export class Menu extends Control {
   private _selectedItem: MenuItem | undefined;
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     for (let item of this._items) {
       item.updateLocale(i18n);
     }
@@ -524,6 +525,7 @@ export class MenuItem extends Control {
   };
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this.captionElm && this._caption?.startsWith('$'))
       this.captionElm.innerHTML = i18n.get(this._caption) || '';
   }

@@ -210,6 +210,7 @@ export class TreeView extends Control {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     for (let node of this._items) {
       node.updateLocale(i18n);
     }
@@ -471,6 +472,7 @@ export class TreeNode extends Control {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this._captionElm && this._caption?.startsWith('$'))
       this._captionElm.innerHTML = i18n.get(this._caption) || '';
   }

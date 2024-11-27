@@ -1630,7 +1630,16 @@ export class Container extends Control {
             this.refreshControls();
     };
     updateLocale(i18n: I18n): void{
-        for (let i = 0; i < this._controls.length; i++)
-            this._controls[i].updateLocale(i18n);
+        if (this._controls?.length) {
+            for (let i = 0; i < this._controls.length; i++)
+                this._controls[i].updateLocale(i18n);
+        } else {
+            const childNodes = this.childNodes;
+            for (const childNode of childNodes) {
+                if (childNode instanceof Control) {
+                    childNode.updateLocale(i18n);
+                }
+            }
+        }
     };
 };

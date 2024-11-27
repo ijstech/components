@@ -2,7 +2,8 @@ import {
   Control,
   Container,
   customElements,
-  IFont
+  IFont,
+  I18n
 } from "@ijstech/base";
 import { VStack, HStack, Panel } from '@ijstech/layout';
 import { Label } from '@ijstech/label';
@@ -82,11 +83,17 @@ export class AccordionItem extends Container {
     return self;
   }
 
+  updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
+    if (this.lbTitle && this._name?.startsWith('$'))
+      this.lbTitle.caption = i18n.get(this._name) || '';
+  }
+
   get name() {
     const name = this._name || '';
     if (name?.startsWith('$')) {
       const translated =
-        this.parent?.parentModule?.i18n?.get(name) ||
+        this.parentModule?.i18n?.get(name) ||
         application.i18n?.get(name) ||
         '';
       return translated;
@@ -209,6 +216,7 @@ export class AccordionItem extends Container {
   add(item: Control) {
     item.parent = this.pnlContent;
     this.pnlContent.appendChild(item);
+    this._controls.push(item);
     return item;
   }
 

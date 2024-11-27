@@ -107,6 +107,7 @@ export class TableColumn extends Control {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this.columnElm && this._caption?.startsWith('$'))
       this.columnElm.innerHTML = i18n.get(this._caption) || '';
   }

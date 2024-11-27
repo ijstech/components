@@ -449,6 +449,7 @@ export class Tab extends Container {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this.captionElm && this._caption?.startsWith('$'))
       this.captionElm.innerHTML = i18n.get(this._caption) || '';
   }

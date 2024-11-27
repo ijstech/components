@@ -234,6 +234,7 @@ export class Modal extends Container {
     }
 
     updateLocale(i18n: I18n): void {
+        super.updateLocale(i18n);
         const titleElm = this.titleSpan.querySelector('span');
         if (titleElm && this._title?.startsWith('$'))
             titleElm.innerHTML = i18n.get(this._title) || '';
@@ -848,7 +849,7 @@ export class Modal extends Container {
         const parent: any = this._parent || this.linkTo || this.parentElement;
         const i18nData = parent?.parentModule?.i18n || (this.body as any)?.i18n || application.i18n;
         i18nData && this.updateLocale(i18nData);
-        if (i18nData &&this.body) {
+        if (i18nData && this.body) {
             this.body.updateLocale(i18nData);
         }
         if (this.enabled && this._onOpen) {

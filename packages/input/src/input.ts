@@ -234,6 +234,7 @@ export class Input extends Control {
     }
 
     updateLocale(i18n: I18n): void {
+        super.updateLocale(i18n);
         if (this._caption?.startsWith('$')) {
             if (this._inputControl)
                 this._inputControl.caption = i18n.get(this._caption) || '';

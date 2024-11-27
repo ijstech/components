@@ -87,6 +87,7 @@ class UploadDrag extends Control {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this._labelElm && this._caption?.startsWith('$'))
       this._labelElm.textContent = i18n.get(this._caption) || '';
   }
