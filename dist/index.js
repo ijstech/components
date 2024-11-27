@@ -8784,7 +8784,7 @@ define("@ijstech/types", ["require", "exports", "@ijstech/types/jsonSchema.ts", 
     ;
     ;
     function isModule(value) {
-        return value.isModule = true;
+        return value.isModule === true;
     }
     exports.isModule = isModule;
     ;
@@ -13509,8 +13509,18 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
         }
         ;
         updateLocale(i18n) {
-            for (let i = 0; i < this._controls.length; i++)
-                this._controls[i].updateLocale(i18n);
+            if (this._controls?.length) {
+                for (let i = 0; i < this._controls.length; i++)
+                    this._controls[i].updateLocale(i18n);
+            }
+            else {
+                const childNodes = this.childNodes;
+                for (const childNode of childNodes) {
+                    if (childNode instanceof Control) {
+                        childNode.updateLocale(i18n);
+                    }
+                }
+            }
         }
         ;
     }
@@ -16179,6 +16189,7 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
             });
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionSpanElm && this._caption?.startsWith('$'))
                 this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -17081,6 +17092,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             }
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.labelElm && this._caption?.startsWith('$'))
                 this.labelElm.innerHTML = i18n.get(this._caption) || '';
             if (this.inputElm && this._placeholder?.startsWith('$'))
@@ -17819,6 +17831,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             return super._handleClick(event, true);
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.labelElm && this._caption?.startsWith('$'))
                 this.labelElm.textContent = i18n.get(this._caption) || '';
             if (this.inputElm && this._placeholder?.startsWith('$'))
@@ -18327,6 +18340,7 @@ define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijst
             });
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.labelElm && this._caption?.startsWith('$'))
                 this.labelElm.textContent = i18n.get(this._caption) || '';
         }
@@ -18649,6 +18663,7 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             this.inputElm.value = value;
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionSpanElm && this._caption?.startsWith('$'))
                 this.captionSpanElm.textContent = i18n.get(this._caption) || '';
         }
@@ -19270,6 +19285,7 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
             titleElm && (titleElm.innerHTML = this.title);
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             const titleElm = this.titleSpan.querySelector('span');
             if (titleElm && this._title?.startsWith('$'))
                 titleElm.innerHTML = i18n.get(this._title) || '';
@@ -21715,6 +21731,7 @@ define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijst
             this.updateIconPointer();
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionSpanElm && this._caption?.startsWith('$'))
                 this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -22345,6 +22362,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
             return '';
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this._caption?.startsWith('$')) {
                 if (this._inputControl)
                     this._inputControl.caption = i18n.get(this._caption) || '';
@@ -24863,6 +24881,7 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
             this.counter = 0;
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this._labelElm && this._caption?.startsWith('$'))
                 this._labelElm.textContent = i18n.get(this._caption) || '';
         }
@@ -26994,7 +27013,8 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         get content() {
             let value = this._content || '';
             if (value?.startsWith('$')) {
-                const translated = this._parentI18n?.get(value) ||
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    this._parentI18n?.get(value) ||
                     application_1.application.i18n?.get(value) ||
                     '';
                 return translated;
@@ -27648,6 +27668,7 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
                 this._contentElm.removeChild(control);
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionElm && this._caption?.startsWith('$'))
                 this.captionElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -29735,6 +29756,7 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
             this._content = value;
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.titleElm && this._title?.startsWith('$'))
                 this.titleElm.innerHTML = i18n.get(this._title) || '';
             if (this.contentElm && this._content?.startsWith('$'))
@@ -35531,6 +35553,7 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
             this._oldWidth = 0;
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             for (let item of this._items) {
                 item.updateLocale(i18n);
             }
@@ -35909,6 +35932,7 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
         }
         ;
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.captionElm && this._caption?.startsWith('$'))
                 this.captionElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -36711,6 +36735,7 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
             }
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             for (let node of this._items) {
                 node.updateLocale(i18n);
             }
@@ -37002,6 +37027,7 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
             this._captionElm.innerHTML = this.caption;
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this._captionElm && this._caption?.startsWith('$'))
                 this._captionElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -38515,6 +38541,7 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
             this.columnElm && (this.columnElm.innerHTML = this.caption);
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.columnElm && this._caption?.startsWith('$'))
                 this.columnElm.innerHTML = i18n.get(this._caption) || '';
         }
@@ -38967,6 +38994,7 @@ define("@ijstech/table/table.ts", ["require", "exports", "@ijstech/base", "@ijst
             });
         }
         updateLocale(i18n) {
+            super.updateLocale(i18n);
             if (this.tHeadElm) {
                 const columns = this.tHeadElm.querySelectorAll('i-table-column');
                 for (const column of columns) {
@@ -46382,10 +46410,15 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
             await self.ready();
             return self;
         }
+        updateLocale(i18n) {
+            super.updateLocale(i18n);
+            if (this.lbTitle && this._name?.startsWith('$'))
+                this.lbTitle.caption = i18n.get(this._name) || '';
+        }
         get name() {
             const name = this._name || '';
             if (name?.startsWith('$')) {
-                const translated = this.parent?.parentModule?.i18n?.get(name) ||
+                const translated = this.parentModule?.i18n?.get(name) ||
                     application_1.application.i18n?.get(name) ||
                     '';
                 return translated;
@@ -46502,6 +46535,7 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
         add(item) {
             item.parent = this.pnlContent;
             this.pnlContent.appendChild(item);
+            this._controls.push(item);
             return item;
         }
         async init() {

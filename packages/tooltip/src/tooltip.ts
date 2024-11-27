@@ -162,7 +162,8 @@ export class Tooltip extends Control implements ITooltipImpl {
     let value = this._content || '';
     if (value?.startsWith('$')) {
       const translated =
-      this._parentI18n?.get(value) ||
+        this.parentModule?.i18n?.get(value) ||
+        this._parentI18n?.get(value) ||
         application.i18n?.get(value) ||
         ''
       return translated;

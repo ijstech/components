@@ -26048,7 +26048,7 @@ declare module "@ijstech/accordion/style/accordion.css.ts" {
 }
 /// <amd-module name="@ijstech/accordion/accordion-item.ts" />
 declare module "@ijstech/accordion/accordion-item.ts" {
-    import { Control, Container, IFont } from "@ijstech/base";
+    import { Control, Container, IFont, I18n } from "@ijstech/base";
     import { IAccordionItem } from "@ijstech/accordion/interface.ts";
     type onSelectedFn = (target: AccordionItem) => void;
     export interface AccordionItemElement extends IAccordionItem {
@@ -26076,6 +26076,7 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         onRemoved: onSelectedFn;
         constructor(parent?: Container, options?: any);
         static create(options?: AccordionItemElement, parent?: Container): Promise<AccordionItem>;
+        updateLocale(i18n: I18n): void;
         get name(): string;
         set name(value: string);
         get defaultExpanded(): boolean;

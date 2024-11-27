@@ -345,6 +345,7 @@ export class Table extends Control {
   }
 
   updateLocale(i18n: I18n): void {
+    super.updateLocale(i18n);
     if (this.tHeadElm) {
       const columns = this.tHeadElm.querySelectorAll('i-table-column');
       for (const column of columns) {

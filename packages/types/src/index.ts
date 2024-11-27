@@ -14,7 +14,7 @@ export interface IModule extends HTMLElement {
     updateLocale(): void;
 };
 export function isModule(value: IModule): value is IModule {
-    return (value as IModule).isModule = true;
+    return (value as IModule).isModule === true;
 };
 export enum GroupType {
     'BASIC' = 'Basic',

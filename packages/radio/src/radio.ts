@@ -48,6 +48,7 @@ export class Radio extends Control {
         this.inputElm.value = value;
     }
     updateLocale(i18n: I18n): void {
+        super.updateLocale(i18n);
         if (this.captionSpanElm && this._caption?.startsWith('$'))
             this.captionSpanElm.textContent = i18n.get(this._caption) || '';
     }
