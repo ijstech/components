@@ -37,16 +37,15 @@ Styles.cssRule("i-switch", {
       bottom: 0,
       left: 0,
       zIndex: 1,
-      width: '100%',
+      width: '50%',
       height: '100%',
       color: "#fff",
       transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, justify-content 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
 
       $nest: {
         "&.checked": {
-          // color: "#1976d2",
-          // transform: "translateX(26px)",
-          justifyContent: 'flex-end',
+          transform: "translateX(100%)",
+          // justifyContent: 'flex-end',
 
           $nest: {
             ".thumb:before": {

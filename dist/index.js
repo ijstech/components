@@ -16682,7 +16682,7 @@ define("@ijstech/icon/icon.ts", ["require", "exports", "@ijstech/base", "@ijstec
             return this._image;
         }
         set image(image) {
-            if (this._image)
+            if (this._image && this.contains(this._image))
                 this.removeChild(this._image);
             this._image = image;
             if (this._image)
@@ -23060,15 +23060,14 @@ define("@ijstech/switch/style/switch.css.ts", ["require", "exports", "@ijstech/s
                 bottom: 0,
                 left: 0,
                 zIndex: 1,
-                width: '100%',
+                width: '50%',
                 height: '100%',
                 color: "#fff",
                 transition: "left 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, justify-content 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms",
                 $nest: {
                     "&.checked": {
-                        // color: "#1976d2",
-                        // transform: "translateX(26px)",
-                        justifyContent: 'flex-end',
+                        transform: "translateX(100%)",
+                        // justifyContent: 'flex-end',
                         $nest: {
                             ".thumb:before": {
                                 backgroundImage: "var(--checked-background)",

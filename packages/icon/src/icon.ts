@@ -145,7 +145,7 @@ export class Icon extends Control {
         return this._image;
     }
     set image(image: Image) {
-        if (this._image)
+        if (this._image && this.contains(this._image))
             this.removeChild(this._image)
         this._image = image;
         if (this._image)
