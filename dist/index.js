@@ -14493,7 +14493,7 @@ define("@ijstech/moment", ["require", "exports", "@ijstech/base"], function (req
     exports.moment = _moment;
     base_1.RequireJS.config({
         paths: {
-            '@moment': `${base_1.LibPath}lib/moment/2.29.1/moment.js`
+            '@moment': `${base_1.LibPath}lib/moment/2.29.1/min/moment-with-locales.min.js`,
         }
     });
     base_1.RequireJS.require(['@moment'], (moment) => {
@@ -17373,7 +17373,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                         this.add(this.newItem, ulElm);
                 }
                 else if (!ulElm.innerHTML)
-                    ulElm.innerHTML = '<li style="text-align:center;">No data</li>';
+                    ulElm.innerHTML = `<li style="text-align:center;">${application_1.application.i18n.get('no_data')}</li>`;
             }
         }
         add(item, parent) {
@@ -38727,7 +38727,7 @@ define("@ijstech/table/tableRow.ts", ["require", "exports", "@ijstech/table/styl
     }
     exports.TableRow = TableRow;
 });
-define("@ijstech/table/table.ts", ["require", "exports", "@ijstech/base", "@ijstech/table/tableColumn.ts", "@ijstech/pagination", "@ijstech/table/utils.ts", "@ijstech/table/style/table.css.ts", "@ijstech/table/tableRow.ts", "@ijstech/table/tableCell.ts"], function (require, exports, base_4, tableColumn_1, pagination_1, utils_1, table_css_1, tableRow_1, tableCell_1) {
+define("@ijstech/table/table.ts", ["require", "exports", "@ijstech/base", "@ijstech/table/tableColumn.ts", "@ijstech/pagination", "@ijstech/table/utils.ts", "@ijstech/table/style/table.css.ts", "@ijstech/table/tableRow.ts", "@ijstech/table/tableCell.ts", "@ijstech/application"], function (require, exports, base_4, tableColumn_1, pagination_1, utils_1, table_css_1, tableRow_1, tableCell_1, application_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Table = void 0;
@@ -39115,7 +39115,7 @@ define("@ijstech/table/table.ts", ["require", "exports", "@ijstech/base", "@ijst
                 }
                 else {
                     const label = this.createElement('span');
-                    label.textContent = 'No data';
+                    label.textContent = application_2.default.i18n.get('no_data');
                     tdElm.appendChild(label);
                 }
             }

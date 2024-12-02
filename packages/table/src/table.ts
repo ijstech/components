@@ -6,6 +6,7 @@ import { getTableMediaQueriesStyleClass, tableStyle, getCustomStylesClass } from
 import { TableRow } from './tableRow';
 import { Icon } from '@ijstech/icon';
 import { TableCell } from './tableCell';
+import application from '@ijstech/application';
 
 type cellClickCallback = (target: Table, rowIndex: number, columnIdx: number, record: any) => void
 type emptyCallback = (target: Table) => void
@@ -476,7 +477,7 @@ export class Table extends Control {
         this.onRenderEmptyTable(this);
       } else {
         const label = this.createElement('span');
-        label.textContent = 'No data';
+        label.textContent = application.i18n.get('no_data');
         tdElm.appendChild(label);
       }
     }

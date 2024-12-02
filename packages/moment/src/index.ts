@@ -3,7 +3,7 @@ import {moment} from './moment'
 let _moment: typeof moment;
 RequireJS.config({
   paths: {
-    '@moment': `${LibPath}lib/moment/2.29.1/moment.js`
+    '@moment': `${LibPath}lib/moment/2.29.1/min/moment-with-locales.min.js`,
   }
 });
 RequireJS.require(['@moment'], (moment: any) => {

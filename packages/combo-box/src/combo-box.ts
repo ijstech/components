@@ -561,7 +561,7 @@ export class ComboBox extends Control {
         if (!liElm) this.add(this.newItem, ulElm);
       }
       else if (!ulElm.innerHTML)
-        ulElm.innerHTML = '<li style="text-align:center;">No data</li>';
+        ulElm.innerHTML = `<li style="text-align:center;">${application.i18n.get('no_data')}</li>`;
     }
   }
 
