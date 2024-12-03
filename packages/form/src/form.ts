@@ -99,13 +99,13 @@ export interface IFormOptions {
 const DEFAULT_OPTIONS = {
     columnsPerRow: 1,
     confirmButtonOptions: {
-        caption: 'Confirm',
+        caption: '$confirm',
         backgroundColor: theme.colors.primary.main,
         fontColor: theme.colors.primary.contrastText,
         hide: false
     },
     clearButtonOptions: {
-        caption: 'Clear',
+        caption: '$clear',
         backgroundColor: theme.colors.primary.main,
         fontColor: theme.colors.primary.contrastText,
         hide: true
@@ -661,7 +661,8 @@ export class Form extends Control {
             const btnClear = new Button(pnlButton, {
                 caption: this._formOptions.clearButtonOptions.caption || DEFAULT_OPTIONS.clearButtonOptions.caption,
                 font: {
-                    color: this._formOptions.clearButtonOptions.fontColor || DEFAULT_OPTIONS.clearButtonOptions.fontColor
+                    color: this._formOptions.clearButtonOptions.fontColor || DEFAULT_OPTIONS.clearButtonOptions.fontColor,
+                    transform: 'capitalize'
                 },
                 background: {
                     color: this._formOptions.clearButtonOptions.backgroundColor || DEFAULT_OPTIONS.clearButtonOptions.backgroundColor
@@ -682,7 +683,8 @@ export class Form extends Control {
             const btnConfirm = new Button(pnlButton, {
                 caption: this._formOptions.confirmButtonOptions.caption || DEFAULT_OPTIONS.confirmButtonOptions.caption,
                 font: {
-                    color: this._formOptions.confirmButtonOptions.fontColor || DEFAULT_OPTIONS.confirmButtonOptions.fontColor
+                    color: this._formOptions.confirmButtonOptions.fontColor || DEFAULT_OPTIONS.confirmButtonOptions.fontColor,
+                    transform: 'capitalize'
                 },
                 background: {
                     color: this._formOptions.confirmButtonOptions.backgroundColor || DEFAULT_OPTIONS.confirmButtonOptions.backgroundColor
@@ -1813,7 +1815,7 @@ export class Form extends Control {
                 font: { color: '#ff0000' }
             });
         }
-        const btnAdd = new Button(header, { caption: 'Add' });
+        const btnAdd = new Button(header, { caption: '$add', font: { transform: 'capitalize' } });
         btnAdd.setAttribute('action', 'add');
         btnAdd.prepend(new Icon(undefined, {
             name: 'plus',

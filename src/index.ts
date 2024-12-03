@@ -29,7 +29,7 @@ export {Datepicker} from '@ijstech/datepicker';
 // export {Divider} from '@ijstech/divider';
 // export {Clipboard} from '@ijstech/clipboard';
 // export {Collapse, CollapseSummary, CollapseDetails} from '@ijstech/collapse';
-export {Upload, UploadModal} from '@ijstech/upload';
+export {Upload} from '@ijstech/upload';
 export {Tabs, Tab} from '@ijstech/tab';
 export {Iframe} from '@ijstech/iframe';
 export {Range} from '@ijstech/range';

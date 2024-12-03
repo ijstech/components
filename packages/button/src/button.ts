@@ -45,8 +45,7 @@ const defaultIcon = {
         type: 'object',
         properties: {
             caption: {
-                type: 'string',
-                title: 'Caption'
+                type: 'string'
             },
             icon: {
                 type: 'object',

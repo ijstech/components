@@ -23216,135 +23216,6 @@ declare module "@ijstech/label/label.ts" {
 declare module "@ijstech/label" {
     export { Label, LabelElement } from "@ijstech/label/label.ts";
 }
-/// <amd-module name="@ijstech/button/style/button.css.ts" />
-declare module "@ijstech/button/style/button.css.ts" { }
-/// <amd-module name="@ijstech/button/button.ts" />
-declare module "@ijstech/button/button.ts" {
-    import { Control, Container, ControlElement, I18n } from '@ijstech/base';
-    import { Icon, IconElement } from '@ijstech/icon';
-    import "@ijstech/button/style/button.css.ts";
-    export interface ButtonElement extends ControlElement {
-        caption?: string;
-        icon?: IconElement;
-        rightIcon?: IconElement;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-button']: ButtonElement;
-            }
-        }
-    }
-    export class Button extends Control {
-        private captionElm;
-        private _icon;
-        private _rightIcon;
-        private _caption;
-        static create(options?: ButtonElement, parent?: Container): Promise<Button>;
-        constructor(parent?: Control, options?: ButtonElement);
-        updateLocale(i18n: I18n): void;
-        get caption(): string;
-        set caption(value: string);
-        get icon(): Icon;
-        set icon(value: Icon);
-        get rightIcon(): Icon;
-        set rightIcon(value: Icon);
-        get enabled(): boolean;
-        set enabled(value: boolean);
-        private get isSpinning();
-        private prependIcon;
-        private appendIcon;
-        private updateButton;
-        _handleClick(event: MouseEvent): boolean;
-        refresh(): void;
-        protected init(): void;
-    }
-}
-/// <amd-module name="@ijstech/button" />
-declare module "@ijstech/button" {
-    export { Button, ButtonElement } from "@ijstech/button/button.ts";
-}
-/// <amd-module name="@ijstech/progress/style/progress.css.ts" />
-declare module "@ijstech/progress/style/progress.css.ts" { }
-/// <amd-module name="@ijstech/progress/progress.ts" />
-declare module "@ijstech/progress/progress.ts" {
-    import { Control, ControlElement, Types, IFont } from '@ijstech/base';
-    import "@ijstech/progress/style/progress.css.ts";
-    export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
-    export type ProgressType = 'line' | 'circle';
-    type callbackType = (target: Control) => void;
-    export interface ProgressElement extends ControlElement {
-        percent?: number;
-        strokeWidth?: number;
-        strokeColor?: Types.Color;
-        loading?: boolean;
-        steps?: number;
-        type?: ProgressType;
-        format?: (percent: number) => string;
-        onRenderStart?: callbackType;
-        onRenderEnd?: callbackType;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-progress']: ProgressElement;
-            }
-        }
-    }
-    export class Progress extends Control {
-        private _percent;
-        private _status;
-        private _loading;
-        private _steps;
-        private _type;
-        private _strokeWidth;
-        private _strokeColor;
-        private _wrapperElm;
-        private _startElm;
-        private _barElm;
-        private _endElm;
-        private _textElm;
-        format: (percent: number) => string;
-        onRenderStart: callbackType;
-        onRenderEnd: callbackType;
-        constructor(parent?: Control, options?: any);
-        get percent(): number;
-        set percent(value: number);
-        get strokeColor(): Types.Color;
-        set strokeColor(value: Types.Color);
-        get loading(): boolean;
-        set loading(value: boolean);
-        get steps(): number;
-        set steps(value: number);
-        get type(): ProgressType;
-        set type(value: ProgressType);
-        get strokeWidth(): number;
-        set strokeWidth(value: number);
-        get font(): IFont;
-        set font(value: IFont);
-        private get relativeStrokeWidth();
-        private get radius();
-        private get trackPath();
-        private get perimeter();
-        private get rate();
-        private get strokeDashoffset();
-        private get trailPathStyle();
-        private get circlePathStyle();
-        private get stroke();
-        private get trackColor();
-        private get progressTextSize();
-        private renderLine;
-        private renderCircle;
-        private renderCircleInner;
-        private updateCircleInner;
-        protected init(): void;
-        static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
-    }
-}
-/// <amd-module name="@ijstech/progress" />
-declare module "@ijstech/progress" {
-    export { Progress } from "@ijstech/progress/progress.ts";
-}
 /// <amd-module name="@ijstech/upload/style/upload.css.ts" />
 declare module "@ijstech/upload/style/upload.css.ts" { }
 /// <amd-module name="@ijstech/upload/upload.ts" />
@@ -23448,109 +23319,9 @@ declare module "@ijstech/upload/upload.ts" {
         static create(options?: UploadElement, parent?: Control): Promise<Upload>;
     }
 }
-/// <amd-module name="@ijstech/upload/style/upload-modal.css.ts" />
-declare module "@ijstech/upload/style/upload-modal.css.ts" { }
-/// <amd-module name="@ijstech/upload/upload-modal.ts" />
-declare module "@ijstech/upload/upload-modal.ts" {
-    import { Control, ControlElement } from '@ijstech/base';
-    import { ICidInfo } from '@ijstech/ipfs';
-    import "@ijstech/upload/style/upload-modal.css.ts";
-    export enum FILE_STATUS {
-        LISTED = 0,
-        SUCCESS = 1,
-        FAILED = 2,
-        UPLOADING = 3
-    }
-    type BeforeUploadedCallback = (target: UploadModal, data: ICidInfo) => void;
-    type UploadedCallback = (target: UploadModal, file: File, cid: string) => void;
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-upload-modal']: UploadModalElement;
-            }
-        }
-    }
-    export interface UploadModalElement extends ControlElement {
-        rootCid?: string;
-        parentDir?: Partial<ICidInfo>;
-        onBeforeUploaded: BeforeUploadedCallback;
-        onUploaded?: UploadedCallback;
-    }
-    export interface IIPFSItem {
-        cid: string;
-        name: string;
-        size: number;
-        type: 'dir' | 'file';
-        links?: IIPFSItem[];
-    }
-    export interface IUploadResult {
-        success: boolean;
-        error?: string;
-        data?: IIPFSItem;
-    }
-    export class UploadModal extends Control {
-        private _uploadModalElm;
-        private _closeBtnElm;
-        private _uploadBoxElm;
-        private _fileUploader;
-        private _fileIcon;
-        private _dragLabelElm;
-        private _statusFilterElm;
-        private _filterBarElm;
-        private _filterActionsElm;
-        private _fileListElm;
-        private _uploadBtnElm;
-        private _notePnlElm;
-        private _paginationElm;
-        private _rootCid;
-        private _parentDir;
-        onBeforeUploaded: BeforeUploadedCallback;
-        onUploaded: UploadedCallback;
-        private isForcedCancelled;
-        private currentRequest;
-        private currentPage;
-        private currentFilterStatus;
-        private files;
-        private fileListData;
-        constructor(parent?: Control, options?: any);
-        get rootCid(): string;
-        set rootCid(value: string);
-        get parentDir(): Partial<ICidInfo>;
-        set parentDir(value: Partial<ICidInfo>);
-        show(): Promise<void>;
-        private updateUI;
-        hide(): void;
-        private onBeforeDrop;
-        private onBeforeUpload;
-        private filteredFileListData;
-        private numPages;
-        private setCurrentPage;
-        private get isSmallWidth();
-        private renderFilterBar;
-        private renderFileList;
-        private formatBytes;
-        private getStatus;
-        private getPagination;
-        private renderPagination;
-        private onChangeCurrentFilterStatus;
-        private onClear;
-        private onCancel;
-        private onChangeFile;
-        private updateBtnCaption;
-        private onRemove;
-        private onRemoveFile;
-        private getDirItems;
-        private onUpload;
-        private reset;
-        private toggle;
-        protected init(): Promise<void>;
-        static create(options?: UploadModalElement, parent?: Control): Promise<UploadModal>;
-    }
-}
 /// <amd-module name="@ijstech/upload" />
 declare module "@ijstech/upload" {
     export { Upload, UploadElement, UploadRawFile } from "@ijstech/upload/upload.ts";
-    export { UploadModal } from "@ijstech/upload/upload-modal.ts";
 }
 /// <amd-module name="@ijstech/module/module.ts" />
 declare module "@ijstech/module/module.ts" {
@@ -23656,6 +23427,54 @@ declare module "@ijstech/tooltip/tooltip.ts" {
 /// <amd-module name="@ijstech/tooltip" />
 declare module "@ijstech/tooltip" {
     export { Tooltip, ITooltip } from "@ijstech/tooltip/tooltip.ts";
+}
+/// <amd-module name="@ijstech/button/style/button.css.ts" />
+declare module "@ijstech/button/style/button.css.ts" { }
+/// <amd-module name="@ijstech/button/button.ts" />
+declare module "@ijstech/button/button.ts" {
+    import { Control, Container, ControlElement, I18n } from '@ijstech/base';
+    import { Icon, IconElement } from '@ijstech/icon';
+    import "@ijstech/button/style/button.css.ts";
+    export interface ButtonElement extends ControlElement {
+        caption?: string;
+        icon?: IconElement;
+        rightIcon?: IconElement;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-button']: ButtonElement;
+            }
+        }
+    }
+    export class Button extends Control {
+        private captionElm;
+        private _icon;
+        private _rightIcon;
+        private _caption;
+        static create(options?: ButtonElement, parent?: Container): Promise<Button>;
+        constructor(parent?: Control, options?: ButtonElement);
+        updateLocale(i18n: I18n): void;
+        get caption(): string;
+        set caption(value: string);
+        get icon(): Icon;
+        set icon(value: Icon);
+        get rightIcon(): Icon;
+        set rightIcon(value: Icon);
+        get enabled(): boolean;
+        set enabled(value: boolean);
+        private get isSpinning();
+        private prependIcon;
+        private appendIcon;
+        private updateButton;
+        _handleClick(event: MouseEvent): boolean;
+        refresh(): void;
+        protected init(): void;
+    }
+}
+/// <amd-module name="@ijstech/button" />
+declare module "@ijstech/button" {
+    export { Button, ButtonElement } from "@ijstech/button/button.ts";
 }
 /// <amd-module name="@ijstech/tab/style/tab.css.ts" />
 declare module "@ijstech/tab/style/tab.css.ts" {
@@ -23778,6 +23597,87 @@ declare module "@ijstech/tab/tab.ts" {
 /// <amd-module name="@ijstech/tab" />
 declare module "@ijstech/tab" {
     export { Tabs, TabsElement, Tab, TabElement } from "@ijstech/tab/tab.ts";
+}
+/// <amd-module name="@ijstech/progress/style/progress.css.ts" />
+declare module "@ijstech/progress/style/progress.css.ts" { }
+/// <amd-module name="@ijstech/progress/progress.ts" />
+declare module "@ijstech/progress/progress.ts" {
+    import { Control, ControlElement, Types, IFont } from '@ijstech/base';
+    import "@ijstech/progress/style/progress.css.ts";
+    export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
+    export type ProgressType = 'line' | 'circle';
+    type callbackType = (target: Control) => void;
+    export interface ProgressElement extends ControlElement {
+        percent?: number;
+        strokeWidth?: number;
+        strokeColor?: Types.Color;
+        loading?: boolean;
+        steps?: number;
+        type?: ProgressType;
+        format?: (percent: number) => string;
+        onRenderStart?: callbackType;
+        onRenderEnd?: callbackType;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-progress']: ProgressElement;
+            }
+        }
+    }
+    export class Progress extends Control {
+        private _percent;
+        private _status;
+        private _loading;
+        private _steps;
+        private _type;
+        private _strokeWidth;
+        private _strokeColor;
+        private _wrapperElm;
+        private _startElm;
+        private _barElm;
+        private _endElm;
+        private _textElm;
+        format: (percent: number) => string;
+        onRenderStart: callbackType;
+        onRenderEnd: callbackType;
+        constructor(parent?: Control, options?: any);
+        get percent(): number;
+        set percent(value: number);
+        get strokeColor(): Types.Color;
+        set strokeColor(value: Types.Color);
+        get loading(): boolean;
+        set loading(value: boolean);
+        get steps(): number;
+        set steps(value: number);
+        get type(): ProgressType;
+        set type(value: ProgressType);
+        get strokeWidth(): number;
+        set strokeWidth(value: number);
+        get font(): IFont;
+        set font(value: IFont);
+        private get relativeStrokeWidth();
+        private get radius();
+        private get trackPath();
+        private get perimeter();
+        private get rate();
+        private get strokeDashoffset();
+        private get trailPathStyle();
+        private get circlePathStyle();
+        private get stroke();
+        private get trackColor();
+        private get progressTextSize();
+        private renderLine;
+        private renderCircle;
+        private renderCircleInner;
+        private updateCircleInner;
+        protected init(): void;
+        static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
+    }
+}
+/// <amd-module name="@ijstech/progress" />
+declare module "@ijstech/progress" {
+    export { Progress } from "@ijstech/progress/progress.ts";
 }
 /// <amd-module name="@ijstech/jsonUI/styles/jsonUI.css.ts" />
 declare module "@ijstech/jsonUI/styles/jsonUI.css.ts" {
@@ -26172,7 +26072,7 @@ declare module "@ijstech/components" {
     export { Popover } from '@ijstech/popover';
     export { Checkbox } from '@ijstech/checkbox';
     export { Datepicker } from '@ijstech/datepicker';
-    export { Upload, UploadModal } from '@ijstech/upload';
+    export { Upload } from '@ijstech/upload';
     export { Tabs, Tab } from '@ijstech/tab';
     export { Iframe } from '@ijstech/iframe';
     export { Range } from '@ijstech/range';

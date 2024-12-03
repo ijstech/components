@@ -61,8 +61,7 @@ async function loadIconFile(){
         type: 'object',
         properties: {
             name: {
-                type: 'string',
-                title: 'Name'
+                type: 'string'
             },
             fill: {
                 type: 'string',
