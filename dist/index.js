@@ -16739,8 +16739,7 @@ define("@ijstech/icon/icon.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 type: 'object',
                 properties: {
                     name: {
-                        type: 'string',
-                        title: 'Name'
+                        type: 'string'
                     },
                     fill: {
                         type: 'string',
@@ -23819,900 +23818,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-define("@ijstech/button/style/button.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = Styles.Theme.ThemeVars;
-    Styles.cssRule('i-button', {
-        background: Theme.colors.primary.main,
-        boxShadow: Theme.shadows[2],
-        color: Theme.text.primary,
-        // display: 'inline-block',
-        // verticalAlign: 'middle',
-        // textAlign: 'center',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 4,
-        fontFamily: Theme.typography.fontFamily,
-        fontSize: Theme.typography.fontSize,
-        cursor: 'pointer',
-        userSelect: 'none',
-        $nest: {
-            "&:not(.disabled):hover": {
-            // cursor: 'pointer',            
-            // backgroundColor: Theme.colors.primary.dark,
-            // boxShadow: Theme.shadows[4],
-            // background: Theme.colors.primary.main
-            },
-            "&.disabled": {
-                color: Theme.text.disabled,
-                boxShadow: Theme.shadows[0],
-                background: Theme.action.disabledBackground,
-                cursor: 'not-allowed'
-            },
-            "i-icon": {
-                display: 'inline-block',
-                fill: Theme.text.primary,
-                verticalAlign: 'middle',
-            },
-            '.caption': {
-                paddingRight: '.5rem'
-            },
-            "&.is-spinning, &.is-spinning:not(.disabled):hover, &.is-spinning:not(.disabled):focus": {
-                color: Theme.text.disabled,
-                boxShadow: Theme.shadows[0],
-                background: Theme.action.disabledBackground,
-                cursor: 'default'
-            },
-            "&.has-caption": {
-                gap: 5
-            }
-        }
-    });
-});
-define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/button/style/button.css.ts"], function (require, exports, base_1, icon_1, style_1, types_1, application_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Button = void 0;
-    const defaultIcon = {
-        width: 16,
-        height: 16,
-        fill: style_1.Theme.ThemeVars.text.primary
-    };
-    let Button = class Button extends base_1.Control {
-        static async create(options, parent) {
-            let self = new this(parent, options);
-            await self.ready();
-            return self;
-        }
-        constructor(parent, options) {
-            super(parent, options);
-        }
-        updateLocale(i18n) {
-            super.updateLocale(i18n);
-            if (this.captionElm && this._caption?.startsWith('$'))
-                this.captionElm.innerHTML = i18n.get(this._caption) || '';
-        }
-        get caption() {
-            const value = this._caption || '';
-            if (value?.startsWith('$')) {
-                const translated = this.parentModule?.i18n?.get(this._caption) ||
-                    application_1.application.i18n?.get(this._caption) ||
-                    '';
-                return translated;
-            }
-            return value;
-        }
-        set caption(value) {
-            if (typeof value !== 'string')
-                value = String(value || '');
-            this._caption = value;
-            if (!this.captionElm)
-                return;
-            this.captionElm.innerHTML = this.caption;
-            this.captionElm.style.display = value ? "" : "none";
-        }
-        get icon() {
-            if (!this._icon) {
-                let iconAttr = this.getAttribute('icon', true);
-                iconAttr = { ...defaultIcon, ...iconAttr };
-                this._icon = new icon_1.Icon(this, iconAttr);
-                this.prependIcon(this._icon);
-            }
-            return this._icon;
-        }
-        set icon(value) {
-            if (this._icon && this.contains(this._icon))
-                this.removeChild(this._icon);
-            this._icon = value;
-            this.prependIcon(this._icon);
-        }
-        get rightIcon() {
-            if (!this._rightIcon) {
-                let rightIconAttr = this.getAttribute('rightIcon', true);
-                this._rightIcon = new icon_1.Icon(this, {
-                    ...defaultIcon,
-                    name: 'spinner',
-                    ...rightIconAttr
-                });
-                this.appendIcon(this._rightIcon);
-            }
-            return this._rightIcon;
-        }
-        set rightIcon(value) {
-            if (this._rightIcon && this.contains(this._rightIcon))
-                this.removeChild(this._rightIcon);
-            this._rightIcon = value;
-            this.appendIcon(this._rightIcon);
-        }
-        get enabled() {
-            return super.enabled;
-        }
-        set enabled(value) {
-            super.enabled = value;
-            if (!value && this._background) {
-                let bg = '';
-                this._background?.image && (bg += `url(${this._background?.image})`);
-                this._background?.color && (bg += `${this._background?.color}`);
-                this.style.background = bg;
-            }
-        }
-        get isSpinning() {
-            return (this._icon && this._icon.spin && this._icon.visible) ||
-                (this._rightIcon && this._rightIcon.spin && this._rightIcon.visible);
-        }
-        prependIcon(icon) {
-            if (!icon)
-                return;
-            this.appendChild(icon);
-            this.captionElm &&
-                this.insertBefore(icon, this.captionElm);
-        }
-        appendIcon(icon) {
-            if (!icon)
-                return;
-            this.appendChild(icon);
-            this.captionElm &&
-                this.insertBefore(this.captionElm, icon);
-        }
-        updateButton() {
-            if (this.isSpinning)
-                this.classList.add('is-spinning');
-            else
-                this.classList.remove('is-spinning');
-            if (!this.enabled && this._background) {
-                let bg = '';
-                this._background?.image && (bg += `url(${this._background?.image})`);
-                this._background?.color && (bg += `${this._background?.color}`);
-                this.style.background = bg;
-            }
-            if (this._caption)
-                this.classList.add('has-caption');
-            else
-                this.classList.remove('has-caption');
-        }
-        _handleClick(event) {
-            if (this.isSpinning || !this.enabled || this._designMode)
-                return false;
-            return super._handleClick(event);
-        }
-        refresh() {
-            super.refresh();
-            this.updateButton();
-        }
-        init() {
-            if (!this.captionElm) {
-                super.init();
-                this.onClick = this.getAttribute('onClick', true) || this.onClick;
-                this.captionElm = this.createElement('span', this);
-                let caption = this.getAttribute('caption', true, '');
-                this.caption = caption;
-                // if (this.height)
-                //     defaultIcon.width = defaultIcon.height = Math.floor(+this.height / 2)
-                let iconAttr = this.getAttribute('icon', true);
-                if (iconAttr?.name || iconAttr?.image?.url) {
-                    iconAttr = { ...defaultIcon, ...iconAttr };
-                    const icon = new icon_1.Icon(this, iconAttr);
-                    this.icon = icon;
-                }
-                let rightIconAttr = this.getAttribute('rightIcon', true);
-                if (rightIconAttr?.name || rightIconAttr?.image?.url) {
-                    rightIconAttr = { ...defaultIcon, name: 'spinner', ...rightIconAttr };
-                    const icon = new icon_1.Icon(this, rightIconAttr);
-                    this.rightIcon = icon;
-                }
-            }
-        }
-    };
-    Button = __decorate([
-        (0, base_1.customElements)('i-button', {
-            icon: 'closed-captioning',
-            className: 'Button',
-            props: {
-                caption: {
-                    type: 'string',
-                    default: ''
-                },
-                icon: {
-                    type: 'object',
-                    default: {}
-                },
-                rightIcon: {
-                    type: 'object',
-                    default: {}
-                },
-            },
-            events: {},
-            dataSchema: {
-                type: 'object',
-                properties: {
-                    caption: {
-                        type: 'string',
-                        title: 'Caption'
-                    },
-                    icon: {
-                        type: 'object',
-                        properties: {
-                            name: {
-                                type: 'string'
-                            },
-                            fill: {
-                                type: 'string',
-                                format: 'color'
-                            },
-                            width: {
-                                type: 'number'
-                            },
-                            height: {
-                                type: 'number'
-                            },
-                            image: {
-                                type: 'object',
-                                properties: {
-                                    url: {
-                                        type: 'string'
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    rightIcon: {
-                        type: 'object',
-                        properties: {
-                            name: {
-                                type: 'string'
-                            },
-                            fill: {
-                                type: 'string',
-                                format: 'color'
-                            },
-                            width: {
-                                type: 'number'
-                            },
-                            height: {
-                                type: 'number'
-                            },
-                            image: {
-                                type: 'object',
-                                properties: {
-                                    url: {
-                                        type: 'string'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            group: types_1.GroupType.BASIC
-        })
-    ], Button);
-    exports.Button = Button;
-});
-define("@ijstech/button", ["require", "exports", "@ijstech/button/button.ts"], function (require, exports, button_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Button = void 0;
-    Object.defineProperty(exports, "Button", { enumerable: true, get: function () { return button_1.Button; } });
-});
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-define("@ijstech/progress/style/progress.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = Styles.Theme.ThemeVars;
-    const loading = Styles.keyframes({
-        '0%': {
-            left: '-100%'
-        },
-        '100%': {
-            left: '100%'
-        }
-    });
-    Styles.cssRule('i-progress', {
-        display: 'block',
-        maxWidth: '100%',
-        verticalAlign: 'baseline',
-        fontFamily: Theme.typography.fontFamily,
-        fontSize: Theme.typography.fontSize,
-        color: Theme.text.primary,
-        position: 'relative',
-        $nest: {
-            '&.is-loading .i-progress_overlay': {
-                transform: 'translateZ(0)',
-                animation: `${loading} 3s infinite`
-            },
-            '.i-progress': {
-                boxSizing: 'border-box',
-                margin: 0,
-                minWidth: 0,
-                width: '100%',
-                display: 'block'
-            },
-            '.i-progress--grid': {
-                display: 'grid',
-                gap: 20,
-                gridTemplateColumns: 'auto 1fr 80px',
-                alignItems: 'center'
-            },
-            '.i-progress--exception': {
-                $nest: {
-                    '> .i-progress_wrapbar > .i-progress_overlay': {
-                        backgroundColor: Theme.colors.error.light
-                    },
-                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
-                        backgroundColor: Theme.colors.error.light
-                    },
-                    '.i-progress_item.i-progress_item-start': {
-                        borderColor: Theme.colors.error.light
-                    },
-                    '.i-progress_item.i-progress_item-end': {}
-                }
-            },
-            '.i-progress--success': {
-                $nest: {
-                    '> .i-progress_wrapbar > .i-progress_overlay': {
-                        backgroundColor: Theme.colors.success.light
-                    },
-                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
-                        backgroundColor: Theme.colors.success.light
-                    },
-                    '.i-progress_item.i-progress_item-start': {
-                        borderColor: Theme.colors.success.light
-                    },
-                    '.i-progress_item.i-progress_item-end': {}
-                }
-            },
-            '.i-progress--warning': {
-                $nest: {
-                    '> .i-progress_wrapbar > .i-progress_overlay': {
-                        backgroundColor: Theme.colors.warning.light
-                    },
-                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
-                        backgroundColor: Theme.colors.warning.light
-                    },
-                    '.i-progress_item.i-progress_item-start': {
-                        borderColor: Theme.colors.warning.light
-                    },
-                    '.i-progress_item.i-progress_item-end': {}
-                }
-            },
-            '.i-progress--active': {
-                $nest: {
-                    '> .i-progress_wrapbar > .i-progress_overlay': {
-                        backgroundColor: Theme.colors.primary.light
-                    },
-                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
-                        backgroundColor: Theme.colors.primary.light
-                    },
-                    '.i-progress_item.i-progress_item-start': {
-                        backgroundColor: 'transparent',
-                        borderColor: Theme.colors.primary.light
-                    }
-                }
-            },
-            '.i-progress_wrapbar': {
-                position: 'relative',
-                overflow: 'hidden',
-                boxSizing: 'border-box',
-                minWidth: 0,
-                order: 2,
-                minHeight: 2,
-                borderRadius: 'inherit',
-                backgroundColor: Theme.divider,
-                $nest: {
-                    '&.has-steps': {
-                        backgroundColor: 'transparent',
-                    },
-                    '.i-progress_bar': {
-                        boxSizing: 'border-box',
-                        width: '100%',
-                        height: '100%',
-                        position: 'absolute',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1px',
-                        $nest: {
-                            '&.has-bg': {
-                                backgroundColor: Theme.divider
-                            },
-                            '.i-progress_bar-item': {
-                                flex: 'auto',
-                                backgroundColor: Theme.divider
-                            }
-                        }
-                    },
-                    '.i-progress_overlay': {
-                        position: 'absolute',
-                        minWidth: 0,
-                        height: '100%'
-                    }
-                }
-            },
-            '.i-progress_item': {
-                boxSizing: 'border-box',
-                margin: '0px -1.2px 0px 0px',
-                minWidth: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                position: 'relative',
-                $nest: {
-                    '&.i-progress_item-start': {
-                        borderWidth: 1,
-                        borderStyle: 'solid',
-                        borderImage: 'initial',
-                        borderRadius: 14,
-                        borderColor: Theme.divider,
-                        padding: '4px 12px',
-                        order: 1
-                    },
-                    '&.i-progress_item-end': {
-                        boxSizing: 'border-box',
-                        margin: 0,
-                        minWidth: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        cursor: 'default',
-                        position: 'relative',
-                        order: 3,
-                        alignItems: 'flex-start',
-                    }
-                }
-            },
-            '&.i-progress--stretch': {
-                $nest: {
-                    '@media only screen and (max-width: 768px)': {
-                        $nest: {
-                            '.i-progress_wrapbar': {
-                                display: 'none !important'
-                            },
-                            '.i-progress_item-end': {
-                                display: 'none !important'
-                            },
-                            '.is-mobile': {
-                                display: 'inline-block'
-                            },
-                            '.i-progress--grid': {
-                                gridTemplateColumns: 'auto',
-                                justifyContent: 'center'
-                            }
-                        }
-                    }
-                }
-            },
-            '.i-progress--circle ~ .i-progress_text': {
-                position: 'absolute',
-                top: '50%',
-                left: 0,
-                width: '100%',
-                textAlign: 'center',
-                transform: 'translateY(-50%)'
-            },
-            '.i-progress--line ~ .i-progress_text': {
-                display: 'inline-block',
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)'
-            },
-            '.i-progress--line': {
-                borderRadius: 'inherit'
-            }
-        }
-    });
-});
-define("@ijstech/progress/progress.ts", ["require", "exports", "@ijstech/base", "@ijstech/style", "@ijstech/types", "@ijstech/progress/style/progress.css.ts"], function (require, exports, base_1, Styles, types_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Progress = void 0;
-    const Theme = Styles.Theme.ThemeVars;
-    const defaultVals = {
-        percent: 0,
-        height: 20,
-        loading: false,
-        steps: 1,
-        type: 'line',
-        strokeWidth: 2
-    };
-    let Progress = class Progress extends base_1.Control {
-        constructor(parent, options) {
-            super(parent, options, {
-                ...defaultVals
-            });
-            if (options?.onRenderStart)
-                this.onRenderStart = options.onRenderStart;
-            if (options?.onRenderEnd)
-                this.onRenderEnd = options.onRenderEnd;
-        }
-        get percent() {
-            return this._percent;
-        }
-        set percent(value) {
-            this._percent = +value < 0 ? 0 : +value > 100 ? 100 : +value;
-            const overlayElm = this.querySelector('.i-progress_overlay');
-            if (overlayElm) {
-                overlayElm.style.width = `${this._percent}%`;
-                overlayElm.style.backgroundColor = this.stroke;
-            }
-            if (this._percent > 0 && this._percent < 100)
-                this._wrapperElm.classList.add('i-progress--active');
-            else if (this._percent === 100)
-                this._wrapperElm.classList.add('i-progress--success');
-            if (typeof this.format === 'function') {
-                if (!this._textElm) {
-                    this._textElm = this.createElement('span', this);
-                    this._textElm.classList.add('i-progress_text');
-                    this._textElm.style.fontSize = this.progressTextSize + 'px';
-                    this._textElm.style.color = this.strokeColor;
-                }
-                this._textElm.innerHTML = this.format(this._percent);
-            }
-            if (this.type === 'circle') {
-                this.updateCircleInner();
-            }
-        }
-        get strokeColor() {
-            return this._strokeColor || Theme.colors.primary.main;
-        }
-        set strokeColor(value) {
-            this._strokeColor = value;
-            if (this.type === 'circle') {
-                this.renderCircleInner();
-            }
-            else if (this.type === 'line') {
-                const overlayElm = this.querySelector('.i-progress_overlay');
-                if (overlayElm)
-                    overlayElm.style.backgroundColor = this.stroke;
-            }
-        }
-        get loading() {
-            return this._loading;
-        }
-        set loading(value) {
-            this._loading = value;
-            if (value)
-                this.classList.add('is-loading');
-            else
-                this.classList.remove('is-loading');
-        }
-        get steps() {
-            return this._steps;
-        }
-        set steps(value) {
-            this._steps = +value;
-            if (this.type === 'circle')
-                return;
-            const wrapbarElm = this.querySelector('.i-progress_bar');
-            const overlayElm = this.querySelector('.i-progress_overlay');
-            const wrapperElm = this.querySelector('.i-progress_wrapbar');
-            if (wrapperElm)
-                wrapperElm.classList.toggle('has-steps', this._steps > 1);
-            wrapbarElm.innerHTML = '';
-            if (this._steps > 1) {
-                const unitStep = 100 / this._steps;
-                const percentStep = Math.ceil(this.percent / unitStep);
-                const remainder = this.percent % unitStep;
-                const initialH = Math.max(1, Math.floor(this.strokeWidth / 2));
-                for (let i = 0; i < this._steps; i++) {
-                    const barItem = this.createElement('div');
-                    barItem.style.width = unitStep + '%';
-                    barItem.style.height = `${i + initialH}px`;
-                    if (i === percentStep - 1 && remainder !== 0) {
-                        const childElm = this.createElement('div');
-                        childElm.classList.add('i-progress_bar-item');
-                        childElm.style.width = ((remainder * 100) / unitStep) + '%';
-                        childElm.style.height = `${i + initialH}px`;
-                        childElm.style.backgroundColor = this.stroke;
-                        barItem.appendChild(childElm);
-                    }
-                    else if (i < percentStep) {
-                        barItem.classList.add('i-progress_bar-item');
-                        barItem.style.backgroundColor = this.stroke;
-                    }
-                    wrapbarElm.appendChild(barItem);
-                }
-                wrapbarElm.classList.remove('has-bg');
-                overlayElm && (overlayElm.style.display = 'none');
-            }
-            else {
-                wrapbarElm.classList.add('has-bg');
-                overlayElm && (overlayElm.style.display = 'block');
-            }
-        }
-        get type() {
-            return this._type;
-        }
-        set type(value) {
-            this._type = value;
-            if (value === 'circle') {
-                this.renderCircle();
-            }
-            else {
-                this.renderLine();
-            }
-        }
-        get strokeWidth() {
-            return this._strokeWidth || defaultVals.strokeWidth;
-        }
-        set strokeWidth(value) {
-            this._strokeWidth = value || defaultVals.strokeWidth;
-            const overlayElm = this.querySelector('.i-progress_wrapbar');
-            if (overlayElm)
-                overlayElm.style.height = `${this._strokeWidth}px`;
-        }
-        get font() {
-            return {
-                color: this._textElm.style.color,
-                name: this._textElm.style.fontFamily,
-                size: this._textElm.style.fontSize,
-                bold: this._textElm.style.fontStyle.indexOf('bold') >= 0,
-                style: this._textElm.style.fontStyle,
-                transform: this._textElm.style.textTransform,
-                weight: this._textElm.style.fontWeight,
-                shadow: this._textElm.style.textShadow
-            };
-        }
-        set font(value) {
-            if (this._textElm) {
-                this._textElm.style.color = value.color || '';
-                this._textElm.style.fontSize = value.size || '';
-                this._textElm.style.fontWeight = value.bold ? 'bold' : '';
-                this._textElm.style.fontFamily = value.name || '';
-                this._textElm.style.fontStyle = value.style || '';
-                this._textElm.style.textTransform = value.transform || 'none';
-                this._textElm.style.fontWeight = value.bold ? 'bold' : (`${value.weight}` || '');
-                this._textElm.style.textShadow = value.shadow || 'none';
-            }
-        }
-        get relativeStrokeWidth() {
-            return (this.strokeWidth / +this.width * 100).toFixed(1);
-        }
-        get radius() {
-            if (this.type === 'circle') {
-                const value = 50 - (parseFloat(this.relativeStrokeWidth) / 2);
-                return parseInt(value.toFixed(1), 10);
-            }
-            else {
-                return 0;
-            }
-        }
-        get trackPath() {
-            const radius = this.radius;
-            return `
-          M 50 50
-          m 0 -${radius}
-          a ${radius} ${radius} 0 1 1 0 ${radius * 2}
-          a ${radius} ${radius} 0 1 1 0 -${radius * 2}
-          `;
-        }
-        get perimeter() {
-            return 2 * Math.PI * this.radius;
-        }
-        get rate() {
-            return 1;
-        }
-        get strokeDashoffset() {
-            const offset = -1 * this.perimeter * (1 - this.rate) / 2;
-            return `${offset}px`;
-        }
-        get trailPathStyle() {
-            const strokeDasharray = `${this.perimeter * this.rate}px, ${this.perimeter}px`;
-            const strokeDashoffset = this.strokeDashoffset;
-            return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset};`;
-        }
-        get circlePathStyle() {
-            const strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
-            const strokeDashoffset = this.strokeDashoffset;
-            const transition = 'stroke-dasharray 0.6s ease 0s, stroke 0.6s ease';
-            return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset}; transition: ${transition};`;
-        }
-        get stroke() {
-            let ret = this.strokeColor;
-            if (this.percent === 100)
-                ret = Theme.colors.success.main;
-            return ret;
-        }
-        get trackColor() {
-            return Theme.divider;
-        }
-        get progressTextSize() {
-            return this.type === 'line'
-                ? 12 + this.strokeWidth * 0.4
-                : +this.width * 0.111111 + 2;
-        }
-        renderLine() {
-            this.height = 'auto';
-            this._wrapperElm.innerHTML = '';
-            this._wrapperElm.classList.add('i-progress--line');
-            this._barElm = this.createElement('div', this._wrapperElm);
-            this._barElm.classList.add('i-progress_wrapbar');
-            this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.stroke}"></div>`;
-        }
-        renderCircle() {
-            this._wrapperElm.classList.add('i-progress--circle');
-            if (this.width)
-                this.height = this.width;
-            this.renderCircleInner();
-        }
-        renderCircleInner() {
-            const templateHtml = `<svg viewBox="0 0 100 100">
-            <path class="i-progress-circle__track"
-            d="${this.trackPath}"
-            stroke="${this.trackColor}"
-            stroke-width="${this.relativeStrokeWidth}"
-            fill="none"
-            style="${this.trailPathStyle}"></path>
-            <path
-            class="i-progress-circle__path"
-            d="${this.trackPath}"
-            stroke="${this.stroke}"
-            fill="none"
-            stroke-linecap="round"
-            stroke-width="${this.percent ? this.relativeStrokeWidth : 0}"
-            style="${this.circlePathStyle}"></path>
-        </svg>`;
-            this._wrapperElm.innerHTML = '';
-            this._wrapperElm.innerHTML = templateHtml;
-        }
-        updateCircleInner() {
-            const svgPath = this._wrapperElm.querySelector('.i-progress-circle__path');
-            if (svgPath) {
-                svgPath.style.strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
-                svgPath.setAttribute("stroke-width", `${this.percent ? this.relativeStrokeWidth : 0}`);
-            }
-        }
-        init() {
-            if (!this.initialized) {
-                super.init();
-                if (this.options?.onRenderStart)
-                    this.onRenderStart = this.options.onRenderStart;
-                if (this.options?.onRenderEnd)
-                    this.onRenderEnd = this.options.onRenderEnd;
-                this.loading = this.getAttribute('loading', true);
-                this._strokeColor = this.getAttribute('strokeColor', true);
-                this._wrapperElm = this.createElement('div', this);
-                this._wrapperElm.classList.add('i-progress');
-                this.type = this.getAttribute('type', true);
-                this.percent = this.getAttribute('percent', true);
-                this.strokeWidth = this.getAttribute('strokeWidth', true);
-                if (this.type === 'line') {
-                    this.steps = this.getAttribute('steps', true);
-                    if (typeof this.onRenderStart === 'function') {
-                        this._wrapperElm.classList.add('i-progress--grid');
-                        this._startElm = this.createElement('div', this._wrapperElm);
-                        this._startElm.classList.add('i-progress_item', 'i-progress_item-start');
-                        this.onRenderStart(this._startElm);
-                    }
-                    if (typeof this.onRenderEnd === 'function') {
-                        this._wrapperElm.classList.add('i-progress--grid');
-                        this._endElm = this.createElement('div', this._wrapperElm);
-                        this._endElm.classList.add('i-progress_item', 'i-progress_item-end');
-                        this.onRenderEnd(this._endElm);
-                    }
-                }
-                if (this.type === 'circle')
-                    this.renderCircleInner();
-            }
-        }
-        static async create(options, parent) {
-            let self = new this(parent, options);
-            await self.ready();
-            return self;
-        }
-    };
-    Progress = __decorate([
-        (0, base_1.customElements)('i-progress', {
-            icon: 'spinner',
-            group: types_1.GroupType.BASIC,
-            className: 'Progress',
-            props: {
-                percent: {
-                    type: 'number',
-                    default: defaultVals.percent
-                },
-                strokeWidth: {
-                    type: 'number',
-                    default: defaultVals.strokeWidth
-                },
-                strokeColor: {
-                    type: 'string',
-                    default: ''
-                },
-                loading: {
-                    type: 'boolean',
-                    default: defaultVals.loading
-                },
-                steps: {
-                    type: 'number',
-                    default: defaultVals.steps
-                },
-                type: {
-                    type: 'string',
-                    default: defaultVals.type
-                }
-            },
-            events: {
-                format: [
-                    { name: 'percent', type: 'number' }
-                ],
-                onRenderStart: [
-                    { name: 'target', type: 'Progress', isControl: true }
-                ],
-                onRenderEnd: [
-                    { name: 'target', type: 'Progress', isControl: true }
-                ]
-            },
-            dataSchema: {
-                type: 'object',
-                properties: {
-                    type: {
-                        type: 'string',
-                        enum: ['line', 'circle'],
-                        default: defaultVals.type
-                    },
-                    percent: {
-                        type: 'number',
-                        default: defaultVals.percent
-                    },
-                    strokeWidth: {
-                        type: 'number',
-                        default: defaultVals.strokeWidth
-                    },
-                    strokeColor: {
-                        type: 'string',
-                        format: 'color'
-                    },
-                    loading: {
-                        type: 'boolean',
-                        default: defaultVals.loading
-                    },
-                    steps: {
-                        type: 'number',
-                        default: defaultVals.steps
-                    }
-                }
-            }
-        })
-    ], Progress);
-    exports.Progress = Progress;
-});
-define("@ijstech/progress", ["require", "exports", "@ijstech/progress/progress.ts"], function (require, exports, progress_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Progress = void 0;
-    Object.defineProperty(exports, "Progress", { enumerable: true, get: function () { return progress_1.Progress; } });
-});
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
 define("@ijstech/upload/style/upload.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -25464,926 +24569,11 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
     ], Upload);
     exports.Upload = Upload;
 });
-define("@ijstech/upload/style/upload-modal.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
+define("@ijstech/upload", ["require", "exports", "@ijstech/upload/upload.ts"], function (require, exports, upload_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = Styles.Theme.ThemeVars;
-    Styles.cssRule('i-upload-modal', {
-        $nest: {
-            'i-modal': {
-                // @ts-ignore
-                position: 'fixed!important',
-                zIndex: 1000,
-            },
-            '.file-uploader-dropzone': {
-                $nest: {
-                    'i-upload': {
-                        position: 'absolute',
-                        top: 0,
-                        opacity: 0,
-                        minHeight: 'auto',
-                        minWidth: 'auto',
-                        margin: 0,
-                        zIndex: 1,
-                        $nest: {
-                            '.i-upload_preview-img': {
-                                display: 'none!important',
-                            },
-                        },
-                    },
-                    '.filelist': {
-                        $nest: {
-                            '@media screen and (max-width: 767px)': {
-                                flex: '1',
-                                overflowY: 'auto'
-                            },
-                            '.file': {
-                                border: `1px solid ${Theme.divider}`,
-                                borderRadius: '0.5rem',
-                                $nest: {
-                                    '&:hover': {
-                                        border: `1px solid ${Theme.colors.primary.main}`,
-                                    }
-                                }
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    });
-});
-define("@ijstech/upload/upload-modal.ts", ["require", "exports", "@ijstech/base", "@ijstech/application", "@ijstech/button", "@ijstech/image", "@ijstech/ipfs", "@ijstech/label", "@ijstech/modal", "@ijstech/progress", "@ijstech/icon", "@ijstech/layout", "@ijstech/style", "@ijstech/upload/upload.ts", "@ijstech/upload/style/upload-modal.css.ts"], function (require, exports, base_2, application_2, button_1, image_2, ipfs_2, label_2, modal_1, progress_1, icon_2, layout_2, Styles, upload_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.UploadModal = exports.FILE_STATUS = void 0;
-    const Theme = Styles.Theme.ThemeVars;
-    var FILE_STATUS;
-    (function (FILE_STATUS) {
-        FILE_STATUS[FILE_STATUS["LISTED"] = 0] = "LISTED";
-        FILE_STATUS[FILE_STATUS["SUCCESS"] = 1] = "SUCCESS";
-        FILE_STATUS[FILE_STATUS["FAILED"] = 2] = "FAILED";
-        FILE_STATUS[FILE_STATUS["UPLOADING"] = 3] = "UPLOADING";
-    })(FILE_STATUS = exports.FILE_STATUS || (exports.FILE_STATUS = {}));
-    const ITEMS_PER_PAGE = 5;
-    let UploadModal = class UploadModal extends base_2.Control {
-        constructor(parent, options) {
-            super(parent, options);
-            this.isForcedCancelled = false;
-            this.currentPage = 1;
-            this.currentFilterStatus = FILE_STATUS.LISTED;
-            this.files = [];
-            this.fileListData = [];
-        }
-        get rootCid() {
-            return this._rootCid;
-        }
-        set rootCid(value) {
-            console.log('set rootCid: ', value);
-            this._rootCid = value;
-        }
-        get parentDir() {
-            return this._parentDir;
-        }
-        set parentDir(value) {
-            console.log('set parentDir: ', value);
-            this._parentDir = value;
-        }
-        async show() {
-            await this.init();
-            if (!this.parentElement)
-                document.body.appendChild(this);
-            this.updateBtnCaption();
-            this._uploadModalElm.visible = true;
-            this._uploadModalElm.refresh();
-        }
-        updateUI() {
-        }
-        hide() {
-            this._uploadModalElm.visible = false;
-            this.reset();
-        }
-        onBeforeDrop(target) {
-            console.log('onBeforeDrop: ', target);
-            this._fileUploader.enabled = false;
-            this._fileIcon.url = `${base_2.LibPath}assets/img/loading-icon.svg`;
-            this._dragLabelElm.caption = 'Processing your files...';
-        }
-        onBeforeUpload(target, file) {
-            return new Promise((resolve, reject) => {
-                resolve(true);
-            });
-        }
-        filteredFileListData() {
-            return this.currentFilterStatus === FILE_STATUS.LISTED
-                ? this.fileListData
-                : this.fileListData.filter((i) => i.status === this.currentFilterStatus);
-        }
-        numPages() {
-            return Math.ceil(this.filteredFileListData().length / ITEMS_PER_PAGE);
-        }
-        setCurrentPage(page) {
-            if (page >= 1 && page <= this.numPages())
-                this.currentPage = page;
-            this.renderFileList();
-            this.renderPagination();
-        }
-        get isSmallWidth() {
-            return !!window.matchMedia('(max-width: 767px)').matches;
-        }
-        async renderFilterBar() {
-            this._filterBarElm.clearInnerHTML();
-            const isListed = this.currentFilterStatus === FILE_STATUS.LISTED;
-            const listedBtnElm = new button_1.Button(this._filterBarElm, {
-                caption: `All (${this.fileListData.length})`,
-                boxShadow: 'none',
-                background: { color: 'transparent' },
-                font: { color: isListed ? Theme.colors.primary.dark : Theme.text.secondary, size: '0.875rem', weight: isListed ? 'bold' : 'normal' },
-            });
-            listedBtnElm.onClick = () => this.onChangeCurrentFilterStatus(FILE_STATUS.LISTED);
-            const isSuccess = this.currentFilterStatus === FILE_STATUS.SUCCESS;
-            const successBtnElm = new button_1.Button(this._filterBarElm, {
-                caption: `Success (${this.fileListData.filter((i) => i.status === FILE_STATUS.SUCCESS).length})`,
-                boxShadow: 'none',
-                background: { color: 'transparent' },
-                font: { color: isSuccess ? Theme.colors.primary.dark : Theme.text.secondary, size: '0.875rem', weight: isSuccess ? 'bold' : 'normal' },
-            });
-            successBtnElm.onClick = () => this.onChangeCurrentFilterStatus(FILE_STATUS.SUCCESS);
-            const isFailed = this.currentFilterStatus === FILE_STATUS.FAILED;
-            const failedBtnElm = new button_1.Button(this._filterBarElm, {
-                caption: `Fail (${this.fileListData.filter((i) => i.status === FILE_STATUS.FAILED).length})`,
-                boxShadow: 'none',
-                background: { color: 'transparent' },
-                font: { color: isFailed ? Theme.colors.primary.dark : Theme.text.secondary, size: '0.875rem', weight: isFailed ? 'bold' : 'normal' },
-            });
-            failedBtnElm.onClick = () => this.onChangeCurrentFilterStatus(FILE_STATUS.FAILED);
-            const isUploading = this.currentFilterStatus === FILE_STATUS.UPLOADING;
-            const uploadingBtnElm = new button_1.Button(this._filterBarElm, {
-                caption: `Uploading (${this.fileListData.filter((i) => i.status === FILE_STATUS.UPLOADING)
-                    .length})`,
-                boxShadow: 'none',
-                background: { color: 'transparent' },
-                font: { color: isUploading ? Theme.colors.primary.dark : Theme.text.secondary, size: '0.875rem', weight: isUploading ? 'bold' : 'normal' },
-            });
-            uploadingBtnElm.onClick = () => this.onChangeCurrentFilterStatus(FILE_STATUS.UPLOADING);
-            // this.filterBar.append(...filterBtnUI);
-            this._filterActionsElm.clearInnerHTML();
-            if (this.currentFilterStatus === FILE_STATUS.UPLOADING) {
-                const cancelBtnElm = new button_1.Button(this._filterActionsElm, {
-                    caption: 'Cancel',
-                    boxShadow: 'none',
-                    background: { color: Theme.colors.primary.light },
-                    font: { color: Theme.colors.primary.contrastText, size: '0.875rem' },
-                    padding: { top: '0.313rem', left: '0.675rem', right: '0.675rem', bottom: '0.313rem' }
-                });
-                cancelBtnElm.onClick = () => this.onCancel();
-            }
-            else {
-                const clearBtnElm = new button_1.Button(this._filterActionsElm, {
-                    caption: 'Clear',
-                    boxShadow: 'none',
-                    background: { color: Theme.colors.primary.light },
-                    font: { color: Theme.colors.primary.contrastText, size: '0.875rem' },
-                    padding: { top: '0.313rem', left: '0.675rem', right: '0.675rem', bottom: '0.313rem' }
-                });
-                clearBtnElm.onClick = () => this.onClear();
-            }
-        }
-        async renderFileList() {
-            // const fileUIData: Panel[] = [];
-            this._fileListElm.clearInnerHTML();
-            const filteredFileListData = this.filteredFileListData();
-            const paginatedFilteredFileListData = this.isSmallWidth ? this.fileListData : [...filteredFileListData].slice((this.currentPage - 1) * ITEMS_PER_PAGE, ITEMS_PER_PAGE * this.currentPage);
-            for (let i = 0; i < paginatedFilteredFileListData.length; i++) {
-                const fileData = paginatedFilteredFileListData[i];
-                const fileElm = new layout_2.HStack(this._fileListElm, {
-                    class: `file file-${i} status-${fileData.status}`,
-                    overflow: 'hidden',
-                    gap: '1rem',
-                    padding: {
-                        left: '0.75rem',
-                        right: '0.75rem',
-                        top: '0.5rem',
-                        bottom: '0.5rem',
-                    },
-                    stack: { shrink: '0', grow: '1' }
-                });
-                const fileIcon = new icon_2.Icon(fileElm, {
-                    border: { radius: '0.5rem', width: '1px', color: Theme.divider, style: 'solid' },
-                    padding: {
-                        left: '0.35rem',
-                        right: '0.35rem',
-                        top: '0.35rem',
-                        bottom: '0.35rem',
-                    },
-                    name: 'file',
-                    width: '1.75rem',
-                    height: '1.75rem',
-                    fill: Theme.colors.primary.main,
-                    stack: { shrink: '0' }
-                });
-                const wrapper = new layout_2.VStack(fileElm, {
-                    gap: '0.25rem',
-                    stack: { shrink: '1', grow: '1' },
-                    maxWidth: '100%',
-                    overflow: 'hidden'
-                });
-                const row1 = new layout_2.HStack(wrapper, {
-                    gap: '1rem',
-                    horizontalAlignment: 'space-between',
-                    verticalAlignment: 'center'
-                });
-                const fileNameElm = new label_2.Label(row1, {
-                    caption: fileData.file.path || fileData.file.name,
-                    font: { weight: 600, size: '0.875rem' },
-                    maxWidth: '100%',
-                    textOverflow: 'ellipsis'
-                });
-                const removeBtnElm = new icon_2.Icon(row1, {
-                    name: 'times',
-                    width: '0.875rem', height: '0.875rem',
-                    fill: Theme.text.primary,
-                    cursor: 'pointer'
-                });
-                removeBtnElm.onClick = () => this.onRemoveFile(i);
-                const row2 = new layout_2.HStack(wrapper, {
-                    gap: '0.5rem',
-                    verticalAlignment: 'center'
-                });
-                const sizeElm = new label_2.Label(row2, {
-                    caption: this.formatBytes(fileData.file.size || 0),
-                    font: { size: '0.75rem' },
-                    maxWidth: '100%',
-                    textOverflow: 'ellipsis',
-                    opacity: 0.75
-                });
-                const statusElm = this.getStatus(fileData.status, row2);
-                const row3 = new layout_2.HStack(wrapper, {
-                    gap: '0.75rem',
-                    verticalAlignment: 'center'
-                });
-                const progressElm = new progress_1.Progress(row3, {
-                    percent: fileData.percentage,
-                    stack: { grow: '1', shrink: '1', basis: '60%' },
-                    height: 'auto',
-                    border: { radius: '0.5rem' },
-                    strokeWidth: 10
-                });
-                const percentageElm = new label_2.Label(row3, {
-                    caption: `${fileData.percentage}%`,
-                    stack: { grow: '1', shrink: '0' },
-                    font: { size: '0.75rem' }
-                });
-            }
-            // this._fileListElm.append(...fileUIData);
-        }
-        formatBytes(bytes, decimals = 2) {
-            if (bytes === 0)
-                return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-        }
-        getStatus(status, parent) {
-            const iconEl = new icon_2.Icon(parent, {
-                name: 'times',
-                width: '0.875rem', height: '0.875rem',
-                padding: { top: '0.125rem', bottom: '0.125rem', left: '0.125rem', right: '0.125rem' },
-                border: { radius: '50%' },
-                background: { color: Theme.text.primary },
-                fill: Theme.colors.primary.contrastText,
-                visible: false
-            });
-            const statusElm = new label_2.Label(parent, {
-                caption: '',
-            });
-            switch (status) {
-                case 1:
-                    iconEl.name = 'check';
-                    iconEl.background.color = Theme.colors.success.main;
-                    iconEl.visible = true;
-                    statusElm.caption = 'Completed';
-                    break;
-                case 2:
-                    iconEl.name = 'times';
-                    iconEl.background.color = Theme.colors.error.main;
-                    iconEl.visible = true;
-                    statusElm.caption = 'Failed';
-                case 3:
-                    statusElm.caption = 'Uploading';
-            }
-            return statusElm;
-        }
-        getPagination(currentIndex, totalPages) {
-            let current = currentIndex, last = totalPages, delta = 2, left = current - delta, right = current + delta + 1, range = [], rangeWithDots = [], l;
-            for (let i = 1; i <= last; i++) {
-                if (i == 1 || i == last || (i >= left && i < right)) {
-                    range.push(i);
-                }
-            }
-            for (let i of range) {
-                if (l) {
-                    if (i - l === 2) {
-                        rangeWithDots.push(l + 1);
-                    }
-                    else if (i - l !== 1) {
-                        rangeWithDots.push('...');
-                    }
-                }
-                rangeWithDots.push(i);
-                l = i;
-            }
-            return rangeWithDots;
-        }
-        async renderPagination() {
-            const numPages = this.numPages();
-            const rangeWithDots = this.getPagination(this.currentPage, numPages);
-            if (numPages >= 1) {
-                if (this.currentPage > numPages) {
-                    this.setCurrentPage(numPages);
-                }
-                else {
-                    this._paginationElm.clearInnerHTML();
-                    const prevBtn = new button_1.Button(this._paginationElm, {
-                        icon: { name: 'chevron-left', fill: Theme.colors.primary.dark, width: '0.75rem', height: '0.675rem' },
-                        width: '1.5rem',
-                        height: '1.5rem',
-                        border: { radius: '50%', width: '1px', style: 'solid', color: Theme.colors.primary.dark },
-                        font: { size: '0.688rem', weight: 700, color: Theme.colors.primary.dark },
-                        background: { color: 'transparent' },
-                        boxShadow: 'none'
-                    });
-                    prevBtn.onClick = () => {
-                        this.setCurrentPage(this.currentPage - 1);
-                    };
-                    for (let i = 0; i < rangeWithDots.length; i++) {
-                        const isActived = this.currentPage === rangeWithDots[i];
-                        const pageBtn = new button_1.Button(this._paginationElm, {
-                            caption: rangeWithDots[i].toString(),
-                            width: '1.5rem',
-                            height: '1.5rem',
-                            border: { radius: '50%', width: '1px', style: 'solid', color: Theme.colors.primary.dark },
-                            font: { size: '0.688rem', weight: 700, color: isActived ? Theme.colors.primary.contrastText : Theme.colors.primary.dark },
-                            background: { color: isActived ? Theme.colors.primary.dark : 'transparent' },
-                            boxShadow: 'none'
-                        });
-                        if (rangeWithDots[i] === '...') {
-                            pageBtn.border.color = 'transparent';
-                        }
-                        else {
-                            pageBtn.onClick = () => {
-                                this.setCurrentPage(rangeWithDots[i]);
-                            };
-                        }
-                    }
-                    const nexBtn = new button_1.Button(this._paginationElm, {
-                        icon: { name: 'chevron-right', fill: Theme.colors.primary.dark, width: '0.75rem', height: '0.675rem' },
-                        width: '1.5rem',
-                        height: '1.5rem',
-                        border: { radius: '50%', width: '1px', style: 'solid', color: Theme.colors.primary.dark },
-                        font: { size: '0.688rem', weight: 700, color: Theme.colors.primary.dark },
-                        background: { color: 'transparent' },
-                        boxShadow: 'none'
-                    });
-                    nexBtn.onClick = () => {
-                        this.setCurrentPage(this.currentPage + 1);
-                    };
-                }
-            }
-            else {
-                this._paginationElm.clearInnerHTML();
-            }
-        }
-        onChangeCurrentFilterStatus(status) {
-            this.currentFilterStatus = status;
-            this.renderFilterBar();
-            this.renderPagination();
-            this.renderFileList();
-        }
-        onClear() {
-            switch (this.currentFilterStatus) {
-                case FILE_STATUS.LISTED:
-                    this.fileListData =
-                        this.fileListData && this.fileListData.length
-                            ? this.fileListData.filter((fileData) => ![
-                                FILE_STATUS.LISTED,
-                                FILE_STATUS.SUCCESS,
-                                FILE_STATUS.FAILED,
-                            ].includes(fileData.status))
-                            : this.fileListData;
-                    break;
-                case FILE_STATUS.SUCCESS:
-                    this.fileListData =
-                        this.fileListData && this.fileListData.length
-                            ? this.fileListData.filter((fileData) => ![FILE_STATUS.SUCCESS].includes(fileData.status))
-                            : this.fileListData;
-                    break;
-                case FILE_STATUS.FAILED:
-                    this.fileListData =
-                        this.fileListData && this.fileListData.length
-                            ? this.fileListData.filter((fileData) => ![FILE_STATUS.FAILED].includes(fileData.status))
-                            : this.fileListData;
-                    break;
-            }
-            this.renderFilterBar();
-            this.renderFileList();
-            this.renderPagination();
-        }
-        onCancel() {
-            this.currentRequest.abort();
-            this.isForcedCancelled = true;
-        }
-        async onChangeFile(source, files) {
-            console.log('onChangeFile: ', files);
-            return new Promise(async (resolve, reject) => {
-                if (!files.length)
-                    reject();
-                this._fileUploader.enabled = true;
-                this._fileIcon.url = `${base_2.LibPath}assets/img/file-icon.png`;
-                this.updateBtnCaption();
-                for (let i = 0; i < files.length; i++) {
-                    this.fileListData.push({ file: files[i], status: 0, percentage: 0 });
-                    this.files.push(files[i]);
-                }
-                this.renderFileList();
-                this.renderFilterBar();
-                this.renderPagination();
-                this.toggle(true);
-                this._fileUploader.clear();
-            });
-        }
-        updateBtnCaption() {
-            this._dragLabelElm.caption = this.isSmallWidth ? 'Select Files' : 'Drag and drop your files here';
-        }
-        onRemove(source, file) { }
-        onRemoveFile(index) {
-            this.fileListData.splice(index, 1);
-            this.files.splice(index, 1);
-            this.renderFileList();
-            this.renderFilterBar();
-            this.renderPagination();
-            if (!this.fileListData.length) {
-                this.toggle(false);
-            }
-        }
-        // private async getCID(file: File) {
-        //   let fileString: string | ArrayBuffer = "";
-        //   const reader = new FileReader();
-        //   reader.onload = function (evt) {
-        //     if (evt.target.readyState != 2) return;
-        //     if (evt.target.error) {
-        //       alert("Error while reading file");
-        //       return;
-        //     }
-        //     fileString = evt.target.result;
-        //   };
-        //   reader.readAsText(file);
-        //   const cid = await hashContent(fileString);
-        //   return cid;
-        // }
-        // private async uploadRequest(i: number, file: { file: File }) {
-        //   debugger;
-        //   const formData = new FormData();
-        //   formData.append("file", file.file, file.file.name);
-        //   if (this.serverUrl) {
-        //     return new Promise((resolve, reject) => {
-        //       const _self = this;
-        //       this.currentRequest = new XMLHttpRequest();
-        //       this.currentRequest.open("POST", this.serverUrl);
-        //       this.currentRequest.upload.addEventListener("progress", function (e) {
-        //         const percentCompleted = (e.loaded / e.total) * 100;
-        //         _self.fileListData[i].percentage = (
-        //           Math.round(percentCompleted * 100) / 100
-        //         ).toFixed(2);
-        //         _self.renderFileList();
-        //       });
-        //       this.currentRequest.addEventListener("load", function (e) {
-        //         const result = JSON.parse(_self.currentRequest.response);
-        //         console.log("result: ", result, typeof result);
-        //         if (result && result.cid) {
-        //           if (_self.onUploaded)
-        //             _self.onUploaded(_self, file.file, result.cid);
-        //           _self.fileListData[i].status = FILE_STATUS.SUCCESS;
-        //           _self.renderFileList();
-        //         } else {
-        //           console.log("why", result, typeof result);
-        //           _self.fileListData[i].status = FILE_STATUS.FAILED;
-        //         }
-        //         _self.renderFilterBar();
-        //         _self.renderFileList();
-        //         _self.renderPagination();
-        //       });
-        //       this.currentRequest.addEventListener("error", function (e) {
-        //         _self.fileListData[i].status = FILE_STATUS.FAILED;
-        //         _self.renderFilterBar();
-        //         _self.renderFileList();
-        //         _self.renderPagination();
-        //       });
-        //       this.currentRequest.addEventListener("abort", function (e) {
-        //         _self.fileListData[i].status = FILE_STATUS.FAILED;
-        //         _self.renderFilterBar();
-        //         _self.renderFileList();
-        //         _self.renderPagination();
-        //       });
-        //       // send POST request to server
-        //       this.currentRequest.send(formData);
-        //       this.currentRequest.onload = function () {
-        //         if (_self.currentRequest.status === 200) {
-        //           resolve(_self.currentRequest.responseText);
-        //         } else {
-        //           reject(_self.currentRequest.status);
-        //         }
-        //       };
-        //     });
-        //   }
-        // }
-        getDirItems(cidItem, result) {
-            result = result || [];
-            if (cidItem.type == 'dir') {
-                let items = [];
-                if (cidItem.links) {
-                    for (let i = 0; i < cidItem.links?.length; i++) {
-                        let item = cidItem.links[i];
-                        if (item.type == 'dir')
-                            this.getDirItems(item, result);
-                        items.push({
-                            cid: item.cid,
-                            name: item.name,
-                            size: item.size,
-                            type: item.type,
-                        });
-                    }
-                }
-                result.push({
-                    cid: cidItem.cid,
-                    name: cidItem.name,
-                    size: cidItem.size,
-                    type: 'dir',
-                    links: items,
-                });
-            }
-            return result;
-        }
-        async onUpload() {
-            return new Promise(async (resolve, reject) => {
-                if (!this.fileListData.length)
-                    reject();
-                this._uploadBtnElm.caption = 'Uploading files to IPFS...';
-                this._uploadBtnElm.enabled = false;
-                this.isForcedCancelled = false;
-                const cidItems = await (0, ipfs_2.hashFiles)(this.files);
-                console.dir('### IPFS Upload ###');
-                console.log('cidItems: ', cidItems);
-                let dirItems = this.getDirItems(cidItems);
-                console.log('dirItems: ', dirItems);
-                if (this.parentDir && this.rootCid) {
-                    // uploadTo
-                    const oldParentDirCID = cidItems.cid;
-                    dirItems = dirItems.filter((dirItem) => dirItem.cid !== oldParentDirCID);
-                    const items = [];
-                    for (let i = 0; i < dirItems.length; i++) {
-                        let item = dirItems[i];
-                        items.push({ cid: item });
-                    }
-                    for (let i = 0; i < this.fileListData.length; i++) {
-                        const file = this.fileListData[i];
-                        const cidItem = cidItems.links?.find((cidItem) => cidItem.cid === file.file.cid?.cid);
-                        if (cidItem)
-                            items.push({ cid: cidItem, data: file.file });
-                    }
-                    try {
-                        const uploadResult = await application_2.application.uploadTo(this.parentDir.cid, items);
-                        console.log('uploadToResult: ', uploadResult);
-                        if (uploadResult && uploadResult.data) {
-                            uploadResult.data.name = this.parentDir.name;
-                            // Sync root folder
-                            if (this.parentDir.cid !== this.rootCid) {
-                                const syncResult = await application_2.application.uploadTo(this.rootCid, [
-                                    { cid: uploadResult.data },
-                                ]);
-                                console.log('syncResult: ', syncResult);
-                                if (syncResult && syncResult.data) {
-                                    if (this.onBeforeUploaded)
-                                        this.onBeforeUploaded(this, syncResult.data);
-                                }
-                            }
-                            else {
-                                if (this.onBeforeUploaded)
-                                    this.onBeforeUploaded(this, uploadResult.data);
-                            }
-                            for (let i = 0; i < this.fileListData.length; i++) {
-                                const file = this.fileListData[i];
-                                if (this.onUploaded && file.file.cid)
-                                    this.onUploaded(this, file.file, file.file.cid?.cid);
-                                file.status = FILE_STATUS.SUCCESS;
-                            }
-                            this.renderFilterBar();
-                            this.renderFileList();
-                        }
-                        // if (uploadResult && uploadResult.data) {
-                        //   // Sync root folder
-                        //   uploadResult.data.name = this.parentDir.name as string;
-                        //   console.log('uploadToResult before sync: ', this.parentDir);
-                        //   const syncResult = await application.uploadTo(this.rootCid, [
-                        //     { cid: uploadResult.data },
-                        //   ]);
-                        //   console.log('syncResult: ', syncResult);
-                        //   if (syncResult && syncResult.data) {
-                        //     if (this.onBeforeUploaded)
-                        //       this.onBeforeUploaded(this, syncResult.data);
-                        //   }
-                        // }
-                        // if (this.onUploaded)
-                        //   this.onUploaded(this, file.file, file.file.cid?.cid);
-                        // this.fileListData[i].status = FILE_STATUS.SUCCESS;
-                        // this.renderFilterBar();
-                        // this.renderFileList();
-                    }
-                    catch (err) {
-                        console.log('Error! ', err);
-                        // this.fileListData[i].status = FILE_STATUS.FAILED;
-                    }
-                }
-                else {
-                    // upload
-                    if (this.onBeforeUploaded)
-                        this.onBeforeUploaded(this, cidItems);
-                    let uploadUrl = await application_2.application.getUploadUrl(cidItems);
-                    for (let i = 0; i < dirItems.length; i++) {
-                        let item = dirItems[i];
-                        if (uploadUrl[item.cid]) {
-                            await application_2.application.upload(uploadUrl[item.cid], JSON.stringify(item));
-                        }
-                    }
-                    for (let i = 0; i < this.fileListData.length; i++) {
-                        if (this.isForcedCancelled) {
-                            break;
-                        }
-                        else {
-                            const file = this.fileListData[i];
-                            file.url = `/ipfs/${cidItems.cid}${file.file.path || file.file.name}`;
-                            if ([FILE_STATUS.SUCCESS, FILE_STATUS.UPLOADING].includes(file.status) ||
-                                !file.file.cid?.cid) {
-                                continue;
-                            }
-                            this.fileListData[i].status = FILE_STATUS.UPLOADING;
-                            this.renderFilterBar();
-                            if (uploadUrl[file.file.cid?.cid]) {
-                                try {
-                                    let result = await application_2.application.upload(uploadUrl[file.file.cid?.cid], file.file);
-                                    console.log('uploaded fileListData result: ', result);
-                                    if (this.onUploaded)
-                                        this.onUploaded(this, file.file, file.file.cid?.cid);
-                                    this.fileListData[i].status = FILE_STATUS.SUCCESS;
-                                    this.renderFilterBar();
-                                    this.renderFileList();
-                                }
-                                catch (err) {
-                                    console.log('Error! ', err);
-                                    this.fileListData[i].status = FILE_STATUS.FAILED;
-                                }
-                            }
-                        }
-                    }
-                    this.renderFilterBar();
-                    this.renderFileList();
-                    this.renderPagination();
-                    this._uploadBtnElm.caption = 'Upload file to IPFS';
-                    this._uploadBtnElm.enabled = true;
-                }
-            });
-        }
-        reset() {
-            this._fileListElm.clearInnerHTML();
-            this._paginationElm.clearInnerHTML();
-            this._uploadBtnElm.caption = 'Upload file to IPFS';
-            this._uploadBtnElm.enabled = true;
-            this.fileListData = [];
-            this.files = [];
-            this.toggle(false);
-        }
-        toggle(showFileList) {
-            if (showFileList) {
-                this._statusFilterElm.visible = true;
-                this._uploadBtnElm.visible = true;
-                this._notePnlElm.visible = false;
-            }
-            else {
-                this._statusFilterElm.visible = false;
-                this._uploadBtnElm.visible = false;
-                this._notePnlElm.visible = true;
-            }
-        }
-        async init() {
-            if (!this.initialized) {
-                super.init();
-                this.rootCid = this.getAttribute('rootCid', true);
-                this.parentDir = this.getAttribute('parentDir', true);
-                this._uploadModalElm = await modal_1.Modal.create({
-                    showBackdrop: true,
-                    closeOnBackdropClick: false,
-                    popupPlacement: 'center',
-                    width: '800px',
-                    maxWidth: '100%',
-                    height: 'auto',
-                    padding: { top: 0, right: 0, bottom: 0, left: 0 },
-                    border: { radius: '0.675rem' },
-                    boxShadow: '0 1px 5px 0 rgb(0 0 0 / 12%), 0 2px 10px 0 rgb(0 0 0 / 8%), 0 1px 20px 0 rgb(0 0 0 / 8%)',
-                    maxHeight: '90vh',
-                    overflow: { y: 'auto' },
-                    zIndex: 1000,
-                    mediaQueries: [
-                        {
-                            maxWidth: '767px',
-                            properties: {
-                                maxHeight: '100%',
-                                height: '100vh',
-                                width: '100vw'
-                            }
-                        }
-                    ],
-                    onClose: () => this.reset(),
-                });
-                this.appendChild(this._uploadModalElm);
-                this._uploadBoxElm = new layout_2.Panel(this, {
-                    height: '100%',
-                    overflow: 'hidden',
-                    border: { radius: '0.375rem' },
-                    padding: {
-                        top: '3.125rem',
-                        right: '8.5rem',
-                        bottom: '3.125rem',
-                        left: '8.125rem',
-                    },
-                    mediaQueries: [
-                        {
-                            maxWidth: '767px',
-                            properties: {
-                                padding: {
-                                    top: '1.5rem',
-                                    right: '1.5rem',
-                                    bottom: '1.5rem',
-                                    left: '1.5rem',
-                                }
-                            }
-                        }
-                    ]
-                });
-                // Close Button
-                this._closeBtnElm = new button_1.Button(this._uploadBoxElm, {
-                    icon: { name: 'times' },
-                    position: 'absolute',
-                    top: '1rem',
-                    right: '1rem',
-                    maxHeight: '10%',
-                    zIndex: 2,
-                    background: { color: 'transparent' },
-                    boxShadow: 'none',
-                    padding: { top: 0, right: 0, bottom: 0, left: 0 },
-                    onClick: () => this.hide(),
-                });
-                const headingElm = new label_2.Label(this._uploadBoxElm, {
-                    caption: 'Upload more files',
-                    font: { size: 'clamp(1rem, 1rem + 0.625vw, 1.625rem)', color: Theme.colors.primary.dark, weight: 700 },
-                    lineHeight: 1.5,
-                    display: 'block',
-                    class: "text-center"
-                });
-                const labelElm = new label_2.Label(this._uploadBoxElm, {
-                    caption: 'Choose file to upload to IPFS network',
-                    margin: { bottom: '0.5rem' },
-                    display: 'block',
-                    class: "text-center"
-                });
-                const fileUploaderDropzone = new layout_2.VStack(this._uploadBoxElm, {
-                    maxHeight: 'calc(100% - 4.5rem)',
-                    margin: { top: '2rem', bottom: '2.5rem' },
-                    gap: '1.5rem'
-                });
-                fileUploaderDropzone.classList.add('file-uploader-dropzone');
-                const droparea = new layout_2.VStack(fileUploaderDropzone, {
-                    horizontalAlignment: 'center',
-                    verticalAlignment: 'center',
-                    padding: { top: '1.875rem', bottom: '1.875rem' },
-                    background: { color: 'rgba(255,255,255,.1)' },
-                    border: { radius: '0.625rem', width: '2px', style: 'dashed', color: Theme.colors.primary.light },
-                    cursor: 'pointer',
-                    gap: '1rem',
-                    position: 'relative'
-                });
-                this._fileUploader = new upload_1.Upload(droparea, {
-                    multiple: true,
-                    draggable: true,
-                });
-                this._fileUploader.onBeforeDrop = (source) => this.onBeforeDrop(source);
-                this._fileUploader.onUploading = this.onBeforeUpload;
-                this._fileUploader.onChanged = (source, files) => this.onChangeFile(source, files);
-                this._fileUploader.onRemoved = () => this.onRemove;
-                this._fileIcon = new image_2.Image(droparea, { width: 60, height: 60 });
-                this._fileIcon.classList.add('icon');
-                this._fileIcon.url = `${base_2.LibPath}assets/img/file-icon.png`;
-                this._dragLabelElm = new label_2.Label(droparea, {
-                    caption: 'Drag and drop your files here',
-                });
-                this._statusFilterElm = new layout_2.HStack(fileUploaderDropzone, {
-                    horizontalAlignment: 'space-between',
-                });
-                this._statusFilterElm.classList.add('status-filter');
-                this._statusFilterElm.visible = false;
-                this._filterBarElm = new layout_2.HStack(this._statusFilterElm, {
-                    gap: '0.675rem',
-                    mediaQueries: [
-                        {
-                            maxWidth: '767px',
-                            properties: { visible: false }
-                        }
-                    ]
-                });
-                this._filterBarElm.classList.add('filter-bar');
-                this._filterActionsElm = new layout_2.Panel(this._statusFilterElm, {
-                    margin: { left: 'auto' }
-                });
-                this._fileListElm = new layout_2.VStack(fileUploaderDropzone, { gap: '0.5rem', margin: { bottom: '0.5rem' } });
-                this._fileListElm.classList.add('filelist');
-                this._paginationElm = new layout_2.HStack(fileUploaderDropzone, {
-                    gap: '0.313rem',
-                    horizontalAlignment: 'center',
-                    verticalAlignment: 'center',
-                    mediaQueries: [
-                        {
-                            maxWidth: '767px',
-                            properties: { visible: false }
-                        }
-                    ]
-                });
-                this._paginationElm.classList.add('pagination');
-                this._uploadBtnElm = new button_1.Button(fileUploaderDropzone, {
-                    caption: 'Upload files to IPFS',
-                    class: 'upload-btn',
-                    boxShadow: 'none',
-                    background: { color: Theme.colors.primary.main },
-                    font: { color: Theme.colors.primary.contrastText },
-                    padding: { top: '0.5rem', bottom: '0.5rem', left: '0.5rem', right: '0.5rem' },
-                    visible: false,
-                });
-                // 'bafybeihjfcilu5jupyt7yllhbhjj3jx4js3scnlk7kcjk7rpsgxwktimba'
-                this._uploadBtnElm.onClick = () => this.onUpload();
-                this._notePnlElm = new layout_2.Panel(this._uploadBoxElm);
-                const note1Elm = new layout_2.VStack(this._notePnlElm, {
-                    class: 'note',
-                    lineHeight: '1.4375rem',
-                    padding: { left: '1.25rem', right: '0.25rem' },
-                    gap: '1.5rem'
-                });
-                const head1Elm = new label_2.Label(note1Elm, {
-                    caption: 'Public Data',
-                    class: 'head',
-                    font: { weight: 700, size: '0.875rem' }
-                });
-                const desc1Elm = new label_2.Label(note1Elm, {
-                    caption: 'All data uploaded to IPFS Explorer is available to anyone who requests it using the correct CID. Do not store any private or sensitive information in an unencrypted form using IPFS Explorer.',
-                    class: 'desc',
-                    font: { size: '0.75rem', weight: 400, color: Theme.text.secondary },
-                    letterSpacing: 0
-                });
-                const note2Elm = new layout_2.VStack(this._notePnlElm, {
-                    class: 'note',
-                    lineHeight: '1.4375rem',
-                    padding: { left: '1.25rem', right: '0.25rem' },
-                });
-                const head2Elm = new label_2.Label(note2Elm, {
-                    caption: 'Permanent Data',
-                    class: 'head',
-                    font: { weight: 700, size: '0.875rem' }
-                });
-                const des2cElm = new label_2.Label(note2Elm, {
-                    caption: 'Deleting files from the IPFS Explorer site’s Files page will remove them from the file listing for your account, but that doesn’t prevent nodes on the decentralized storage network from retaining copies of the data indefinitely. Do not use IPFS Explorer for data that may need to be permanently deleted in the future.',
-                    class: 'desc',
-                    font: { size: '0.75rem', weight: 400, color: Theme.text.secondary },
-                    letterSpacing: 0
-                });
-                this._uploadModalElm.item = this._uploadBoxElm;
-            }
-        }
-        static async create(options, parent) {
-            let self = new this(parent, options);
-            await self.ready();
-            return self;
-        }
-    };
-    UploadModal = __decorate([
-        (0, base_2.customElements)('i-upload-modal')
-    ], UploadModal);
-    exports.UploadModal = UploadModal;
-});
-define("@ijstech/upload", ["require", "exports", "@ijstech/upload/upload.ts", "@ijstech/upload/upload-modal.ts"], function (require, exports, upload_2, upload_modal_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.UploadModal = exports.Upload = void 0;
-    Object.defineProperty(exports, "Upload", { enumerable: true, get: function () { return upload_2.Upload; } });
-    Object.defineProperty(exports, "UploadModal", { enumerable: true, get: function () { return upload_modal_1.UploadModal; } });
+    exports.Upload = void 0;
+    Object.defineProperty(exports, "Upload", { enumerable: true, get: function () { return upload_1.Upload; } });
 });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -27127,6 +25317,308 @@ define("@ijstech/tooltip", ["require", "exports", "@ijstech/tooltip/tooltip.ts"]
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Tooltip = void 0;
     Object.defineProperty(exports, "Tooltip", { enumerable: true, get: function () { return tooltip_1.Tooltip; } });
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+define("@ijstech/button/style/button.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    const Theme = Styles.Theme.ThemeVars;
+    Styles.cssRule('i-button', {
+        background: Theme.colors.primary.main,
+        boxShadow: Theme.shadows[2],
+        color: Theme.text.primary,
+        // display: 'inline-block',
+        // verticalAlign: 'middle',
+        // textAlign: 'center',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 4,
+        fontFamily: Theme.typography.fontFamily,
+        fontSize: Theme.typography.fontSize,
+        cursor: 'pointer',
+        userSelect: 'none',
+        $nest: {
+            "&:not(.disabled):hover": {
+            // cursor: 'pointer',            
+            // backgroundColor: Theme.colors.primary.dark,
+            // boxShadow: Theme.shadows[4],
+            // background: Theme.colors.primary.main
+            },
+            "&.disabled": {
+                color: Theme.text.disabled,
+                boxShadow: Theme.shadows[0],
+                background: Theme.action.disabledBackground,
+                cursor: 'not-allowed'
+            },
+            "i-icon": {
+                display: 'inline-block',
+                fill: Theme.text.primary,
+                verticalAlign: 'middle',
+            },
+            '.caption': {
+                paddingRight: '.5rem'
+            },
+            "&.is-spinning, &.is-spinning:not(.disabled):hover, &.is-spinning:not(.disabled):focus": {
+                color: Theme.text.disabled,
+                boxShadow: Theme.shadows[0],
+                background: Theme.action.disabledBackground,
+                cursor: 'default'
+            },
+            "&.has-caption": {
+                gap: 5
+            }
+        }
+    });
+});
+define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ijstech/icon", "@ijstech/style", "@ijstech/types", "@ijstech/application", "@ijstech/button/style/button.css.ts"], function (require, exports, base_1, icon_1, style_1, types_1, application_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Button = void 0;
+    const defaultIcon = {
+        width: 16,
+        height: 16,
+        fill: style_1.Theme.ThemeVars.text.primary
+    };
+    let Button = class Button extends base_1.Control {
+        static async create(options, parent) {
+            let self = new this(parent, options);
+            await self.ready();
+            return self;
+        }
+        constructor(parent, options) {
+            super(parent, options);
+        }
+        updateLocale(i18n) {
+            super.updateLocale(i18n);
+            if (this.captionElm && this._caption?.startsWith('$'))
+                this.captionElm.innerHTML = i18n.get(this._caption) || '';
+        }
+        get caption() {
+            const value = this._caption || '';
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(this._caption) ||
+                    application_1.application.i18n?.get(this._caption) ||
+                    '';
+                return translated;
+            }
+            return value;
+        }
+        set caption(value) {
+            if (typeof value !== 'string')
+                value = String(value || '');
+            this._caption = value;
+            if (!this.captionElm)
+                return;
+            this.captionElm.innerHTML = this.caption;
+            this.captionElm.style.display = value ? "" : "none";
+        }
+        get icon() {
+            if (!this._icon) {
+                let iconAttr = this.getAttribute('icon', true);
+                iconAttr = { ...defaultIcon, ...iconAttr };
+                this._icon = new icon_1.Icon(this, iconAttr);
+                this.prependIcon(this._icon);
+            }
+            return this._icon;
+        }
+        set icon(value) {
+            if (this._icon && this.contains(this._icon))
+                this.removeChild(this._icon);
+            this._icon = value;
+            this.prependIcon(this._icon);
+        }
+        get rightIcon() {
+            if (!this._rightIcon) {
+                let rightIconAttr = this.getAttribute('rightIcon', true);
+                this._rightIcon = new icon_1.Icon(this, {
+                    ...defaultIcon,
+                    name: 'spinner',
+                    ...rightIconAttr
+                });
+                this.appendIcon(this._rightIcon);
+            }
+            return this._rightIcon;
+        }
+        set rightIcon(value) {
+            if (this._rightIcon && this.contains(this._rightIcon))
+                this.removeChild(this._rightIcon);
+            this._rightIcon = value;
+            this.appendIcon(this._rightIcon);
+        }
+        get enabled() {
+            return super.enabled;
+        }
+        set enabled(value) {
+            super.enabled = value;
+            if (!value && this._background) {
+                let bg = '';
+                this._background?.image && (bg += `url(${this._background?.image})`);
+                this._background?.color && (bg += `${this._background?.color}`);
+                this.style.background = bg;
+            }
+        }
+        get isSpinning() {
+            return (this._icon && this._icon.spin && this._icon.visible) ||
+                (this._rightIcon && this._rightIcon.spin && this._rightIcon.visible);
+        }
+        prependIcon(icon) {
+            if (!icon)
+                return;
+            this.appendChild(icon);
+            this.captionElm &&
+                this.insertBefore(icon, this.captionElm);
+        }
+        appendIcon(icon) {
+            if (!icon)
+                return;
+            this.appendChild(icon);
+            this.captionElm &&
+                this.insertBefore(this.captionElm, icon);
+        }
+        updateButton() {
+            if (this.isSpinning)
+                this.classList.add('is-spinning');
+            else
+                this.classList.remove('is-spinning');
+            if (!this.enabled && this._background) {
+                let bg = '';
+                this._background?.image && (bg += `url(${this._background?.image})`);
+                this._background?.color && (bg += `${this._background?.color}`);
+                this.style.background = bg;
+            }
+            if (this._caption)
+                this.classList.add('has-caption');
+            else
+                this.classList.remove('has-caption');
+        }
+        _handleClick(event) {
+            if (this.isSpinning || !this.enabled || this._designMode)
+                return false;
+            return super._handleClick(event);
+        }
+        refresh() {
+            super.refresh();
+            this.updateButton();
+        }
+        init() {
+            if (!this.captionElm) {
+                super.init();
+                this.onClick = this.getAttribute('onClick', true) || this.onClick;
+                this.captionElm = this.createElement('span', this);
+                let caption = this.getAttribute('caption', true, '');
+                this.caption = caption;
+                // if (this.height)
+                //     defaultIcon.width = defaultIcon.height = Math.floor(+this.height / 2)
+                let iconAttr = this.getAttribute('icon', true);
+                if (iconAttr?.name || iconAttr?.image?.url) {
+                    iconAttr = { ...defaultIcon, ...iconAttr };
+                    const icon = new icon_1.Icon(this, iconAttr);
+                    this.icon = icon;
+                }
+                let rightIconAttr = this.getAttribute('rightIcon', true);
+                if (rightIconAttr?.name || rightIconAttr?.image?.url) {
+                    rightIconAttr = { ...defaultIcon, name: 'spinner', ...rightIconAttr };
+                    const icon = new icon_1.Icon(this, rightIconAttr);
+                    this.rightIcon = icon;
+                }
+            }
+        }
+    };
+    Button = __decorate([
+        (0, base_1.customElements)('i-button', {
+            icon: 'closed-captioning',
+            className: 'Button',
+            props: {
+                caption: {
+                    type: 'string',
+                    default: ''
+                },
+                icon: {
+                    type: 'object',
+                    default: {}
+                },
+                rightIcon: {
+                    type: 'object',
+                    default: {}
+                },
+            },
+            events: {},
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    caption: {
+                        type: 'string'
+                    },
+                    icon: {
+                        type: 'object',
+                        properties: {
+                            name: {
+                                type: 'string'
+                            },
+                            fill: {
+                                type: 'string',
+                                format: 'color'
+                            },
+                            width: {
+                                type: 'number'
+                            },
+                            height: {
+                                type: 'number'
+                            },
+                            image: {
+                                type: 'object',
+                                properties: {
+                                    url: {
+                                        type: 'string'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    rightIcon: {
+                        type: 'object',
+                        properties: {
+                            name: {
+                                type: 'string'
+                            },
+                            fill: {
+                                type: 'string',
+                                format: 'color'
+                            },
+                            width: {
+                                type: 'number'
+                            },
+                            height: {
+                                type: 'number'
+                            },
+                            image: {
+                                type: 'object',
+                                properties: {
+                                    url: {
+                                        type: 'string'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            group: types_1.GroupType.BASIC
+        })
+    ], Button);
+    exports.Button = Button;
+});
+define("@ijstech/button", ["require", "exports", "@ijstech/button/button.ts"], function (require, exports, button_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Button = void 0;
+    Object.defineProperty(exports, "Button", { enumerable: true, get: function () { return button_1.Button; } });
 });
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -27893,6 +26385,597 @@ define("@ijstech/tab", ["require", "exports", "@ijstech/tab/tab.ts"], function (
     exports.Tab = exports.Tabs = void 0;
     Object.defineProperty(exports, "Tabs", { enumerable: true, get: function () { return tab_1.Tabs; } });
     Object.defineProperty(exports, "Tab", { enumerable: true, get: function () { return tab_1.Tab; } });
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+define("@ijstech/progress/style/progress.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    const Theme = Styles.Theme.ThemeVars;
+    const loading = Styles.keyframes({
+        '0%': {
+            left: '-100%'
+        },
+        '100%': {
+            left: '100%'
+        }
+    });
+    Styles.cssRule('i-progress', {
+        display: 'block',
+        maxWidth: '100%',
+        verticalAlign: 'baseline',
+        fontFamily: Theme.typography.fontFamily,
+        fontSize: Theme.typography.fontSize,
+        color: Theme.text.primary,
+        position: 'relative',
+        $nest: {
+            '&.is-loading .i-progress_overlay': {
+                transform: 'translateZ(0)',
+                animation: `${loading} 3s infinite`
+            },
+            '.i-progress': {
+                boxSizing: 'border-box',
+                margin: 0,
+                minWidth: 0,
+                width: '100%',
+                display: 'block'
+            },
+            '.i-progress--grid': {
+                display: 'grid',
+                gap: 20,
+                gridTemplateColumns: 'auto 1fr 80px',
+                alignItems: 'center'
+            },
+            '.i-progress--exception': {
+                $nest: {
+                    '> .i-progress_wrapbar > .i-progress_overlay': {
+                        backgroundColor: Theme.colors.error.light
+                    },
+                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
+                        backgroundColor: Theme.colors.error.light
+                    },
+                    '.i-progress_item.i-progress_item-start': {
+                        borderColor: Theme.colors.error.light
+                    },
+                    '.i-progress_item.i-progress_item-end': {}
+                }
+            },
+            '.i-progress--success': {
+                $nest: {
+                    '> .i-progress_wrapbar > .i-progress_overlay': {
+                        backgroundColor: Theme.colors.success.light
+                    },
+                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
+                        backgroundColor: Theme.colors.success.light
+                    },
+                    '.i-progress_item.i-progress_item-start': {
+                        borderColor: Theme.colors.success.light
+                    },
+                    '.i-progress_item.i-progress_item-end': {}
+                }
+            },
+            '.i-progress--warning': {
+                $nest: {
+                    '> .i-progress_wrapbar > .i-progress_overlay': {
+                        backgroundColor: Theme.colors.warning.light
+                    },
+                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
+                        backgroundColor: Theme.colors.warning.light
+                    },
+                    '.i-progress_item.i-progress_item-start': {
+                        borderColor: Theme.colors.warning.light
+                    },
+                    '.i-progress_item.i-progress_item-end': {}
+                }
+            },
+            '.i-progress--active': {
+                $nest: {
+                    '> .i-progress_wrapbar > .i-progress_overlay': {
+                        backgroundColor: Theme.colors.primary.light
+                    },
+                    '> .i-progress_wrapbar > .i-progress_bar .i-progress_bar-item': {
+                        backgroundColor: Theme.colors.primary.light
+                    },
+                    '.i-progress_item.i-progress_item-start': {
+                        backgroundColor: 'transparent',
+                        borderColor: Theme.colors.primary.light
+                    }
+                }
+            },
+            '.i-progress_wrapbar': {
+                position: 'relative',
+                overflow: 'hidden',
+                boxSizing: 'border-box',
+                minWidth: 0,
+                order: 2,
+                minHeight: 2,
+                borderRadius: 'inherit',
+                backgroundColor: Theme.divider,
+                $nest: {
+                    '&.has-steps': {
+                        backgroundColor: 'transparent',
+                    },
+                    '.i-progress_bar': {
+                        boxSizing: 'border-box',
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1px',
+                        $nest: {
+                            '&.has-bg': {
+                                backgroundColor: Theme.divider
+                            },
+                            '.i-progress_bar-item': {
+                                flex: 'auto',
+                                backgroundColor: Theme.divider
+                            }
+                        }
+                    },
+                    '.i-progress_overlay': {
+                        position: 'absolute',
+                        minWidth: 0,
+                        height: '100%'
+                    }
+                }
+            },
+            '.i-progress_item': {
+                boxSizing: 'border-box',
+                margin: '0px -1.2px 0px 0px',
+                minWidth: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'relative',
+                $nest: {
+                    '&.i-progress_item-start': {
+                        borderWidth: 1,
+                        borderStyle: 'solid',
+                        borderImage: 'initial',
+                        borderRadius: 14,
+                        borderColor: Theme.divider,
+                        padding: '4px 12px',
+                        order: 1
+                    },
+                    '&.i-progress_item-end': {
+                        boxSizing: 'border-box',
+                        margin: 0,
+                        minWidth: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        cursor: 'default',
+                        position: 'relative',
+                        order: 3,
+                        alignItems: 'flex-start',
+                    }
+                }
+            },
+            '&.i-progress--stretch': {
+                $nest: {
+                    '@media only screen and (max-width: 768px)': {
+                        $nest: {
+                            '.i-progress_wrapbar': {
+                                display: 'none !important'
+                            },
+                            '.i-progress_item-end': {
+                                display: 'none !important'
+                            },
+                            '.is-mobile': {
+                                display: 'inline-block'
+                            },
+                            '.i-progress--grid': {
+                                gridTemplateColumns: 'auto',
+                                justifyContent: 'center'
+                            }
+                        }
+                    }
+                }
+            },
+            '.i-progress--circle ~ .i-progress_text': {
+                position: 'absolute',
+                top: '50%',
+                left: 0,
+                width: '100%',
+                textAlign: 'center',
+                transform: 'translateY(-50%)'
+            },
+            '.i-progress--line ~ .i-progress_text': {
+                display: 'inline-block',
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)'
+            },
+            '.i-progress--line': {
+                borderRadius: 'inherit'
+            }
+        }
+    });
+});
+define("@ijstech/progress/progress.ts", ["require", "exports", "@ijstech/base", "@ijstech/style", "@ijstech/types", "@ijstech/progress/style/progress.css.ts"], function (require, exports, base_1, Styles, types_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Progress = void 0;
+    const Theme = Styles.Theme.ThemeVars;
+    const defaultVals = {
+        percent: 0,
+        height: 20,
+        loading: false,
+        steps: 1,
+        type: 'line',
+        strokeWidth: 2
+    };
+    let Progress = class Progress extends base_1.Control {
+        constructor(parent, options) {
+            super(parent, options, {
+                ...defaultVals
+            });
+            if (options?.onRenderStart)
+                this.onRenderStart = options.onRenderStart;
+            if (options?.onRenderEnd)
+                this.onRenderEnd = options.onRenderEnd;
+        }
+        get percent() {
+            return this._percent;
+        }
+        set percent(value) {
+            this._percent = +value < 0 ? 0 : +value > 100 ? 100 : +value;
+            const overlayElm = this.querySelector('.i-progress_overlay');
+            if (overlayElm) {
+                overlayElm.style.width = `${this._percent}%`;
+                overlayElm.style.backgroundColor = this.stroke;
+            }
+            if (this._percent > 0 && this._percent < 100)
+                this._wrapperElm.classList.add('i-progress--active');
+            else if (this._percent === 100)
+                this._wrapperElm.classList.add('i-progress--success');
+            if (typeof this.format === 'function') {
+                if (!this._textElm) {
+                    this._textElm = this.createElement('span', this);
+                    this._textElm.classList.add('i-progress_text');
+                    this._textElm.style.fontSize = this.progressTextSize + 'px';
+                    this._textElm.style.color = this.strokeColor;
+                }
+                this._textElm.innerHTML = this.format(this._percent);
+            }
+            if (this.type === 'circle') {
+                this.updateCircleInner();
+            }
+        }
+        get strokeColor() {
+            return this._strokeColor || Theme.colors.primary.main;
+        }
+        set strokeColor(value) {
+            this._strokeColor = value;
+            if (this.type === 'circle') {
+                this.renderCircleInner();
+            }
+            else if (this.type === 'line') {
+                const overlayElm = this.querySelector('.i-progress_overlay');
+                if (overlayElm)
+                    overlayElm.style.backgroundColor = this.stroke;
+            }
+        }
+        get loading() {
+            return this._loading;
+        }
+        set loading(value) {
+            this._loading = value;
+            if (value)
+                this.classList.add('is-loading');
+            else
+                this.classList.remove('is-loading');
+        }
+        get steps() {
+            return this._steps;
+        }
+        set steps(value) {
+            this._steps = +value;
+            if (this.type === 'circle')
+                return;
+            const wrapbarElm = this.querySelector('.i-progress_bar');
+            const overlayElm = this.querySelector('.i-progress_overlay');
+            const wrapperElm = this.querySelector('.i-progress_wrapbar');
+            if (wrapperElm)
+                wrapperElm.classList.toggle('has-steps', this._steps > 1);
+            wrapbarElm.innerHTML = '';
+            if (this._steps > 1) {
+                const unitStep = 100 / this._steps;
+                const percentStep = Math.ceil(this.percent / unitStep);
+                const remainder = this.percent % unitStep;
+                const initialH = Math.max(1, Math.floor(this.strokeWidth / 2));
+                for (let i = 0; i < this._steps; i++) {
+                    const barItem = this.createElement('div');
+                    barItem.style.width = unitStep + '%';
+                    barItem.style.height = `${i + initialH}px`;
+                    if (i === percentStep - 1 && remainder !== 0) {
+                        const childElm = this.createElement('div');
+                        childElm.classList.add('i-progress_bar-item');
+                        childElm.style.width = ((remainder * 100) / unitStep) + '%';
+                        childElm.style.height = `${i + initialH}px`;
+                        childElm.style.backgroundColor = this.stroke;
+                        barItem.appendChild(childElm);
+                    }
+                    else if (i < percentStep) {
+                        barItem.classList.add('i-progress_bar-item');
+                        barItem.style.backgroundColor = this.stroke;
+                    }
+                    wrapbarElm.appendChild(barItem);
+                }
+                wrapbarElm.classList.remove('has-bg');
+                overlayElm && (overlayElm.style.display = 'none');
+            }
+            else {
+                wrapbarElm.classList.add('has-bg');
+                overlayElm && (overlayElm.style.display = 'block');
+            }
+        }
+        get type() {
+            return this._type;
+        }
+        set type(value) {
+            this._type = value;
+            if (value === 'circle') {
+                this.renderCircle();
+            }
+            else {
+                this.renderLine();
+            }
+        }
+        get strokeWidth() {
+            return this._strokeWidth || defaultVals.strokeWidth;
+        }
+        set strokeWidth(value) {
+            this._strokeWidth = value || defaultVals.strokeWidth;
+            const overlayElm = this.querySelector('.i-progress_wrapbar');
+            if (overlayElm)
+                overlayElm.style.height = `${this._strokeWidth}px`;
+        }
+        get font() {
+            return {
+                color: this._textElm.style.color,
+                name: this._textElm.style.fontFamily,
+                size: this._textElm.style.fontSize,
+                bold: this._textElm.style.fontStyle.indexOf('bold') >= 0,
+                style: this._textElm.style.fontStyle,
+                transform: this._textElm.style.textTransform,
+                weight: this._textElm.style.fontWeight,
+                shadow: this._textElm.style.textShadow
+            };
+        }
+        set font(value) {
+            if (this._textElm) {
+                this._textElm.style.color = value.color || '';
+                this._textElm.style.fontSize = value.size || '';
+                this._textElm.style.fontWeight = value.bold ? 'bold' : '';
+                this._textElm.style.fontFamily = value.name || '';
+                this._textElm.style.fontStyle = value.style || '';
+                this._textElm.style.textTransform = value.transform || 'none';
+                this._textElm.style.fontWeight = value.bold ? 'bold' : (`${value.weight}` || '');
+                this._textElm.style.textShadow = value.shadow || 'none';
+            }
+        }
+        get relativeStrokeWidth() {
+            return (this.strokeWidth / +this.width * 100).toFixed(1);
+        }
+        get radius() {
+            if (this.type === 'circle') {
+                const value = 50 - (parseFloat(this.relativeStrokeWidth) / 2);
+                return parseInt(value.toFixed(1), 10);
+            }
+            else {
+                return 0;
+            }
+        }
+        get trackPath() {
+            const radius = this.radius;
+            return `
+          M 50 50
+          m 0 -${radius}
+          a ${radius} ${radius} 0 1 1 0 ${radius * 2}
+          a ${radius} ${radius} 0 1 1 0 -${radius * 2}
+          `;
+        }
+        get perimeter() {
+            return 2 * Math.PI * this.radius;
+        }
+        get rate() {
+            return 1;
+        }
+        get strokeDashoffset() {
+            const offset = -1 * this.perimeter * (1 - this.rate) / 2;
+            return `${offset}px`;
+        }
+        get trailPathStyle() {
+            const strokeDasharray = `${this.perimeter * this.rate}px, ${this.perimeter}px`;
+            const strokeDashoffset = this.strokeDashoffset;
+            return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset};`;
+        }
+        get circlePathStyle() {
+            const strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
+            const strokeDashoffset = this.strokeDashoffset;
+            const transition = 'stroke-dasharray 0.6s ease 0s, stroke 0.6s ease';
+            return `stroke-dasharray: ${strokeDasharray}; stroke-dashoffset: ${strokeDashoffset}; transition: ${transition};`;
+        }
+        get stroke() {
+            let ret = this.strokeColor;
+            if (this.percent === 100)
+                ret = Theme.colors.success.main;
+            return ret;
+        }
+        get trackColor() {
+            return Theme.divider;
+        }
+        get progressTextSize() {
+            return this.type === 'line'
+                ? 12 + this.strokeWidth * 0.4
+                : +this.width * 0.111111 + 2;
+        }
+        renderLine() {
+            this.height = 'auto';
+            this._wrapperElm.innerHTML = '';
+            this._wrapperElm.classList.add('i-progress--line');
+            this._barElm = this.createElement('div', this._wrapperElm);
+            this._barElm.classList.add('i-progress_wrapbar');
+            this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.stroke}"></div>`;
+        }
+        renderCircle() {
+            this._wrapperElm.classList.add('i-progress--circle');
+            if (this.width)
+                this.height = this.width;
+            this.renderCircleInner();
+        }
+        renderCircleInner() {
+            const templateHtml = `<svg viewBox="0 0 100 100">
+            <path class="i-progress-circle__track"
+            d="${this.trackPath}"
+            stroke="${this.trackColor}"
+            stroke-width="${this.relativeStrokeWidth}"
+            fill="none"
+            style="${this.trailPathStyle}"></path>
+            <path
+            class="i-progress-circle__path"
+            d="${this.trackPath}"
+            stroke="${this.stroke}"
+            fill="none"
+            stroke-linecap="round"
+            stroke-width="${this.percent ? this.relativeStrokeWidth : 0}"
+            style="${this.circlePathStyle}"></path>
+        </svg>`;
+            this._wrapperElm.innerHTML = '';
+            this._wrapperElm.innerHTML = templateHtml;
+        }
+        updateCircleInner() {
+            const svgPath = this._wrapperElm.querySelector('.i-progress-circle__path');
+            if (svgPath) {
+                svgPath.style.strokeDasharray = `${this.perimeter * this.rate * (this.percent / 100)}px, ${this.perimeter}px`;
+                svgPath.setAttribute("stroke-width", `${this.percent ? this.relativeStrokeWidth : 0}`);
+            }
+        }
+        init() {
+            if (!this.initialized) {
+                super.init();
+                if (this.options?.onRenderStart)
+                    this.onRenderStart = this.options.onRenderStart;
+                if (this.options?.onRenderEnd)
+                    this.onRenderEnd = this.options.onRenderEnd;
+                this.loading = this.getAttribute('loading', true);
+                this._strokeColor = this.getAttribute('strokeColor', true);
+                this._wrapperElm = this.createElement('div', this);
+                this._wrapperElm.classList.add('i-progress');
+                this.type = this.getAttribute('type', true);
+                this.percent = this.getAttribute('percent', true);
+                this.strokeWidth = this.getAttribute('strokeWidth', true);
+                if (this.type === 'line') {
+                    this.steps = this.getAttribute('steps', true);
+                    if (typeof this.onRenderStart === 'function') {
+                        this._wrapperElm.classList.add('i-progress--grid');
+                        this._startElm = this.createElement('div', this._wrapperElm);
+                        this._startElm.classList.add('i-progress_item', 'i-progress_item-start');
+                        this.onRenderStart(this._startElm);
+                    }
+                    if (typeof this.onRenderEnd === 'function') {
+                        this._wrapperElm.classList.add('i-progress--grid');
+                        this._endElm = this.createElement('div', this._wrapperElm);
+                        this._endElm.classList.add('i-progress_item', 'i-progress_item-end');
+                        this.onRenderEnd(this._endElm);
+                    }
+                }
+                if (this.type === 'circle')
+                    this.renderCircleInner();
+            }
+        }
+        static async create(options, parent) {
+            let self = new this(parent, options);
+            await self.ready();
+            return self;
+        }
+    };
+    Progress = __decorate([
+        (0, base_1.customElements)('i-progress', {
+            icon: 'spinner',
+            group: types_1.GroupType.BASIC,
+            className: 'Progress',
+            props: {
+                percent: {
+                    type: 'number',
+                    default: defaultVals.percent
+                },
+                strokeWidth: {
+                    type: 'number',
+                    default: defaultVals.strokeWidth
+                },
+                strokeColor: {
+                    type: 'string',
+                    default: ''
+                },
+                loading: {
+                    type: 'boolean',
+                    default: defaultVals.loading
+                },
+                steps: {
+                    type: 'number',
+                    default: defaultVals.steps
+                },
+                type: {
+                    type: 'string',
+                    default: defaultVals.type
+                }
+            },
+            events: {
+                format: [
+                    { name: 'percent', type: 'number' }
+                ],
+                onRenderStart: [
+                    { name: 'target', type: 'Progress', isControl: true }
+                ],
+                onRenderEnd: [
+                    { name: 'target', type: 'Progress', isControl: true }
+                ]
+            },
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    type: {
+                        type: 'string',
+                        enum: ['line', 'circle'],
+                        default: defaultVals.type
+                    },
+                    percent: {
+                        type: 'number',
+                        default: defaultVals.percent
+                    },
+                    strokeWidth: {
+                        type: 'number',
+                        default: defaultVals.strokeWidth
+                    },
+                    strokeColor: {
+                        type: 'string',
+                        format: 'color'
+                    },
+                    loading: {
+                        type: 'boolean',
+                        default: defaultVals.loading
+                    },
+                    steps: {
+                        type: 'number',
+                        default: defaultVals.steps
+                    }
+                }
+            }
+        })
+    ], Progress);
+    exports.Progress = Progress;
+});
+define("@ijstech/progress", ["require", "exports", "@ijstech/progress/progress.ts"], function (require, exports, progress_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Progress = void 0;
+    Object.defineProperty(exports, "Progress", { enumerable: true, get: function () { return progress_1.Progress; } });
 });
 define("@ijstech/jsonUI/styles/jsonUI.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
     "use strict";
@@ -29883,8 +28966,8 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                         left: "2rem",
                         right: "2rem",
                     },
-                    caption: "Cancel",
-                    font: { color: style_1.Theme.ThemeVars.colors.secondary.contrastText },
+                    caption: "$cancel",
+                    font: { color: style_1.Theme.ThemeVars.colors.secondary.contrastText, transform: 'capitalize' },
                     background: { color: style_1.Theme.ThemeVars.colors.secondary.main },
                     onClick: () => {
                         if (typeof this.onClose === 'function') {
@@ -29900,8 +28983,8 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                         left: "2rem",
                         right: "2rem",
                     },
-                    caption: "Confirm",
-                    font: { color: style_1.Theme.ThemeVars.colors.primary.contrastText },
+                    caption: "$confirm",
+                    font: { color: style_1.Theme.ThemeVars.colors.primary.contrastText, transform: 'capitalize' },
                     onClick: () => {
                         if (typeof this.onConfirm === 'function') {
                             this.onConfirm();
@@ -29918,8 +29001,8 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                         left: "2rem",
                         right: "2rem",
                     },
-                    caption: "Close",
-                    font: { color: style_1.Theme.ThemeVars.colors.primary.contrastText },
+                    caption: "$close",
+                    font: { color: style_1.Theme.ThemeVars.colors.primary.contrastText, transform: 'capitalize' },
                     onClick: () => {
                         if (typeof this.onClose === 'function') {
                             this.onClose();
@@ -43727,13 +42810,13 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
     const DEFAULT_OPTIONS = {
         columnsPerRow: 1,
         confirmButtonOptions: {
-            caption: 'Confirm',
+            caption: '$confirm',
             backgroundColor: theme.colors.primary.main,
             fontColor: theme.colors.primary.contrastText,
             hide: false
         },
         clearButtonOptions: {
-            caption: 'Clear',
+            caption: '$clear',
             backgroundColor: theme.colors.primary.main,
             fontColor: theme.colors.primary.contrastText,
             hide: true
@@ -44431,7 +43514,8 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 const btnClear = new button_1.Button(pnlButton, {
                     caption: this._formOptions.clearButtonOptions.caption || DEFAULT_OPTIONS.clearButtonOptions.caption,
                     font: {
-                        color: this._formOptions.clearButtonOptions.fontColor || DEFAULT_OPTIONS.clearButtonOptions.fontColor
+                        color: this._formOptions.clearButtonOptions.fontColor || DEFAULT_OPTIONS.clearButtonOptions.fontColor,
+                        transform: 'capitalize'
                     },
                     background: {
                         color: this._formOptions.clearButtonOptions.backgroundColor || DEFAULT_OPTIONS.clearButtonOptions.backgroundColor
@@ -44452,7 +43536,8 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 const btnConfirm = new button_1.Button(pnlButton, {
                     caption: this._formOptions.confirmButtonOptions.caption || DEFAULT_OPTIONS.confirmButtonOptions.caption,
                     font: {
-                        color: this._formOptions.confirmButtonOptions.fontColor || DEFAULT_OPTIONS.confirmButtonOptions.fontColor
+                        color: this._formOptions.confirmButtonOptions.fontColor || DEFAULT_OPTIONS.confirmButtonOptions.fontColor,
+                        transform: 'capitalize'
                     },
                     background: {
                         color: this._formOptions.confirmButtonOptions.backgroundColor || DEFAULT_OPTIONS.confirmButtonOptions.backgroundColor
@@ -45593,7 +44678,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                     font: { color: '#ff0000' }
                 });
             }
-            const btnAdd = new button_1.Button(header, { caption: 'Add' });
+            const btnAdd = new button_1.Button(header, { caption: '$add', font: { transform: 'capitalize' } });
             btnAdd.setAttribute('action', 'add');
             btnAdd.prepend(new icon_1.Icon(undefined, {
                 name: 'plus',
@@ -46582,17 +45667,14 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
                 type: 'object',
                 properties: {
                     name: {
-                        type: 'string',
-                        title: 'Name'
+                        type: 'string'
                     },
                     defaultExpanded: {
                         type: 'boolean',
-                        title: 'Default Expanded',
                         default: false
                     },
                     showRemove: {
                         type: 'boolean',
-                        title: 'Show Remove',
                         default: false
                     }
                 }
@@ -46762,7 +45844,6 @@ define("@ijstech/accordion/accordion.ts", ["require", "exports", "@ijstech/base"
                 properties: {
                     isFlush: {
                         type: 'boolean',
-                        title: 'Flush',
                         default: false
                     },
                 }
@@ -46781,7 +45862,7 @@ define("@ijstech/accordion", ["require", "exports", "@ijstech/accordion/accordio
 define("@ijstech/components", ["require", "exports", "@ijstech/style", "@ijstech/application", "@ijstech/jsonUI", "@ijstech/base", "@ijstech/alert", "@ijstech/button", "@ijstech/combo-box", "@ijstech/data-grid", "@ijstech/input", "@ijstech/icon", "@ijstech/image", "@ijstech/markdown", "@ijstech/markdown-editor", "@ijstech/menu", "@ijstech/module", "@ijstech/label", "@ijstech/tooltip", "@ijstech/tree-view", "@ijstech/switch", "@ijstech/modal", "@ijstech/popover", "@ijstech/checkbox", "@ijstech/datepicker", "@ijstech/upload", "@ijstech/tab", "@ijstech/iframe", "@ijstech/range", "@ijstech/radio", "@ijstech/layout", "@ijstech/pagination", "@ijstech/progress", "@ijstech/link", "@ijstech/table", "@ijstech/carousel", "@ijstech/ipfs", "@ijstech/moment", "@ijstech/video", "@ijstech/schema-designer", "@ijstech/navigator", "@ijstech/breadcrumb", "@ijstech/form", "@ijstech/color", "@ijstech/repeater", "@ijstech/accordion"], function (require, exports, Styles, application_1, jsonUI_1, base_1, alert_1, button_1, combo_box_1, data_grid_1, input_1, icon_1, image_1, markdown_1, markdown_editor_1, menu_1, module_1, label_1, tooltip_1, tree_view_1, switch_1, modal_1, popover_1, checkbox_1, datepicker_1, upload_1, tab_1, iframe_1, range_1, radio_1, layout_1, pagination_1, progress_1, link_1, table_1, carousel_1, IPFS, moment_1, video_1, schema_designer_1, navigator_1, breadcrumb_1, form_1, color_1, repeater_1, accordion_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AccordionItem = exports.Accordion = exports.Repeater = exports.ColorPicker = exports.Form = exports.Breadcrumb = exports.Nav = exports.SchemaDesigner = exports.Video = exports.moment = exports.IPFS = exports.CarouselSlider = exports.TableCell = exports.TableColumn = exports.Table = exports.Link = exports.Progress = exports.Pagination = exports.StackLayout = exports.GridLayout = exports.CardLayout = exports.HStack = exports.VStack = exports.Panel = exports.RadioGroup = exports.Radio = exports.Range = exports.Iframe = exports.Tab = exports.Tabs = exports.UploadModal = exports.Upload = exports.Datepicker = exports.Checkbox = exports.Popover = exports.Modal = exports.Switch = exports.TreeNode = exports.TreeView = exports.Tooltip = exports.Label = exports.Module = exports.MenuItem = exports.ContextMenu = exports.Menu = exports.MarkdownEditor = exports.markdownToPlainText = exports.Markdown = exports.Image = exports.Icon = exports.Input = exports.DataGridCell = exports.DataGrid = exports.ComboBox = exports.Button = exports.Alert = exports.IdUtils = exports.I18n = exports.RequireJS = exports.LibPath = exports.observable = exports.isObservable = exports.ClearObservers = exports.Unobserve = exports.Observe = exports.Container = exports.Control = exports.Component = exports.getCustomElements = exports.customElements = exports.customModule = exports.DataSchemaValidator = exports.renderUI = exports.FormatUtils = exports.EventBus = exports.application = exports.Styles = void 0;
+    exports.AccordionItem = exports.Accordion = exports.Repeater = exports.ColorPicker = exports.Form = exports.Breadcrumb = exports.Nav = exports.SchemaDesigner = exports.Video = exports.moment = exports.IPFS = exports.CarouselSlider = exports.TableCell = exports.TableColumn = exports.Table = exports.Link = exports.Progress = exports.Pagination = exports.StackLayout = exports.GridLayout = exports.CardLayout = exports.HStack = exports.VStack = exports.Panel = exports.RadioGroup = exports.Radio = exports.Range = exports.Iframe = exports.Tab = exports.Tabs = exports.Upload = exports.Datepicker = exports.Checkbox = exports.Popover = exports.Modal = exports.Switch = exports.TreeNode = exports.TreeView = exports.Tooltip = exports.Label = exports.Module = exports.MenuItem = exports.ContextMenu = exports.Menu = exports.MarkdownEditor = exports.markdownToPlainText = exports.Markdown = exports.Image = exports.Icon = exports.Input = exports.DataGridCell = exports.DataGrid = exports.ComboBox = exports.Button = exports.Alert = exports.IdUtils = exports.I18n = exports.RequireJS = exports.LibPath = exports.observable = exports.isObservable = exports.ClearObservers = exports.Unobserve = exports.Observe = exports.Container = exports.Control = exports.Component = exports.getCustomElements = exports.customElements = exports.customModule = exports.DataSchemaValidator = exports.renderUI = exports.FormatUtils = exports.EventBus = exports.application = exports.Styles = void 0;
     ///<amd-module name='@ijstech/components'/> 
     exports.Styles = Styles;
     Object.defineProperty(exports, "application", { enumerable: true, get: function () { return application_1.application; } });
@@ -46829,7 +45910,6 @@ define("@ijstech/components", ["require", "exports", "@ijstech/style", "@ijstech
     Object.defineProperty(exports, "Checkbox", { enumerable: true, get: function () { return checkbox_1.Checkbox; } });
     Object.defineProperty(exports, "Datepicker", { enumerable: true, get: function () { return datepicker_1.Datepicker; } });
     Object.defineProperty(exports, "Upload", { enumerable: true, get: function () { return upload_1.Upload; } });
-    Object.defineProperty(exports, "UploadModal", { enumerable: true, get: function () { return upload_1.UploadModal; } });
     Object.defineProperty(exports, "Tabs", { enumerable: true, get: function () { return tab_1.Tabs; } });
     Object.defineProperty(exports, "Tab", { enumerable: true, get: function () { return tab_1.Tab; } });
     Object.defineProperty(exports, "Iframe", { enumerable: true, get: function () { return iframe_1.Iframe; } });

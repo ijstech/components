@@ -50,7 +50,6 @@ export interface IAccordionMessage {
     properties: {
       isFlush: {
         type: 'boolean',
-        title: 'Flush',
         default: false
       },
     }

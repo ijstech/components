@@ -42,17 +42,14 @@ declare global {
     type: 'object',
     properties: {
       name: {
-        type: 'string',
-        title: 'Name'
+        type: 'string'
       },
       defaultExpanded: {
         type: 'boolean',
-        title: 'Default Expanded',
         default: false
       },
       showRemove: {
         type: 'boolean',
-        title: 'Show Remove',
         default: false
       }
     }

@@ -300,8 +300,8 @@ export class Alert extends Control {
           left: "2rem",
           right: "2rem",
         },
-        caption: "Cancel",
-        font: { color: Theme.ThemeVars.colors.secondary.contrastText },
+        caption: "$cancel",
+        font: { color: Theme.ThemeVars.colors.secondary.contrastText, transform: 'capitalize' },
         background: { color: Theme.ThemeVars.colors.secondary.main },
         onClick: () => {
           if (typeof this.onClose === 'function') {
@@ -317,8 +317,8 @@ export class Alert extends Control {
           left: "2rem",
           right: "2rem",
         },
-        caption: "Confirm",
-        font: { color: Theme.ThemeVars.colors.primary.contrastText },
+        caption: "$confirm",
+        font: { color: Theme.ThemeVars.colors.primary.contrastText, transform: 'capitalize' },
         onClick: () => {
           if (typeof this.onConfirm === 'function') {
             this.onConfirm();
@@ -334,8 +334,8 @@ export class Alert extends Control {
           left: "2rem",
           right: "2rem",
         },
-        caption: "Close",
-        font: { color: Theme.ThemeVars.colors.primary.contrastText },
+        caption: "$close",
+        font: { color: Theme.ThemeVars.colors.primary.contrastText, transform: 'capitalize' },
         onClick: () => {
           if (typeof this.onClose === 'function') {
             this.onClose();
