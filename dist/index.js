@@ -43512,7 +43512,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 this._formOptions.clearButtonOptions = DEFAULT_OPTIONS.clearButtonOptions;
             if (!this._formOptions.clearButtonOptions?.hide) {
                 const btnClear = new button_1.Button(pnlButton, {
-                    caption: this._formOptions.clearButtonOptions.caption || DEFAULT_OPTIONS.clearButtonOptions.caption,
+                    caption: this.convertToKey(this._formOptions.clearButtonOptions.caption || DEFAULT_OPTIONS.clearButtonOptions.caption),
                     font: {
                         color: this._formOptions.clearButtonOptions.fontColor || DEFAULT_OPTIONS.clearButtonOptions.fontColor,
                         transform: 'capitalize'
@@ -43534,7 +43534,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             }
             if (!this._formOptions.confirmButtonOptions?.hide) {
                 const btnConfirm = new button_1.Button(pnlButton, {
-                    caption: this._formOptions.confirmButtonOptions.caption || DEFAULT_OPTIONS.confirmButtonOptions.caption,
+                    caption: this.convertToKey(this._formOptions.confirmButtonOptions.caption || DEFAULT_OPTIONS.confirmButtonOptions.caption),
                     font: {
                         color: this._formOptions.confirmButtonOptions.fontColor || DEFAULT_OPTIONS.confirmButtonOptions.fontColor,
                         transform: 'capitalize'
@@ -43587,7 +43587,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             else
                 isRequired = !!schema.required;
             const controlOptions = {
-                caption: labelName,
+                caption: this.convertToKey(labelName),
                 description: schema.description,
                 tooltip: schema.tooltip,
                 placeholder: schema.placeholder,
@@ -43661,7 +43661,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 }
                 if (schemaOptions?.format === "radio") {
                     items = items.map(v => ({
-                        caption: v.label,
+                        caption: this.convertToKey(v.label),
                         value: v.value
                     }));
                     return this.renderRadioGroup({ parent, scope, items, options: controlOptions, labelProp, defaultValue });
@@ -43854,7 +43854,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             else if (type === 'Group') {
                 const groupObj = this.renderGroup({ parent, options: {
                         required: false,
-                        caption: (typeof label === 'string' ? label : ''),
+                        caption: this.convertToKey(typeof label === 'string' ? label : ''),
                         columnWidth: '100%',
                         description: '',
                         readOnly: false
@@ -43911,7 +43911,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                         }
                     }
                     let tabCaption = (typeof caption == 'boolean') ? '' : caption;
-                    const tab = carryData.tabs.add({ caption: tabCaption, children: children });
+                    const tab = carryData.tabs.add({ caption: this.convertToKey(tabCaption || ''), children: children });
                     if (rule)
                         this._formRules.push({ elm: tab, rule });
                 }
@@ -44161,7 +44161,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             const header = new layout_1.Panel(wrapper);
             header.classList.add(Styles.groupHeaderStyle);
             const hstack = new layout_1.HStack(header, { gap: 2 });
-            new label_1.Label(hstack, { caption: options.caption });
+            new label_1.Label(hstack, { caption: this.convertToKey(options.caption || '') });
             if (options.required) {
                 new label_1.Label(hstack, {
                     caption: '*',
@@ -44204,7 +44204,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                     width: '100%'
                 });
                 label = new label_1.Label(hstack, {
-                    caption: options?.caption
+                    caption: this.convertToKey(options?.caption || '')
                 });
                 if (options.required) {
                     new label_1.Label(hstack, {
@@ -44224,7 +44224,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             }
             else if (type === 'description') {
                 label = new label_1.Label(parent, {
-                    caption: options.description,
+                    caption: this.convertToKey(options.description || ''),
                     margin: { top: 2 },
                     visible: !!options.description
                 });
@@ -44629,7 +44629,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             wrapper.classList.add(Styles.formGroupStyle);
             const vstack = new layout_1.VStack(wrapper, { gap: 4, width: '100%' });
             const input = new checkbox_1.Checkbox(vstack, {
-                caption: options.caption
+                caption: this.convertToKey(options.caption || '')
             });
             input.onChanged = () => {
                 if (labelProp)
@@ -44671,7 +44671,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             const header = new layout_1.GridLayout(wrapper, { templateColumns: ['1fr', '80px'] });
             header.classList.add(Styles.listHeaderStyle);
             const hstack = new layout_1.HStack(header, { gap: 2 });
-            new label_1.Label(hstack, { caption: options.caption });
+            new label_1.Label(hstack, { caption: this.convertToKey(options.caption || '') });
             if (options.required) {
                 new label_1.Label(hstack, {
                     caption: '*',
@@ -45183,6 +45183,14 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                     label += char;
             }
             return label;
+        }
+        convertToKey(value) {
+            if (!value)
+                return '';
+            if (value.startsWith('$'))
+                return value;
+            const str = value.toLowerCase().replace(/\s/g, '_');
+            return `$${str}`;
         }
         setDataUpload(url, control) {
             if (!url || !control)

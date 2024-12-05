@@ -25876,6 +25876,7 @@ declare module "@ijstech/form/form.ts" {
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
         private convertFieldNameToLabel;
+        private convertToKey;
         private setDataUpload;
     }
 }
