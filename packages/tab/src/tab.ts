@@ -451,7 +451,7 @@ export class Tab extends Container {
   updateLocale(i18n: I18n): void {
     super.updateLocale(i18n);
     if (this.captionElm && this._caption?.startsWith('$'))
-      this.captionElm.innerHTML = i18n.get(this._caption) || '';
+      this.captionElm.textContent = i18n.get(this._caption) || '';
   }
 
   get caption(): string {
@@ -469,7 +469,7 @@ export class Tab extends Container {
     if (typeof value !== 'string') value = String(value || '');
     this._caption = value;
     if (!this.captionElm) return;
-    this.captionElm.innerHTML = this.caption;
+    this.captionElm.textContent = this.caption;
   }
   close(){
     this.handleDefaultClose();
@@ -514,12 +514,12 @@ export class Tab extends Container {
       this.rightElm.classList.remove("has-icon");
     }
   }
-  get innerHTML(): string{
-    return this._contentElm.innerHTML;
-  }
-  set innerHTML(value: string){
-    this._contentElm.innerHTML = value;
-  }
+  // get innerHTML(): string{
+  //   return this._contentElm.innerHTML;
+  // }
+  // set innerHTML(value: string){
+  //   this._contentElm.innerHTML = value;
+  // }
   get font(): IFont {
     return {
       color: this.captionElm.style.color,

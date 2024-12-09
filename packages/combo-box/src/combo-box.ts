@@ -273,7 +273,7 @@ export class ComboBox extends Control {
   updateLocale(i18n: I18n): void {
     super.updateLocale(i18n);
     if (this.labelElm && this._caption?.startsWith('$'))
-      this.labelElm.innerHTML = i18n.get(this._caption) || '';
+      this.labelElm.textContent = i18n.get(this._caption) || '';
     if (this.inputElm && this._placeholder?.startsWith('$'))
       this.inputElm.placeholder = i18n.get(this._placeholder) || '';
   }
@@ -286,7 +286,7 @@ export class ComboBox extends Control {
     this._caption = value;
     this.labelElm.style.display = !value ? 'none' : '';
     if (!this.labelElm) return;
-    this.labelElm.innerHTML = this.caption;
+    this.labelElm.textContent = this.caption;
   }
 
   get captionWidth(): number | string {

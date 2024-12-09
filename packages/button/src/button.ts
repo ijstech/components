@@ -120,7 +120,7 @@ export class Button extends Control {
     updateLocale(i18n: I18n): void {
         super.updateLocale(i18n);
         if (this.captionElm && this._caption?.startsWith('$'))
-            this.captionElm.innerHTML = i18n.get(this._caption) || '';
+            this.captionElm.textContent = i18n.get(this._caption) || '';
     }
 
     get caption(): string{
@@ -138,7 +138,7 @@ export class Button extends Control {
         if (typeof value !== 'string') value = String(value || '');
         this._caption = value;
         if (!this.captionElm) return;
-        this.captionElm.innerHTML = this.caption;
+        this.captionElm.textContent = this.caption;
         this.captionElm.style.display = value ? "" : "none";
     }
     get icon(): Icon{

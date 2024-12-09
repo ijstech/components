@@ -468,13 +468,13 @@ export class TreeNode extends Control {
     if (typeof value !== 'string') value = String(value || '');
     this._caption = value
     if (!this._captionElm) return;
-    this._captionElm.innerHTML = this.caption;
+    this._captionElm.textContent = this.caption;
   }
 
   updateLocale(i18n: I18n): void {
     super.updateLocale(i18n);
     if (this._captionElm && this._caption?.startsWith('$'))
-      this._captionElm.innerHTML = i18n.get(this._caption) || '';
+      this._captionElm.textContent = i18n.get(this._caption) || '';
   }
 
   get collapsible(): boolean {

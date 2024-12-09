@@ -105,7 +105,7 @@ export class Checkbox extends Control {
     updateLocale(i18n: I18n): void {
         super.updateLocale(i18n);
         if (this.captionSpanElm && this._caption?.startsWith('$'))
-            this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+            this.captionSpanElm.textContent= i18n.get(this._caption) || '';
     }
 
     get caption(): string{
@@ -124,7 +124,7 @@ export class Checkbox extends Control {
         this._caption = value;
         this.captionSpanElm.style.display = !value ? 'none' : '';
         if (!this.captionSpanElm) return;
-        this.captionSpanElm.innerHTML = this.caption;
+        this.captionSpanElm.textContent = this.caption;
     }
     get captionWidth(): number | string {
         return this._captionWidth;

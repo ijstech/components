@@ -554,7 +554,7 @@ export class Upload extends Control {
     this._previewRemoveElm.onclick = this.handleRemoveImagePreview.bind(this);
     const span = this.createElement('span', this._previewRemoveElm);
     span.style.fontFamily = Theme.typography.fontFamily;
-    span.innerHTML = 'Click to remove';
+    span.innerHTML = application.i18n.get('click_to_remove');
   }
 
   private handleRemoveImagePreview (event: Event) {

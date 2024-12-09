@@ -230,14 +230,14 @@ export class Modal extends Container {
         if (typeof value !== 'string') value = String(value || '');
         this._title = value;
         const titleElm = this.titleSpan.querySelector('span');
-        titleElm && (titleElm.innerHTML = this.title);
+        titleElm && (titleElm.textContent = this.title);
     }
 
     updateLocale(i18n: I18n): void {
         super.updateLocale(i18n);
         const titleElm = this.titleSpan.querySelector('span');
         if (titleElm && this._title?.startsWith('$'))
-            titleElm.innerHTML = i18n.get(this._title) || '';
+            titleElm.textContent = i18n.get(this._title) || '';
     }
 
     private getTranslatedText(value: string): string {
@@ -846,7 +846,7 @@ export class Modal extends Container {
     protected _handleOnShow(event: Event) {
         if (this.popupPlacement && this.enabled)
             this.positionAt(this.popupPlacement)
-        const parent: any = this._parent || this.linkTo || this.parentElement;
+        const parent: any = this._parent || this.linkTo || this;
         const i18nData = parent?.parentModule?.i18n || (this.body as any)?.i18n || application.i18n;
         i18nData && this.updateLocale(i18nData);
         if (i18nData && this.body) {

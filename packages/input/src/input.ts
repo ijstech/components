@@ -239,7 +239,7 @@ export class Input extends Control {
             if (this._inputControl)
                 this._inputControl.caption = i18n.get(this._caption) || '';
             else if (this.labelElm)
-                this.labelElm.innerHTML = i18n.get(this._caption) || '';
+                this.labelElm.textContent = i18n.get(this._caption) || '';
         }
         if (this.inputElm && this._placeholder?.startsWith('$'))
             this.inputElm.placeholder = i18n.get(this._placeholder) || '';
@@ -257,7 +257,7 @@ export class Input extends Control {
         if (this._inputControl){
             this._inputControl.caption = this.caption;
         } else {
-            this.labelElm.innerHTML = this.caption;
+            this.labelElm.textContent = this.caption;
             this.captionSpanElm.style.display = value ? 'inline-block' : 'none';
         }
     }
@@ -605,7 +605,7 @@ export class Input extends Control {
                 this.inputElm.addEventListener('keyup', this._handleInputKeyUp.bind(this));
                 this.inputElm.addEventListener('focus', this._handleOnFocus.bind(this));
                 if (caption && this.labelElm) {
-                    this.labelElm.innerHTML = caption;
+                    this.labelElm.textContent = caption;
                 }
                 break;
             case "color":
@@ -657,7 +657,7 @@ export class Input extends Control {
                     this.clearIconElm.appendChild(clearIcon);
                 }
                 if (caption && this.labelElm) {
-                    this.labelElm.innerHTML = caption;
+                    this.labelElm.textContent = caption;
                 }
                 break
         }

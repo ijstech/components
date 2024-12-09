@@ -23421,6 +23421,7 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         close(): void;
         private onHandleClick;
         private renderTooltip;
+        private createLabels;
         private initEvents;
     }
 }
@@ -23583,8 +23584,6 @@ declare module "@ijstech/tab/tab.ts" {
         set icon(elm: Icon);
         get rightIcon(): Icon;
         set rightIcon(elm: Icon);
-        get innerHTML(): string;
-        set innerHTML(value: string);
         get font(): IFont;
         set font(value: IFont);
         _handleClick(event: MouseEvent): boolean;
@@ -23829,6 +23828,7 @@ declare module "@ijstech/alert/alert.ts" {
         showModal: () => void;
         private renderUI;
         private renderContent;
+        private createLabels;
         private renderLink;
         private renderButtons;
         protected init(): Promise<void>;
@@ -25876,6 +25876,7 @@ declare module "@ijstech/form/form.ts" {
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
         private convertFieldNameToLabel;
+        private convertToKey;
         private setDataUpload;
     }
 }

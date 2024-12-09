@@ -52,7 +52,7 @@ export class TableColumn extends Control {
   }
   set data(value: number | string) {
     this._data = value;
-    this.columnElm.innerHTML = `${value}`;
+    this.columnElm.textContent = `${value}`;
   }
 
   get rowData(): number | string {
@@ -103,13 +103,13 @@ export class TableColumn extends Control {
   set caption(value: string) {
     if (typeof value !== 'string') value = String(value || '');
     this._caption = value;
-    this.columnElm && (this.columnElm.innerHTML = this.caption);
+    this.columnElm && (this.columnElm.textContent = this.caption);
   }
 
   updateLocale(i18n: I18n): void {
     super.updateLocale(i18n);
     if (this.columnElm && this._caption?.startsWith('$'))
-      this.columnElm.innerHTML = i18n.get(this._caption) || '';
+      this.columnElm.textContent = i18n.get(this._caption) || '';
   }
 
   private renderSort() {
@@ -159,7 +159,7 @@ export class TableColumn extends Control {
     (cell.columnSpan > 1) && tdElm.setAttribute('colspan', cell.columnSpan + '');
     (cell.rowSpan > 1) && tdElm.setAttribute('rowspan', cell.rowSpan + '');
     if (typeof node === 'string' || typeof node === 'number') {
-      this.columnElm.innerHTML = node + '';
+      this.columnElm.textContent = node + '';
     } else {
       this.columnElm.innerHTML = '';
       this.columnElm.appendChild(node);
@@ -185,7 +185,7 @@ export class TableColumn extends Control {
       this.data = this.getAttribute('data', true);
 
       if (this.isHeader) {
-        this.columnElm.innerHTML = this.caption;
+        this.columnElm.textContent = this.caption;
         this.sortable = this.getAttribute('sortable', true, false);
         if (this.options.onSortChange)
           this.onSortChange = this.options.onSortChange;
