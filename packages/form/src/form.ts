@@ -736,7 +736,7 @@ export class Form extends Control {
         const controlOptions: IControlOptions = {
             caption: this.convertToKey(labelName),
             description: schema.description,
-            tooltip: schema.tooltip,
+            tooltip: schema.tooltip ? this.convertToKey(schema.tooltip) : '',
             placeholder: schema.placeholder,
             columnWidth: columnWidth,
             readOnly: schema.readOnly,
@@ -1336,7 +1336,7 @@ export class Form extends Control {
                     height: '1rem',
                     name: 'info-circle',
                     margin: { left: 2 },
-                    tooltip: { content: options.tooltip, placement: 'bottom' }
+                    tooltip: { content: this.convertToKey(options.tooltip), placement: 'bottom' }
                 });
             }
         } else if (type === 'description') {

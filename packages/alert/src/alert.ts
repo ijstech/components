@@ -99,7 +99,7 @@ const DEFAULT_VALUES = {
 export class Alert extends Control {
   private mdAlert: Modal;
   private pnlMain: Panel;
-  private contentElm: Label|null = null;
+  private contentElm: Panel|null = null;
   private titleElm: Label|null = null;
   private linkElm: Label|null = null;
   private _status:
@@ -149,9 +149,11 @@ export class Alert extends Control {
   updateLocale(i18n: I18n): void {
     super.updateLocale(i18n);
     if (this.titleElm && this._title?.startsWith('$'))
-      this.titleElm.innerHTML = i18n.get(this._title) || '';
-    if (this.contentElm && this._content?.startsWith('$'))
-      this.contentElm.innerHTML = i18n.get(this._content) || '';
+      this.titleElm.textContent = i18n.get(this._title) || '';
+    if (this.contentElm && this._content?.startsWith('$')) {
+      const text = i18n.get(this._content) || '';
+      this.createLabels(text);
+    }
     if (this.linkElm) this.linkElm.updateLocale(i18n);
   }
 
@@ -268,12 +270,26 @@ export class Alert extends Control {
         })
       : null;
 
-      this.contentElm = this.content
-      ? new Label(contentElm, {
-          caption: this.content,
-          overflowWrap: "anywhere",
-        })
-      : null;
+      this.contentElm = new Panel(contentElm, {width: '100%'});
+      if (this.content) {
+        this.createLabels(this.content);
+      }
+  }
+
+  private createLabels(text: string) {
+    this.contentElm?.clearInnerHTML();
+    if (!text || !this.contentElm) return;
+    const elements: Control[] = [];
+    const newText = text.replace(/\r\n|\r|<br>/g, '\n');
+    const lines = newText.split('\n');
+    lines.forEach(line => {
+      const label = new Label(this.contentElm as any, {
+        caption: line,
+        overflowWrap: "anywhere",
+      });
+      elements.push(label);
+    });
+    return elements;
   }
 
   private renderLink(wrapperElm: Container) {

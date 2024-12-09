@@ -88,7 +88,7 @@ export class Label extends Text {
     updateLocale(i18n: I18n): void {
         super.updateLocale(i18n);
         if (this.captionSpan && this._caption?.startsWith('$'))
-            this.captionSpan.innerHTML = i18n.get(this._caption) || '';
+            this.captionSpan.textContent = i18n.get(this._caption) || '';
     }
     get caption(): string {
         const value = this._caption || '';
@@ -105,7 +105,7 @@ export class Label extends Text {
         if (typeof value !== 'string') value = String(value || '');
         this._caption = value;
         if (!this.captionSpan) return;
-        this.captionSpan.innerHTML = this.caption;
+        this.captionSpan.textContent = this.caption;
     }
 
     get link(): Link {

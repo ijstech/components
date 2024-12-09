@@ -245,7 +245,7 @@ export class Range extends Control {
       this.tooltipElm.style.marginLeft = `-${this.tooltipElm.clientWidth / 2}px`
     }
 
-    this.tooltipElm.innerHTML = `${formattedValue}`;
+    this.tooltipElm.textContent = `${formattedValue}`;
     this.tooltipElm.style.left = (this._value - min) * 100 / (max - min) + '%';
   }
   protected init() {

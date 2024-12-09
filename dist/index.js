@@ -16191,7 +16191,7 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.captionSpanElm && this._caption?.startsWith('$'))
-                this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+                this.captionSpanElm.textContent = i18n.get(this._caption) || '';
         }
         get caption() {
             const value = this._caption || '';
@@ -16210,7 +16210,7 @@ define("@ijstech/checkbox/checkbox.ts", ["require", "exports", "@ijstech/base", 
             this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
-            this.captionSpanElm.innerHTML = this.caption;
+            this.captionSpanElm.textContent = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -17093,7 +17093,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.labelElm && this._caption?.startsWith('$'))
-                this.labelElm.innerHTML = i18n.get(this._caption) || '';
+                this.labelElm.textContent = i18n.get(this._caption) || '';
             if (this.inputElm && this._placeholder?.startsWith('$'))
                 this.inputElm.placeholder = i18n.get(this._placeholder) || '';
         }
@@ -17107,7 +17107,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
             this.labelElm.style.display = !value ? 'none' : '';
             if (!this.labelElm)
                 return;
-            this.labelElm.innerHTML = this.caption;
+            this.labelElm.textContent = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -18474,7 +18474,7 @@ define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijst
             if (init) {
                 this.tooltipElm.style.marginLeft = `-${this.tooltipElm.clientWidth / 2}px`;
             }
-            this.tooltipElm.innerHTML = `${formattedValue}`;
+            this.tooltipElm.textContent = `${formattedValue}`;
             this.tooltipElm.style.left = (this._value - min) * 100 / (max - min) + '%';
         }
         init() {
@@ -19281,13 +19281,13 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
                 value = String(value || '');
             this._title = value;
             const titleElm = this.titleSpan.querySelector('span');
-            titleElm && (titleElm.innerHTML = this.title);
+            titleElm && (titleElm.textContent = this.title);
         }
         updateLocale(i18n) {
             super.updateLocale(i18n);
             const titleElm = this.titleSpan.querySelector('span');
             if (titleElm && this._title?.startsWith('$'))
-                titleElm.innerHTML = i18n.get(this._title) || '';
+                titleElm.textContent = i18n.get(this._title) || '';
         }
         getTranslatedText(value) {
             const parent = this._parent || this.linkTo || this.parentElement;
@@ -19874,7 +19874,7 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
         _handleOnShow(event) {
             if (this.popupPlacement && this.enabled)
                 this.positionAt(this.popupPlacement);
-            const parent = this._parent || this.linkTo || this.parentElement;
+            const parent = this._parent || this.linkTo || this;
             const i18nData = parent?.parentModule?.i18n || this.body?.i18n || application_1.application.i18n;
             i18nData && this.updateLocale(i18nData);
             if (i18nData && this.body) {
@@ -21732,7 +21732,7 @@ define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijst
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.captionSpanElm && this._caption?.startsWith('$'))
-                this.captionSpanElm.innerHTML = i18n.get(this._caption) || '';
+                this.captionSpanElm.textContent = i18n.get(this._caption) || '';
         }
         get caption() {
             const value = this._caption || '';
@@ -21751,7 +21751,7 @@ define("@ijstech/color/color.ts", ["require", "exports", "@ijstech/base", "@ijst
             this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
-            this.captionSpanElm.innerHTML = this.caption;
+            this.captionSpanElm.textContent = this.caption;
         }
         get captionWidth() {
             return this._captionWidth;
@@ -22366,7 +22366,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                 if (this._inputControl)
                     this._inputControl.caption = i18n.get(this._caption) || '';
                 else if (this.labelElm)
-                    this.labelElm.innerHTML = i18n.get(this._caption) || '';
+                    this.labelElm.textContent = i18n.get(this._caption) || '';
             }
             if (this.inputElm && this._placeholder?.startsWith('$'))
                 this.inputElm.placeholder = i18n.get(this._placeholder) || '';
@@ -22385,7 +22385,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                 this._inputControl.caption = this.caption;
             }
             else {
-                this.labelElm.innerHTML = this.caption;
+                this.labelElm.textContent = this.caption;
                 this.captionSpanElm.style.display = value ? 'inline-block' : 'none';
             }
         }
@@ -22744,7 +22744,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                     this.inputElm.addEventListener('keyup', this._handleInputKeyUp.bind(this));
                     this.inputElm.addEventListener('focus', this._handleOnFocus.bind(this));
                     if (caption && this.labelElm) {
-                        this.labelElm.innerHTML = caption;
+                        this.labelElm.textContent = caption;
                     }
                     break;
                 case "color":
@@ -22798,7 +22798,7 @@ define("@ijstech/input/input.ts", ["require", "exports", "@ijstech/base", "@ijst
                         this.clearIconElm.appendChild(clearIcon);
                     }
                     if (caption && this.labelElm) {
-                        this.labelElm.innerHTML = caption;
+                        this.labelElm.textContent = caption;
                     }
                     break;
             }
@@ -23653,7 +23653,7 @@ define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijst
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.captionSpan && this._caption?.startsWith('$'))
-                this.captionSpan.innerHTML = i18n.get(this._caption) || '';
+                this.captionSpan.textContent = i18n.get(this._caption) || '';
         }
         get caption() {
             const value = this._caption || '';
@@ -23671,7 +23671,7 @@ define("@ijstech/label/label.ts", ["require", "exports", "@ijstech/base", "@ijst
             this._caption = value;
             if (!this.captionSpan)
                 return;
-            this.captionSpan.innerHTML = this.caption;
+            this.captionSpan.textContent = this.caption;
         }
         get link() {
             if (!this._link) {
@@ -24350,7 +24350,7 @@ define("@ijstech/upload/upload.ts", ["require", "exports", "@ijstech/base", "@ij
             this._previewRemoveElm.onclick = this.handleRemoveImagePreview.bind(this);
             const span = this.createElement('span', this._previewRemoveElm);
             span.style.fontFamily = Theme.typography.fontFamily;
-            span.innerHTML = 'Click to remove';
+            span.innerHTML = application_1.application.i18n.get('click_to_remove');
         }
         handleRemoveImagePreview(event) {
             if (!this.isPreviewing || !this.enabled)
@@ -25061,7 +25061,7 @@ define("@ijstech/tooltip/style/tooltip.css.ts", ["require", "exports", "@ijstech
         },
     });
 });
-define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@ijstech/application", "@ijstech/tooltip/style/tooltip.css.ts"], function (require, exports, base_1, application_1) {
+define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@ijstech/application", "@ijstech/label", "@ijstech/tooltip/style/tooltip.css.ts"], function (require, exports, base_1, application_1, label_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Tooltip = void 0;
@@ -25196,8 +25196,10 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
             }
         }
         updateLocale(i18n) {
-            if (this.tooltipElm && this._content?.startsWith('$'))
-                this.tooltipElm.innerHTML = i18n.get(this._content) || '';
+            if (this.tooltipElm && this._content?.startsWith('$')) {
+                const text = i18n.get(this._content) || '';
+                this.createLabels(text, this.tooltipElm);
+            }
         }
         get content() {
             let value = this._content || '';
@@ -25215,7 +25217,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 value = String(value || '');
             this._content = value;
             if (this.tooltipElm) {
-                this.tooltipElm.innerHTML = this.content;
+                this.createLabels(this.content, this.tooltipElm);
             }
         }
         get placement() {
@@ -25272,7 +25274,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         renderTooltip() {
             this.tooltipElm = document.createElement("div");
             this.tooltipElm.classList.add("ii-tooltip");
-            this.tooltipElm.innerHTML = this.content;
+            this.createLabels(this.content, this.tooltipElm);
             this.tooltipElm.classList.add(this.popperClass);
             this.tooltipElm.classList.add(`ii-tooltip-${this.placement}`);
             if (this.color) {
@@ -25281,6 +25283,25 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
             }
             if (this.maxWidth)
                 this.tooltipElm.style.maxWidth = this.maxWidth;
+        }
+        createLabels(text, parent) {
+            parent.innerHTML = '';
+            if (!text)
+                return;
+            const elements = [];
+            const newText = text.replace(/\r\n|\r|<br>/g, '\n');
+            const lines = newText.split('\n');
+            lines.forEach(line => {
+                const label = new label_1.Label(undefined, {
+                    caption: line,
+                    display: 'block',
+                    overflowWrap: "anywhere",
+                    font: { size: '0.6875rem' }
+                });
+                parent.appendChild(label);
+                elements.push(label);
+            });
+            return elements;
         }
         initEvents(source) {
             source.addEventListener('mouseover', e => {
@@ -25397,7 +25418,7 @@ define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ij
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.captionElm && this._caption?.startsWith('$'))
-                this.captionElm.innerHTML = i18n.get(this._caption) || '';
+                this.captionElm.textContent = i18n.get(this._caption) || '';
         }
         get caption() {
             const value = this._caption || '';
@@ -25415,7 +25436,7 @@ define("@ijstech/button/button.ts", ["require", "exports", "@ijstech/base", "@ij
             this._caption = value;
             if (!this.captionElm)
                 return;
-            this.captionElm.innerHTML = this.caption;
+            this.captionElm.textContent = this.caption;
             this.captionElm.style.display = value ? "" : "none";
         }
         get icon() {
@@ -26161,7 +26182,7 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.captionElm && this._caption?.startsWith('$'))
-                this.captionElm.innerHTML = i18n.get(this._caption) || '';
+                this.captionElm.textContent = i18n.get(this._caption) || '';
         }
         get caption() {
             let value = this._caption || '';
@@ -26179,7 +26200,7 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
             this._caption = value;
             if (!this.captionElm)
                 return;
-            this.captionElm.innerHTML = this.caption;
+            this.captionElm.textContent = this.caption;
         }
         close() {
             this.handleDefaultClose();
@@ -26227,12 +26248,12 @@ define("@ijstech/tab/tab.ts", ["require", "exports", "@ijstech/base", "@ijstech/
                 this.rightElm.classList.remove("has-icon");
             }
         }
-        get innerHTML() {
-            return this._contentElm.innerHTML;
-        }
-        set innerHTML(value) {
-            this._contentElm.innerHTML = value;
-        }
+        // get innerHTML(): string{
+        //   return this._contentElm.innerHTML;
+        // }
+        // set innerHTML(value: string){
+        //   this._contentElm.innerHTML = value;
+        // }
         get font() {
             return {
                 color: this.captionElm.style.color,
@@ -28840,9 +28861,11 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.titleElm && this._title?.startsWith('$'))
-                this.titleElm.innerHTML = i18n.get(this._title) || '';
-            if (this.contentElm && this._content?.startsWith('$'))
-                this.contentElm.innerHTML = i18n.get(this._content) || '';
+                this.titleElm.textContent = i18n.get(this._title) || '';
+            if (this.contentElm && this._content?.startsWith('$')) {
+                const text = i18n.get(this._content) || '';
+                this.createLabels(text);
+            }
             if (this.linkElm)
                 this.linkElm.updateLocale(i18n);
         }
@@ -28936,12 +28959,26 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                     font: { size: "1.25rem", bold: true },
                 })
                 : null;
-            this.contentElm = this.content
-                ? new label_1.Label(contentElm, {
-                    caption: this.content,
+            this.contentElm = new layout_1.Panel(contentElm, { width: '100%' });
+            if (this.content) {
+                this.createLabels(this.content);
+            }
+        }
+        createLabels(text) {
+            this.contentElm?.clearInnerHTML();
+            if (!text || !this.contentElm)
+                return;
+            const elements = [];
+            const newText = text.replace(/\r\n|\r|<br>/g, '\n');
+            const lines = newText.split('\n');
+            lines.forEach(line => {
+                const label = new label_1.Label(this.contentElm, {
+                    caption: line,
                     overflowWrap: "anywhere",
-                })
-                : null;
+                });
+                elements.push(label);
+            });
+            return elements;
         }
         renderLink(wrapperElm) {
             if (this.link)
@@ -35016,7 +35053,7 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.captionElm && this._caption?.startsWith('$'))
-                this.captionElm.innerHTML = i18n.get(this._caption) || '';
+                this.captionElm.textContent = i18n.get(this._caption) || '';
         }
         get title() {
             return this._caption;
@@ -35030,10 +35067,10 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
                     const translated = this.linkTo?.parentModule?.i18n?.get(value) ||
                         application_1.application.i18n?.get(value) ||
                         '';
-                    this.captionElm.innerHTML = translated;
+                    this.captionElm.textContent = translated;
                 }
                 else
-                    this.captionElm.innerHTML = value || '';
+                    this.captionElm.textContent = value || '';
             }
         }
         set font(value) {
@@ -36106,12 +36143,12 @@ define("@ijstech/tree-view/treeView.ts", ["require", "exports", "@ijstech/base",
             this._caption = value;
             if (!this._captionElm)
                 return;
-            this._captionElm.innerHTML = this.caption;
+            this._captionElm.textContent = this.caption;
         }
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this._captionElm && this._caption?.startsWith('$'))
-                this._captionElm.innerHTML = i18n.get(this._caption) || '';
+                this._captionElm.textContent = i18n.get(this._caption) || '';
         }
         get collapsible() {
             return this._collapsible;
@@ -37571,7 +37608,7 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
         }
         set data(value) {
             this._data = value;
-            this.columnElm.innerHTML = `${value}`;
+            this.columnElm.textContent = `${value}`;
         }
         get rowData() {
             return this._rowData;
@@ -37620,12 +37657,12 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
             if (typeof value !== 'string')
                 value = String(value || '');
             this._caption = value;
-            this.columnElm && (this.columnElm.innerHTML = this.caption);
+            this.columnElm && (this.columnElm.textContent = this.caption);
         }
         updateLocale(i18n) {
             super.updateLocale(i18n);
             if (this.columnElm && this._caption?.startsWith('$'))
-                this.columnElm.innerHTML = i18n.get(this._caption) || '';
+                this.columnElm.textContent = i18n.get(this._caption) || '';
         }
         renderSort() {
             if (!this.sortable) {
@@ -37674,7 +37711,7 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
             (cell.columnSpan > 1) && tdElm.setAttribute('colspan', cell.columnSpan + '');
             (cell.rowSpan > 1) && tdElm.setAttribute('rowspan', cell.rowSpan + '');
             if (typeof node === 'string' || typeof node === 'number') {
-                this.columnElm.innerHTML = node + '';
+                this.columnElm.textContent = node + '';
             }
             else {
                 this.columnElm.innerHTML = '';
@@ -37698,7 +37735,7 @@ define("@ijstech/table/tableColumn.ts", ["require", "exports", "@ijstech/base", 
                 this.columnElm = this.createElement('div', this);
                 this.data = this.getAttribute('data', true);
                 if (this.isHeader) {
-                    this.columnElm.innerHTML = this.caption;
+                    this.columnElm.textContent = this.caption;
                     this.sortable = this.getAttribute('sortable', true, false);
                     if (this.options.onSortChange)
                         this.onSortChange = this.options.onSortChange;
@@ -43589,7 +43626,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             const controlOptions = {
                 caption: this.convertToKey(labelName),
                 description: schema.description,
-                tooltip: schema.tooltip,
+                tooltip: schema.tooltip ? this.convertToKey(schema.tooltip) : '',
                 placeholder: schema.placeholder,
                 columnWidth: columnWidth,
                 readOnly: schema.readOnly,
@@ -44218,7 +44255,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                         height: '1rem',
                         name: 'info-circle',
                         margin: { left: 2 },
-                        tooltip: { content: options.tooltip, placement: 'bottom' }
+                        tooltip: { content: this.convertToKey(options.tooltip), placement: 'bottom' }
                     });
                 }
             }

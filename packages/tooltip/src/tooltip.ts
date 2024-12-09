@@ -2,6 +2,7 @@ import { Control, customElements, I18n } from '@ijstech/base';
 import "./style/tooltip.css";
 import { PlacementType, TriggerType, ITooltipImpl, ITooltip } from '@ijstech/types';
 import { application } from '@ijstech/application';
+import { Label } from '@ijstech/label';
 export { ITooltip };
 
 const DEFAULT_DURATION = 2000;
@@ -154,8 +155,10 @@ export class Tooltip extends Control implements ITooltipImpl {
   }
 
   updateLocale(i18n: I18n): void {
-    if (this.tooltipElm && this._content?.startsWith('$'))
-      this.tooltipElm.innerHTML = i18n.get(this._content) || '';
+    if (this.tooltipElm && this._content?.startsWith('$')) {
+      const text = i18n.get(this._content) || '';
+      this.createLabels(text, this.tooltipElm as any);
+    }
   }
 
   get content(): string {
@@ -173,8 +176,8 @@ export class Tooltip extends Control implements ITooltipImpl {
   set content(value: string) {
     if (typeof value !== 'string') value = String(value || '');
     this._content = value;
-    if (this.tooltipElm){
-      this.tooltipElm.innerHTML = this.content;
+    if (this.tooltipElm) {
+      this.createLabels(this.content, this.tooltipElm);
     }
   }
 
@@ -239,7 +242,8 @@ export class Tooltip extends Control implements ITooltipImpl {
     this.tooltipElm = document.createElement("div");
     this.tooltipElm.classList.add("ii-tooltip");
 
-    this.tooltipElm.innerHTML = this.content;
+    this.createLabels(this.content, this.tooltipElm);
+
     this.tooltipElm.classList.add(this.popperClass);
     this.tooltipElm.classList.add(`ii-tooltip-${this.placement}`);
     if (this.color) {
@@ -248,6 +252,25 @@ export class Tooltip extends Control implements ITooltipImpl {
     }
     if (this.maxWidth)
       this.tooltipElm.style.maxWidth = this.maxWidth;
+  }
+
+  private createLabels(text: string, parent: HTMLElement) {
+    parent.innerHTML = '';
+    if (!text) return;
+    const elements: Control[] = [];
+    const newText = text.replace(/\r\n|\r|<br>/g, '\n');
+    const lines = newText.split('\n');
+    lines.forEach(line => {
+      const label = new Label(undefined, {
+        caption: line,
+        display: 'block',
+        overflowWrap: "anywhere",
+        font: {size: '0.6875rem'}
+      });
+      parent.appendChild(label);
+      elements.push(label);
+    });
+    return elements;
   }
 
   private initEvents(source: Control) {

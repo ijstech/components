@@ -527,7 +527,7 @@ export class MenuItem extends Control {
   updateLocale(i18n: I18n): void {
     super.updateLocale(i18n);
     if (this.captionElm && this._caption?.startsWith('$'))
-      this.captionElm.innerHTML = i18n.get(this._caption) || '';
+      this.captionElm.textContent = i18n.get(this._caption) || '';
   }
 
   get title(): string {
@@ -542,10 +542,10 @@ export class MenuItem extends Control {
           this.linkTo?.parentModule?.i18n?.get(value) ||
           application.i18n?.get(value) ||
           '';
-        this.captionElm.innerHTML = translated;
+        this.captionElm.textContent = translated;
       }
       else
-        this.captionElm.innerHTML = value || '';
+        this.captionElm.textContent = value || '';
     }
   }
 
