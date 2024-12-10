@@ -81,7 +81,7 @@ export class Datepicker extends Control {
     private _dateTimeFormat: string;
     private _type: dateType;
     private _placeholder: string;
-    private _minDate: string;
+    private _minDate?: Moment;
     private callback: (value: any) => void;
     private _isInternalUpdate = false; 
 
@@ -183,13 +183,18 @@ export class Datepicker extends Control {
             this._isInternalUpdate = false;
         }
     }
+    get minDate(): Moment | undefined {
+        return this._minDate;
+    }
     set minDate(value: Moment | undefined) {
+        this._minDate = value;
+        let strMinDate: string;
         if (!value) {
-            this._minDate = "";
+            strMinDate = "";
         } else {
-            this._minDate = value.format("YYYY-MM-DDTHH:mm");
+            strMinDate = value.format("YYYY-MM-DDTHH:mm");
         }
-        if (this.datepickerElm) this.datepickerElm.min = this._minDate;
+        if (this.datepickerElm) this.datepickerElm.min = strMinDate;
     }
     get defaultDateTimeFormat(): string {
         switch (this._type) {
@@ -381,7 +386,11 @@ export class Datepicker extends Control {
             const temp = moment(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
             const _moment = moment(temp, this.datepickerFormat, true);
             const oldVal = this.value;
-            this.valueFormat = _moment.utc().toISOString();
+            if (this.minDate && _moment.isBefore(this.minDate)) {
+                this.valueFormat = this.minDate.utc().toISOString();
+            } else {
+                this.valueFormat = _moment.utc().toISOString();
+            }
             const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value)
             if (isChanged) this.emitChange(event);
         // })

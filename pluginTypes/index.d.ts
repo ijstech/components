@@ -22070,7 +22070,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         private _dateTimeFormat;
         private _type;
         private _placeholder;
-        private _minDate;
+        private _minDate?;
         private callback;
         private _isInternalUpdate;
         private captionSpanElm;
@@ -22096,6 +22096,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         get border(): Border;
         get value(): Moment | undefined;
         set value(value: Moment | undefined);
+        get minDate(): Moment | undefined;
         set minDate(value: Moment | undefined);
         get defaultDateTimeFormat(): string;
         get dateTimeFormat(): string;
