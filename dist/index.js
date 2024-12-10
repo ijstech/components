@@ -17898,7 +17898,8 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.clear();
                 return;
             }
-            if (!value.isSame(this._value)) {
+            const isSameDate = this._value && value.isSame(this._value);
+            if (!isSameDate) {
                 this._isInternalUpdate = true;
                 this._valueFormat = value.utc().toISOString();
                 this.updateValue(value);
