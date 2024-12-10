@@ -17819,7 +17819,12 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 const temp = (0, moment_1.moment)(this.inputElm.value, this.formatString, true).format(this.datepickerFormat);
                 const _moment = (0, moment_1.moment)(temp, this.datepickerFormat, true);
                 const oldVal = this.value;
-                this.valueFormat = _moment.utc().toISOString();
+                if (this.minDate && _moment.isBefore(this.minDate)) {
+                    this.valueFormat = this.minDate.utc().toISOString();
+                }
+                else {
+                    this.valueFormat = _moment.utc().toISOString();
+                }
                 const isChanged = (oldVal && this.value && !oldVal.isSame(this.value)) || (!oldVal || !this.value);
                 if (isChanged)
                     this.emitChange(event);
@@ -17898,22 +17903,28 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.clear();
                 return;
             }
-            if (!value.isSame(this._value)) {
+            const isSameDate = this._value && value.isSame(this._value);
+            if (!isSameDate) {
                 this._isInternalUpdate = true;
                 this._valueFormat = value.utc().toISOString();
                 this.updateValue(value);
                 this._isInternalUpdate = false;
             }
         }
+        get minDate() {
+            return this._minDate;
+        }
         set minDate(value) {
+            this._minDate = value;
+            let strMinDate;
             if (!value) {
-                this._minDate = "";
+                strMinDate = "";
             }
             else {
-                this._minDate = value.format("YYYY-MM-DDTHH:mm");
+                strMinDate = value.format("YYYY-MM-DDTHH:mm");
             }
             if (this.datepickerElm)
-                this.datepickerElm.min = this._minDate;
+                this.datepickerElm.min = strMinDate;
         }
         get defaultDateTimeFormat() {
             switch (this._type) {
