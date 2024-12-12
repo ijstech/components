@@ -1,5 +1,5 @@
 import {IModule} from '@ijstech/types';
-import {LibPath, RequireJS, I18n} from '@ijstech/base';
+import {LibPath, RequireJS, I18n, Permissions} from '@ijstech/base';
 import {Locales} from '@ijstech/types';
 import {EventBus} from './event-bus';
 import {GlobalEvents} from './globalEvent';
@@ -147,6 +147,7 @@ export class Application{
     private _locale: Locales = 'en';
     private _i18n: I18n;
     private static _modules: {[name: string]: IModule} = {};
+    private _permissions: Permissions;
 
     static updateLocale(): void {
         for (let key in this._modules){
@@ -322,6 +323,11 @@ export class Application{
             this._locale = value;
             Application.updateLocale();
         };
+    };
+    get permissions(): Permissions{
+        if (!this._permissions)
+            this._permissions = new Permissions();
+        return this._permissions;
     };
     async uploadData(fileName: string, content: string): Promise<IUploadResult>{
         let cid = await hashContent(content);
