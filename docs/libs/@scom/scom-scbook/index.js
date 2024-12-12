@@ -2563,8 +2563,11 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                     let newSlug = mainHref
                         // @ts-ignore
                         .replaceAll('.md', '')
-                        .replaceAll('/readme', '')
-                        .replace(`${slug}`, '');
+                        .replaceAll('/readme', '');
+                    const finded = this.flatTree.find((item) => item.slug === newSlug);
+                    if (!finded) {
+                        newSlug = newSlug.replace(`${slug}`, '');
+                    }
                     if (newSlug.startsWith('/'))
                         newSlug = newSlug.substr(1);
                     const lgPath = (0, index_5.getLanguagePath)();
