@@ -6,12 +6,13 @@ declare module "@scom/scom-code-viewer/index.css.ts" {
 /// <amd-module name="@scom/scom-code-viewer" />
 declare module "@scom/scom-code-viewer" {
     import { ControlElement, Module } from '@ijstech/components';
+    type ThemeType = 'light' | 'dark';
     interface ScomCodeViewerElement extends ControlElement {
         code?: string;
         language?: string;
         entryPoint?: string;
-        isButtonsShown?: boolean;
-        theme?: 'light' | 'dark';
+        isButtonsShwn?: boolean;
+        theme?: ThemeType;
     }
     global {
         namespace JSX {
@@ -34,6 +35,7 @@ declare module "@scom/scom-code-viewer" {
         private btnEdit;
         private btnCopy;
         private _data;
+        private _theme;
         private fileData;
         private _fullPath;
         tag: any;
@@ -46,6 +48,8 @@ declare module "@scom/scom-code-viewer" {
         get fullCode(): string;
         get isButtonsShown(): boolean;
         set isButtonsShown(value: boolean);
+        get theme(): ThemeType;
+        set theme(value: ThemeType);
         setData(value: ICodeViewer): Promise<void>;
         private renderUI;
         private revertHtmlTags;
@@ -55,6 +59,7 @@ declare module "@scom/scom-code-viewer" {
         private updateButtons;
         private initLibs;
         private addCSS;
+        private removeCSS;
         private onCopy;
         private onEdit;
         onClose(): void;

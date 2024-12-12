@@ -40,6 +40,7 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
     const Theme = components_2.Styles.Theme.ThemeVars;
     const path = components_2.application.currentModuleDir;
     const DEFAULT_LANGUAGE = 'javascript';
+    const DEFAULT_THEME = 'dark';
     let ScomCodeViewer = class ScomCodeViewer extends components_2.Module {
         constructor() {
             super(...arguments);
@@ -47,6 +48,7 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
                 code: '',
                 language: DEFAULT_LANGUAGE
             };
+            this._theme = DEFAULT_THEME;
             this.fileData = { content: '', path: 'index.tsx' };
             this._fullPath = '';
             this.tag = {};
@@ -77,6 +79,20 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
         }
         set isButtonsShown(value) {
             this._data.isButtonsShown = value ?? true;
+        }
+        get theme() {
+            return this._theme || DEFAULT_THEME;
+        }
+        set theme(value) {
+            this._theme = value || DEFAULT_THEME;
+            if (this._theme === 'light') {
+                this.removeCSS('hljs-dark');
+                this.addCSS(`${path}/lib/default.min.css`, 'hljs-default');
+            }
+            else {
+                this.removeCSS('hljs-default');
+                this.addCSS(`${path}/lib/dark.min.css`, 'hljs-dark');
+            }
         }
         async setData(value) {
             const code = value.code;
@@ -111,7 +127,8 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             this.pnlButtons.visible = this.isButtonsShown;
             if (!this.hljs) {
                 try {
-                    this.addCSS(`${path}/lib/dark.min.css`, 'hljs');
+                    const themeVar = this._theme || document.body.style.getPropertyValue('--theme') || DEFAULT_THEME;
+                    this.theme = themeVar;
                     this.hljs = await this.initLibs();
                 }
                 catch { }
@@ -205,6 +222,12 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             link.href = href;
             document.head.append(link);
         }
+        removeCSS(name) {
+            const css = document.head.querySelector(`[name="${name}"]`);
+            console.log(css);
+            if (css)
+                css.remove();
+        }
         async onCopy(target, event) {
             event.stopPropagation();
             const code = this.querySelector('code')?.innerText || '';
@@ -264,6 +287,7 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             const language = this.getAttribute('language', true);
             const entryPoint = this.getAttribute('entryPoint', true);
             const isButtonsShown = this.getAttribute('isButtonsShown', true);
+            this._theme = this.getAttribute('theme', true);
             code && this.setData({ code, language, entryPoint, isButtonsShown });
         }
         render() {

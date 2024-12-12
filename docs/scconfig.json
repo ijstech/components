@@ -194,6 +194,19 @@
             }
         }
     },
+    "multilingual": {
+        "default": "",
+        "locales": [
+            {
+                "code": "",
+                "name": "English"
+            },
+            {
+                "code": "cn",
+                "name": "繁體中文"
+            }
+        ]
+    },
     "packages": [
         "@ijstech/components",
         "@scom/scom-scbook",
