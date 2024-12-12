@@ -13,6 +13,7 @@ export {Control, Container};
 export * as Types from './types';
 export {getControlMediaQueriesStyle, getBackground, getSpacingValue, getMediaQueryRule} from './style/base.css';
 export {IdUtils, customElements, getCustomElements} from './utils';
+export { Permissions } from './permissions';
 declare var _currentDefineModule: any;
 let scripts = document.getElementsByTagName("script");
 // let LibUrl = new URL(scripts[scripts.length - 1].src);

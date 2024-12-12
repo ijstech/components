@@ -737,7 +737,7 @@ export class Form extends Control {
             caption: this.convertToKey(labelName),
             description: schema.description,
             tooltip: schema.tooltip ? this.convertToKey(schema.tooltip) : '',
-            placeholder: schema.placeholder,
+            placeholder: schema.placeholder ? this.convertToKey(schema.placeholder) : '',
             columnWidth: columnWidth,
             readOnly: schema.readOnly,
             required: isRequired,
@@ -1392,7 +1392,9 @@ export class Form extends Control {
             input.setAttribute('readOnly', options.readOnly.toString());
         }
         if (options.placeholder !== undefined) {
-            input.setAttribute('placeholder', options.placeholder);
+            const placeholderKey = this.convertToKey(options.placeholder);
+            const placeholderText = this.parentModule?.i18n?.get(placeholderKey);
+            input.setAttribute('placeholder', placeholderText || options.placeholder);
         }
         input.classList.add(Styles.inputStyle);
         const description = this.renderLabel({ parent:vstack, options, type: 'description'});
@@ -1444,7 +1446,9 @@ export class Form extends Control {
             input.setAttribute('readOnly', options.readOnly.toString());
         }
         if (options.placeholder !== undefined) {
-            input.setAttribute('placeholder', options.placeholder);
+            const placeholderKey = this.convertToKey(options.placeholder);
+            const placeholderText = this.parentModule?.i18n?.get(placeholderKey);
+            input.setAttribute('placeholder', placeholderText || options.placeholder);
         }
         input.classList.add(Styles.inputStyle);
         const description = this.renderLabel({parent: vstack, options, type: 'description'});
@@ -1494,7 +1498,9 @@ export class Form extends Control {
             input.setAttribute('readOnly', options.readOnly.toString());
         }
         if (options.placeholder !== undefined) {
-            input.setAttribute('placeholder', options.placeholder);
+            const placeholderKey = this.convertToKey(options.placeholder);
+            const placeholderText = this.parentModule?.i18n?.get(placeholderKey);
+            input.setAttribute('placeholder', placeholderText || options.placeholder);
         }
         input.classList.add(Styles.inputStyle);
         const description = this.renderLabel({parent: vstack, options, type: 'description'});
