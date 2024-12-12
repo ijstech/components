@@ -1,10 +1,7 @@
-# Busuu
+# Media Player
 
 ## Description
-A global platform for learning languages
-
-## Website
-[Busuu](https://www.busuu.com/en-us)
+A media player component for the web
 
 ## Sample Code
 ```typescript(source/index.tsx)

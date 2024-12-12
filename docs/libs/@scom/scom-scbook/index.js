@@ -1,3 +1,17 @@
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -626,9 +640,6 @@ define("@scom/scom-scbook/header.css.ts", ["require", "exports", "@ijstech/compo
             '.hidden': {
                 display: 'none !important',
             },
-            'i-switch': {
-                display: 'none',
-            },
             '& > .header': {
                 flexShrink: 0,
                 width: '100%',
@@ -653,96 +664,6 @@ define("@scom/scom-scbook/header.css.ts", ["require", "exports", "@ijstech/compo
                         }
                     }
                 }
-            },
-            '.logo': {
-                height: '65px',
-                padding: '10px 0',
-                width: '162px',
-                // borderRight: "1px solid #E0E0E0",
-                // marginLeft: '20px',
-                display: 'none',
-                $nest: {
-                    '@media (min-width: 701px)': {
-                        display: 'block',
-                        marginRight: '110px',
-                    },
-                },
-            },
-            '#btnMenu': {
-                display: 'block',
-                position: 'absolute',
-                left: 0,
-                padding: '20px',
-                cursor: 'pointer',
-                $nest: {
-                    '@media (min-width: 701px)': {
-                        display: 'none',
-                    },
-                    svg: {
-                        height: '20px',
-                        width: '20px',
-                    },
-                },
-            },
-            '#btnEdit': {
-                display: 'block',
-                position: 'absolute',
-                right: 0,
-                padding: '20px',
-                cursor: 'pointer',
-                $nest: {
-                    svg: {
-                        height: '20px',
-                        width: '20px',
-                    },
-                },
-            },
-            '.container': {
-                display: 'flex',
-                alignItems: 'center',
-                flexFlow: 'row nowrap',
-                position: 'relative',
-                textAlign: 'left',
-                // maxWidth: '1750px',
-                height: '100%',
-                padding: '0 4px',
-                margin: '0 auto',
-            },
-            '.heading': {
-                $nest: {
-                    div: {
-                        fontSize: '25px',
-                        fontWeight: 700,
-                        color: 'white',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        display: 'block',
-                    },
-                },
-                fontSize: '15px',
-                fontWeight: 700,
-                color: 'white',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                display: 'block',
-            },
-            '#logoText': {
-                width: '259px',
-                borderRight: `1px solid ${Theme.divider}`,
-                marginLeft: '20px',
-                display: 'none',
-                $nest: {
-                    '@media (min-width: 701px)': {
-                        display: 'block',
-                    },
-                },
-            },
-            'i-panel.search': {
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: 'auto',
             },
             'i-scom-scbook-search': {
                 marginRight: '6px',
@@ -919,18 +840,63 @@ define("@scom/scom-scbook/search.css.ts", ["require", "exports", "@ijstech/compo
         },
     });
 });
-define("@scom/scom-scbook/search.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/search.css.ts"], function (require, exports, components_4) {
+define("@scom/scom-scbook/store/interfaces.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+});
+define("@scom/scom-scbook/store/index.ts", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/store/interfaces.ts"], function (require, exports, components_4, interfaces_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.getLanguagePath = exports.getDefaultLg = exports.getCurrentLg = exports.setCurrentLanguage = exports.setMutilingual = exports.getMutilingual = void 0;
+    const store = {
+        state: {
+            multilingual: null,
+            currentLang: null
+        }
+    };
+    const getMutilingual = () => {
+        return store.state.multilingual;
+    };
+    exports.getMutilingual = getMutilingual;
+    const setMutilingual = (value) => {
+        store.state.multilingual = value;
+        store.state.currentLang = value && value?.default ? value.locales.find(lg => lg.code === value.default) : null;
+    };
+    exports.setMutilingual = setMutilingual;
+    const getDefaultLg = () => {
+        return store.state.multilingual?.default || '';
+    };
+    exports.getDefaultLg = getDefaultLg;
+    const setCurrentLanguage = (value) => {
+        store.state.currentLang = value;
+        const locale = value?.code === 'cn' ? 'zh-hant' : value?.code;
+        if (locale)
+            components_4.application.locale = locale;
+    };
+    exports.setCurrentLanguage = setCurrentLanguage;
+    const getCurrentLg = () => {
+        const defaultLg = store.state.multilingual?.locales.find(lg => lg.code === getDefaultLg());
+        return store.state.currentLang || defaultLg;
+    };
+    exports.getCurrentLg = getCurrentLg;
+    const getLanguagePath = () => {
+        return getCurrentLg()?.code;
+    };
+    exports.getLanguagePath = getLanguagePath;
+    __exportStar(interfaces_1, exports);
+});
+define("@scom/scom-scbook/search.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/store/index.ts", "@scom/scom-scbook/search.css.ts"], function (require, exports, components_5, index_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Search = void 0;
-    const Theme = components_4.Styles.Theme.ThemeVars;
-    const __dirname = components_4.application.currentModuleDir;
-    components_4.RequireJS.config({
+    const Theme = components_5.Styles.Theme.ThemeVars;
+    const __dirname = components_5.application.currentModuleDir;
+    components_5.RequireJS.config({
         paths: {
             minisearch: `${__dirname}/lib/minisearch`,
         },
     });
-    let Search = class Search extends components_4.Control {
+    let Search = class Search extends components_5.Control {
         constructor() {
             super(...arguments);
             this.isDropdownShown = false;
@@ -970,8 +936,12 @@ define("@scom/scom-scbook/search.tsx", ["require", "exports", "@ijstech/componen
         updatePath(slug) {
             if (slug) {
                 let path = slug.toLowerCase() === 'readme' ? '' : slug;
-                let baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
-                window.history.pushState(slug, 'Title', baseUrl + path);
+                const lgPath = (0, index_1.getLanguagePath)();
+                if (path.toLowerCase() === `${lgPath ? lgPath + '/' : ''}readme`) {
+                    path = lgPath;
+                }
+                const baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
+                window.history.pushState(slug, 'Title', `${baseUrl}${path}`);
                 window.dispatchEvent(new Event('popstate'));
             }
         }
@@ -1037,7 +1007,7 @@ define("@scom/scom-scbook/search.tsx", ["require", "exports", "@ijstech/componen
             if (!this.wrapperElm) {
                 this.wrapperElm = this.createElement('span', this);
                 this.wrapperElm.classList.add('search', 'autocomplete');
-                const icon = new components_4.Icon(this, { name: 'search', fill: Theme.input.fontColor });
+                const icon = new components_5.Icon(this, { name: 'search', fill: Theme.input.fontColor });
                 this.wrapperElm.appendChild(icon);
                 this.inputElm = this.createElement('input', this.wrapperElm);
                 this.inputElm.setAttribute('placeholder', 'Search');
@@ -1071,7 +1041,7 @@ define("@scom/scom-scbook/search.tsx", ["require", "exports", "@ijstech/componen
         }
     };
     Search = __decorate([
-        (0, components_4.customElements)('i-scom-scbook-search')
+        (0, components_5.customElements)('i-scom-scbook-search')
     ], Search);
     exports.Search = Search;
 });
@@ -1080,21 +1050,24 @@ define("@scom/scom-scbook/event.ts", ["require", "exports"], function (require, 
     Object.defineProperty(exports, "__esModule", { value: true });
     ;
 });
-define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/search.tsx", "@scom/scom-scbook/header.css.ts"], function (require, exports, components_5, search_1) {
+define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/store/index.ts", "@scom/scom-scbook/search.tsx", "@scom/scom-scbook/header.css.ts"], function (require, exports, components_6, index_2, search_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DocsHeader = exports.Search = void 0;
+    const Theme = components_6.Styles.Theme.ThemeVars;
     Object.defineProperty(exports, "Search", { enumerable: true, get: function () { return search_1.Search; } });
-    const Theme = components_5.Styles.Theme.ThemeVars;
     const moonIcon = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="%23326e81" d="M4.2 2.5l-.7 1.8-1.8.7 1.8.7.7 1.8.6-1.8L6.7 5l-1.9-.7-.6-1.8zm15 8.3a6.7 6.7 0 11-6.6-6.6 5.8 5.8 0 006.6 6.6z"/></svg>';
     const sunIcon = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="%23326e81" d="M9.305 1.667V3.75h1.389V1.667h-1.39zm-4.707 1.95l-.982.982L5.09 6.072l.982-.982-1.473-1.473zm10.802 0L13.927 5.09l.982.982 1.473-1.473-.982-.982zM10 5.139a4.872 4.872 0 00-4.862 4.86A4.872 4.872 0 0010 14.862 4.872 4.872 0 0014.86 10 4.872 4.872 0 0010 5.139zm0 1.389A3.462 3.462 0 0113.471 10a3.462 3.462 0 01-3.473 3.472A3.462 3.462 0 016.527 10 3.462 3.462 0 0110 6.528zM1.665 9.305v1.39h2.083v-1.39H1.666zm14.583 0v1.39h2.084v-1.39h-2.084zM5.09 13.928L3.616 15.4l.982.982 1.473-1.473-.982-.982zm9.82 0l-.982.982 1.473 1.473.982-.982-1.473-1.473zM9.305 16.25v2.083h1.389V16.25h-1.39z"/></svg>';
-    let DocsHeader = class DocsHeader extends components_5.Module {
+    let DocsHeader = class DocsHeader extends components_6.Module {
         constructor(parent, options) {
-            super();
+            super(parent, options);
             this.menuItem = [];
             this.searchIndex = [];
             this._showSearch = true;
             this._theme = 'dark';
+            this._currentLg = (0, index_2.getDefaultLg)();
+            this.events = [];
+            this.$eventBus = components_6.application.EventBus;
         }
         get menu() {
             return this._menu;
@@ -1102,7 +1075,7 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
         set menu(value) {
             this._menu = value;
             if (this._menu && this._menu.length) {
-                components_5.RequireJS.require([`${components_5.LibPath}lib/marked/marked.umd.js`], async (marked) => {
+                components_6.RequireJS.require([`${components_6.LibPath}lib/marked/marked.umd.js`], async (marked) => {
                     const acc = [];
                     for (const item of this._menu) {
                         if (item.text) {
@@ -1166,8 +1139,19 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             this._showSearch = value;
             this.searchBar.visible = value;
         }
+        get multilingual() {
+            return this._multilingual;
+        }
+        set multilingual(value) {
+            this._multilingual = value;
+            this._currentLg = value?.default || '';
+            const locale = this._multilingual?.locales.find(lg => lg.code === this._currentLg);
+            (0, index_2.setCurrentLanguage)(locale);
+            this.renderLgComboBox();
+        }
         async loadSearchIndex(entrypoint) {
-            const response = await components_5.application.fetch(`${entrypoint}/.scbook/searchindex.json`);
+            const filePath = this.getFilePath('.scbook/searchindex.json');
+            const response = await components_6.application.fetch(`${entrypoint}/${filePath}`);
             if (!response.ok) {
                 this.searchBar.visible = false;
                 return null;
@@ -1177,14 +1161,13 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             this.searchIndex = searchIndex;
             return searchIndex;
         }
-        async loadMarkdown(src) {
-            const response = await components_5.application.fetch(src, {
-                headers: new Headers({ accept: 'application/vnd.github.v3.raw' }),
-            });
-            if (!response.ok)
-                return '# There was error with your response, please check the details and try again';
-            return response.text();
-        }
+        // private async loadMarkdown(src: string): Promise<string> {
+        //     const response = await application.fetch(src, {
+        //         headers: new Headers({ accept: 'application/vnd.github.v3.raw' }),
+        //     });
+        //     if (!response.ok) return '# There was error with your response, please check the details and try again';
+        //     return response.text();
+        // }
         onChangeTheme(target, event) {
             if (this._theme === 'light') {
                 this.btnLight.background.color = 'transparent';
@@ -1195,28 +1178,106 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             target.background.color = Theme.action.hoverBackground;
             const theme = target.tag;
             this._theme = theme;
-            components_5.Styles.Theme.applyTheme(theme === 'light' ? components_5.Styles.Theme.defaultTheme : components_5.Styles.Theme.darkTheme);
+            components_6.Styles.Theme.applyTheme(theme === 'light' ? components_6.Styles.Theme.defaultTheme : components_6.Styles.Theme.darkTheme);
             document.body.style.setProperty('--theme', theme);
-            components_5.application.EventBus.dispatch("scbookThemeChanged" /* EventId.scbookThemeChanged */, theme);
+        }
+        onLocaleChanged(target, event) {
+            const oldLg = this._currentLg;
+            const locale = target.tag;
+            this.updateLanguage(locale);
+            this.$eventBus.dispatch("scbookLangChanged" /* EventId.ScbookLangChanged */, locale);
+            const lgPath = (0, index_2.getLanguagePath)();
+            const baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
+            const currentHash = window.location.hash;
+            let hash = oldLg ? currentHash.slice(currentHash.indexOf(oldLg) + oldLg.length) : currentHash.slice(currentHash.indexOf(baseUrl) + baseUrl.length);
+            if (hash.startsWith('/'))
+                hash = hash.slice(1);
+            const slug = `${baseUrl}${lgPath ? `${lgPath}/` : ''}${hash}`;
+            window.history.pushState(slug, 'Title', slug);
+            window.dispatchEvent(new Event('popstate'));
+        }
+        onHide() {
+            for (const event of this.events) {
+                event.unregister();
+            }
+        }
+        updateLanguage(lg) {
+            const oldLg = this._currentLg;
+            if (lg.code === this._currentLg)
+                return;
+            this._currentLg = lg.code;
+            (0, index_2.setCurrentLanguage)(lg);
+            if (this.btnLang && this.mdLang) {
+                const oldTarget = this.mdLang?.querySelector(`#pnl${oldLg}`);
+                if (oldTarget)
+                    oldTarget.background.color = 'transparent';
+                const currentTarget = this.mdLang?.querySelector(`#pnl${this._currentLg}`);
+                if (currentTarget)
+                    currentTarget.background.color = 'transparent';
+                currentTarget.background.color = Theme.action.hoverBackground;
+                this.btnLang.caption = lg.name;
+            }
+            else {
+                this.renderLgComboBox();
+            }
+        }
+        renderLgComboBox() {
+            const multilingual = (0, index_2.getMutilingual)();
+            this.pnlRight.clearInnerHTML();
+            if (!multilingual)
+                return;
+            const options = multilingual.locales.map((locale) => {
+                return this.$render("i-hstack", { id: `pnl${locale.code}`, tag: locale, padding: { left: '0.75rem', right: '0.75rem', top: '0.5rem', bottom: '0.5rem' }, hover: {
+                        backgroundColor: Theme.action.hoverBackground
+                    }, background: { color: locale.code === this._currentLg ? Theme.action.hoverBackground : 'transparent' }, onClick: (target, event) => {
+                        optionsMd.visible = false;
+                        this.onLocaleChanged(target, event);
+                    } },
+                    this.$render("i-label", { caption: locale.name, width: '100%', textOverflow: 'ellipsis' }));
+            });
+            const lgName = (0, index_2.getCurrentLg)()?.name;
+            const lgBtn = this.$render("i-button", { id: 'btnLang', border: { radius: '0.25rem' }, background: { color: Theme.colors.primary.main }, boxShadow: 'none', width: 100, height: 30, margin: { left: '0.5rem' }, caption: lgName || '', icon: { name: 'globe', width: 16, height: 16, fill: Theme.colors.primary.contrastText }, font: { color: Theme.colors.primary.contrastText, size: '14px' }, onClick: () => {
+                    optionsMd.linkTo = lgBtn;
+                    optionsMd.visible = !optionsMd.visible;
+                } });
+            const optionsMd = this.$render("i-modal", { id: "mdLang", width: 150, zIndex: 999, popupPlacement: 'bottomRight', showBackdrop: false, padding: { top: 0, left: 0, right: 0, bottom: 0 }, onOpen: () => {
+                    document.body.appendChild(optionsMd);
+                }, onClose: () => {
+                    optionsMd.remove();
+                } },
+                this.$render("i-vstack", { width: '100%', padding: { top: '0.5rem', bottom: '0.5rem' } }, options));
+            this.pnlRight.append(lgBtn, optionsMd);
         }
         async init() {
             super.init();
+            const multilingual = (0, index_2.getMutilingual)();
+            this._currentLg = multilingual?.default || '';
+            this.pnlRight.clearInnerHTML();
+            if (multilingual)
+                this.renderLgComboBox();
+            this.registerEvents();
+        }
+        registerEvents() {
+            this.events.push(this.$eventBus.register(this, "scbookLangChanged" /* EventId.ScbookLangChanged */, (locale) => {
+                this.updateLanguage(locale);
+            }));
         }
         async checkLogoExists(entrypoint, logoPath) {
             if (logoPath.indexOf('https://') >= 0 || logoPath.indexOf('http://') >= 0) {
                 this.imgLogo.url = logoPath;
                 return;
             }
+            const filePath = logoPath ? this.getFilePath(logoPath) : '';
             if (logoPath) {
-                const response = await components_5.application.fetch(`${entrypoint}/${logoPath}`);
+                const response = await components_6.application.fetch(`${entrypoint}/${filePath}`);
                 if (!response.ok) {
                     this.imgLogo.classList.add('hidden');
                     this.logoText.classList.remove('hidden');
                 }
                 else if (entrypoint.indexOf('://') < 0 && !entrypoint.startsWith('/'))
-                    this.imgLogo.url = `${components_5.application.rootDir}${entrypoint}/${logoPath}`;
+                    this.imgLogo.url = `${components_6.application.rootDir}${entrypoint}/${filePath}`;
                 else
-                    this.imgLogo.url = `${entrypoint}/${logoPath}`;
+                    this.imgLogo.url = `${entrypoint}/${filePath}`;
             }
             else {
                 this.imgLogo.classList.add('hidden');
@@ -1227,8 +1288,7 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             return new Promise((resolve, reject) => {
                 const load = async (p) => {
                     try {
-                        const request = new Request(path);
-                        const response = await components_5.application.fetch(path);
+                        const response = await components_6.application.fetch(p);
                         if (response.ok) {
                             resolve(response);
                         }
@@ -1261,7 +1321,8 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             if (entrypoint && (forceUpdate || !header)) {
                 try {
                     // const request = new Request(`${entrypoint}/HEADER.md`);
-                    const response = await this.loadFile(`${entrypoint}/HEADER.md`);
+                    const headerPath = this.getFilePath('HEADER.md');
+                    const response = await this.loadFile(`${entrypoint}/${headerPath}`);
                     if (response.ok) {
                         header = await response.text();
                         // if (window.localStorage) {
@@ -1316,7 +1377,13 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
                 ];
             }
         }
-        toggleMenu() {
+        getFilePath(url) {
+            const lgPath = (0, index_2.getLanguagePath)();
+            return this.multilingual && !url.startsWith(lgPath) ? `${lgPath ? lgPath + '/' : ''}${url}` : url;
+        }
+        toggleMenu(target, event) {
+            event.stopPropagation();
+            event.preventDefault();
             const navigator = document.querySelector('#docsNavigator');
             if (navigator) {
                 navigator.classList.contains('show') ? navigator.classList.remove('show') : navigator.classList.add('show');
@@ -1339,33 +1406,31 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
         render() {
             this.style.width = '100%';
             this.style.height = 'auto';
-            return (this.$render("i-panel", { class: "header" },
-                this.$render("i-panel", { id: "pnlContainer", class: "container" },
-                    this.$render("i-label", { id: "logoText", class: "heading hidden" }),
-                    this.$render("i-hstack", null,
-                        this.$render("i-image", { id: "imgLogo", class: "logo" })),
-                    this.$render("i-panel", { id: "btnMenu", onClick: this.toggleMenu },
-                        this.$render("i-icon", { name: "bars", fill: Theme.text.primary })),
-                    this.$render("i-menu", { id: "scbookMenu", width: "100%", data: this.menuItem }),
-                    this.$render("i-panel", { id: "btnEdit", onClick: this.toggleEditMode, class: "hidden" },
-                        this.$render("i-icon", { name: "pencil-alt", fill: Theme.text.primary })),
-                    this.$render("i-panel", { class: "search" },
+            return (this.$render("i-panel", { class: "header", width: '100%', overflow: 'hidden' },
+                this.$render("i-hstack", { id: "pnlContainer", verticalAlignment: 'center', horizontalAlignment: 'space-between', wrap: "nowrap", position: 'relative', height: '100%', width: '100%', overflow: 'hidden', padding: { left: 4, right: 4 }, margin: { left: 'auto', right: 'auto' } },
+                    this.$render("i-label", { id: "logoText", width: '259px', border: { right: { style: 'solid', width: '1px', color: Theme.divider } }, margin: { left: '20px' }, font: { size: '15px', weight: 700, color: Theme.text.primary }, textOverflow: 'ellipsis', class: "hidden", mediaQueries: [{ maxWidth: '701px', properties: { visible: false } }] }),
+                    this.$render("i-image", { id: "imgLogo", height: 65, width: 162, padding: { top: 10, bottom: 10 }, margin: { right: '110px' }, mediaQueries: [{ maxWidth: '701px', properties: { visible: false, margin: { right: 0 } } }] }),
+                    this.$render("i-button", { id: "btnMenu", icon: { name: 'bars', width: 20, height: 20, fill: Theme.text.primary }, background: { color: 'transparent' }, boxShadow: 'none', height: 'auto', padding: { left: 16, right: 16, top: 20, bottom: 20 }, border: { radius: '0px' }, onClick: this.toggleMenu, mediaQueries: [{ minWidth: '701px', properties: { visible: false } }] }),
+                    this.$render("i-button", { id: "btnEdit", visible: false, icon: { name: 'pencil-alt', width: 20, height: 20, fill: Theme.text.primary }, background: { color: 'transparent' }, boxShadow: 'none', height: 'auto', padding: { left: 20, right: 20, top: 20, bottom: 20 }, border: { radius: '0px' }, onClick: this.toggleEditMode }),
+                    this.$render("i-menu", { id: "scbookMenu", width: "100%", data: this.menuItem, maxWidth: '60%', overflow: 'hidden' }),
+                    this.$render("i-hstack", { verticalAlignment: 'center', horizontalAlignment: 'end', padding: { right: 16 } },
                         this.$render("i-scom-scbook-search", { id: "searchBar" }),
                         this.$render("i-hstack", { horizontalAlignment: 'center', verticalAlignment: 'center', gap: "0.25rem", padding: { top: '0.25rem', right: '0.35rem', bottom: '0.25rem', left: '0.35rem' }, border: { radius: '9999px', color: Theme.divider, width: '1px', style: 'solid' } },
                             this.$render("i-button", { id: "btnLight", width: '1.25rem', height: '1.25rem', border: { radius: '50%' }, background: { color: 'transparent' }, tag: "light", boxShadow: 'none', icon: { image: { url: sunIcon, width: '1rem', height: '1rem', display: 'flex' } }, onClick: this.onChangeTheme }),
-                            this.$render("i-button", { id: "btnDark", width: '1.25rem', height: '1.25rem', border: { radius: '50%' }, background: { color: Theme.action.hoverBackground }, boxShadow: 'none', tag: "dark", icon: { image: { url: moonIcon, width: '1rem', height: '1rem', display: 'flex' } }, onClick: this.onChangeTheme }))))));
+                            this.$render("i-button", { id: "btnDark", width: '1.25rem', height: '1.25rem', border: { radius: '50%' }, background: { color: Theme.action.hoverBackground }, boxShadow: 'none', tag: "dark", icon: { image: { url: moonIcon, width: '1rem', height: '1rem', display: 'flex' } }, onClick: this.onChangeTheme })),
+                        this.$render("i-panel", { id: "pnlRight" })))));
         }
     };
     DocsHeader = __decorate([
-        (0, components_5.customElements)('i-scom-scbook-header')
+        (0, components_6.customElements)('i-scom-scbook-header')
     ], DocsHeader);
     exports.DocsHeader = DocsHeader;
 });
-define("@scom/scom-scbook/navigator.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_6) {
+define("@scom/scom-scbook/navigator.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = components_6.Styles.Theme.ThemeVars;
-    components_6.Styles.cssRule('i-scom-scbook-navigator', {
+    const Theme = components_7.Styles.Theme.ThemeVars;
+    components_7.Styles.cssRule('i-scom-scbook-navigator', {
         display: 'block',
         flex: '0 0 280px',
         position: 'sticky',
@@ -1655,11 +1720,10 @@ define("@scom/scom-scbook/navigator.css.ts", ["require", "exports", "@ijstech/co
         },
     });
 });
-define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/navigator.css.ts"], function (require, exports, components_7) {
+define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/store/index.ts", "@scom/scom-scbook/navigator.css.ts"], function (require, exports, components_8, index_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DocsNavigator = void 0;
-    const Theme = components_7.Styles.Theme.ThemeVars;
     const slugify = (str) => {
         return str
             .toLowerCase()
@@ -1668,43 +1732,11 @@ define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/compo
             .replace(/[\s_-]+/g, '-')
             .replace(/^-+|-+$/g, '');
     };
-    let DocsNavigator = class DocsNavigator extends components_7.Module {
+    let DocsNavigator = class DocsNavigator extends components_8.Module {
         constructor(parent, options) {
             // super(parent, options);
             super();
             this.isNavOpened = true;
-            this.events = [];
-            this.$eventBus = components_7.application.EventBus;
-            this.registerEvent();
-        }
-        registerEvent() {
-            this.events.push(this.$eventBus.register(this, "scbookThemeChanged" /* EventId.scbookThemeChanged */, async (value) => this.onThemeChanged(value)));
-        }
-        onThemeChanged(value) {
-            if (value == 'dark') {
-                this.classList.remove("light");
-                this.classList.add("dark");
-                // this.treeView.classList.remove("light");
-                // this.treeView.classList.add("dark");
-                const treenodes = this.treeView.querySelectorAll('i-tree-node');
-                for (let i = 0; i < treenodes.length; i++) {
-                    const treeNode = treenodes[i];
-                    treeNode.classList.remove("light");
-                    treeNode.classList.add("dark");
-                }
-            }
-            else if (value == 'light') {
-                this.classList.remove("dark");
-                this.classList.add("light");
-                // this.treeView.classList.remove("dark");
-                // this.treeView.classList.add("light");
-                const treenodes = this.treeView.querySelectorAll('i-tree-node');
-                for (let i = 0; i < treenodes.length; i++) {
-                    const treeNode = treenodes[i];
-                    treeNode.classList.remove("dark");
-                    treeNode.classList.add("light");
-                }
-            }
         }
         get treeData() {
             return this._treeData;
@@ -1722,7 +1754,9 @@ define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/compo
             this._baseUrl = url;
         }
         handleActive(parent, prevNode) {
-            // const url: string = parent.activeItem?.order || '';
+            const currentSlug = this.currentNode?.tag?.slug;
+            if (currentSlug && parent.activeItem?.tag?.slug === currentSlug)
+                return;
             this._currentNode = parent.activeItem;
             const url = parent.activeItem?.tag.slug;
             this.updatePath(url);
@@ -1730,8 +1764,12 @@ define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/compo
         updatePath(slug) {
             if (slug) {
                 let path = slug.toLowerCase() === 'readme' ? '' : slug;
-                let baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
-                window.history.pushState(slug, 'Title', baseUrl + path);
+                const lgPath = (0, index_3.getLanguagePath)();
+                if (path.toLowerCase() === `${lgPath ? lgPath + '/' : ''}readme`) {
+                    path = lgPath;
+                }
+                const baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
+                window.history.pushState(slug, 'Title', `${baseUrl}${path}`);
                 window.dispatchEvent(new Event('popstate'));
             }
         }
@@ -1805,6 +1843,7 @@ define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/compo
                         treeNode.classList.add('tree-node--label');
                     }
                 }
+                this._currentNode = this.treeView.activeItem;
             }
         }
         async init() {
@@ -1823,15 +1862,15 @@ define("@scom/scom-scbook/navigator.tsx", ["require", "exports", "@ijstech/compo
         }
     };
     DocsNavigator = __decorate([
-        (0, components_7.customElements)('i-scom-scbook-navigator')
+        (0, components_8.customElements)('i-scom-scbook-navigator')
     ], DocsNavigator);
     exports.DocsNavigator = DocsNavigator;
 });
-define("@scom/scom-scbook/paging.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_8) {
+define("@scom/scom-scbook/paging.css.ts", ["require", "exports", "@ijstech/components"], function (require, exports, components_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = components_8.Styles.Theme.ThemeVars;
-    components_8.Styles.cssRule('i-scom-scbook-paging', {
+    const Theme = components_9.Styles.Theme.ThemeVars;
+    components_9.Styles.cssRule('i-scom-scbook-paging', {
         display: 'block',
         $nest: {
             '@media(max-width: 970px)': {
@@ -1961,12 +2000,16 @@ define("@scom/scom-scbook/paging.css.ts", ["require", "exports", "@ijstech/compo
         },
     });
 });
-define("@scom/scom-scbook/paging.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/paging.css.ts"], function (require, exports, components_9) {
+define("@scom/scom-scbook/paging.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/store/index.ts", "@scom/scom-scbook/paging.css.ts"], function (require, exports, components_10, index_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DocsPaging = void 0;
-    const Theme = components_9.Styles.Theme.ThemeVars;
-    let DocsPaging = class DocsPaging extends components_9.Module {
+    const Theme = components_10.Styles.Theme.ThemeVars;
+    let DocsPaging = class DocsPaging extends components_10.Module {
+        constructor() {
+            super(...arguments);
+            this.events = [];
+        }
         set flatTree(value) {
             this._flatTree = value;
             if (!this._currentNode && value && value.length > 0) {
@@ -2080,30 +2123,61 @@ define("@scom/scom-scbook/paging.tsx", ["require", "exports", "@ijstech/componen
             window.scrollTo(0, 0);
         }
         updatePath(slug) {
-            let baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
-            window.history.pushState(slug, 'Title', baseUrl + slug);
+            if (slug.endsWith('/'))
+                slug = slug.slice(0, -1);
+            if (slug.startsWith('/'))
+                slug = slug.substr(1);
+            const lgPath = (0, index_4.getLanguagePath)();
+            if (slug.toLowerCase() === `${lgPath ? lgPath + '/' : ''}readme`) {
+                slug = lgPath;
+            }
+            const baseUrl = this.baseUrl ? this.baseUrl + (this.baseUrl[this.baseUrl.length - 1] == '/' ? '' : '/') : '#/';
+            window.history.pushState(slug, 'Title', `${baseUrl}${slug}`);
             window.dispatchEvent(new Event('popstate'));
+        }
+        onHide() {
+            for (const event of this.events) {
+                event.unregister();
+            }
+        }
+        init() {
+            this.i18n.init({
+                'en': {
+                    'previous': 'Previous',
+                    'next': 'Next'
+                },
+                'zh-hant': {
+                    'previous': '上一個',
+                    'next': '下一個'
+                }
+            });
+            super.init();
+            this.$eventBus = components_10.application.EventBus;
+            this.events.push(this.$eventBus.register(this, "scbookLangChanged" /* EventId.ScbookLangChanged */, () => {
+                this.prevTitle.updateLocale(this.i18n);
+                this.nextTitle.updateLocale(this.i18n);
+            }));
         }
         render() {
             return (this.$render("i-grid-layout", { class: "paging", templateColumns: ['1fr', '1fr'], gap: { column: '1rem', row: '1rem' } },
                 this.$render("i-hstack", { id: 'prevPage', class: 'btnPaging prev hidden', horizontalAlignment: 'space-between', verticalAlignment: 'center', gap: '1rem', onClick: this.prevPageOnClick },
                     this.$render("i-icon", { name: 'arrow-left' }),
                     this.$render("i-vstack", { class: 'pager-content', horizontalAlignment: 'end', stack: { grow: '1', shrink: '0', basis: '0%' }, overflow: "hidden" },
-                        this.$render("i-label", { caption: 'Previous', class: 'pager-title1', font: { size: '12px', color: Theme.text.secondary } }),
+                        this.$render("i-label", { id: "prevTitle", caption: '$previous', class: 'pager-title1', font: { size: '12px', color: Theme.text.secondary } }),
                         this.$render("i-label", { id: 'labelPrev', class: 'pager-title2', maxWidth: "100%", font: { size: '16px', weight: 600 } }))),
                 this.$render("i-hstack", { id: 'nextPage', class: 'btnPaging next hidden', horizontalAlignment: 'space-between', verticalAlignment: 'center', gap: '1rem', onClick: this.nextPageOnClick },
                     this.$render("i-vstack", { class: 'pager-content', stack: { grow: '1', shrink: '0', basis: '0%' }, overflow: "hidden" },
-                        this.$render("i-label", { caption: 'Next', class: 'pager-title1', font: { size: '12px', color: Theme.text.secondary } }),
+                        this.$render("i-label", { id: "nextTitle", caption: '$next', class: 'pager-title1', font: { size: '12px', color: Theme.text.secondary } }),
                         this.$render("i-label", { id: 'labelNext', class: 'pager-title2', maxWidth: "100%", font: { size: '16px', weight: 600 } })),
                     this.$render("i-icon", { name: 'arrow-right' }))));
         }
     };
     DocsPaging = __decorate([
-        (0, components_9.customElements)('i-scom-scbook-paging')
+        (0, components_10.customElements)('i-scom-scbook-paging')
     ], DocsPaging);
     exports.DocsPaging = DocsPaging;
 });
-define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/search.tsx", "@scom/scom-scbook/header.tsx", "@scom/scom-scbook/navigator.tsx", "@scom/scom-scbook/paging.tsx", "@ijstech/components", "@scom/scom-scbook/main.css.ts"], function (require, exports, components_10, search_2, header_1, navigator_1, paging_1, components_11) {
+define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components", "@scom/scom-scbook/search.tsx", "@scom/scom-scbook/header.tsx", "@scom/scom-scbook/navigator.tsx", "@scom/scom-scbook/paging.tsx", "@scom/scom-scbook/store/index.ts", "@scom/scom-scbook/main.css.ts"], function (require, exports, components_11, search_2, header_1, navigator_1, paging_1, index_5) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SCBook = exports.DocsPaging = exports.DocsNavigator = exports.DocsHeader = exports.Search = void 0;
@@ -2112,7 +2186,7 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
     Object.defineProperty(exports, "DocsNavigator", { enumerable: true, get: function () { return navigator_1.DocsNavigator; } });
     Object.defineProperty(exports, "DocsPaging", { enumerable: true, get: function () { return paging_1.DocsPaging; } });
     const Theme = components_11.Styles.Theme.ThemeVars;
-    let SCBook = class SCBook extends components_10.Module {
+    let SCBook = class SCBook extends components_11.Module {
         constructor() {
             super(...arguments);
             this.treeData = [];
@@ -2174,6 +2248,15 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             this._themes = value;
             this.updateThemes(value);
         }
+        get multilingual() {
+            return this._multilingual;
+        }
+        set multilingual(value) {
+            this._multilingual = value;
+            (0, index_5.setMutilingual)(value);
+            if (this.docsHeader)
+                this.docsHeader.multilingual = value;
+        }
         updateThemes(themes) {
             if (!themes)
                 return;
@@ -2201,12 +2284,13 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
         }
         set theme(value) {
             this._theme = value;
-            components_10.application.EventBus.dispatch("scbookThemeChanged" /* EventId.scbookThemeChanged */, value);
             if (this.mdViewer)
                 this.mdViewer.theme = value;
         }
         async init() {
+            this.$eventBus = components_11.application.EventBus;
             this.entrypoint = this.getAttribute('entrypoint', true);
+            this.multilingual = this.getAttribute('multilingual', true);
             this.activeRightNodeOnScroll = this.activeRightNodeOnScroll.bind(this);
             this.handlePopStateEvent = this.handlePopStateEvent.bind(this);
             super.init();
@@ -2215,8 +2299,10 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             this.renderPnlDocsWrapper();
             this.baseUrl = this.getAttribute('baseUrl', true);
             if (this.showHeader) {
+                this.docsHeader.multilingual = this.multilingual;
                 await this.docsHeader.loadHeader(this.entrypoint);
             }
+            this.checkLanguage();
             this.bindEvents();
             await this.loadPage();
             const themes = this.getAttribute('themes', true);
@@ -2224,24 +2310,63 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 this.themes = typeof themes === 'string' ? JSON.parse(themes) : themes;
             this.theme = this._theme || this.themes?.default || 'light';
         }
+        checkLanguage() {
+            const hash = this.hash.slice(this.hash.indexOf('#/') + 1);
+            if (hash.startsWith('/'))
+                return hash.substr(1);
+            const splittedPath = hash.split('/');
+            const lang = splittedPath[0];
+            const storedLg = (0, index_5.getCurrentLg)();
+            if (storedLg && lang && lang !== storedLg?.code) {
+                const locale = (0, index_5.getMutilingual)()?.locales?.find((locale) => locale.code === lang);
+                if (locale) {
+                    (0, index_5.setCurrentLanguage)(locale);
+                    this.$eventBus.dispatch("scbookLangChanged" /* EventId.ScbookLangChanged */, locale);
+                }
+            }
+            else if (!hash && this.multilingual) {
+                const defaultLg = this.multilingual.default;
+                if (defaultLg) {
+                    window.location.hash = `/${defaultLg}`;
+                }
+            }
+        }
         async retryLoadFile(path) {
             return new Promise((resolve, reject) => {
-                const load = async (p) => {
+                const load = async (p, isRetry = false) => {
+                    const currentLang = (0, index_5.getLanguagePath)();
                     try {
-                        const response = await components_10.application.fetch(`${this.entrypoint}/${path}`);
+                        const response = await components_11.application.fetch(`${this.entrypoint}/${p}`);
                         if (response.ok) {
                             resolve(response);
                         }
                         else {
                             setTimeout(() => {
-                                load(p);
-                            }, 5000);
+                                if (response.status == 404) {
+                                    if (this.multilingual) {
+                                        const defaultLg = (0, index_5.getDefaultLg)();
+                                        if (path.startsWith('/'))
+                                            path = path.substr(1);
+                                        const splitPath = path.split('/');
+                                        if (splitPath[0] === currentLang)
+                                            splitPath.shift();
+                                        const newPath = `${defaultLg ? defaultLg + '/' : ''}${splitPath.join('/')}`;
+                                        load(newPath, true);
+                                    }
+                                    else {
+                                        load(p, true);
+                                    }
+                                }
+                                else {
+                                    load(p, true);
+                                }
+                            }, currentLang ? 500 : 5000);
                         }
                     }
                     catch (e) {
                         console.log('load file catch', e);
                         setTimeout(() => {
-                            load(p);
+                            load(p, true);
                         }, 5000);
                     }
                 };
@@ -2263,53 +2388,6 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 return acc.flat();
             }, []);
         }
-        addBtnEvent() {
-            // const dropdownBtns = document.querySelectorAll('.dropdown-btn');
-            const editBtns = document.querySelectorAll('.edit-btn');
-            // const runBtns = document.querySelectorAll('.run-btn');
-            const copyBtns = document.querySelectorAll('.copy-btn');
-            // const self = this;
-            const lgRegex = new RegExp(/language-(.*?) .*$/gi);
-            // Array.from(dropdownBtns)?.map((btn) =>
-            //     btn.addEventListener('click', async (e: any) => {
-            //         const dropdownModal = btn.querySelector('.dropdown-modal') as any;
-            //         dropdownModal.showBackdrop = false
-            //         dropdownModal.height = "auto"
-            //         dropdownModal.popupPlacement = "bottomRight"
-            //         dropdownModal.visible = !dropdownModal.visible
-            //     })
-            // )
-            Array.from(editBtns)?.map((btn) => btn.addEventListener('click', async (e) => {
-                const parentNode = e.target.closest('pre');
-                let code = parentNode.querySelector('code');
-                const lg = code.className.replace(lgRegex, (_, lg) => lg);
-                const filePath = lg.substr(lg.indexOf('(') + 1, lg.indexOf(')') - lg.indexOf('(') - 1);
-                const response = await components_10.application.fetch(`${this.entrypoint}/${filePath}`);
-                const script = await response.text();
-                // window.localStorage.setItem('$$scbook_edit_language', lg);
-                // window.localStorage.setItem('$$scbook_edit_code', script);
-                // window?.open('/edit.html', '_blank')?.focus();
-            }));
-            // Array.from(runBtns)?.map((btn) =>
-            //     btn.addEventListener('click', async (e: any) => {
-            //         try {
-            //             const parentNode = e.target.closest('pre');
-            //             const code = parentNode.querySelector('code');
-            //             const lg = code.className.replace(lgRegex, (_: string, lg: string) => lg);
-            //             // this.pnlRunner.clearInnerHTML();
-            //         } catch (e) {
-            //             console.log(e);
-            //         }
-            //     })
-            // );
-            Array.from(copyBtns)?.map((btn) => btn.addEventListener('click', (e) => {
-                const parentNode = e.target.closest('pre');
-                const code = parentNode.querySelector('code')?.innerText;
-                navigator.clipboard.writeText(code);
-                e.target.innerText = 'Copied';
-                setTimeout(() => (e.target.innerText = 'Copy'), 1000);
-            }));
-        }
         async processGitbook(content, filePath) {
             const fileRegex = new RegExp(/{% file src="([^#&?]*)" %}/gi);
             const embedRegex = new RegExp(/{% embed url="<a href=".*?">(.*?)"<\/a> %}/gi);
@@ -2321,13 +2399,6 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             const preRegex = new RegExp(/<pre>(.*?)<\/pre>/gis);
             if (preRegex.test(content)) {
                 content = content.replace(preRegex, (_, html) => {
-                    // let ddBtn = `<i-hstack class="dropdown-btn" verticalAlignment="center" horizontalAlignment="end">`;
-                    // const runBtn = `<i-button class="action-btn edit-btn"><i-icon name="edit" width="12" height="12" fill="${Theme.action.active}"></i-icon></i-button>`;
-                    // const copyBtn = `<i-button class="action-btn copy-btn"><i-icon name="copy" width="12" height="12" fill="${Theme.action.active}"></i-icon></i-button>`;
-                    // ddBtn += runBtn;
-                    // ddBtn += copyBtn;
-                    // ddBtn += `</i-hstack>`;
-                    // html += ddBtn;
                     const encoder = new TextEncoder();
                     const encodedData = btoa(String.fromCharCode(...encoder.encode(html)));
                     let currentPath = this.currentNode?.tag?.file || '';
@@ -2351,7 +2422,7 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             }
             if (fileRegex.test(content)) {
                 const sclinkPath = `${this.entrypoint}/${filePath}`;
-                const result = await components_10.application.fetch(sclinkPath);
+                const result = await components_11.application.fetch(sclinkPath);
                 if (result.ok) {
                     const sclinkData = await result.json();
                     content = content.replace(fileRegex, (_, src) => {
@@ -2378,7 +2449,7 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             }
             if (embedRegex.test(content)) {
                 const sclinkPath = `${this.entrypoint}/${filePath}`;
-                const result = await components_10.application.fetch(sclinkPath);
+                const result = await components_11.application.fetch(sclinkPath);
                 if (result.ok) {
                     const sclinkData = await result.json();
                     content = content.replace(embedRegex, (_, url) => {
@@ -2467,7 +2538,10 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                         else {
                             if (href.startsWith('/'))
                                 href = href.substr(1);
-                            const newSlug = href.toLowerCase();
+                            let newSlug = href.toLowerCase();
+                            const lgPath = (0, index_5.getLanguagePath)();
+                            if (this.multilingual && !newSlug.startsWith(lgPath))
+                                newSlug = `${lgPath}/${newSlug}`;
                             let newPath = `#/${newSlug}`;
                             if (newPath)
                                 newPath = newPath.replace('.md', '').replace('/readme', '');
@@ -2489,10 +2563,18 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                     let newSlug = mainHref
                         // @ts-ignore
                         .replaceAll('.md', '')
-                        .replaceAll('/readme', '')
-                        .replace(`${slug}`, '');
+                        .replaceAll('/readme', '');
+                    let replaced = newSlug.replace(`${slug}`, '');
+                    if (replaced.startsWith('/'))
+                        replaced = replaced.substr(1);
+                    if (replaced.startsWith(slug)) {
+                        newSlug = replaced;
+                    }
                     if (newSlug.startsWith('/'))
                         newSlug = newSlug.substr(1);
+                    const lgPath = (0, index_5.getLanguagePath)();
+                    if (this.multilingual && !newSlug.startsWith(lgPath))
+                        newSlug = `${lgPath}/${newSlug}`;
                     return `<a class="internal-link" href="#/${newSlug}" slug="#/${newSlug}">${text}</a>`;
                 });
             }
@@ -2551,7 +2633,6 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 if (element) {
                     const top = element.offsetTop + element.offsetHeight;
                     window.scrollTo(0, top - 80);
-                    // element.scrollIntoView({ behavior: 'smooth' });
                 }
             }
         }
@@ -2569,6 +2650,10 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
         }
         onHide() {
             this.unbindEvents();
+            if (this.docsPaging)
+                this.docsPaging.onHide();
+            if (this.docsHeader)
+                this.docsHeader.onHide();
         }
         async loadPage() {
             if (!this.entrypoint)
@@ -2590,7 +2675,6 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                     const processedMd = await this.processGitbook(md, `${this.currentNode.slug}.sclink`);
                     this.mdViewer.beforeRender(processedMd);
                     await this.sleep(200);
-                    // this.addBtnEvent();
                     for (const ref of document.querySelectorAll('a.internal-link')) {
                         ref.addEventListener('click', (e) => {
                             e.preventDefault();
@@ -2639,7 +2723,7 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 const captionReg = /\[(.*?)\]/;
                 const fileReg = /\((.*?)\)/;
                 let id = 1;
-                const hash = this.hash || 'readme';
+                const hash = this.hash.split('#')?.[0] || 'readme';
                 for (let item of dataArr) {
                     if (!beginWithAsteriskReg.test(item)) {
                         let caption = item.trim().startsWith('## ') ? item.trim().substr(item.indexOf(' ') + 1, item.length) : '';
@@ -2658,8 +2742,13 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                     }
                     const level = item.match(spaceReg)[0].length / space;
                     const caption = item?.match(captionReg)[1];
-                    const file = item?.match(fileReg)[1];
-                    const slug = file.replace('.md', '').toLowerCase().replace('/readme', '');
+                    let file = item?.match(fileReg)[1];
+                    let slug = file.replace('.md', '').toLowerCase().replace('/readme', '');
+                    if (this.multilingual) {
+                        const lg = (0, index_5.getLanguagePath)();
+                        file = file.startsWith(lg) ? file : `${lg}/${file}`;
+                        slug = slug.startsWith(lg) ? slug : `${lg}/${slug}`;
+                    }
                     if (level === 0) {
                         result.push({
                             id: ++id,
@@ -2723,7 +2812,9 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
         async loadMenu() {
             return new Promise(async (resolve, reject) => {
                 let menuText = '';
-                const response = await this.retryLoadFile('SUMMARY.md');
+                const lgPath = (0, index_5.getLanguagePath)();
+                const summaryPath = this.multilingual ? `${lgPath ? lgPath + '/' : ''}SUMMARY.md` : 'SUMMARY.md';
+                const response = await this.retryLoadFile(summaryPath);
                 menuText = await response.text();
                 this.processMenu(menuText).then((treeData) => {
                     this.treeData = treeData;
@@ -2840,16 +2931,26 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             });
         }
         get currentNode() {
-            const currentHash = this.hash.split('#')?.[0];
+            let currentHash = this.hash.split('#')?.[0];
+            if (currentHash.startsWith('/'))
+                currentHash = currentHash.substr(1);
+            if (currentHash.endsWith('/'))
+                currentHash = currentHash.slice(0, -1);
+            const lgPath = (0, index_5.getLanguagePath)();
+            if (this.multilingual && !currentHash.startsWith(lgPath)) {
+                currentHash = `${lgPath ? lgPath + '/' : ''}${currentHash}`;
+            }
+            if (!currentHash || lgPath === currentHash) {
+                currentHash = this.multilingual ? `${lgPath ? lgPath + '/' : ''}readme` : 'readme';
+            }
             let node = this.flatTree.find((node) => {
-                return node.slug === (currentHash === '' ? 'readme' : currentHash);
+                return node.slug === currentHash;
             });
             if (!node)
                 node = this.flatTree.find((node) => {
                     return !!node.text;
                 });
             return node;
-            // return this.docsNavigator.currentNode;
         }
         get hash() {
             if (this.baseUrl && window.location.hash.startsWith(this.baseUrl)) {
@@ -2859,7 +2960,6 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             return decodeURI(window.location.hash.substring(2));
         }
         renderPnlDocsWrapper() {
-            const parent = this.querySelector('.docs-module');
             const wrapper = this.$render("i-panel", { id: "pnlDocsWrapper", margin: { left: 'auto', right: 'auto' }, maxWidth: this._maxWidth || 1400, class: "docs-wrapper" },
                 this.$render("i-scom-scbook-navigator", { id: "docsNavigator" }),
                 this.$render("i-panel", { class: "docs-container" },
@@ -2869,19 +2969,19 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                         this.$render("i-markdown", { id: "mdViewer" }),
                         this.$render("i-scom-scbook-paging", { id: "docsPaging", display: "block", margin: { top: '1rem' } })),
                     this.$render("i-panel", { class: "right-nav" })));
-            parent.append(wrapper);
+            this.pnlWrapper.append(wrapper);
             if (this.showHeader)
                 wrapper.classList.add('show-header');
             else
                 wrapper.classList.add('no-header');
         }
         render() {
-            return (this.$render("i-panel", { class: "docs-module", height: "auto", width: "100%" },
+            return (this.$render("i-panel", { id: "pnlWrapper", class: "docs-module", minHeight: '100%', width: "100%" },
                 this.$render("i-scom-scbook-header", { id: "docsHeader", visible: this._showHeader, maxWidth: this._maxWidth || 1400 })));
         }
     };
     SCBook = __decorate([
-        (0, components_10.customElements)('i-scom-scbook')
+        (0, components_11.customElements)('i-scom-scbook')
     ], SCBook);
     exports.SCBook = SCBook;
 });
