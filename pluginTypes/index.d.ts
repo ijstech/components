@@ -20610,6 +20610,18 @@ declare module "@ijstech/base/control.ts" {
         updateLocale(i18n: I18n): void;
     }
 }
+/// <amd-module name="@ijstech/base/permissions.ts" />
+declare module "@ijstech/base/permissions.ts" {
+    export interface IPermissions {
+        query: (name: string, descriptor?: PermissionDescriptor) => Promise<PermissionStatus | null>;
+        request: (name: string) => Promise<any>;
+    }
+    export class Permissions implements IPermissions {
+        constructor();
+        query(name: string, descriptor?: PermissionDescriptor): Promise<PermissionStatus | null>;
+        request(name: string): Promise<false | void | NotificationPermission | MediaStream>;
+    }
+}
 /// <amd-module name="@ijstech/base" />
 declare module "@ijstech/base" {
     export { Observe, Unobserve, ClearObservers, Observables, isObservable, observable } from "@ijstech/base/observable.ts";
@@ -20627,6 +20639,7 @@ declare module "@ijstech/base" {
     export * as Types from "@ijstech/base/types.ts";
     export { getControlMediaQueriesStyle, getBackground, getSpacingValue, getMediaQueryRule } from "@ijstech/base/style/base.css.ts";
     export { IdUtils, customElements, getCustomElements } from "@ijstech/base/utils.ts";
+    export { Permissions } from "@ijstech/base/permissions.ts";
     let LibPath: string;
     export { LibPath };
     export const RequireJS: {
@@ -21576,7 +21589,7 @@ declare module "@ijstech/application/formatUtils.ts" {
 /// <amd-module name="@ijstech/application" />
 declare module "@ijstech/application" {
     import { IModule } from '@ijstech/types';
-    import { I18n } from '@ijstech/base';
+    import { I18n, Permissions } from '@ijstech/base';
     import { Locales } from '@ijstech/types';
     import { EventBus } from "@ijstech/application/event-bus.ts";
     import { GlobalEvents } from "@ijstech/application/globalEvent.ts";
@@ -21690,6 +21703,7 @@ declare module "@ijstech/application" {
         private _locale;
         private _i18n;
         private static _modules;
+        private _permissions;
         static updateLocale(): void;
         static registerModule(uuid: string, module: IModule): void;
         static unregisterModule(uuid: string): void;
@@ -21710,6 +21724,7 @@ declare module "@ijstech/application" {
         get i18n(): I18n;
         get locale(): Locales;
         set locale(value: Locales);
+        get permissions(): Permissions;
         uploadData(fileName: string, content: string): Promise<IUploadResult>;
         uploadTo(targetCid: string, items: IUploadItem[]): Promise<IUploadResult>;
         upload(url: string, data: File | string): Promise<number>;
