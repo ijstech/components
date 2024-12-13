@@ -13527,43 +13527,10 @@ define("@ijstech/base/control.ts", ["require", "exports", "@ijstech/base/compone
     exports.Container = Container;
     ;
 });
-define("@ijstech/base/permissions.ts", ["require", "exports"], function (require, exports) {
+define("@ijstech/base", ["require", "exports", "@ijstech/base/observable.ts", "@ijstech/base/component.ts", "@ijstech/base/control.ts", "@ijstech/base/control.ts", "@ijstech/base/i18n.ts", "@ijstech/base/types.ts", "@ijstech/base/style/base.css.ts", "@ijstech/base/utils.ts"], function (require, exports, observable_3, component_2, control_1, control_2, i18n_1, Types, base_css_2, utils_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Permissions = void 0;
-    class Permissions {
-        constructor() { }
-        async query(name, descriptor) {
-            try {
-                const status = await navigator.permissions.query(Object.assign({ name }, descriptor));
-                return status;
-            }
-            catch (e) {
-            }
-            return null;
-        }
-        async request(name) {
-            if (name === 'geolocation') {
-                return navigator.geolocation.getCurrentPosition(() => { });
-            }
-            else if (name === 'notifications') {
-                return Notification.requestPermission();
-            }
-            else if (name === 'camera') {
-                return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            }
-            else if (name === 'microphone') {
-                return navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-            }
-            return false;
-        }
-    }
-    exports.Permissions = Permissions;
-});
-define("@ijstech/base", ["require", "exports", "@ijstech/base/observable.ts", "@ijstech/base/component.ts", "@ijstech/base/control.ts", "@ijstech/base/control.ts", "@ijstech/base/i18n.ts", "@ijstech/base/types.ts", "@ijstech/base/style/base.css.ts", "@ijstech/base/utils.ts", "@ijstech/base/permissions.ts"], function (require, exports, observable_3, component_2, control_1, control_2, i18n_1, Types, base_css_2, utils_4, permissions_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.setAttributeToProperty = exports.customModule = exports.RequireJS = exports.LibPath = exports.Permissions = exports.getCustomElements = exports.customElements = exports.IdUtils = exports.getMediaQueryRule = exports.getSpacingValue = exports.getBackground = exports.getControlMediaQueriesStyle = exports.Types = exports.Container = exports.Control = exports.I18n = exports.Overflow = exports.SpaceValue = exports.Border = exports.Background = exports.Component = exports.observable = exports.isObservable = exports.Observables = exports.ClearObservers = exports.Unobserve = exports.Observe = void 0;
+    exports.setAttributeToProperty = exports.customModule = exports.RequireJS = exports.LibPath = exports.getCustomElements = exports.customElements = exports.IdUtils = exports.getMediaQueryRule = exports.getSpacingValue = exports.getBackground = exports.getControlMediaQueriesStyle = exports.Types = exports.Container = exports.Control = exports.I18n = exports.Overflow = exports.SpaceValue = exports.Border = exports.Background = exports.Component = exports.observable = exports.isObservable = exports.Observables = exports.ClearObservers = exports.Unobserve = exports.Observe = void 0;
     Object.defineProperty(exports, "Observe", { enumerable: true, get: function () { return observable_3.Observe; } });
     Object.defineProperty(exports, "Unobserve", { enumerable: true, get: function () { return observable_3.Unobserve; } });
     Object.defineProperty(exports, "ClearObservers", { enumerable: true, get: function () { return observable_3.ClearObservers; } });
@@ -13586,7 +13553,6 @@ define("@ijstech/base", ["require", "exports", "@ijstech/base/observable.ts", "@
     Object.defineProperty(exports, "IdUtils", { enumerable: true, get: function () { return utils_4.IdUtils; } });
     Object.defineProperty(exports, "customElements", { enumerable: true, get: function () { return utils_4.customElements; } });
     Object.defineProperty(exports, "getCustomElements", { enumerable: true, get: function () { return utils_4.getCustomElements; } });
-    Object.defineProperty(exports, "Permissions", { enumerable: true, get: function () { return permissions_1.Permissions; } });
     let scripts = document.getElementsByTagName("script");
     // let LibUrl = new URL(scripts[scripts.length - 1].src);
     // let pathname = LibUrl.pathname;
@@ -15289,12 +15255,6 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
                 Application.updateLocale();
             }
             ;
-        }
-        ;
-        get permissions() {
-            if (!this._permissions)
-                this._permissions = new base_2.Permissions();
-            return this._permissions;
         }
         ;
         async uploadData(fileName, content) {
@@ -18859,7 +18819,8 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         renderUI() {
             this.clearInnerHTML();
             this._group = [];
-            this.name = new Date().getTime().toString();
+            if (!this.name)
+                this.name = new Date().getTime().toString();
             this.radioItems.forEach((item) => {
                 const elm = new Radio(this, item);
                 this.appendItem(elm);
@@ -18893,9 +18854,11 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
         }
         add(options) {
+            if (!this.name) {
+                this.name = new Date().getTime().toString();
+            }
             const elm = new Radio(this, options);
             this.appendItem(elm);
-            // this.selectedValue = elm.value;
             this._radioItems.push(options);
             return elm;
         }
@@ -18911,7 +18874,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         init() {
             if (!this.initialized) {
-                // this.classList.add('i-radio-group');
                 this.setAttribute('role', 'radiogroup');
                 if (this.options?.onChanged)
                     this.onChanged = this.options.onChanged;
@@ -19944,8 +19906,12 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
             if (!this.closeOnBackdropClick && !this.showBackdrop) {
                 this.setInsideClick(event);
             }
-            if (!this.insideClick)
-                this.visible = false;
+            if (!this.insideClick) {
+                if (typeof this.onBeforeClose === 'function')
+                    this.onBeforeClose(this);
+                else
+                    this.visible = false;
+            }
         }
         setInsideClick(event) {
             const target = event.target;
@@ -20053,8 +20019,9 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         init() {
             if (!this.wrapperDiv) {
-                if (this.options?.onClose)
-                    this.onClose = this.options.onClose;
+                this.onBeforeClose = this.getAttribute('onBeforeClose', true) || this.onBeforeClose;
+                this.onClose = this.getAttribute('onClose', true) || this.onClose;
+                this.onOpen = this.getAttribute('onOpen', true) || this.onOpen;
                 this.popupPlacement = this.getAttribute('popupPlacement', true, DEFAULT_VALUES.popupPlacement);
                 this.closeOnBackdropClick = this.getAttribute('closeOnBackdropClick', true, DEFAULT_VALUES.closeOnBackdropClick);
                 this.wrapperDiv = this.createElement('div', this);
@@ -36949,7 +36916,7 @@ define("@ijstech/iframe/iframe.ts", ["require", "exports", "@ijstech/base", "@ij
             let iframe = this.iframeElm;
             return new Promise((resolve) => {
                 if (iframe) {
-                    iframe.src = iframe.src;
+                    iframe.src = this.url;
                     iframe.onload = function () {
                         resolve();
                         iframe && (iframe.onload = null);
@@ -43678,7 +43645,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 caption: this.convertToKey(labelName),
                 description: schema.description,
                 tooltip: schema.tooltip ? this.convertToKey(schema.tooltip) : '',
-                placeholder: schema.placeholder ? this.convertToKey(schema.placeholder) : '',
+                placeholder: schema.placeholder,
                 columnWidth: columnWidth,
                 readOnly: schema.readOnly,
                 required: isRequired,
@@ -44364,9 +44331,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 input.setAttribute('readOnly', options.readOnly.toString());
             }
             if (options.placeholder !== undefined) {
-                const placeholderKey = this.convertToKey(options.placeholder);
-                const placeholderText = this.parentModule?.i18n?.get(placeholderKey);
-                input.setAttribute('placeholder', placeholderText || options.placeholder);
+                input.setAttribute('placeholder', options.placeholder);
             }
             input.classList.add(Styles.inputStyle);
             const description = this.renderLabel({ parent: vstack, options, type: 'description' });
@@ -44417,9 +44382,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 input.setAttribute('readOnly', options.readOnly.toString());
             }
             if (options.placeholder !== undefined) {
-                const placeholderKey = this.convertToKey(options.placeholder);
-                const placeholderText = this.parentModule?.i18n?.get(placeholderKey);
-                input.setAttribute('placeholder', placeholderText || options.placeholder);
+                input.setAttribute('placeholder', options.placeholder);
             }
             input.classList.add(Styles.inputStyle);
             const description = this.renderLabel({ parent: vstack, options, type: 'description' });
@@ -44468,9 +44431,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 input.setAttribute('readOnly', options.readOnly.toString());
             }
             if (options.placeholder !== undefined) {
-                const placeholderKey = this.convertToKey(options.placeholder);
-                const placeholderText = this.parentModule?.i18n?.get(placeholderKey);
-                input.setAttribute('placeholder', placeholderText || options.placeholder);
+                input.setAttribute('placeholder', options.placeholder);
             }
             input.classList.add(Styles.inputStyle);
             const description = this.renderLabel({ parent: vstack, options, type: 'description' });

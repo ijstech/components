@@ -2565,6 +2565,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                         .replaceAll('.md', '')
                         .replaceAll('/readme', '');
                     const finded = this.flatTree.find((item) => item.slug === newSlug);
+                    console.log(finded);
+                    console.log(newSlug, this.flatTree);
                     if (!finded) {
                         newSlug = newSlug.replace(`${slug}`, '');
                     }

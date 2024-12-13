@@ -18859,7 +18859,8 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         renderUI() {
             this.clearInnerHTML();
             this._group = [];
-            this.name = new Date().getTime().toString();
+            if (!this.name)
+                this.name = new Date().getTime().toString();
             this.radioItems.forEach((item) => {
                 const elm = new Radio(this, item);
                 this.appendItem(elm);
@@ -18893,9 +18894,11 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
         }
         add(options) {
+            if (!this.name) {
+                this.name = new Date().getTime().toString();
+            }
             const elm = new Radio(this, options);
             this.appendItem(elm);
-            // this.selectedValue = elm.value;
             this._radioItems.push(options);
             return elm;
         }
@@ -18911,7 +18914,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         init() {
             if (!this.initialized) {
-                // this.classList.add('i-radio-group');
                 this.setAttribute('role', 'radiogroup');
                 if (this.options?.onChanged)
                     this.onChanged = this.options.onChanged;
@@ -19944,8 +19946,12 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
             if (!this.closeOnBackdropClick && !this.showBackdrop) {
                 this.setInsideClick(event);
             }
-            if (!this.insideClick)
-                this.visible = false;
+            if (!this.insideClick) {
+                if (typeof this.onBeforeClose === 'function')
+                    this.onBeforeClose(this);
+                else
+                    this.visible = false;
+            }
         }
         setInsideClick(event) {
             const target = event.target;
@@ -20053,8 +20059,9 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         init() {
             if (!this.wrapperDiv) {
-                if (this.options?.onClose)
-                    this.onClose = this.options.onClose;
+                this.onBeforeClose = this.getAttribute('onBeforeClose', true) || this.onBeforeClose;
+                this.onClose = this.getAttribute('onClose', true) || this.onClose;
+                this.onOpen = this.getAttribute('onOpen', true) || this.onOpen;
                 this.popupPlacement = this.getAttribute('popupPlacement', true, DEFAULT_VALUES.popupPlacement);
                 this.closeOnBackdropClick = this.getAttribute('closeOnBackdropClick', true, DEFAULT_VALUES.closeOnBackdropClick);
                 this.wrapperDiv = this.createElement('div', this);
@@ -36949,7 +36956,7 @@ define("@ijstech/iframe/iframe.ts", ["require", "exports", "@ijstech/base", "@ij
             let iframe = this.iframeElm;
             return new Promise((resolve) => {
                 if (iframe) {
-                    iframe.src = iframe.src;
+                    iframe.src = this.url;
                     iframe.onload = function () {
                         resolve();
                         iframe && (iframe.onload = null);

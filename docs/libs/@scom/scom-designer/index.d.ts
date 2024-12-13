@@ -658,6 +658,7 @@ declare module "@scom/scom-designer/languages/components.json.ts" {
             widget_settings: string;
             your_blocks: string;
             your_own_custom_components: string;
+            structure: string;
         };
         "zh-hant": {
             add_component: string;
@@ -673,6 +674,7 @@ declare module "@scom/scom-designer/languages/components.json.ts" {
             widget_settings: string;
             your_blocks: string;
             your_own_custom_components: string;
+            structure: string;
         };
         vi: {
             add_component: string;
@@ -688,6 +690,7 @@ declare module "@scom/scom-designer/languages/components.json.ts" {
             widget_settings: string;
             your_blocks: string;
             your_own_custom_components: string;
+            structure: string;
         };
     };
     export default _default_3;

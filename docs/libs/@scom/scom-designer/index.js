@@ -878,7 +878,7 @@ define("@scom/scom-designer/helpers/utils.ts", ["require", "exports", "@scom/sco
     const parsePropValue = (value, baseUrl) => {
         if (typeof value !== "string")
             return value;
-        value = value.replace(/\s+/g, '');
+        value = value.replace(/\s+([{[])|([}\]])\s+/g, '');
         if (value.startsWith('{') && value.endsWith('}')) {
             value = value.substring(1, value.length - 1);
             if (value.startsWith('{') && value.endsWith('}')) {
@@ -1419,7 +1419,8 @@ define("@scom/scom-designer/languages/components.json.ts", ["require", "exports"
             "view_deleted_components": "View Deleted Components",
             "widget_settings": "Widget Settings",
             "your_blocks": "Your Blocks",
-            "your_own_custom_components": "Your own custom components"
+            "your_own_custom_components": "Your own custom components",
+            "structure": "Structure",
         },
         "zh-hant": {
             "add_component": "添加组件",
@@ -1434,7 +1435,8 @@ define("@scom/scom-designer/languages/components.json.ts", ["require", "exports"
             "view_deleted_components": "查看已删除的组件",
             "widget_settings": "小部件设置",
             "your_blocks": "您的块",
-            "your_own_custom_components": "您自己的自定义组件"
+            "your_own_custom_components": "您自己的自定义组件",
+            "structure": "结构",
         },
         "vi": {
             "add_component": "Thêm thành phần",
@@ -1450,6 +1452,7 @@ define("@scom/scom-designer/languages/components.json.ts", ["require", "exports"
             "widget_settings": "Cài đặt tiện ích",
             "your_blocks": "Các khối của bạn",
             "your_own_custom_components": "Các thành phần tùy chỉnh của bạn",
+            "structure": "Cấu trúc",
         }
     };
 });
@@ -2070,7 +2073,7 @@ define("@scom/scom-designer/components/components.tsx", ["require", "exports", "
         render() {
             return (this.$render("i-vstack", { width: "100%", height: "100%", maxWidth: Theme.layout.container.maxWidth, margin: { left: "auto", right: "auto" }, position: "relative", background: { color: Theme.background.main } },
                 this.$render("i-hstack", { gap: 8, verticalAlignment: "center", horizontalAlignment: "space-between", padding: { top: 4, bottom: 4, left: 8 }, background: { color: Theme.background.main } },
-                    this.$render("i-label", { caption: "Structure", font: { bold: true, size: '0.75rem' } }),
+                    this.$render("i-label", { caption: "$structure", font: { bold: true, size: '0.75rem' } }),
                     this.$render("i-hstack", { visible: false, verticalAlignment: "center", margin: { left: 'auto' } },
                         this.$render("i-icon", { name: "history", class: index_css_1.hoverFullOpacity, opacity: 0.8, cursor: "pointer", width: 28, height: 24, padding: { top: 4, bottom: 4, left: 6, right: 6 }, border: {
                                 left: { style: 'solid', color: Theme.divider, width: 1 },
@@ -2079,7 +2082,7 @@ define("@scom/scom-designer/components/components.tsx", ["require", "exports", "
                                 content: '$view_deleted_components'
                             } }))),
                 this.$render("i-vstack", { id: "vStackComponents", gap: 4, overflow: "auto", position: 'relative', height: "100%", maxHeight: "calc(100% - 32px)" }),
-                this.$render("i-alert", { id: "mdAlert", title: 'Confirm', status: 'confirm', content: '$are_you_sure_to_delete_this_component', onConfirm: this.onConfirm.bind(this), onClose: this.onClose.bind(this) })));
+                this.$render("i-alert", { id: "mdAlert", title: '$confirm', status: 'confirm', content: '$are_you_sure_to_delete_this_component', onConfirm: this.onConfirm.bind(this), onClose: this.onClose.bind(this) })));
         }
     };
     DesignerComponents = __decorate([
@@ -2798,7 +2801,7 @@ define("@scom/scom-designer/tools/layout.tsx", ["require", "exports", "@ijstech/
                     this.$render("i-vstack", { id: "pnlFlexContent", gap: 8, border: { top: { width: '1px', style: 'solid', color: Theme.divider } }, padding: { top: '1rem' } },
                         this.$render("i-label", { caption: "$content", font: { size: '0.875rem', transform: 'uppercase' }, letterSpacing: "0.2em", opacity: 0.8 }),
                         this.$render("i-vstack", { gap: 12 },
-                            this.$render("designer-selector", { id: "wrapSelector", title: "Wrap", items: [
+                            this.$render("designer-selector", { id: "wrapSelector", title: "$wrap", items: [
                                     { value: 'nowrap', caption: 'None', type: 'wrap', isActive: true },
                                     { value: 'wrap', caption: 'Wrap', type: 'wrap' },
                                     { value: 'wrap-reverse', caption: 'Reverse', type: 'wrap' }
@@ -5936,7 +5939,7 @@ define("@scom/scom-designer/designer.tsx", ["require", "exports", "@ijstech/comp
             const newProps = {};
             for (let prop in props) {
                 const defaultValue = customProps[prop]?.default;
-                if (prop === 'mediaQueries') {
+                if (prop === 'mediaQueries' && Array.isArray(props[prop])) {
                     props[prop] = (props[prop] || []).filter(v => (v && Object.keys(v.properties).length > 0));
                     if (props[prop].length === 0) {
                         continue;
@@ -7332,13 +7335,13 @@ define("@scom/scom-designer", ["require", "exports", "@ijstech/components", "@sc
             if (typeof this.onImportFile === 'function') {
                 result = await this.onImportFile(fileName, isPackage);
                 if (result) {
-                    if (fileName === '@ijstech/compiler') {
-                        result.content = `
-            declare module '${fileName}' {
-              ${result.content}
-            } \n
-          `;
-                    }
+                    // if (fileName === '@ijstech/compiler') {
+                    //   result.content = `
+                    //     declare module '${fileName}' {
+                    //       ${result.content}
+                    //     } \n
+                    //   `;
+                    // }
                     const importedName = isPackage ? fileName : result.fileName;
                     const isDependency = isPackage && result?.fileName === 'index.d.ts';
                     if (isDependency)
@@ -7439,45 +7442,13 @@ define("@scom/scom-designer", ["require", "exports", "@ijstech/components", "@sc
                 };
             }
             else {
-                return this.getFile(fileName);
+                return await this.getFile(fileName);
             }
         }
         ;
-        getFile(fileName) {
-            let fName = '';
-            let fContent = '';
-            for (let f in this.imported) {
-                if (f.endsWith(fileName)) {
-                    fName = fileName;
-                    fContent = this.imported[f];
-                    break;
-                }
-                else if (f.endsWith(fileName + '.ts')) {
-                    fName = fileName + '.ts';
-                    fContent = this.imported[f];
-                    break;
-                }
-                else if (f.endsWith(fileName + '.tsx')) {
-                    fName = fileName + '.tsx';
-                    fContent = this.imported[f];
-                    break;
-                }
-                else if (f.endsWith(fileName + '.d.ts')) {
-                    fName = fileName + '.d.ts';
-                    fContent = this.imported[f];
-                    break;
-                }
-                else if (f.endsWith(fileName + '/index.ts')) {
-                    fName = fileName + '/index.ts';
-                    fContent = this.imported[f];
-                    break;
-                }
-            }
-            if (fName) {
-                return {
-                    fileName: fName,
-                    content: fContent
-                };
+        async getFile(fileName) {
+            if (typeof this.onImportFile === 'function') {
+                return await this.onImportFile(fileName, false);
             }
             return null;
         }

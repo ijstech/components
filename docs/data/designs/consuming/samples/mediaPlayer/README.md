@@ -3,22 +3,16 @@
 ## Description
 A media player component
 
-## Sample Code
+## Screens
 
-### Home Page
+### Home
 
-![Home Page](designs/consuming/samples/mediaPlayer/screenshots/home.png)
+![Home](designs/consuming/samples/mediaPlayer/screenshots/home.png)
 
-```typescript(source/home/index.tsx)
-render() {
-  <i-panel></i-panel>
-}
-```
+### Discover and Explore
 
-### Playlist
+![Discover and Explore](designs/consuming/samples/mediaPlayer/screenshots/playlist.png)
 
-![Playlist](designs/consuming/samples/mediaPlayer/screenshots/playlist.png)
+### Audio Playback
 
-### Player
-
-![Player](designs/consuming/samples/mediaPlayer/screenshots/player.png)
+![Audio Playback](designs/consuming/samples/mediaPlayer/screenshots/player.png)

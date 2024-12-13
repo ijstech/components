@@ -243,7 +243,7 @@ export class RadioGroup extends Control {
     private renderUI() {
         this.clearInnerHTML();
         this._group= [];
-        this.name = new Date().getTime().toString();
+        if (!this.name) this.name = new Date().getTime().toString();
         this.radioItems.forEach((item: RadioElement) => {
             const elm = new Radio(this, item);
             this.appendItem(elm);
@@ -281,9 +281,11 @@ export class RadioGroup extends Control {
     }
 
     add(options: RadioElement): Radio {
+        if (!this.name) {
+            this.name = new Date().getTime().toString();
+        }
         const elm = new Radio(this, options);
         this.appendItem(elm);
-        // this.selectedValue = elm.value;
         this._radioItems.push(options);
         return elm;
     }
@@ -301,7 +303,6 @@ export class RadioGroup extends Control {
 
     protected init() {
         if (!this.initialized) {
-            // this.classList.add('i-radio-group');
             this.setAttribute('role', 'radiogroup');
 
             if (this.options?.onChanged)

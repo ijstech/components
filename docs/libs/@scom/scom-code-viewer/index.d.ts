@@ -3,6 +3,24 @@ declare module "@scom/scom-code-viewer/index.css.ts" {
     export const customMdStyles: string;
     export const overflowStyle: string;
 }
+/// <amd-module name="@scom/scom-code-viewer/translations.json.ts" />
+declare module "@scom/scom-code-viewer/translations.json.ts" {
+    const _default: {
+        en: {
+            warning: string;
+            do_you_want_to_close_the_modal: string;
+        };
+        "zh-hant": {
+            warning: string;
+            do_you_want_to_close_the_modal: string;
+        };
+        vi: {
+            warning: string;
+            do_you_want_to_close_the_modal: string;
+        };
+    };
+    export default _default;
+}
 /// <amd-module name="@scom/scom-code-viewer" />
 declare module "@scom/scom-code-viewer" {
     import { ControlElement, Module } from '@ijstech/components';
@@ -34,6 +52,7 @@ declare module "@scom/scom-code-viewer" {
         private pnlButtons;
         private btnEdit;
         private btnCopy;
+        private alertEl;
         private _data;
         private _theme;
         private fileData;
@@ -56,13 +75,17 @@ declare module "@scom/scom-code-viewer" {
         private sleep;
         private getFullCode;
         private fetchContent;
+        private fetchFile;
         private updateButtons;
         private initLibs;
         private addCSS;
         private removeCSS;
         private onCopy;
         private onEdit;
+        private onImportFile;
         onClose(): void;
+        private onBeforeClose;
+        private handleClose;
         init(): void;
         render(): any;
     }
