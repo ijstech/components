@@ -33,13 +33,33 @@ define("@scom/scom-code-viewer/index.css.ts", ["require", "exports", "@ijstech/c
         overflow: 'hidden'
     });
 });
-define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "@scom/scom-designer", "@scom/scom-code-viewer/index.css.ts"], function (require, exports, components_2, scom_designer_1, index_css_1) {
+define("@scom/scom-code-viewer/translations.json.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ///<amd-module name='@scom/scom-code-viewer/translations.json.ts'/> 
+    exports.default = {
+        "en": {
+            "warning": "Warning",
+            "do_you_want_to_close_the_modal": "Do you want to close the modal?"
+        },
+        "zh-hant": {
+            "warning": "警告",
+            "do_you_want_to_close_the_modal": "您確定要關閉此模態嗎？"
+        },
+        "vi": {
+            "warning": "Cảnh báo",
+            "do_you_want_to_close_the_modal": "Bạn có muốn đóng cửa sổ này không?"
+        }
+    };
+});
+define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "@scom/scom-designer", "@scom/scom-code-viewer/index.css.ts", "@scom/scom-code-viewer/translations.json.ts"], function (require, exports, components_2, scom_designer_1, index_css_1, translations_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ScomCodeViewer = void 0;
     const Theme = components_2.Styles.Theme.ThemeVars;
     const path = components_2.application.currentModuleDir;
     const DEFAULT_LANGUAGE = 'javascript';
+    const DEFAULT_THEME = 'dark';
     let ScomCodeViewer = class ScomCodeViewer extends components_2.Module {
         constructor() {
             super(...arguments);
@@ -47,6 +67,7 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
                 code: '',
                 language: DEFAULT_LANGUAGE
             };
+            this._theme = DEFAULT_THEME;
             this.fileData = { content: '', path: 'index.tsx' };
             this._fullPath = '';
             this.tag = {};
@@ -77,6 +98,20 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
         }
         set isButtonsShown(value) {
             this._data.isButtonsShown = value ?? true;
+        }
+        get theme() {
+            return this._theme || DEFAULT_THEME;
+        }
+        set theme(value) {
+            this._theme = value || DEFAULT_THEME;
+            if (this._theme === 'light') {
+                this.removeCSS('hljs-dark');
+                this.addCSS(`${path}/lib/default.min.css`, 'hljs-default');
+            }
+            else {
+                this.removeCSS('hljs-default');
+                this.addCSS(`${path}/lib/dark.min.css`, 'hljs-dark');
+            }
         }
         async setData(value) {
             const code = value.code;
@@ -111,7 +146,8 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             this.pnlButtons.visible = this.isButtonsShown;
             if (!this.hljs) {
                 try {
-                    this.addCSS(`${path}/lib/dark.min.css`, 'hljs');
+                    const themeVar = this._theme || document.body.style.getPropertyValue('--theme') || DEFAULT_THEME;
+                    this.theme = themeVar;
                     this.hljs = await this.initLibs();
                 }
                 catch { }
@@ -171,12 +207,18 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
         async fetchContent(filePath) {
             if (!filePath)
                 return;
+            const script = await this.fetchFile(filePath);
+            this.fileData.content = script;
+            this.fileData.path = filePath || 'index.tsx';
+        }
+        async fetchFile(filePath) {
+            if (!filePath)
+                return;
             if (filePath.startsWith('/'))
                 filePath = filePath.slice(1);
             const response = await components_2.application.fetch(`${this.entryPoint}/${filePath}`);
             const script = await response.text();
-            this.fileData.content = script;
-            this.fileData.path = filePath || 'index.tsx';
+            return script;
         }
         updateButtons(hasPath) {
             this.btnEdit.visible = hasPath;
@@ -205,6 +247,12 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             link.href = href;
             document.head.append(link);
         }
+        removeCSS(name) {
+            const css = document.head.querySelector(`[name="${name}"]`);
+            console.log(css);
+            if (css)
+                css.remove();
+        }
         async onCopy(target, event) {
             event.stopPropagation();
             const code = this.querySelector('code')?.innerText || '';
@@ -219,6 +267,7 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             if (!this.scomDesigner) {
                 this.scomDesigner = new scom_designer_1.ScomDesigner(undefined, {
                     file: { ...this.fileData },
+                    onImportFile: this.onImportFile.bind(this),
                 });
                 this.scomDesigner.onTogglePreview = (isPreview) => {
                     const closeIcon = currentModal.querySelector('.i-modal_header');
@@ -252,18 +301,42 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
                 overflow: 'hidden',
                 class: index_css_1.customMdStyles,
                 onClose: this.onClose.bind(this),
+                onBeforeClose: this.onBeforeClose.bind(this),
             });
             document.body.classList.add(index_css_1.overflowStyle);
+        }
+        async onImportFile(fileName, isPackage) {
+            const filePath = this.fileData.path;
+            let parentFolder = filePath.substring(0, filePath.lastIndexOf('/'));
+            const checkedParent = fileName.substring(0, fileName.lastIndexOf('/'));
+            const index = checkedParent ? parentFolder.indexOf(checkedParent) : -1;
+            parentFolder = index > -1 ? parentFolder.substring(0, index) : parentFolder;
+            const newFilePath = parentFolder + '/' + fileName + '.ts';
+            const text = await this.fetchFile(newFilePath);
+            if (text) {
+                return {
+                    fileName: `${fileName + '.ts'}`,
+                    content: text,
+                };
+            }
         }
         onClose() {
             document.body.classList.remove(index_css_1.overflowStyle);
         }
+        onBeforeClose() {
+            this.alertEl.showModal();
+        }
+        handleClose() {
+            this.scomDesigner.closeModal();
+        }
         init() {
+            this.i18n.init({ ...translations_json_1.default });
             super.init();
             const code = this.getAttribute('code', true);
             const language = this.getAttribute('language', true);
             const entryPoint = this.getAttribute('entryPoint', true);
             const isButtonsShown = this.getAttribute('isButtonsShown', true);
+            this._theme = this.getAttribute('theme', true);
             code && this.setData({ code, language, entryPoint, isButtonsShown });
         }
         render() {
@@ -272,7 +345,8 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
                     this.$render("i-hstack", { verticalAlignment: "center", horizontalAlignment: 'center', height: '1.75rem', stack: { grow: '0', shrink: '0' }, border: { radius: 6 } },
                         this.$render("i-button", { id: "btnEdit", height: '100%', cursor: "pointer", stack: { shrink: '0' }, icon: { name: 'edit', width: '0.75rem', height: '0.75rem', fill: Theme.action.active }, background: { color: Theme.action.activeBackground }, tooltip: { content: 'Edit', placement: 'bottom' }, padding: { top: 0, bottom: 0, left: '0.75rem', right: '0.75rem' }, boxShadow: 'none', visible: false, border: { radius: '6px 0 0 6px', style: 'none', width: '0px', right: { width: '1px', style: 'solid', color: Theme.divider } }, onClick: this.onEdit }),
                         this.$render("i-button", { id: "btnCopy", height: '100%', cursor: "pointer", stack: { shrink: '0' }, icon: { name: 'copy', width: '0.75rem', height: '0.75rem', fill: Theme.action.active }, tooltip: { content: 'Copy', placement: 'bottom' }, background: { color: Theme.action.activeBackground }, padding: { top: 0, bottom: 0, left: '0.75rem', right: '0.75rem' }, boxShadow: 'none', border: { radius: '0 6px 6px 0', style: 'none', width: '0px' }, onClick: this.onCopy }))),
-                this.$render("i-panel", { id: "pnlViewer", display: 'block', stack: { grow: '1', shrink: '1' }, width: '100%' })));
+                this.$render("i-panel", { id: "pnlViewer", display: 'block', stack: { grow: '1', shrink: '1' }, width: '100%' }),
+                this.$render("i-alert", { id: "alertEl", title: '$warning', content: '$do_you_want_to_close_the_modal', status: "confirm", onConfirm: this.handleClose })));
         }
     };
     ScomCodeViewer = __decorate([

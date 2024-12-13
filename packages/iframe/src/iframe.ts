@@ -61,7 +61,7 @@ export class Iframe extends Control {
         let iframe = this.iframeElm;
         return new Promise((resolve)=>{
             if (iframe) {
-                iframe.src = iframe.src;
+                iframe.src = this.url;
                 iframe.onload = function(){
                     resolve();
                     iframe && (iframe.onload = null);

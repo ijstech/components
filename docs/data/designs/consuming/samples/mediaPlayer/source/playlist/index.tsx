@@ -97,12 +97,16 @@ export default class Playlist extends Module {
     }
   }
 
+  private formatNumber(num: number) {
+    return FormatUtils.formatNumber(num, { shortScale: true, decimalFigures: 0});
+  }
+
   private renderUI() {
     this.lblArtist.caption = this.artist?.name || '';
-    const num = FormatUtils.formatNumber(this.artist?.followers?.total || 0, {shortScale: true});
+    const num = this.formatNumber(this.artist?.followers?.total || 0);
     this.lblSubscribe.caption = `Subscribe ${num}`;
     const img = this.artist?.images?.[0]?.url || '';
-    this.pnlInfo.background = {color: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3), var(--background-default)), url(${img}) no-repeat center center`}
+    this.pnlInfo.background = {color: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3), var(--background-default)), url(${img}) no-repeat center center/cover`}
     this.renderPlaylist();
   }
 
@@ -135,7 +139,7 @@ export default class Playlist extends Module {
         width='100%'
         alignItems='center'
         justifyContent='end'
-        height='40%'
+        height='50%'
         gap={8}
         padding={{ "left": "16px", "right": "16px", "bottom": "16px" }}
       >

@@ -184,33 +184,6 @@ declare module "@ijstech/types/jsonSchema.ts" {
     }
     export type IDataSchema = IJSONSchema4 | IJSONSchema6 | IJSONSchema7;
 }
-/// <amd-module name="@ijstech/types/tooltip.ts" />
-declare module "@ijstech/types/tooltip.ts" {
-    export type PlacementType = 'top' | 'left' | 'right' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'leftTop' | 'leftBottom' | 'rightTop' | 'rightBottom';
-    export type TriggerType = 'hover' | 'click';
-    export interface ITooltipImpl {
-        content: string;
-        popperClass: string;
-        color: string;
-        placement: PlacementType;
-        trigger: TriggerType;
-        duration: number;
-        maxWidth: string;
-        designMode: boolean;
-        isSmallScreen: boolean;
-        show(elm: HTMLElement): void;
-        close(): void;
-    }
-    export interface ITooltip {
-        content?: string;
-        popperClass?: string;
-        color?: string;
-        placement?: PlacementType;
-        trigger?: TriggerType;
-        duration?: number;
-        maxWidth?: string;
-    }
-}
 /// <amd-module name="@ijstech/types/i18n.ts" />
 declare module "@ijstech/types/i18n.ts" {
     export interface I18nInterface {
@@ -981,6 +954,35 @@ declare module "@ijstech/types/i18n.ts" {
             native: string;
         };
     };
+}
+/// <amd-module name="@ijstech/types/tooltip.ts" />
+declare module "@ijstech/types/tooltip.ts" {
+    import { I18nInterface } from "@ijstech/types/i18n.ts";
+    export type PlacementType = 'top' | 'left' | 'right' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'leftTop' | 'leftBottom' | 'rightTop' | 'rightBottom';
+    export type TriggerType = 'hover' | 'click';
+    export interface ITooltipImpl {
+        content: string;
+        popperClass: string;
+        color: string;
+        placement: PlacementType;
+        trigger: TriggerType;
+        duration: number;
+        maxWidth: string;
+        designMode: boolean;
+        isSmallScreen: boolean;
+        show(elm: HTMLElement): void;
+        close(): void;
+        updateLocale(i18n: I18nInterface): void;
+    }
+    export interface ITooltip {
+        content?: string;
+        popperClass?: string;
+        color?: string;
+        placement?: PlacementType;
+        trigger?: TriggerType;
+        duration?: number;
+        maxWidth?: string;
+    }
 }
 /// <amd-module name="@ijstech/types" />
 declare module "@ijstech/types" {
@@ -20049,10 +20051,6 @@ declare module "@ijstech/base/types.ts" {
         right?: IBorderSideStyles;
         bottom?: IBorderSideStyles;
         left?: IBorderSideStyles;
-        topLeft?: IBorderCornerStyles;
-        topRight?: IBorderCornerStyles;
-        bottomLeft?: IBorderCornerStyles;
-        bottomRight?: IBorderCornerStyles;
     }
     export interface IAnchor {
         top?: boolean;
@@ -20069,10 +20067,8 @@ declare module "@ijstech/base/types.ts" {
         size?: string;
         color?: string;
         bold?: boolean;
-        italic?: boolean;
         style?: FontStyle;
         transform?: TextTransform;
-        underline?: boolean;
         weight?: number | string;
         shadow?: string;
     }
@@ -20327,7 +20323,7 @@ declare module "@ijstech/base/control.ts" {
     import { Component } from "@ijstech/base/component.ts";
     import { IStack, IFont, ISpace, IOverflow, OverflowType, CursorType } from "@ijstech/base/types.ts";
     import { ICustomProperties, IAnchor, IBackground, IBorderSideStyles, BorderStyleType, IBorder, BorderStylesSideType } from "@ijstech/base/types.ts";
-    import { IGrid, LineHeightType, DockStyle, DisplayType, PositionType } from "@ijstech/base/types.ts";
+    import { IGrid, LineHeightType, DockStyle, DisplayType, IControlMediaQuery, PositionType } from "@ijstech/base/types.ts";
     import { I18n } from "@ijstech/base/i18n.ts";
     import { IModule } from '@ijstech/types';
     export type SpaceProps = 'margin' | 'padding';
@@ -20358,10 +20354,6 @@ declare module "@ijstech/base/control.ts" {
         private _right;
         private _bottom;
         private _left;
-        private _topLeft;
-        private _topRight;
-        private _bottomLeft;
-        private _bottomRight;
         constructor(target: Control, options?: IBorder);
         updateValue(options: IBorder): void;
         private isNumber;
@@ -20586,8 +20578,8 @@ declare module "@ijstech/base/control.ts" {
         set letterSpacing(value: string | number);
         get boxShadow(): string;
         set boxShadow(value: string);
-        get mediaQueries(): any[];
-        set mediaQueries(value: any[]);
+        get mediaQueries(): IControlMediaQuery[];
+        set mediaQueries(value: IControlMediaQuery[]);
         protected removeStyle<P extends keyof Control>(propertyName: P): void;
         protected setStyle<P extends keyof Control>(propertyName: P, value: string): void;
         updateLocale(i18n: I18n): void;
@@ -21751,7 +21743,7 @@ declare module "@ijstech/application" {
 declare module "@ijstech/checkbox/style/checkbox.css.ts" { }
 /// <amd-module name="@ijstech/checkbox/checkbox.ts" />
 declare module "@ijstech/checkbox/checkbox.ts" {
-    import { ControlElement, Control, notifyEventCallback } from '@ijstech/base';
+    import { ControlElement, Control, notifyEventCallback, I18n } from '@ijstech/base';
     import "@ijstech/checkbox/style/checkbox.css.ts";
     export interface CheckboxElement extends ControlElement {
         checked?: boolean;
@@ -21769,10 +21761,10 @@ declare module "@ijstech/checkbox/checkbox.ts" {
         }
     }
     export class Checkbox extends Control {
+        private _checked;
         private _caption;
         private _captionWidth;
         private _indeterminate;
-        private _checked;
         private _readOnly;
         private wrapperElm;
         private inputSpanElm;
@@ -21781,6 +21773,7 @@ declare module "@ijstech/checkbox/checkbox.ts" {
         private checkmarklElm;
         onChanged: notifyEventCallback;
         constructor(parent?: Control, options?: any);
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -21931,7 +21924,7 @@ declare module "@ijstech/combo-box/combo-box-item.ts" {
 }
 /// <amd-module name="@ijstech/combo-box/combo-box.ts" />
 declare module "@ijstech/combo-box/combo-box.ts" {
-    import { Control, ControlElement, notifyEventCallback, IBorder, Border, IFont, IBackground, Background } from "@ijstech/base";
+    import { Control, ControlElement, notifyEventCallback, IBorder, Border, IFont, IBackground, Background, I18n } from "@ijstech/base";
     import { Icon, IconElement } from "@ijstech/icon";
     import "@ijstech/combo-box/style/combo-box.css.ts";
     export interface IComboItem {
@@ -21970,6 +21963,7 @@ declare module "@ijstech/combo-box/combo-box.ts" {
         private _icon;
         private _mode;
         private _readOnly;
+        private _placeholder;
         private _searchStr;
         private newItem;
         private isListShown;
@@ -21988,6 +21982,10 @@ declare module "@ijstech/combo-box/combo-box.ts" {
         set selectedItem(value: IComboItem | undefined);
         get selectedItems(): IComboItem[] | undefined;
         set selectedItems(value: IComboItem[] | undefined);
+        private renderSelectedItems;
+        private renderInvalidItems;
+        private updateItems;
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -22000,6 +21998,7 @@ declare module "@ijstech/combo-box/combo-box.ts" {
         set searchStr(str: string);
         get placeholder(): string;
         set placeholder(value: string);
+        private getTranslatedText;
         get mode(): ModeType;
         set mode(value: ModeType);
         get isMulti(): boolean;
@@ -22039,7 +22038,7 @@ declare module "@ijstech/combo-box" {
 declare module "@ijstech/datepicker/style/datepicker.css.ts" { }
 /// <amd-module name="@ijstech/datepicker/datepicker.ts" />
 declare module "@ijstech/datepicker/datepicker.ts" {
-    import { ControlElement, Control, notifyEventCallback, IBorder, Border } from '@ijstech/base';
+    import { ControlElement, Control, notifyEventCallback, IBorder, Border, I18n } from '@ijstech/base';
     import "@ijstech/datepicker/style/datepicker.css.ts";
     import { Moment } from '@ijstech/moment';
     type actionCallback = (target: Datepicker) => void;
@@ -22048,6 +22047,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         caption?: string;
         captionWidth?: number | string;
         value?: Moment;
+        valueFormat?: string;
         minDate?: Moment;
         placeholder?: string;
         type?: dateType;
@@ -22063,14 +22063,16 @@ declare module "@ijstech/datepicker/datepicker.ts" {
     }
     export class Datepicker extends Control {
         private _value?;
+        private _valueFormat;
         private _caption;
         private _captionWidth;
         private _iconWidth;
         private _dateTimeFormat;
         private _type;
         private _placeholder;
-        private _minDate;
+        private _minDate?;
         private callback;
+        private _isInternalUpdate;
         private captionSpanElm;
         private labelElm;
         private inputElm;
@@ -22081,6 +22083,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         onBlur: actionCallback;
         constructor(parent?: Control, options?: any);
         _handleClick(event: MouseEvent): boolean;
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number;
@@ -22093,6 +22096,7 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         get border(): Border;
         get value(): Moment | undefined;
         set value(value: Moment | undefined);
+        get minDate(): Moment | undefined;
         set minDate(value: Moment | undefined);
         get defaultDateTimeFormat(): string;
         get dateTimeFormat(): string;
@@ -22103,9 +22107,12 @@ declare module "@ijstech/datepicker/datepicker.ts" {
         set enabled(value: boolean);
         get placeholder(): string;
         set placeholder(value: string);
+        private getTranslatedText;
         get type(): dateType;
         set type(value: dateType);
         set designMode(value: boolean);
+        get valueFormat(): string;
+        set valueFormat(value: string);
         private get formatString();
         private emitChange;
         private _onDatePickerChange;
@@ -22125,7 +22132,7 @@ declare module "@ijstech/datepicker" {
 declare module "@ijstech/range/style/range.css.ts" { }
 /// <amd-module name="@ijstech/range/range.ts" />
 declare module "@ijstech/range/range.ts" {
-    import { Control, ControlElement, notifyEventCallback, Types } from '@ijstech/base';
+    import { Control, ControlElement, notifyEventCallback, Types, I18n } from '@ijstech/base';
     import "@ijstech/range/style/range.css.ts";
     type tooltipFormatterCallback = (value: number) => string;
     export interface RangeElement extends ControlElement {
@@ -22164,6 +22171,7 @@ declare module "@ijstech/range/range.ts" {
         onKeyUp: notifyEventCallback;
         private callback;
         constructor(parent?: Control, options?: any);
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number;
@@ -22195,7 +22203,7 @@ declare module "@ijstech/radio/radio.css.ts" {
 }
 /// <amd-module name="@ijstech/radio/radio.ts" />
 declare module "@ijstech/radio/radio.ts" {
-    import { Control, ControlElement, notifyEventCallback, IFont } from '@ijstech/base';
+    import { Control, ControlElement, notifyEventCallback, IFont, I18n } from '@ijstech/base';
     export interface RadioElement extends ControlElement {
         caption?: string;
         captionWidth?: number | string;
@@ -22226,6 +22234,7 @@ declare module "@ijstech/radio/radio.ts" {
         constructor(parent?: Control, options?: any);
         get value(): string;
         set value(value: string);
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -22279,7 +22288,7 @@ declare module "@ijstech/modal/style/modal.css.ts" {
 }
 /// <amd-module name="@ijstech/modal/modal.ts" />
 declare module "@ijstech/modal/modal.ts" {
-    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border, IMediaQuery, IControlMediaQueryProps, ISpace, Overflow, IOverflow, OverflowType } from '@ijstech/base';
+    import { Control, ControlElement, Container, IBackground, IBorder, Background, Border, IMediaQuery, IControlMediaQueryProps, ISpace, Overflow, IOverflow, OverflowType, I18n } from '@ijstech/base';
     import { Icon, IconElement } from '@ijstech/icon';
     export type ModalPopupPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
     type eventCallback = (target: Control) => void;
@@ -22302,6 +22311,7 @@ declare module "@ijstech/modal/modal.ts" {
         mediaQueries?: IModalMediaQuery[];
         onOpen?: eventCallback;
         onClose?: eventCallback;
+        onBeforeClose?: eventCallback;
     }
     global {
         namespace JSX {
@@ -22325,6 +22335,7 @@ declare module "@ijstech/modal/modal.ts" {
         private _isChildFixed;
         private _closeOnScrollChildFixed;
         private _mediaQueries;
+        private _title;
         private hasInitializedChildFixed;
         private mapScrollTop;
         private insideClick;
@@ -22332,6 +22343,7 @@ declare module "@ijstech/modal/modal.ts" {
         private boundHandleModalMouseUp;
         protected _onOpen: eventCallback;
         onClose: eventCallback;
+        onBeforeClose: eventCallback;
         constructor(parent?: Control, options?: any);
         get visible(): boolean;
         set visible(value: boolean);
@@ -22339,6 +22351,8 @@ declare module "@ijstech/modal/modal.ts" {
         set onOpen(callback: any);
         get title(): string;
         set title(value: string);
+        updateLocale(i18n: I18n): void;
+        private getTranslatedText;
         get popupPlacement(): ModalPopupPlacementType;
         set popupPlacement(value: ModalPopupPlacementType);
         get closeIcon(): Icon | null;
@@ -22772,7 +22786,7 @@ declare module "@ijstech/color/utils.ts" {
 declare module "@ijstech/color/style/color.css.ts" { }
 /// <amd-module name="@ijstech/color/color.ts" />
 declare module "@ijstech/color/color.ts" {
-    import { ControlElement, Control, notifyEventCallback } from '@ijstech/base';
+    import { ControlElement, Control, notifyEventCallback, I18n } from '@ijstech/base';
     import "@ijstech/color/style/color.css.ts";
     export interface ColorPickerElement extends ControlElement {
         value?: string;
@@ -22812,6 +22826,7 @@ declare module "@ijstech/color/color.ts" {
         constructor(parent?: Control, options?: any);
         get value(): string;
         set value(color: string);
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -22851,7 +22866,7 @@ declare module "@ijstech/color" {
 declare module "@ijstech/input/style/input.css.ts" { }
 /// <amd-module name="@ijstech/input/input.ts" />
 declare module "@ijstech/input/input.ts" {
-    import { Control, ControlElement, notifyEventCallback, IBorder, Border, IBackground, Background, IFont } from '@ijstech/base';
+    import { Control, ControlElement, notifyEventCallback, IBorder, Border, IBackground, Background, IFont, I18n } from '@ijstech/base';
     import { Checkbox, CheckboxElement } from "@ijstech/checkbox";
     import { ComboBox, ComboBoxElement } from "@ijstech/combo-box";
     import { Datepicker, DatepickerElement } from '@ijstech/datepicker';
@@ -22863,6 +22878,7 @@ declare module "@ijstech/input/input.ts" {
     type InputControlType = Checkbox | ComboBox | Datepicker | Range | Radio | ColorPicker;
     type actionCallback = (target: Input) => void;
     type ResizeType = "none" | "auto" | "both" | "horizontal" | "vertical" | "initial" | "inherit" | "auto-grow";
+    type EnterKeyHintType = "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
     export interface InputElement extends ControlElement, CheckboxElement, ComboBoxElement, DatepickerElement, RangeElement, RadioElement {
         caption?: string;
         captionWidth?: number | string;
@@ -22875,6 +22891,7 @@ declare module "@ijstech/input/input.ts" {
         multiline?: boolean;
         resize?: ResizeType;
         maxLength?: number;
+        enterKeyHint?: EnterKeyHintType;
         onChanged?: notifyEventCallback;
         onKeyDown?: notifyEventCallback;
         onKeyUp?: notifyEventCallback;
@@ -22903,6 +22920,7 @@ declare module "@ijstech/input/input.ts" {
         private _multiline;
         private _resize;
         private _maxLength;
+        private _enterKeyHint;
         private captionSpanElm;
         private labelElm;
         private inputElm;
@@ -22920,8 +22938,9 @@ declare module "@ijstech/input/input.ts" {
         get onObserverChanged(): (target: Control, event?: Event) => void;
         set checked(value: boolean);
         get checked(): boolean;
-        set selectedItem(value: any);
-        get selectedItem(): any;
+        set valueFormat(value: string);
+        get valueFormat(): string;
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         get captionWidth(): number | string;
@@ -22939,7 +22958,9 @@ declare module "@ijstech/input/input.ts" {
         get inputControl(): InputControlType;
         get enabled(): boolean;
         set enabled(value: boolean);
+        get placeholder(): string;
         set placeholder(value: string);
+        private getTranslatedText;
         get rows(): number;
         set rows(value: number);
         get multiline(): boolean;
@@ -22950,6 +22971,8 @@ declare module "@ijstech/input/input.ts" {
         get border(): Border;
         set maxLength(value: number);
         get maxLength(): number;
+        set enterKeyHint(value: EnterKeyHintType);
+        get enterKeyHint(): EnterKeyHintType;
         get background(): Background;
         set background(value: IBackground);
         get font(): IFont;
@@ -23196,135 +23219,6 @@ declare module "@ijstech/label/label.ts" {
 declare module "@ijstech/label" {
     export { Label, LabelElement } from "@ijstech/label/label.ts";
 }
-/// <amd-module name="@ijstech/button/style/button.css.ts" />
-declare module "@ijstech/button/style/button.css.ts" { }
-/// <amd-module name="@ijstech/button/button.ts" />
-declare module "@ijstech/button/button.ts" {
-    import { Control, Container, ControlElement, I18n } from '@ijstech/base';
-    import { Icon, IconElement } from '@ijstech/icon';
-    import "@ijstech/button/style/button.css.ts";
-    export interface ButtonElement extends ControlElement {
-        caption?: string;
-        icon?: IconElement;
-        rightIcon?: IconElement;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-button']: ButtonElement;
-            }
-        }
-    }
-    export class Button extends Control {
-        private captionElm;
-        private _icon;
-        private _rightIcon;
-        private _caption;
-        static create(options?: ButtonElement, parent?: Container): Promise<Button>;
-        constructor(parent?: Control, options?: ButtonElement);
-        updateLocale(i18n: I18n): void;
-        get caption(): string;
-        set caption(value: string);
-        get icon(): Icon;
-        set icon(value: Icon);
-        get rightIcon(): Icon;
-        set rightIcon(value: Icon);
-        get enabled(): boolean;
-        set enabled(value: boolean);
-        private get isSpinning();
-        private prependIcon;
-        private appendIcon;
-        private updateButton;
-        _handleClick(event: MouseEvent): boolean;
-        refresh(): void;
-        protected init(): void;
-    }
-}
-/// <amd-module name="@ijstech/button" />
-declare module "@ijstech/button" {
-    export { Button, ButtonElement } from "@ijstech/button/button.ts";
-}
-/// <amd-module name="@ijstech/progress/style/progress.css.ts" />
-declare module "@ijstech/progress/style/progress.css.ts" { }
-/// <amd-module name="@ijstech/progress/progress.ts" />
-declare module "@ijstech/progress/progress.ts" {
-    import { Control, ControlElement, Types, IFont } from '@ijstech/base';
-    import "@ijstech/progress/style/progress.css.ts";
-    export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
-    export type ProgressType = 'line' | 'circle';
-    type callbackType = (target: Control) => void;
-    export interface ProgressElement extends ControlElement {
-        percent?: number;
-        strokeWidth?: number;
-        strokeColor?: Types.Color;
-        loading?: boolean;
-        steps?: number;
-        type?: ProgressType;
-        format?: (percent: number) => string;
-        onRenderStart?: callbackType;
-        onRenderEnd?: callbackType;
-    }
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-progress']: ProgressElement;
-            }
-        }
-    }
-    export class Progress extends Control {
-        private _percent;
-        private _status;
-        private _loading;
-        private _steps;
-        private _type;
-        private _strokeWidth;
-        private _strokeColor;
-        private _wrapperElm;
-        private _startElm;
-        private _barElm;
-        private _endElm;
-        private _textElm;
-        format: (percent: number) => string;
-        onRenderStart: callbackType;
-        onRenderEnd: callbackType;
-        constructor(parent?: Control, options?: any);
-        get percent(): number;
-        set percent(value: number);
-        get strokeColor(): Types.Color;
-        set strokeColor(value: Types.Color);
-        get loading(): boolean;
-        set loading(value: boolean);
-        get steps(): number;
-        set steps(value: number);
-        get type(): ProgressType;
-        set type(value: ProgressType);
-        get strokeWidth(): number;
-        set strokeWidth(value: number);
-        get font(): IFont;
-        set font(value: IFont);
-        private get relativeStrokeWidth();
-        private get radius();
-        private get trackPath();
-        private get perimeter();
-        private get rate();
-        private get strokeDashoffset();
-        private get trailPathStyle();
-        private get circlePathStyle();
-        private get stroke();
-        private get trackColor();
-        private get progressTextSize();
-        private renderLine;
-        private renderCircle;
-        private renderCircleInner;
-        private updateCircleInner;
-        protected init(): void;
-        static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
-    }
-}
-/// <amd-module name="@ijstech/progress" />
-declare module "@ijstech/progress" {
-    export { Progress } from "@ijstech/progress/progress.ts";
-}
 /// <amd-module name="@ijstech/upload/style/upload.css.ts" />
 declare module "@ijstech/upload/style/upload.css.ts" { }
 /// <amd-module name="@ijstech/upload/upload.ts" />
@@ -23428,109 +23322,9 @@ declare module "@ijstech/upload/upload.ts" {
         static create(options?: UploadElement, parent?: Control): Promise<Upload>;
     }
 }
-/// <amd-module name="@ijstech/upload/style/upload-modal.css.ts" />
-declare module "@ijstech/upload/style/upload-modal.css.ts" { }
-/// <amd-module name="@ijstech/upload/upload-modal.ts" />
-declare module "@ijstech/upload/upload-modal.ts" {
-    import { Control, ControlElement } from '@ijstech/base';
-    import { ICidInfo } from '@ijstech/ipfs';
-    import "@ijstech/upload/style/upload-modal.css.ts";
-    export enum FILE_STATUS {
-        LISTED = 0,
-        SUCCESS = 1,
-        FAILED = 2,
-        UPLOADING = 3
-    }
-    type BeforeUploadedCallback = (target: UploadModal, data: ICidInfo) => void;
-    type UploadedCallback = (target: UploadModal, file: File, cid: string) => void;
-    global {
-        namespace JSX {
-            interface IntrinsicElements {
-                ['i-upload-modal']: UploadModalElement;
-            }
-        }
-    }
-    export interface UploadModalElement extends ControlElement {
-        rootCid?: string;
-        parentDir?: Partial<ICidInfo>;
-        onBeforeUploaded: BeforeUploadedCallback;
-        onUploaded?: UploadedCallback;
-    }
-    export interface IIPFSItem {
-        cid: string;
-        name: string;
-        size: number;
-        type: 'dir' | 'file';
-        links?: IIPFSItem[];
-    }
-    export interface IUploadResult {
-        success: boolean;
-        error?: string;
-        data?: IIPFSItem;
-    }
-    export class UploadModal extends Control {
-        private _uploadModalElm;
-        private _closeBtnElm;
-        private _uploadBoxElm;
-        private _fileUploader;
-        private _fileIcon;
-        private _dragLabelElm;
-        private _statusFilterElm;
-        private _filterBarElm;
-        private _filterActionsElm;
-        private _fileListElm;
-        private _uploadBtnElm;
-        private _notePnlElm;
-        private _paginationElm;
-        private _rootCid;
-        private _parentDir;
-        onBeforeUploaded: BeforeUploadedCallback;
-        onUploaded: UploadedCallback;
-        private isForcedCancelled;
-        private currentRequest;
-        private currentPage;
-        private currentFilterStatus;
-        private files;
-        private fileListData;
-        constructor(parent?: Control, options?: any);
-        get rootCid(): string;
-        set rootCid(value: string);
-        get parentDir(): Partial<ICidInfo>;
-        set parentDir(value: Partial<ICidInfo>);
-        show(): Promise<void>;
-        private updateUI;
-        hide(): void;
-        private onBeforeDrop;
-        private onBeforeUpload;
-        private filteredFileListData;
-        private numPages;
-        private setCurrentPage;
-        private get isSmallWidth();
-        private renderFilterBar;
-        private renderFileList;
-        private formatBytes;
-        private getStatus;
-        private getPagination;
-        private renderPagination;
-        private onChangeCurrentFilterStatus;
-        private onClear;
-        private onCancel;
-        private onChangeFile;
-        private updateBtnCaption;
-        private onRemove;
-        private onRemoveFile;
-        private getDirItems;
-        private onUpload;
-        private reset;
-        private toggle;
-        protected init(): Promise<void>;
-        static create(options?: UploadModalElement, parent?: Control): Promise<UploadModal>;
-    }
-}
 /// <amd-module name="@ijstech/upload" />
 declare module "@ijstech/upload" {
     export { Upload, UploadElement, UploadRawFile } from "@ijstech/upload/upload.ts";
-    export { UploadModal } from "@ijstech/upload/upload-modal.ts";
 }
 /// <amd-module name="@ijstech/module/module.ts" />
 declare module "@ijstech/module/module.ts" {
@@ -23590,7 +23384,7 @@ declare module "@ijstech/module" {
 declare module "@ijstech/tooltip/style/tooltip.css.ts" { }
 /// <amd-module name="@ijstech/tooltip/tooltip.ts" />
 declare module "@ijstech/tooltip/tooltip.ts" {
-    import { Control } from '@ijstech/base';
+    import { Control, I18n } from '@ijstech/base';
     import "@ijstech/tooltip/style/tooltip.css.ts";
     import { PlacementType, TriggerType, ITooltipImpl, ITooltip } from '@ijstech/types';
     export { ITooltip };
@@ -23603,8 +23397,9 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         private _trigger;
         private _duration;
         private timeout;
+        private _parentI18n;
         private tooltipElm;
-        constructor(parent: Control);
+        constructor(parent: Control, parentI18n?: I18n);
         private initData;
         private positionAt;
         get trigger(): TriggerType;
@@ -23613,6 +23408,7 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         set popperClass(value: string);
         get color(): string;
         set color(value: string);
+        updateLocale(i18n: I18n): void;
         get content(): string;
         set content(value: string);
         get placement(): PlacementType;
@@ -23628,12 +23424,61 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         close(): void;
         private onHandleClick;
         private renderTooltip;
+        private createLabels;
         private initEvents;
     }
 }
 /// <amd-module name="@ijstech/tooltip" />
 declare module "@ijstech/tooltip" {
     export { Tooltip, ITooltip } from "@ijstech/tooltip/tooltip.ts";
+}
+/// <amd-module name="@ijstech/button/style/button.css.ts" />
+declare module "@ijstech/button/style/button.css.ts" { }
+/// <amd-module name="@ijstech/button/button.ts" />
+declare module "@ijstech/button/button.ts" {
+    import { Control, Container, ControlElement, I18n } from '@ijstech/base';
+    import { Icon, IconElement } from '@ijstech/icon';
+    import "@ijstech/button/style/button.css.ts";
+    export interface ButtonElement extends ControlElement {
+        caption?: string;
+        icon?: IconElement;
+        rightIcon?: IconElement;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-button']: ButtonElement;
+            }
+        }
+    }
+    export class Button extends Control {
+        private captionElm;
+        private _icon;
+        private _rightIcon;
+        private _caption;
+        static create(options?: ButtonElement, parent?: Container): Promise<Button>;
+        constructor(parent?: Control, options?: ButtonElement);
+        updateLocale(i18n: I18n): void;
+        get caption(): string;
+        set caption(value: string);
+        get icon(): Icon;
+        set icon(value: Icon);
+        get rightIcon(): Icon;
+        set rightIcon(value: Icon);
+        get enabled(): boolean;
+        set enabled(value: boolean);
+        private get isSpinning();
+        private prependIcon;
+        private appendIcon;
+        private updateButton;
+        _handleClick(event: MouseEvent): boolean;
+        refresh(): void;
+        protected init(): void;
+    }
+}
+/// <amd-module name="@ijstech/button" />
+declare module "@ijstech/button" {
+    export { Button, ButtonElement } from "@ijstech/button/button.ts";
 }
 /// <amd-module name="@ijstech/tab/style/tab.css.ts" />
 declare module "@ijstech/tab/style/tab.css.ts" {
@@ -23642,7 +23487,7 @@ declare module "@ijstech/tab/style/tab.css.ts" {
 }
 /// <amd-module name="@ijstech/tab/tab.ts" />
 declare module "@ijstech/tab/tab.ts" {
-    import { Control, Container, ContainerElement, IFont, IMediaQuery, IControlMediaQueryProps } from '@ijstech/base';
+    import { Control, Container, ContainerElement, IFont, IMediaQuery, IControlMediaQueryProps, I18n } from '@ijstech/base';
     import { Icon, IconElement } from "@ijstech/icon";
     import "@ijstech/tab/style/tab.css.ts";
     type TabModeType = "horizontal" | "vertical";
@@ -23694,6 +23539,7 @@ declare module "@ijstech/tab/tab.ts" {
         onCloseTab: TabCloseEventCallback;
         onBeforeClose: TabCloseEventCallback;
         constructor(parent?: Container, options?: any);
+        updateLocale(i18n: I18n): void;
         get activeTab(): Tab;
         get activeTabIndex(): number;
         set activeTabIndex(index: number);
@@ -23728,9 +23574,11 @@ declare module "@ijstech/tab/tab.ts" {
         private _rightIcon;
         private _closeBtn;
         protected _parent: Tabs;
+        private _caption;
         active(): void;
         protected addChildControl(control: Control): void;
         protected removeChildControl(control: Control): void;
+        updateLocale(i18n: I18n): void;
         get caption(): string;
         set caption(value: string);
         close(): void;
@@ -23739,8 +23587,6 @@ declare module "@ijstech/tab/tab.ts" {
         set icon(elm: Icon);
         get rightIcon(): Icon;
         set rightIcon(elm: Icon);
-        get innerHTML(): string;
-        set innerHTML(value: string);
         get font(): IFont;
         set font(value: IFont);
         _handleClick(event: MouseEvent): boolean;
@@ -23753,6 +23599,87 @@ declare module "@ijstech/tab/tab.ts" {
 /// <amd-module name="@ijstech/tab" />
 declare module "@ijstech/tab" {
     export { Tabs, TabsElement, Tab, TabElement } from "@ijstech/tab/tab.ts";
+}
+/// <amd-module name="@ijstech/progress/style/progress.css.ts" />
+declare module "@ijstech/progress/style/progress.css.ts" { }
+/// <amd-module name="@ijstech/progress/progress.ts" />
+declare module "@ijstech/progress/progress.ts" {
+    import { Control, ControlElement, Types, IFont } from '@ijstech/base';
+    import "@ijstech/progress/style/progress.css.ts";
+    export type ProgressStatus = 'success' | 'exception' | 'active' | 'warning';
+    export type ProgressType = 'line' | 'circle';
+    type callbackType = (target: Control) => void;
+    export interface ProgressElement extends ControlElement {
+        percent?: number;
+        strokeWidth?: number;
+        strokeColor?: Types.Color;
+        loading?: boolean;
+        steps?: number;
+        type?: ProgressType;
+        format?: (percent: number) => string;
+        onRenderStart?: callbackType;
+        onRenderEnd?: callbackType;
+    }
+    global {
+        namespace JSX {
+            interface IntrinsicElements {
+                ['i-progress']: ProgressElement;
+            }
+        }
+    }
+    export class Progress extends Control {
+        private _percent;
+        private _status;
+        private _loading;
+        private _steps;
+        private _type;
+        private _strokeWidth;
+        private _strokeColor;
+        private _wrapperElm;
+        private _startElm;
+        private _barElm;
+        private _endElm;
+        private _textElm;
+        format: (percent: number) => string;
+        onRenderStart: callbackType;
+        onRenderEnd: callbackType;
+        constructor(parent?: Control, options?: any);
+        get percent(): number;
+        set percent(value: number);
+        get strokeColor(): Types.Color;
+        set strokeColor(value: Types.Color);
+        get loading(): boolean;
+        set loading(value: boolean);
+        get steps(): number;
+        set steps(value: number);
+        get type(): ProgressType;
+        set type(value: ProgressType);
+        get strokeWidth(): number;
+        set strokeWidth(value: number);
+        get font(): IFont;
+        set font(value: IFont);
+        private get relativeStrokeWidth();
+        private get radius();
+        private get trackPath();
+        private get perimeter();
+        private get rate();
+        private get strokeDashoffset();
+        private get trailPathStyle();
+        private get circlePathStyle();
+        private get stroke();
+        private get trackColor();
+        private get progressTextSize();
+        private renderLine;
+        private renderCircle;
+        private renderCircleInner;
+        private updateCircleInner;
+        protected init(): void;
+        static create(options?: ProgressElement, parent?: Control): Promise<Progress>;
+    }
+}
+/// <amd-module name="@ijstech/progress" />
+declare module "@ijstech/progress" {
+    export { Progress } from "@ijstech/progress/progress.ts";
 }
 /// <amd-module name="@ijstech/jsonUI/styles/jsonUI.css.ts" />
 declare module "@ijstech/jsonUI/styles/jsonUI.css.ts" {
@@ -23838,7 +23765,7 @@ declare module "@ijstech/jsonUI" {
 declare module "@ijstech/alert/style/alert.css.ts" { }
 /// <amd-module name="@ijstech/alert/alert.ts" />
 declare module "@ijstech/alert/alert.ts" {
-    import { Control, Container, ControlElement } from "@ijstech/base";
+    import { Control, Container, ControlElement, I18n } from "@ijstech/base";
     import "@ijstech/alert/style/alert.css.ts";
     export interface AlertElement extends ControlElement {
         status?: "warning" | "success" | "error" | "loading" | "confirm";
@@ -23872,6 +23799,9 @@ declare module "@ijstech/alert/alert.ts" {
     export class Alert extends Control {
         private mdAlert;
         private pnlMain;
+        private contentElm;
+        private titleElm;
+        private linkElm;
         private _status;
         private _title;
         private _content;
@@ -23885,6 +23815,8 @@ declare module "@ijstech/alert/alert.ts" {
         set title(value: string);
         get content(): string;
         set content(value: string);
+        updateLocale(i18n: I18n): void;
+        private getTranslatedText;
         get link(): {
             caption: string;
             href: string;
@@ -23899,6 +23831,7 @@ declare module "@ijstech/alert/alert.ts" {
         showModal: () => void;
         private renderUI;
         private renderContent;
+        private createLabels;
         private renderLink;
         private renderButtons;
         protected init(): Promise<void>;
@@ -24422,6 +24355,7 @@ declare module "@ijstech/markdown-editor/markdown-editor.ts" {
         set autoFocus(value: boolean);
         get placeholder(): string;
         set placeholder(value: string);
+        private getTranslatedText;
         get padding(): ISpace;
         set padding(value: ISpace);
         get border(): Border;
@@ -24452,7 +24386,7 @@ declare module "@ijstech/menu/style/menu.css.ts" {
 }
 /// <amd-module name="@ijstech/menu/menu.ts" />
 declare module "@ijstech/menu/menu.ts" {
-    import { Control, ControlElement, IContextMenu, IFont, ISpace } from "@ijstech/base";
+    import { Control, ControlElement, I18n, IContextMenu, IFont, ISpace } from "@ijstech/base";
     import { Link, LinkElement } from '@ijstech/link';
     import { Icon, IconElement } from '@ijstech/icon';
     export type MenuMode = "horizontal" | "vertical" | "inline";
@@ -24498,6 +24432,7 @@ declare module "@ijstech/menu/menu.ts" {
         private itemsWidth;
         private resizeTimeout;
         private _selectedItem;
+        updateLocale(i18n: I18n): void;
         add(options?: IMenuItem): MenuItem;
         delete(item: MenuItem): void;
         get mode(): MenuMode;
@@ -24549,9 +24484,11 @@ declare module "@ijstech/menu/menu.ts" {
         private closeTimeout;
         private _level;
         private _textAlign;
+        private _caption;
         constructor(parent?: Control, options?: MenuItemElement);
         add(options?: IMenuItem): MenuItem;
         delete(item: MenuItem): void;
+        updateLocale(i18n: I18n): void;
         get title(): string;
         set title(value: string);
         set font(value: IFont);
@@ -24594,7 +24531,7 @@ declare module "@ijstech/menu" {
 declare module "@ijstech/tree-view/style/treeView.css.ts" { }
 /// <amd-module name="@ijstech/tree-view/treeView.ts" />
 declare module "@ijstech/tree-view/treeView.ts" {
-    import { Control, ControlElement } from '@ijstech/base';
+    import { Control, ControlElement, I18n } from '@ijstech/base';
     import { Icon, IconElement } from '@ijstech/icon';
     import { Button, ButtonElement } from '@ijstech/button';
     import "@ijstech/tree-view/style/treeView.css.ts";
@@ -24678,6 +24615,7 @@ declare module "@ijstech/tree-view/treeView.ts" {
         set editable(value: boolean);
         get actionButtons(): ButtonElement[];
         set actionButtons(value: ButtonElement[]);
+        updateLocale(i18n: I18n): void;
         add(parentNode?: TreeNode | null, caption?: string): TreeNode;
         appendNode(childNode: TreeNode): void;
         delete(node: TreeNode): void;
@@ -24714,6 +24652,7 @@ declare module "@ijstech/tree-view/treeView.ts" {
         set data(value: ITreeNode);
         get caption(): string;
         set caption(value: string);
+        updateLocale(i18n: I18n): void;
         get collapsible(): boolean;
         set collapsible(value: any);
         get expanded(): boolean;
@@ -24958,7 +24897,7 @@ declare module "@ijstech/table/tableCell.ts" {
 }
 /// <amd-module name="@ijstech/table/tableColumn.ts" />
 declare module "@ijstech/table/tableColumn.ts" {
-    import { Control, ControlElement } from '@ijstech/base';
+    import { Control, ControlElement, I18n } from '@ijstech/base';
     import { TableCell } from "@ijstech/table/tableCell.ts";
     import "@ijstech/table/style/table.css.ts";
     export type SortDirection = 'asc' | 'desc' | 'none';
@@ -24975,7 +24914,6 @@ declare module "@ijstech/table/tableColumn.ts" {
         onRenderCell?: renderCallback;
     }
     export class TableColumn extends Control {
-        caption: string;
         fieldName: string;
         key?: string | number;
         sortable?: boolean;
@@ -24988,6 +24926,7 @@ declare module "@ijstech/table/tableColumn.ts" {
         private _data;
         private _textAlign;
         private _rowData;
+        private _caption;
         onSortChange: (source: Control, key: string, value: SortDirection) => void;
         onRenderCell: renderCallback;
         sorter: (a: any, b: any) => number;
@@ -25000,6 +24939,9 @@ declare module "@ijstech/table/tableColumn.ts" {
         set sortOrder(value: SortDirection);
         get textAlign(): TextAlign;
         set textAlign(value: TextAlign);
+        get caption(): string;
+        set caption(value: string);
+        updateLocale(i18n: I18n): void;
         private renderSort;
         appendNode(params: any): Promise<void>;
         init(): void;
@@ -25029,7 +24971,7 @@ declare module "@ijstech/table/tableRow.ts" {
 }
 /// <amd-module name="@ijstech/table/table.ts" />
 declare module "@ijstech/table/table.ts" {
-    import { Control, ControlElement, IMediaQuery, IControlMediaQueryProps } from '@ijstech/base';
+    import { Control, ControlElement, IMediaQuery, IControlMediaQueryProps, I18n } from '@ijstech/base';
     import { TableColumnElement } from "@ijstech/table/tableColumn.ts";
     import { Pagination } from '@ijstech/pagination';
     import { TableRow } from "@ijstech/table/tableRow.ts";
@@ -25118,6 +25060,7 @@ declare module "@ijstech/table/table.ts" {
         private onPageChanged;
         private onSortChange;
         private renderHeader;
+        updateLocale(i18n: I18n): void;
         _handleClick(event: MouseEvent): boolean;
         private expandRow;
         private renderRow;
@@ -25936,6 +25879,7 @@ declare module "@ijstech/form/form.ts" {
         private mustBeValid;
         validate(instance: any, schema: IDataSchema, options: any): ValidationResult;
         private convertFieldNameToLabel;
+        private convertToKey;
         private setDataUpload;
     }
 }
@@ -26008,7 +25952,7 @@ declare module "@ijstech/accordion/style/accordion.css.ts" {
 }
 /// <amd-module name="@ijstech/accordion/accordion-item.ts" />
 declare module "@ijstech/accordion/accordion-item.ts" {
-    import { Control, Container, IFont } from "@ijstech/base";
+    import { Control, Container, IFont, I18n } from "@ijstech/base";
     import { IAccordionItem } from "@ijstech/accordion/interface.ts";
     type onSelectedFn = (target: AccordionItem) => void;
     export interface AccordionItemElement extends IAccordionItem {
@@ -26036,6 +25980,7 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         onRemoved: onSelectedFn;
         constructor(parent?: Container, options?: any);
         static create(options?: AccordionItemElement, parent?: Container): Promise<AccordionItem>;
+        updateLocale(i18n: I18n): void;
         get name(): string;
         set name(value: string);
         get defaultExpanded(): boolean;
@@ -26057,7 +26002,7 @@ declare module "@ijstech/accordion/accordion-item.ts" {
 }
 /// <amd-module name="@ijstech/accordion/accordion.ts" />
 declare module "@ijstech/accordion/accordion.ts" {
-    import { Control, Container, ControlElement } from "@ijstech/base";
+    import { Control, Container, ControlElement, I18n } from "@ijstech/base";
     import { AccordionItem, AccordionItemElement } from "@ijstech/accordion/accordion-item.ts";
     import { IAccordionItem } from "@ijstech/accordion/interface.ts";
     export { AccordionItem, AccordionItemElement };
@@ -26084,6 +26029,7 @@ declare module "@ijstech/accordion/accordion.ts" {
         onCustomItemRemoved: onCustomItemRemovedCallback;
         static create(options?: AccordionElement, parent?: Container): Promise<Accordion>;
         constructor(parent?: Container, options?: any);
+        updateLocale(i18n: I18n): void;
         get isFlush(): boolean;
         set isFlush(value: boolean);
         get items(): IAccordionItem[];
@@ -26130,7 +26076,7 @@ declare module "@ijstech/components" {
     export { Popover } from '@ijstech/popover';
     export { Checkbox } from '@ijstech/checkbox';
     export { Datepicker } from '@ijstech/datepicker';
-    export { Upload, UploadModal } from '@ijstech/upload';
+    export { Upload } from '@ijstech/upload';
     export { Tabs, Tab } from '@ijstech/tab';
     export { Iframe } from '@ijstech/iframe';
     export { Range } from '@ijstech/range';

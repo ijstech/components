@@ -8,7 +8,7 @@ export default class MediaPlayer extends Module {
   private startSlider: CarouselSlider;
 
   private formatNumber(num: number) {
-    return FormatUtils.formatNumber(num, {shortScale: true});
+    return FormatUtils.formatNumber(num, { shortScale: true, decimalFigures: 0});
   }
 
   private renderStartSlider() {
@@ -79,17 +79,20 @@ export default class MediaPlayer extends Module {
           font={{ "size": "16px", "weight": 700 }}
         >
         </i-label>
-        <i-carousel-slider
-          id="startSlider"
-          width='100%'
-          indicators={false}
-          slidesToShow={1}
-          swipe={true}
+        <i-panel
           margin={{top: '1rem'}}
-          class={customStyles}
-          background={{ color: Theme.colors.primary.main }}
         >
-        </i-carousel-slider>
+          <i-carousel-slider
+            id="startSlider"
+            width='100%'
+            indicators={false}
+            slidesToShow={1}
+            swipe={true}
+            class={customStyles}
+            background={{ color: Theme.colors.primary.main }}
+          >
+          </i-carousel-slider>
+        </i-panel>
       </i-vstack>
     </i-vstack>
   }

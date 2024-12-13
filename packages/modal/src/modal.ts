@@ -31,6 +31,7 @@ export interface ModalElement extends ControlElement {
     mediaQueries?: IModalMediaQuery[];
     onOpen?: eventCallback;
     onClose?: eventCallback;
+    onBeforeClose?: eventCallback;
 }
 declare global {
     namespace JSX {
@@ -161,6 +162,7 @@ export class Modal extends Container {
 
     protected _onOpen: eventCallback;
     public onClose: eventCallback;
+    public onBeforeClose: eventCallback;
 
     constructor(parent?: Control, options?: any) {
         super(parent, options, {
@@ -867,7 +869,10 @@ export class Modal extends Container {
         if (!this.closeOnBackdropClick && !this.showBackdrop) {
             this.setInsideClick(event);
         }
-        if (!this.insideClick) this.visible = false;
+        if (!this.insideClick) {
+            if (typeof this.onBeforeClose === 'function') this.onBeforeClose(this);
+            else this.visible = false;
+        }
     }
 
     private setInsideClick(event: MouseEvent) {
@@ -974,8 +979,9 @@ export class Modal extends Container {
     }
     protected init() {
         if (!this.wrapperDiv) {
-            if (this.options?.onClose)
-                this.onClose = this.options.onClose;
+            this.onBeforeClose = this.getAttribute('onBeforeClose', true) || this.onBeforeClose;
+            this.onClose = this.getAttribute('onClose', true) || this.onClose;
+            this.onOpen = this.getAttribute('onOpen', true) || this.onOpen;
             this.popupPlacement = this.getAttribute('popupPlacement', true, DEFAULT_VALUES.popupPlacement);
             this.closeOnBackdropClick = this.getAttribute('closeOnBackdropClick', true, DEFAULT_VALUES.closeOnBackdropClick);
             this.wrapperDiv = this.createElement('div', this);

@@ -22311,6 +22311,7 @@ declare module "@ijstech/modal/modal.ts" {
         mediaQueries?: IModalMediaQuery[];
         onOpen?: eventCallback;
         onClose?: eventCallback;
+        onBeforeClose?: eventCallback;
     }
     global {
         namespace JSX {
@@ -22342,6 +22343,7 @@ declare module "@ijstech/modal/modal.ts" {
         private boundHandleModalMouseUp;
         protected _onOpen: eventCallback;
         onClose: eventCallback;
+        onBeforeClose: eventCallback;
         constructor(parent?: Control, options?: any);
         get visible(): boolean;
         set visible(value: boolean);
