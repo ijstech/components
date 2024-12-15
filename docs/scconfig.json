@@ -5,6 +5,21 @@
     "type": "dapp",
     "main": "@modules/main",
     "assets": "@modules/assets",
+    "multilingual": {
+        "default": "en",
+        "locales": [
+            {
+                "code": "en",
+                "path": "en",
+                "name": "English"
+            },
+            {
+                "code": "zh-hant",
+                "path": "zh-hant",
+                "name": "繁體中文"
+            }
+        ]
+    },
     "modules": {
         "@modules/assets": {
             "path": "assets",
