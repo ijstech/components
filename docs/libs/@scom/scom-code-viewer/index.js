@@ -113,6 +113,18 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
                 this.addCSS(`${path}/lib/dark.min.css`, 'hljs-dark');
             }
         }
+        get currentLocale() {
+            return this._data.currentLocale;
+        }
+        set currentLocale(value) {
+            this._data.currentLocale = value;
+        }
+        get defaultLocale() {
+            return this._data.defaultLocale;
+        }
+        set defaultLocale(value) {
+            this._data.defaultLocale = value;
+        }
         async setData(value) {
             const code = value.code;
             if (code.startsWith('`') && code.endsWith('`')) {
@@ -216,7 +228,14 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
                 return;
             if (filePath.startsWith('/'))
                 filePath = filePath.slice(1);
-            const response = await components_2.application.fetch(`${this.entryPoint}/${filePath}`);
+            let path = `${this.entryPoint}/${filePath}`;
+            let response = await components_2.application.fetch(path);
+            if (response.status === 404 && this.currentLocale) {
+                if (path.includes(this.currentLocale)) {
+                    path = path.replace(this.currentLocale, this.defaultLocale);
+                    response = await components_2.application.fetch(path);
+                }
+            }
             const script = await response.text();
             return script;
         }
@@ -336,8 +355,10 @@ define("@scom/scom-code-viewer", ["require", "exports", "@ijstech/components", "
             const language = this.getAttribute('language', true);
             const entryPoint = this.getAttribute('entryPoint', true);
             const isButtonsShown = this.getAttribute('isButtonsShown', true);
+            const defaultLocale = this.getAttribute('defaultLocale', true);
+            const currentLocale = this.getAttribute('currentLocale', true);
             this._theme = this.getAttribute('theme', true);
-            code && this.setData({ code, language, entryPoint, isButtonsShown });
+            code && this.setData({ code, language, entryPoint, isButtonsShown, defaultLocale, currentLocale });
         }
         render() {
             return (this.$render("i-vstack", { width: '100%', background: { color: Theme.background.main }, border: { color: Theme.divider, width: '1px', style: 'solid', radius: '0.5rem' }, overflow: 'hidden' },

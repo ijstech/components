@@ -64,4 +64,3 @@
     * [Cart](designs/booking/samples/cart/README.md)
   * [Consuming](designs/consuming/README.md)
     * [Media Player](designs/consuming/samples/mediaplayer/README.md)
-  * [Creating](designs/creating/README.md)

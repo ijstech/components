@@ -5,21 +5,6 @@
     "type": "dapp",
     "main": "@modules/main",
     "assets": "@modules/assets",
-    "multilingual": {
-        "default": "en",
-        "locales": [
-            {
-                "code": "en",
-                "path": "en",
-                "name": "English"
-            },
-            {
-                "code": "zh-hant",
-                "path": "zh-hant",
-                "name": "繁體中文"
-            }
-        ]
-    },
     "modules": {
         "@modules/assets": {
             "path": "assets",
@@ -208,6 +193,19 @@
                 "text1": "color-mix(in srgb,color-mix(in srgb,rgb(180 180 180),rgb(255 255 255) 94.5%),transparent calc(100% - 100% * .72))"
             }
         }
+    },
+    "multilingual": {
+        "default": "en",
+        "locales": [
+            {
+                "code": "en",
+                "name": "English"
+            },
+            {
+                "code": "zh-hant",
+                "name": "繁體中文"
+            }
+        ]
     },
     "packages": [
         "@ijstech/components",

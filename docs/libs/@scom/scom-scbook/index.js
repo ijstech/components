@@ -2397,6 +2397,31 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             const tabRegex = new RegExp(/{% tab title="(.*?)" %}<\/p>(.+?)<p>{% endtab %}/gis);
             const anchorRegex = new RegExp(/<a\s+(target=["']_\w+["']\s+)?href="(.*?)">(.*?)<\/a>/gm);
             const preRegex = new RegExp(/<pre>(.*?)<\/pre>/gis);
+            const imgRegex = new RegExp(/<img\s+(src=["'](.*?)["']\s+)?alt="(.*?)">/gis);
+            if (imgRegex.test(content)) {
+                content = content.replace(imgRegex, (_, group, src, alt) => {
+                    let currentPath = this.currentNode?.tag?.file || '';
+                    if (currentPath.endsWith('/'))
+                        currentPath = currentPath.slice(0, -1);
+                    const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                    const languagePath = (0, index_5.getLanguagePath)();
+                    src = src.replace(this.entrypoint, '');
+                    let mainPath = src.startsWith('./') ? src.slice(2) : src.startsWith('../') ? src.slice(3) : src;
+                    if (mainPath.startsWith('/'))
+                        mainPath = mainPath.slice(1);
+                    const tempCurrentDir = currentDir.replace(`${languagePath}/`, '');
+                    mainPath = (mainPath.toLowerCase()).replace(tempCurrentDir, '');
+                    console.log('currentDir', currentDir);
+                    let newRootDir = this.entrypoint;
+                    if (newRootDir.endsWith('/'))
+                        newRootDir = newRootDir.slice(0, -1);
+                    if (currentDir && !newRootDir.includes(currentDir)) {
+                        newRootDir = `${newRootDir}/${currentDir}`;
+                    }
+                    const newFileName = `${newRootDir}/${mainPath}`;
+                    return `<img src="${newFileName}" alt="${alt}">`;
+                });
+            }
             if (preRegex.test(content)) {
                 content = content.replace(preRegex, (_, html) => {
                     const encoder = new TextEncoder();
@@ -2417,6 +2442,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                     entryPoint="${newRootDir}"
                     display="block"
                     maxWidth="100%"
+                    defaultLocale="${this.multilingual?.default || ''}"
+                    currentLocale="${(0, index_5.getCurrentLg)()?.code || ''}"
                 ></i-scom-code-viewer>`;
                 });
             }
@@ -2565,8 +2592,6 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                         .replaceAll('.md', '')
                         .replaceAll('/readme', '');
                     const finded = this.flatTree.find((item) => item.slug === newSlug);
-                    console.log(finded);
-                    console.log(newSlug, this.flatTree);
                     if (!finded) {
                         newSlug = newSlug.replace(`${slug}`, '');
                     }

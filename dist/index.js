@@ -18731,7 +18731,7 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             if (typeof value !== 'string')
                 value = String(value);
             this._caption = value || '';
-            this.captionSpanElm.style.display = !value ? 'none' : '';
+            // this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
             this.captionSpanElm.textContent = this.caption;
@@ -18783,7 +18783,15 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             return super._handleClick(event);
         }
         init() {
-            if (!this.initialized) {
+            if (!this.labelElm) {
+                const items = [];
+                if (this.children.length > 0) {
+                    for (const child of this.children) {
+                        if (child instanceof base_1.Control) {
+                            items.push(child);
+                        }
+                    }
+                }
                 super.init();
                 this.classList.add(radio_css_1.captionStyle);
                 this.labelElm = this.createElement('label', this);
@@ -18802,6 +18810,12 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
                     this.font = font;
                 else
                     this.labelElm.style.color = style_1.Theme.ThemeVars.text.primary;
+                if (items.length) {
+                    for (const child of items) {
+                        this.labelElm.appendChild(child);
+                    }
+                }
+                console.log('===', this.labelElm);
             }
         }
         static async create(options, parent) {
@@ -18914,12 +18928,36 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
         init() {
             if (!this.initialized) {
+                const radios = [];
+                if (this.children.length > 0) {
+                    for (const child of this.children) {
+                        if (child instanceof Radio) {
+                            radios.push(child);
+                        }
+                    }
+                }
                 this.setAttribute('role', 'radiogroup');
                 if (this.options?.onChanged)
                     this.onChanged = this.options.onChanged;
-                (0, base_1.setAttributeToProperty)(this, 'radioItems');
                 (0, base_1.setAttributeToProperty)(this, 'selectedValue');
                 (0, base_1.setAttributeToProperty)(this, 'layout', 'vertical');
+                if (radios.length) {
+                    this.clearInnerHTML();
+                    this._group = [];
+                    this._radioItems = [];
+                    for (const radio of radios) {
+                        this._radioItems.push({
+                            caption: radio.caption,
+                            value: radio.value
+                        });
+                        if (!this.name)
+                            this.name = new Date().getTime().toString();
+                        this.appendItem(radio);
+                    }
+                }
+                else {
+                    (0, base_1.setAttributeToProperty)(this, 'radioItems');
+                }
                 super.init();
             }
         }
