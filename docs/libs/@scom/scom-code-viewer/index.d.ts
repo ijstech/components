@@ -29,8 +29,10 @@ declare module "@scom/scom-code-viewer" {
         code?: string;
         language?: string;
         entryPoint?: string;
-        isButtonsShwn?: boolean;
+        isButtonsShown?: boolean;
         theme?: ThemeType;
+        defaultLocale?: string;
+        currentLocale?: string;
     }
     global {
         namespace JSX {
@@ -44,6 +46,8 @@ declare module "@scom/scom-code-viewer" {
         language?: string;
         entryPoint?: string;
         isButtonsShown?: boolean;
+        defaultLocale?: string;
+        currentLocale?: string;
     }
     export class ScomCodeViewer extends Module {
         private pnlViewer;
@@ -69,6 +73,10 @@ declare module "@scom/scom-code-viewer" {
         set isButtonsShown(value: boolean);
         get theme(): ThemeType;
         set theme(value: ThemeType);
+        get currentLocale(): string;
+        set currentLocale(value: string);
+        get defaultLocale(): string;
+        set defaultLocale(value: string);
         setData(value: ICodeViewer): Promise<void>;
         private renderUI;
         private revertHtmlTags;

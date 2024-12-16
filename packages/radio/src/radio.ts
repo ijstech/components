@@ -66,7 +66,7 @@ export class Radio extends Control {
     set caption(value: string) {
         if (typeof value !== 'string') value = String(value);
         this._caption = value || '';
-        this.captionSpanElm.style.display = !value ? 'none' : '';
+        // this.captionSpanElm.style.display = !value ? 'none' : '';
         if (!this.captionSpanElm) return;
         this.captionSpanElm.textContent = this.caption;
     }
@@ -117,7 +117,15 @@ export class Radio extends Control {
     }
    
     protected init() {
-        if (!this.initialized) {
+        if (!this.labelElm) {
+            const items = [];
+            if (this.children.length > 0) {
+                for (const child of this.children) {
+                    if (child instanceof Control) {
+                        items.push(child);
+                    }
+                }
+            }
             super.init();
             this.classList.add(captionStyle);
 
@@ -139,6 +147,12 @@ export class Radio extends Control {
             const font = this.getAttribute('font', true)
             if (font) this.font = font;
             else this.labelElm.style.color = Theme.ThemeVars.text.primary;
+
+            if (items.length) {
+                for (const child of items) {
+                   this.labelElm.appendChild(child);
+                }
+            }
         }
     }
 
@@ -303,15 +317,37 @@ export class RadioGroup extends Control {
 
     protected init() {
         if (!this.initialized) {
+            const radios: Radio[] = [];
+            if (this.children.length > 0) {
+                for (const child of this.children) {
+                    if (child instanceof Radio) {
+                        radios.push(child);
+                    }
+                }
+            }
             this.setAttribute('role', 'radiogroup');
 
             if (this.options?.onChanged)
                 this.onChanged = this.options.onChanged;
-
-            setAttributeToProperty(this, 'radioItems');
             setAttributeToProperty(this, 'selectedValue');
             setAttributeToProperty(this, 'layout', 'vertical');
+            
+            if (radios.length) {
+                this.clearInnerHTML();
+                this._group = [];
+                this._radioItems = [];
+                for (const radio of radios) {
+                    this._radioItems.push({
+                        caption: radio.caption,
+                        value: radio.value
+                    });
+                    if (!this.name) this.name = new Date().getTime().toString();
+                    this.appendItem(radio);
+                }
 
+            } else {
+                setAttributeToProperty(this, 'radioItems');
+            }
             super.init();
         }
     }
