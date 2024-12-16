@@ -1,0 +1,1 @@
+# [Secure Compute](.scbook/assets/icon.svg)

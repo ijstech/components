@@ -4,7 +4,7 @@
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover">
   <meta charset="utf-8">
-  <link rel="icon" href="modules/assets/img/favicon.png">
+  <link rel="icon" href="0.1.0/modules/assets/img/favicon.png">
   <title>Docs</title>
   <meta name="description" content="Documentation">
   <meta property="og:site_name" content="DOCS">
@@ -15,18 +15,18 @@
 
 
   <script 
-    src="libs/@ijstech/components/index.js"
-    integrity="sha256-muDiAuAWGQ/l97urdfivoQ3v4LVL6mEu8E3+f4cdc3o="
+    src="0.1.0/libs/@ijstech/components/index.js"
+    integrity="sha256-qpc9lEMT8iMKqksRe+IZsZVE9bGJ+zYipIGbKhvY2Qc="
     crossorigin="anonymous"></script>
   
-  <script src="bundle.js" integrity="sha256-VzqkWliqal89oFneVlPVuUTN561z7tEFu/IrzPSVRV0=" crossorigin="anonymous"></script>
+  <script src="0.1.0/bundle.js" integrity="sha256-I5Mew5afZ5MhbrrlaQUsTIk6zIQwdElRR7VtD1Ruweo=" crossorigin="anonymous"></script>
 </head>
 <html>
 
 <body>
   <script>
     async function init() {
-      let module = await application.init('scconfig.json');
+      let module = await application.init('0.1.0/scconfig.json');
       document.body.append(module);
     };
     init();

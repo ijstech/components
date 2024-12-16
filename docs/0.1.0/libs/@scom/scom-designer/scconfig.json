@@ -1,0 +1,10 @@
+{
+    "name": "@scom/scom-designer",
+    "type": "widget",
+    "version": "0.1.11",
+    "dependencies": [
+        "@ijstech/components",
+        "@ijstech/compiler",
+        "@scom/scom-code-editor"
+    ]
+}

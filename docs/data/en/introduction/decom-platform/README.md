@@ -1,2 +1,0 @@
-# DECOM Platform
-The DECOM Platform is a groundbreaking end-to-end verifiable system designed to enhance security, transparency, and user empowerment through its innovative components. By integrating various advanced technologies, the platform offers a comprehensive solution for managing digital assets and identities.  Below, we delve into the technical details, benefits, and potential use cases of the DECOM Platform.
