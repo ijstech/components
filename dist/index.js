@@ -18815,7 +18815,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
                         this.labelElm.appendChild(child);
                     }
                 }
-                console.log('===', this.labelElm);
             }
         }
         static async create(options, parent) {
