@@ -2307,9 +2307,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             if (themes)
                 this.themes = typeof themes === 'string' ? JSON.parse(themes) : themes;
             this.theme = this._theme || this.themes?.default || 'light';
-            window.addEventListener('beforeunload', (event) => {
-                event.preventDefault();
-                event.returnValue = 'Do you really want to close?';
+            window.addEventListener('beforeunload', () => {
+                return "Do you really want to close?";
             });
         }
         async reloadPage() {
