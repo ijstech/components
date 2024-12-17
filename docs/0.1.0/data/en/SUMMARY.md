@@ -64,6 +64,6 @@
     * [Cart](designs/booking/samples/cart/README.md)
     * [Details](designs/booking/samples/details/README.md)
   * [Consuming](designs/consuming/README.md)
-    * [Media Player](designs/consuming/samples/mediaplayer/README.md)
+    * [Media Player](designs/consuming/samples/mediaPlayer/README.md)
   * [Checkout](designs/checkout/README.md)
     * [Payment](designs/checkout/samples/payment/README.md)
