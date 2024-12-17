@@ -1149,7 +1149,8 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             (0, index_2.setCurrentLanguage)(locale);
             this.renderLgComboBox();
         }
-        async loadSearchIndex(entrypoint) {
+        async loadSearchIndex(entrypoint = '') {
+            entrypoint = entrypoint.indexOf('://') < 0 && !entrypoint.startsWith('/') ? `/${entrypoint}` : entrypoint;
             const filePath = this.getFilePath('.scbook/searchindex.json');
             const response = await components_6.application.fetch(`${entrypoint}/${filePath}`);
             if (!response.ok) {
@@ -1311,6 +1312,7 @@ define("@scom/scom-scbook/header.tsx", ["require", "exports", "@ijstech/componen
             });
         }
         async loadHeader(entrypoint, forceUpdate) {
+            entrypoint = entrypoint.indexOf('://') < 0 && !entrypoint.startsWith('/') ? `/${entrypoint}` : entrypoint;
             let header;
             const KEY = '$$scbook_header';
             if (!forceUpdate) {
@@ -2199,7 +2201,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             return this._entrypoint;
         }
         set entrypoint(value) {
-            this._entrypoint = value;
+            this._entrypoint = value.startsWith('/') ? value.slice(1) : value;
+            this.reloadPage();
         }
         get baseUrl() {
             return this._baseUrl;
@@ -2298,17 +2301,25 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             this.showSearch = this.getAttribute('showSearch', true, true);
             this.renderPnlDocsWrapper();
             this.baseUrl = this.getAttribute('baseUrl', true);
+            this.bindEvents();
+            await this.reloadPage();
+            const themes = this.getAttribute('themes', true);
+            if (themes)
+                this.themes = typeof themes === 'string' ? JSON.parse(themes) : themes;
+            this.theme = this._theme || this.themes?.default || 'light';
+            window.addEventListener('beforeunload', (event) => {
+                event.preventDefault();
+                event.returnValue = 'Do you really want to close?';
+            });
+        }
+        async reloadPage() {
+            console.log('reloadPage');
             if (this.showHeader) {
                 this.docsHeader.multilingual = this.multilingual;
                 await this.docsHeader.loadHeader(this.entrypoint);
             }
             this.checkLanguage();
-            this.bindEvents();
             await this.loadPage();
-            const themes = this.getAttribute('themes', true);
-            if (themes)
-                this.themes = typeof themes === 'string' ? JSON.parse(themes) : themes;
-            this.theme = this._theme || this.themes?.default || 'light';
         }
         checkLanguage() {
             const hash = this.hash.slice(this.hash.indexOf('#/') + 1);
@@ -2337,7 +2348,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 const load = async (p, isRetry = false) => {
                     const currentLang = (0, index_5.getLanguagePath)();
                     try {
-                        const response = await components_11.application.fetch(`${this.entrypoint}/${p}`);
+                        const entrypoint = this.entrypoint.indexOf('://') < 0 && !this.entrypoint.startsWith('/') ? `/${this.entrypoint}` : this.entrypoint;
+                        const response = await components_11.application.fetch(`${entrypoint}/${p}`);
                         if (response.ok) {
                             resolve(response);
                         }
@@ -2396,6 +2408,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
             const imgRegex = new RegExp(/<img\s+(src=["'](.*?)["']\s+)?alt="(.*?)">/gis);
             if (imgRegex.test(content)) {
                 content = content.replace(imgRegex, (_, group, src, alt) => {
+                    if (src.indexOf('://') !== -1)
+                        return `<img src="${src}" alt="${alt}">`;
                     let currentPath = this.currentNode?.tag?.file || '';
                     if (currentPath.endsWith('/'))
                         currentPath = currentPath.slice(0, -1);
@@ -2431,6 +2445,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                     if (currentDir && !newRootDir.includes(currentDir)) {
                         newRootDir = `${newRootDir}/${currentDir}`;
                     }
+                    if (!newRootDir.startsWith('/') && newRootDir.indexOf('://') < 0)
+                        newRootDir = `/${newRootDir}`;
                     return `<i-scom-code-viewer
                     code="${encodedData}"
                     language="typescript"
@@ -2443,7 +2459,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 });
             }
             if (fileRegex.test(content)) {
-                const sclinkPath = `${this.entrypoint}/${filePath}`;
+                const entrypoint = this.entrypoint.indexOf('://') < 0 && !this.entrypoint.startsWith('/') ? `/${this.entrypoint}` : this.entrypoint;
+                const sclinkPath = `${entrypoint}/${filePath}`;
                 const result = await components_11.application.fetch(sclinkPath);
                 if (result.ok) {
                     const sclinkData = await result.json();
@@ -2470,7 +2487,8 @@ define("@scom/scom-scbook/main.tsx", ["require", "exports", "@ijstech/components
                 }
             }
             if (embedRegex.test(content)) {
-                const sclinkPath = `${this.entrypoint}/${filePath}`;
+                const entrypoint = this.entrypoint.indexOf('://') < 0 && !this.entrypoint.startsWith('/') ? `/${this.entrypoint}` : this.entrypoint;
+                const sclinkPath = `${entrypoint}/${filePath}`;
                 const result = await components_11.application.fetch(sclinkPath);
                 if (result.ok) {
                     const sclinkData = await result.json();

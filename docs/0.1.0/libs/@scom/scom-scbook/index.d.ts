@@ -289,6 +289,7 @@ declare module "@scom/scom-scbook/main.tsx" {
         get theme(): Markdown["theme"];
         set theme(value: Markdown["theme"]);
         init(): Promise<void>;
+        private reloadPage;
         private checkLanguage;
         retryLoadFile(path: string): Promise<Response>;
         flattenTree(tree: Array<any>): any;
