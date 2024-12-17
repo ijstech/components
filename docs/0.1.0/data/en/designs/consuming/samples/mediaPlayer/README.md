@@ -7,7 +7,7 @@ A media player component
 
 ### Home
 
-![Home](designs/consuming/samples/mediaPlayer/screenshots/home.png)
+![Home](screenshots/home.png)
 
 ```typescript(source/home/index.tsx)
 import { Styles, Module, CarouselSlider, FormatUtils } from "@ijstech/components";
@@ -23,7 +23,7 @@ export default class MediaPlayer extends Module
 
 ### Discover and Explore
 
-![Discover and Explore](designs/consuming/samples/mediaPlayer/screenshots/playlist.png)
+![Discover and Explore](screenshots/playlist.png)
 
 ```typescript(source/playlist/index.tsx)
 import { Styles, Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils } from "@ijstech/components";
@@ -38,7 +38,7 @@ export default class MediaPlayer extends Module
 
 ### Audio Playback
 
-![Audio Playback](designs/consuming/samples/mediaPlayer/screenshots/player.png)
+![Audio Playback](screenshots/player.png)
 
 ```typescript(source/player/index.tsx)
 import {

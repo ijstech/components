@@ -8,13 +8,21 @@ define("@modules/main", ["require", "exports", "@ijstech/components"], function 
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     let DocsModule = class DocsModule extends components_1.Module {
+        constructor() {
+            super(...arguments);
+            this.entrypoint = '';
+        }
         init() {
             super.init();
+            this.entrypoint = this.options?.version ? `${this.options.version}/data` : 'data';
         }
         render() {
-            return (this.$render("i-scom-scbook", { display: 'block', width: '100%', height: '100%', entrypoint: "data", showHeader: true, showSearch: false, themes: this.options?.themes || '', multilingual: this.options?.multilingual || '', maxWidth: 1400 }));
+            return (this.$render("i-scom-scbook", { display: 'block', width: '100%', height: '100%', entrypoint: this.entrypoint, showHeader: true, showSearch: false, themes: this.options?.themes || '', multilingual: this.options?.multilingual || '', maxWidth: 1400 }));
         }
     };
+    __decorate([
+        (0, components_1.observable)()
+    ], DocsModule.prototype, "entrypoint", void 0);
     DocsModule = __decorate([
         components_1.customModule
     ], DocsModule);
