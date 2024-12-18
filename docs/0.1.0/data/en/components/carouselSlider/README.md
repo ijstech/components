@@ -16,12 +16,12 @@ Inherited from [`Control`](../Control/README.md)
 | transitionSpeed | Define the transition speed of `<i-carousel-slider>`                | number                                                                              | 500     |
 | autoplay        | Define `<i-carousel-slider>` to scroll automatically                | boolean                                                                             | false   |
 | autoplaySpeed   | Define the auto scroll speed of `<i-carousel-slider>`               | number                                                                              | 3000    |
-| items           | Define the slide items of `<i-carousel-slider>`                     | [CarouselItem&#91;&#93;](../customdatatype/README.md#carouselitem)               |         |
+| items           | Define the slide items of `<i-carousel-slider>`                     | [CarouselItem&#91;&#93;](../customDataType/README.md#carouselitem)               |         |
 | activeSlide     | Define the starting slide for `<i-carousel-slider>`                 | number                                                                              | 0       |
 | type            | Define the type of `<i-carousel-slider>`                            | [CarouselType](#carouseltype)                                                       | `dot`   |
 | indicators      | Define the indicators of `<i-carousel-slider>`                      | boolean                                                                             | true    |
 | swipe           | Define the swipe of `<i-carousel-slider>`                           | boolean                                                                             | false   |
-| mediaQueries    | Define tailored style to different devices                          | [ICarouselMediaQuery&#91;&#93;](../customdatatype/README.md#icarouselmediaquery) |         |
+| mediaQueries    | Define tailored style to different devices                          | [ICarouselMediaQuery&#91;&#93;](../customDataType/README.md#icarouselmediaquery) |         |
 
 ### CarouselType
 
@@ -94,7 +94,7 @@ render() {
 }
 ```
 
-**Tip**: _The properties `id`, `width`, `height`, `minHeight`, [`padding`](../customdatatype/README.md#ispace) are inherited from [`Control`](../Control/README.md)_
+**Tip**: _The properties `id`, `width`, `height`, `minHeight`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](../Control/README.md)_
 
 ### Functions
 

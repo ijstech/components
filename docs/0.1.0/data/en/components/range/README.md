@@ -87,4 +87,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, `top`, `left`, `width`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `top`, `left`, `width`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_

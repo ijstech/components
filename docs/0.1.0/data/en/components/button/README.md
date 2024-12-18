@@ -12,8 +12,8 @@ Inherited from [`Control`](../Control/README.md)
 | Name            | Description                                       | Type       | Default |
 | --------------- | ------------------------------------------------- | ---------- | ------- |
 | caption         | Define the name of an `<i-button>`                | string     |         |
-| icon            | To align the icon on the left of an `<i-button>`  | [Icon](../customdatatype/README.md#icon) | |
-| rightIcon       | To align the icon on the right of an `<i-button>` | [Icon](../customdatatype/README.md#icon) | |
+| icon            | To align the icon on the left of an `<i-button>`  | [Icon](../customDataType/README.md#icon) | |
+| rightIcon       | To align the icon on the right of an `<i-button>` | [Icon](../customDataType/README.md#icon) | |
 
 ## Sample Code
 
@@ -41,4 +41,4 @@ render(){
     )
 }
 ```
-**Tip**: _The properties `top`, `left`, [`padding`](../customdatatype/README.md#ispace) and the event `onClick` are inherited from [`Control`](../Control/README.md)_
+**Tip**: _The properties `top`, `left`, [`padding`](../customDataType/README.md#ispace) and the event `onClick` are inherited from [`Control`](../Control/README.md)_

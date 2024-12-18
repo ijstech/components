@@ -16,7 +16,7 @@ Inherited from [`Container`](components/container/README.md)
 | direction       | Define the direction type of the `StackLayout`       | [StackDirectionType](#stackdirectiontype)           |         |
 | justifyContent  | Define the justify content type of the `StackLayout` | [StackJustifyContentType](#stackjustifycontenttype) |         |
 | alignItems      | Define the alignitems type of the `StackLayout`      | [StackAlignItemsType](#stackalignitemstype)         |         |
-| mediaQueries    | Define tailored style to different devices           | [IStackMediaQuery&#91;&#93;](components/customdatatype/README.md#imediaquery) | |
+| mediaQueries    | Define tailored style to different devices           | [IStackMediaQuery&#91;&#93;](../../customDataType/README.md#imediaquery) | |
 
 ### StackWrapType
 `nowrap` \| `wrap` \| `wrap-reverse` \| `initial` \| `inherit`
@@ -51,4 +51,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, [`padding`](components/customdatatype/README.md#ispace), [`grid`](components/customdatatype/README.md#igrid) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, [`padding`](../../customDataType/README.md#ispace), [`grid`](../../customDataType/README.md#igrid) are inherited from [`Control`](components/Control/README.md)_

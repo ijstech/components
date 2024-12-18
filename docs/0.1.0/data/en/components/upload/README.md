@@ -11,7 +11,7 @@ Inherited from [`Control`](components/Control/README.md)
 
 | Name            | Description                                                            | Type       | Default |
 | --------------- | -------------------------------------------------                      | ---------- | ------- |
-| fileList        |                                                                        | [File&#91;&#93;](components/customdatatype/README.md#file) | |
+| fileList        |                                                                        | [File&#91;&#93;](../customDataType/README.md#file) | |
 | multiple        | Define that an `<i-upload>` that allows multiple files to be selected. | boolean    |         |
 | accept          | Define a filter for what file types can be select `<i-upload>`         | string     |         |
 | draggable       | Define that an `<i-upload>` can be draggable                           | boolean    |         |
@@ -59,7 +59,7 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, [`margin`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, [`margin`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
 
 ### Events
 ```typescript(samples/i-upload_2.tsx)
@@ -92,4 +92,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, [`margin`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, [`margin`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_

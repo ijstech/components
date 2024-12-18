@@ -100,7 +100,7 @@
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/customdatatype/",
+    "loc": "https://docs.decom.dev/#!/components/custom-data-type/",
     "priority": "0.7",
     "lastmod": "2022-08-31"
   },
@@ -116,17 +116,17 @@
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/layout/cardlayout/",
+    "loc": "https://docs.decom.dev/#!/components/layout/card-layout/",
     "priority": "0.56",
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/layout/gridlayout/",
+    "loc": "https://docs.decom.dev/#!/components/layout/grid-layout/",
     "priority": "0.56",
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/layout/stacklayout/",
+    "loc": "https://docs.decom.dev/#!/components/layout/stack-layout/",
     "priority": "0.56",
     "lastmod": "2022-08-31"
   },
@@ -161,7 +161,7 @@
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/carouselslider/",
+    "loc": "https://docs.decom.dev/#!/components/carousel-slider/",
     "priority": "0.7",
     "lastmod": "2022-08-31"
   },
@@ -256,12 +256,12 @@
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/tabs/itabs/",
+    "loc": "https://docs.decom.dev/#!/components/tabs/i-tabs/",
     "priority": "0.56",
     "lastmod": "2022-08-31"
   },
   {
-    "loc": "https://docs.decom.dev/#!/components/tabs/itab/",
+    "loc": "https://docs.decom.dev/#!/components/tabs/i-tab/",
     "priority": "0.56",
     "lastmod": "2022-08-31"
   },

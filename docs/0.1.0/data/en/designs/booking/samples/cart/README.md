@@ -3,9 +3,11 @@
 ## Description
 A cart component
 
-## Screens
+## Screen
 
 ![Cart](screenshots/cart.png)
+
+## Source Code
 
 ```typescript(source/home/index.tsx)
 import { Styles, Module, Container, Image, Label, FormatUtils, RadioGroup } from "@ijstech/components";

@@ -37,7 +37,7 @@ interface PlayerElement extends ControlElement {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      ['media-player--player']: PlayerElement;
+      ['media-player-player']: PlayerElement;
     }
   }
 }
@@ -46,7 +46,7 @@ interface IPlayer {
   track?: ITrack;
 }
 
-@customElements('media-player--player')
+@customElements('media-player-player')
 export default class Player extends Module {
   private player: HTMLAudioElement;
   private iconPlay: Icon;
@@ -488,7 +488,7 @@ export default class Player extends Module {
         templateColumns={["1fr"]}
         verticalAlignment='stretch'
         padding={{bottom: '1.25rem'}}
-        onClick={this.onExpand}
+        // onClick={this.onExpand}
       >
       </i-grid-layout>
     </i-panel>

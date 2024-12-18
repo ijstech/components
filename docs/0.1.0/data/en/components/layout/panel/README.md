@@ -11,7 +11,7 @@ Inherited from [`Container`](components/container/README.md)
 
 | Name      | Description                        | Type                                  | Default |
 | --------- | ----------------------             | ----------------------                | ------- |
-| hover     | Define custom styles when hovering in `<i-panel>` | [IHover](components/customdatatype/README.md#ihover) | |
+| hover     | Define custom styles when hovering in `<i-panel>` | [IHover](../../customDataType/README.md#ihover) | |
 
 ## Sample Code
 ```typescript(samples/i-panel.tsx)
@@ -29,4 +29,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `width`, `height`, `background`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `width`, `height`, `background`, [`padding`](../../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_

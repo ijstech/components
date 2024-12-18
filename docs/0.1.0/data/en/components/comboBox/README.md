@@ -11,10 +11,10 @@ Inherited from [`Control`](components/Control/README.md)
 
 | Name            | Description                                       | Type                  | Default |
 | --------------- | ------------------------------------------------- | ----------            | ------- |
-| selectedItem    | Define the selected item of an `<i-combo-box>`    | [IComboItem](components/customdatatype/README.md#icomboitem) | |
-| selectedItems    | Define the selected items of an `<i-combo-box>`    | [IComboItem&#91;&#93;](components/customdatatype/README.md#icomboitem) | |
-| items           | Define the items of the `<i-combo-box>`           | [IComboItem&#91;&#93;](components/customdatatype/README.md#icomboitem)| |
-| icon            | Define the icon of the `<i-combo-box>`            | [Icon](components/customdatatype/README.md#icon)| |
+| selectedItem    | Define the selected item of an `<i-combo-box>`    | [IComboItem](../customDataType/README.md#icomboitem) | |
+| selectedItems    | Define the selected items of an `<i-combo-box>`    | [IComboItem&#91;&#93;](../customDataType/README.md#icomboitem) | |
+| items           | Define the items of the `<i-combo-box>`           | [IComboItem&#91;&#93;](../customDataType/README.md#icomboitem)| |
+| icon            | Define the icon of the `<i-combo-box>`            | [Icon](../customDataType/README.md#icon)| |
 | mode            | Define the select mode of the `<i-combo-box>`     | [ModeType](#modetype) |    `single`    |
 | placeholder     | Define a short hint that describes the expected value of an `<i-combo-box>` before selection | string | |
 | readOnly        | Define whether the `<i-combo-box>` is read-only   | boolean               | false          |
@@ -74,7 +74,7 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
 
 ### Event
 ```typescript(samples/i-combo-box_2.tsx)
@@ -109,4 +109,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_

@@ -12,7 +12,7 @@ Inherited from [`Control`](components/Control/README.md)
 | Name            | Description                                       | Type                  | Default |
 | --------------- | ------------------------------------------------- | ----------            | ------- |
 | mode            | Define the menu display mode                      | [MenuMode](#menumode) |         |
-| data            | Define the menu content                           | [IMenuItem](components/customdatatype/README.md#imenuitem) | | |
+| data            | Define the menu content                           | [IMenuItem](../customDataType/README.md#imenuitem) | | |
 
 ### MenuMode
 `horizontal` \| `vertical` \| `inline`

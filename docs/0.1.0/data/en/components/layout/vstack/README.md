@@ -36,4 +36,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `width`, `height`, [`margin`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md) and the property `gap` is inherited from [`StackLayout`](components/layout/stackLayout/README.md)_
+**Tip**: _The properties `width`, `height`, [`margin`](../../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md) and the property `gap` is inherited from [`StackLayout`](components/layout/stackLayout/README.md)_

@@ -36,7 +36,7 @@ render() {
     )
 }
 ```
-**Tip**: _The property [`padding`](components/customdatatype/README.md#ispace) is inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The property [`padding`](../customDataType/README.md#ispace) is inherited from [`Control`](components/Control/README.md)_
 
 ### Event
 ```typescript(samples/i-checkbox-1.tsx)
@@ -57,4 +57,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_

@@ -17,11 +17,11 @@ Inherited from [`Container`](components/container/README.md)
 | autoColumnSize      | Define the columns size in `<i-grid-layout>`                     | string                                  |         |
 | autoRowSize         | Define the rows size in `<i-grid-layout>`                        | string                                  |         |
 | columnsPerRow       | Define how many columns in the row                               | number                                  |         |
-| gap                 | Define the gap of the `<i-grid-layout>`                          | [IGap](components/customdatatype/README.md#igap)  | |
+| gap                 | Define the gap of the `<i-grid-layout>`                          | [IGap](../../customDataType/README.md#igap)  | |
 | horizontalAlignment | Define the horizontal alignment of the `<i-grid-layout>`         | [HorizontalAlignment](#horizontalalignment) | |
 | verticalAlignment   | Define the vertical alignment of the `<i-grid-layout>`           | [VerticalAlignment](#verticalalignment) | |
 | autoFillInHoles     | Define auto fill in the holes in `<i-grid-layout>`               | boolean                                 |         |
-| mediaQueries        | Define tailored style to different devices                       | [IGridLayoutMediaQuery&#91;&#93;](components/customdatatype/README.md#imediaquery) | |
+| mediaQueries        | Define tailored style to different devices                       | [IGridLayoutMediaQuery&#91;&#93;](../../customDataType/README.md#imediaquery) | |
 
 ### HorizontalAlignment
 `stretch` \| `start` \| `end` \| `center`
@@ -87,4 +87,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, `width`, `height`, `background`, [`grid`](components/customdatatype/README.md#igrid), [`font`](components/customdatatype/README.md#ifont) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, `height`, `background`, [`grid`](../../customDataType/README.md#igrid), [`font`](../../customDataType/README.md#ifont) are inherited from [`Control`](components/Control/README.md)_

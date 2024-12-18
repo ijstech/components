@@ -13,7 +13,7 @@ Inherited from [`Control`](components/Control/README.md)
 | --------------- | ------------------------------------------------- | ---------- | ------- |
 | layout          | Define the layout of the radio group              | [RadioGroupLayout](#radiogrouplayout) | `vertical` |
 | selectedValue   | Define the selected value of an `<i-radio-group>` | string     |         |
-| radioItems      | Define the items of an `<i-radio-group>`          | [Radio&#91;&#93;](components/customdatatype/README.md#radio) | |
+| radioItems      | Define the items of an `<i-radio-group>`          | [Radio&#91;&#93;](../customDataType/README.md#radio) | |
 
 ### RadioGroupLayout
 `vertical` \| `horizontal`
@@ -30,7 +30,7 @@ Inherited from [`Control`](components/Control/README.md)
 | **add**        |                                                |
 | -------------- | ---------------------------------------------- |
 | Description    | to add radio                                   |
-| Signature      | add(options: [Radio](components/customdatatype/README.md#radio)) |
+| Signature      | add(options: [Radio](../customDataType/README.md#radio)) |
 
 | **delete**     |                                                |
 | -------------- | ---------------------------------------------- |

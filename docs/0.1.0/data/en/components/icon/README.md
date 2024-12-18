@@ -12,7 +12,7 @@ Inherited from [`Control`](components/Control/README.md)
 | Name            | Description                                       | Type                 | Default |
 | --------------- | ------------------------------------------------- | ----------           | ------- |
 | name            | define which icon to display, for reference: https://fontawesome.com/v5/search?m=free&s=solid | IconName | |
-| image           | define an image to display                        | [Image](components/customdatatype/README.md#image) | |
+| image           | define an image to display                        | [Image](../customDataType/README.md#image) | |
 | fill            | define the color of the icon                      | string \| color code |         |
 | spin            | set the icon spin                                 | boolean              | false   |
 
@@ -39,4 +39,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `class`, [`tooltip`](components/customdatatype/README.md#tooltip) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `class`, [`tooltip`](../customDataType/README.md#tooltip) are inherited from [`Control`](components/Control/README.md)_
