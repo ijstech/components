@@ -233,7 +233,7 @@ tooltip={{
 | Name            | Description                                       | Type                 | Default |
 | --------------- | ------------------------------------------------- | ----------           | ------- |
 | name            | Define which icon to display, for reference: https://fontawesome.com/v5/search?s=solid | IconName | |
-| image           | Define an image to display    | [Image](components/customdatatype/README.md#image) |         |
+| image           | Define an image to display    | [Image](#image) |         |
 | fill            | Define the color of the icon                      | string \| color code |         |
 | spin            | set the icon spin                                 | boolean              | false   |
 ```

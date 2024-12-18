@@ -1,25 +1,3 @@
-# Media Player
-
-## Description
-A media player component
-
-## Screens
-
-### Home
-
-![Home](screenshots/home.png)
-
-### Discover and Explore
-
-![Discover and Explore](screenshots/playlist.png)
-
-### Audio Playback
-
-![Audio Playback](screenshots/player.png)
-
-## Source Code
-
-```typescript(source/index.tsx)
 import { Module } from "@ijstech/components";
 import Home from "./home/index";
 import Playlist from "./playlist/index";
@@ -61,4 +39,3 @@ export default class MediaPlayer extends Module {
     </i-panel>
   }
 }
-```

@@ -3,9 +3,11 @@
 ## Description
 A booking details component
 
-## Screens
+## Screen
 
 ![Detail](screenshots/details.png)
+
+## Source Code
 
 ```typescript(source/home/index.tsx)
 import { Styles, Module, Container } from "@ijstech/components";

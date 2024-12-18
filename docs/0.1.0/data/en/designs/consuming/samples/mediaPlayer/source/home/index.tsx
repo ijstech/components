@@ -1,11 +1,36 @@
-import { Styles, Module, CarouselSlider, FormatUtils } from "@ijstech/components";
+import { Styles, Module, CarouselSlider, FormatUtils, ControlElement, customElements, Container } from "@ijstech/components";
 import { customStyles } from "./index.css";
 import { DataModel } from "./model";
 const Theme = Styles.Theme.ThemeVars;
 
-export default class MediaPlayer extends Module {
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      ['media-player-home']: HomeElement;
+    }
+  }
+}
+
+interface HomeElement extends ControlElement {
+  onOpen?: (artist: any) => void;
+}
+
+@customElements('media-player-home')
+export default class Home extends Module {
   private model: DataModel;
   private startSlider: CarouselSlider;
+
+  onOpen: (artist: any) => void;
+
+  constructor(parent?: Container, options?: any) {
+    super(parent, options);
+  }
+
+  static async create(options?: HomeElement, parent?: Container) {
+    let self = new this(parent, options);
+    await self.ready();
+    return self;
+  }
 
   private formatNumber(num: number) {
     return FormatUtils.formatNumber(num, { shortScale: true, decimalFigures: 0});
@@ -20,6 +45,7 @@ export default class MediaPlayer extends Module {
         horizontalAlignment="center"
         hover={{ opacity: 0.5 }}
         cursor="pointer"
+        onClick={() => this.handleOpen(artist)}
       >
         <i-panel
           width={120}
@@ -46,8 +72,13 @@ export default class MediaPlayer extends Module {
     this.startSlider.items = items;
   }
 
+  private handleOpen(artist: any) {
+    if (this.onOpen) this.onOpen(artist);
+  }
+
   init() {
     super.init();
+    this.onOpen = this.getAttribute('onOpen', true) || this.onOpen;
     this.model = new DataModel();
     this.renderStartSlider();
   }

@@ -12,7 +12,7 @@ Inherited from [`Container`](components/container/README.md)
 | closable        | show close icon which allows user to close the active `<i-tab>` | boolean     | false   |
 | draggable       | allow user to drag and drop the `<i-tab>` in the `<i-tab>`      | boolean     | false   |
 | mode            | used to define the display mode of the `<i-tab>`                | [TabModeType](#tabmodetype) | `horizontal` |
-| mediaQueries    | Define tailored style to different devices                      | [ITabMediaQuery&#91;&#93;](components/customdatatype/README.md#itabmediaquery) | |
+| mediaQueries    | Define tailored style to different devices                      | [ITabMediaQuery&#91;&#93;](../../customDataType/README.md#itabmediaquery) | |
 
 ### TabModeType
 `horizontal` \| `vertical`

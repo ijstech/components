@@ -11,20 +11,20 @@ Control has many protected properties and methods that are used or published by 
 | Name          | Description                                             | Type                                                                                                                           | Default |
 | ------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------- |
 | contextMenu   |                                                         | string \| Control \| null                                                                                                      |         |
-| dock          |                                                         | [DockStyle](components/customdatatype/README.md#dockstyle)                                                                     |         |
+| dock          |                                                         | [DockStyle](../customDataType/README.md#dockstyle)                                                                     |         |
 | enabled       |                                                         | boolean                                                                                                                        |         |
-| tooltip       |                                                         | [Tooltip](components/customdatatype/README.md#tooltip)                                                                         |         |
+| tooltip       |                                                         | [Tooltip](../customDataType/README.md#tooltip)                                                                         |         |
 | id            |                                                         | string                                                                                                                         |         |
 | visible       |                                                         | boolean                                                                                                                        | true        |
-| stack         |                                                         | [IStack](components/customdatatype/README.md#istack)                                                                           |         |
+| stack         |                                                         | [IStack](../customDataType/README.md#istack)                                                                           |         |
 | parent        |                                                         | Control \| undefined                                                                                                           |         |
 | tag           | For storing any custom properties defined by developers | any                                                                                                                            |         |
 | linkTo        |                                                         | Control                                                                                                                        |         |
 | zIndex        |                                                         | string \| number                                                                                                               |         |
-| background    |                                                         | [IBackground](components/customdatatype/README.md#ibackground)                                                                 |         |
-| border        |                                                         | [IBorder](components/customdatatype/README.md#iborder)                                                                         |         |
-| grid          |                                                         | [IGrid](components/customdatatype/README.md#igrid)                                                                             |         |
-| lineHeight    |                                                         | [LineHeightType](components/customdatatype/README.md#lineheighttype)                                                           |         |
+| background    |                                                         | [IBackground](../customDataType/README.md#ibackground)                                                                 |         |
+| border        |                                                         | [IBorder](../customDataType/README.md#iborder)                                                                         |         |
+| grid          |                                                         | [IGrid](../customDataType/README.md#igrid)                                                                             |         |
+| lineHeight    |                                                         | [LineHeightType](../customDataType/README.md#lineheighttype)                                                           |         |
 | left          |                                                         | number \| string                                                                                                               |         |
 | bottom        |                                                         | number \| string                                                                                                               |         |
 | right         |                                                         | number \| string                                                                                                               |         |
@@ -35,19 +35,19 @@ Control has many protected properties and methods that are used or published by 
 | minWidth      |                                                         | number \| string                                                                                                               |         |
 | maxHeight     |                                                         | number \| string                                                                                                               |         |
 | minHeight     |                                                         | number \| string                                                                                                               |         |
-| margin        |                                                         | [ISpace](components/customdatatype/README.md#ispace)                                                                           |         |
-| padding       |                                                         | [ISpace](components/customdatatype/README.md#ispace)                                                                           |         |
-| position      |                                                         | [PositionType](components/customdatatype/README.md#positiontype)                                                               |         |
-| overflow      |                                                         | [OverflowType](components/customdatatype/README.md#overflowtype) \| [IOverflow](components/customdatatype/README.md#ioverflow) |         |
+| margin        |                                                         | [ISpace](../customDataType/README.md#ispace)                                                                           |         |
+| padding       |                                                         | [ISpace](../customDataType/README.md#ispace)                                                                           |         |
+| position      |                                                         | [PositionType](../customDataType/README.md#positiontype)                                                               |         |
+| overflow      |                                                         | [OverflowType](../customDataType/README.md#overflowtype) \| [IOverflow](../customDataType/README.md#ioverflow) |         |
 | opacity       |                                                         | number \| string                                                                                                               |         |
-| display       |                                                         | [DisplayType](components/customdatatype/README.md#displaytype)                                                                 |         |
-| font          |                                                         | [IFont](components/customdatatype/README.md#ifont)                                                                             |         |
-| cursor        |                                                         | [CursorType](components/customdatatype/README.md#cursortype)                                                                   |         |
+| display       |                                                         | [DisplayType](../customDataType/README.md#displaytype)                                                                 |         |
+| font          |                                                         | [IFont](../customDataType/README.md#ifont)                                                                             |         |
+| cursor        |                                                         | [CursorType](../customDataType/README.md#cursortype)                                                                   |         |
 | boxShadow     |                                                         | string                                                                                                                         |         |
 | designMode    |                                                         | boolean                                                                                                                        | false   |
 | letterSpacing |                                                         | string \| number                                                                                                               |         |
-| anchor        |                                                         | [IAnchor](components/customdatatype/README.md#ianchor)                                                                         |         |
-| mediaQueries  | Define tailored style to different devices              | [IControlMediaQuery](components/customdatatype/README.md#icontrolmediaquery)[]                                                 |         |
+| anchor        |                                                         | [IAnchor](../customDataType/README.md#ianchor)                                                                         |         |
+| mediaQueries  | Define tailored style to different devices              | [IControlMediaQuery](../customDataType/README.md#icontrolmediaquery)[]                                                 |         |
 
 ## Events
 

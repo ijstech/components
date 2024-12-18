@@ -12,10 +12,10 @@ Inherited from [`Control`](components/Control/README.md)
 
 | Name            | Description                                            | Type       | Default |
 | --------------- | -------------------------------------------------      | ---------- | ------- |
-| activeItem      | Define the a TreeNode as active                        | [TreeNode](../customdatatype/README.md#itreenode) | |
-| data            | Define the contents of the TreeNodes                   | [ITreeNode&#91;&#93;](../customdatatype/README.md#itreenode) | |
+| activeItem      | Define the a TreeNode as active                        | [TreeNode](../customDataType/README.md#itreenode) | |
+| data            | Define the contents of the TreeNodes                   | [ITreeNode&#91;&#93;](../customDataType/README.md#itreenode) | |
 | editable        | Allow the TreeView to be edited                        | boolean    | false   |
-| actionButtons   | Define the action buttons associated with the TreeView | [Button&#91;&#93;](../customdatatype/README.md#button) | |
+| actionButtons   | Define the action buttons associated with the TreeView | [Button&#91;&#93;](../customDataType/README.md#button) | |
 | alwaysExpanded  | Define the TreeNode always expanded                    | boolean    | false   |
 | deleteNodeOnEmptyCaption | Define the TreeNode delete when caption is empty | boolean    | false   |
 
@@ -133,7 +133,7 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, `width`, [`icon`](omponents/customdatatype/README.md#icon) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, [`icon`](../customDataType/README.md#icon) are inherited from [`Control`](components/Control/README.md)_
 
 ### Sample Code for onChanged Event
 ```typescript(samples/i-tree-view_3.tsx)
@@ -221,7 +221,7 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, `width`, [`icon`](omponents/customdatatype/README.md#icon) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, [`icon`](../customDataType/README.md#icon) are inherited from [`Control`](components/Control/README.md)_
 
 ### Sample Code for Functions: add and delete
 ```typescript(samples/i-tree-view_2.tsx)
@@ -294,4 +294,4 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, `width`, [`icon`](omponents/customdatatype/README.md#icon) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, [`icon`](../customDataType/README.md#icon) are inherited from [`Control`](components/Control/README.md)_

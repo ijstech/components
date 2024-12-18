@@ -74,4 +74,4 @@ render() {
 }
 }
 ```
-**Tip**: _The properties `id`, `width`, `height`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `width`, `height`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_

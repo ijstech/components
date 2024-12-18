@@ -12,13 +12,13 @@ Inherited from [`Container`](../container/README.md)
 | ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ | -------- |
 | title                   | Define the title of `<i-modal>`                            | string                                                                   |          |
 | showBackdrop            | Define show the backdrop when `<i-modal>` visible          | boolean                                                                  | true     |
-| closeIcon               | Define the close icon of `<i-modal>`                       | [Icon](../customdatatype/README.md#icon)                         |          |
+| closeIcon               | Define the close icon of `<i-modal>`                       | [Icon](../customDataType/README.md#icon)                         |          |
 | popupPlacement          | Define the popup placement when `<i-modal>` visible        | [ModalPopupPlacementType](#modalpopupplacementtype)                      | `center` |
 | closeOnBackdropClick    | Define can close the `<i-modal>` when showBackdrop is true | boolean                                                                  | true     |
 | item                    | Define the item of `<i-modal>`                             | [Control](../Control/README.md#properties)                                  |          |
 | isChildFixed            | Define the `<i-modal>` is child fixed                      | boolean                                                                  | false    |
 | closeOnScrollChildFixed | Define can close the `<i-modal>` when scroll child fixed   | boolean                                                                  | false    |
-| mediaQueries            | Define the `<i-modal>` media queries                       | [IModalMediaQuery](../customdatatype/README.md#imodalmediaquery) |          |
+| mediaQueries            | Define the `<i-modal>` media queries                       | [IModalMediaQuery](../customDataType/README.md#imodalmediaquery) |          |
 
 ### ModalPopupPlacementType
 `center` \| `bottom` \| `bottomLeft` \| `bottomRight` \| `top` \| `topLeft` \| `topRight` \| `rightTop`
@@ -81,7 +81,7 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `id`, `height`, `maxWidth`, [`padding`](../customdatatype/README.md#ispace) and the event `onClick` are inherited from [`Control`](../Control/README.md)_
+**Tip**: _The properties `id`, `height`, `maxWidth`, [`padding`](../customDataType/README.md#ispace) and the event `onClick` are inherited from [`Control`](../Control/README.md)_
 
 ### Property (For drop down menu)
 ```typescript(samples/i-modal_2.tsx)
@@ -142,7 +142,7 @@ render() {
     </i-panel>
 }
 ```
-**Tip**: _The properties `id`, `height`, `top`, `left`, [`padding`](components/customdatatype/README.md#ispace), [`margin`](components/customdatatype/README.md#ispace) and the event `onClick` are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `id`, `height`, `top`, `left`, [`padding`](../customDataType/README.md#ispace), [`margin`](../customDataType/README.md#ispace) and the event `onClick` are inherited from [`Control`](components/Control/README.md)_
 
 ### Events
 ```typescript(samples/i-modal_3.tsx)

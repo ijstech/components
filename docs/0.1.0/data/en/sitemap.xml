@@ -100,7 +100,7 @@
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/customdatatype/</loc>
+                <loc>https://docs.decom.dev/#!/components/custom-data-type/</loc>
                 <priority>0.7</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>
@@ -120,17 +120,17 @@
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/layout/cardlayout/</loc>
+                <loc>https://docs.decom.dev/#!/components/layout/card-layout/</loc>
                 <priority>0.56</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/layout/gridlayout/</loc>
+                <loc>https://docs.decom.dev/#!/components/layout/grid-layout/</loc>
                 <priority>0.56</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/layout/stacklayout/</loc>
+                <loc>https://docs.decom.dev/#!/components/layout/stack-layout/</loc>
                 <priority>0.56</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>
@@ -160,7 +160,7 @@
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/carouselslider/</loc>
+                <loc>https://docs.decom.dev/#!/components/carousel-slider/</loc>
                 <priority>0.7</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>
@@ -255,12 +255,12 @@
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/tabs/itabs/</loc>
+                <loc>https://docs.decom.dev/#!/components/tabs/i-tabs/</loc>
                 <priority>0.56</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>
 <url>
-                <loc>https://docs.decom.dev/#!/components/tabs/itab/</loc>
+                <loc>https://docs.decom.dev/#!/components/tabs/i-tab/</loc>
                 <priority>0.56</priority>
                 <lastmod>2022-08-31</lastmod>
                 </url>

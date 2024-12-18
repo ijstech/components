@@ -3,9 +3,11 @@
 ## Description
 A payment component
 
-## Screens
+## Screen
 
 ![Payment](screenshots/payment.png)
+
+## Source Code
 
 ```typescript(source/home/index.tsx)
 import { Styles, Module } from "@ijstech/components";

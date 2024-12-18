@@ -13,7 +13,7 @@ Inherited from [`Control`](components/Control/README.md)
 | Name           | Description                                   | Type                                             | Default |
 | -------------- | --------------------------------------------- | ------------------------------------------------ | ------- |
 | caption        | Define the header of the `<i-label>`          | string                                           |         |
-| link           | Define the hyperlink of the `<i-label>`       | [Link](components/customdatatype/README.md#link) |         |
+| link           | Define the hyperlink of the `<i-label>`       | [Link](../customDataType/README.md#link) |         |
 | textDecoration | Define the text decoration of the `<i-label>` | [TextDecorationType](#textdecorationtype)        | `none`  |
 
 ### TextDecorationType

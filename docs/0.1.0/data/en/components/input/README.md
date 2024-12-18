@@ -94,7 +94,7 @@ render() {
     )
 }
 ```
-**Tip**: _The properties `width`, `height`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `width`, `height`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
 
 ### Event
 ```typescript(samples/i-input_2.tsx)
@@ -144,4 +144,4 @@ render() {
         )
     }
 ```
-**Tip**: _The properties `width`, [`padding`](components/customdatatype/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
+**Tip**: _The properties `width`, [`padding`](../customDataType/README.md#ispace) are inherited from [`Control`](components/Control/README.md)_
