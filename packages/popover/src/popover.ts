@@ -1,7 +1,7 @@
 import { Control, customElements, ControlElement, Container, IBackground, IBorder, Background, Border, SpaceValue, ISpace } from '@ijstech/base';
 import * as Styles from "@ijstech/style";
 import { popoverMainContentStyle, getNoBackdropStyle, getOverlayStyle, getAbsoluteWrapperStyle } from './style/popover.css';
-const Theme = Styles.Theme.ThemeVars;
+import { GroupType } from '@ijstech/types';
 
 const showEvent = new Event('show');
 export type popoverPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
@@ -22,7 +22,49 @@ declare global {
         }
     }
 }
-@customElements('i-popover')
+
+const DEFAULT_VALUES = {
+    placement: 'center',
+    closeOnScrollChildFixed: false,
+}
+
+@customElements('i-popover', {
+    icon: 'window-restore',
+    group: GroupType.BASIC,
+    className: 'Popover',
+    props: {
+        placement: {
+            type: 'string',
+            default: DEFAULT_VALUES.placement
+        },
+        closeOnScrollChildFixed: {
+            type: 'boolean',
+            default: DEFAULT_VALUES.closeOnScrollChildFixed
+        }
+    },
+    events: {
+        onOpen: [
+            {name: 'target', type: 'Control', isControl: true}
+        ],
+        onClose: [
+            {name: 'target', type: 'Control', isControl: true}
+        ]
+    },
+    dataSchema: {
+        type: 'object',
+        properties: {
+            placement: {
+                type: 'string',
+                enum: [ 'center', 'bottom', 'bottomLeft', 'bottomRight', 'top', 'topLeft', 'topRight', 'rightTop', 'left', 'right' ],
+                default: DEFAULT_VALUES.placement,
+            },
+            closeOnScrollChildFixed: {
+                type: 'boolean',
+                default: DEFAULT_VALUES.closeOnScrollChildFixed
+            }
+        }
+    }
+})
 export class Popover extends Container {
     protected _visible: boolean = false;
     private wrapperDiv: HTMLElement;
@@ -283,6 +325,7 @@ export class Popover extends Container {
             target.classList.add(value);
         }
     }
+
     protected init() {
         if (!this.wrapperDiv) {
             if (this.options?.onClose)

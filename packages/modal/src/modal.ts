@@ -80,7 +80,17 @@ const DEFAULT_VALUES = {
             default: DEFAULT_VALUES.closeOnScrollChildFixed
         }
     },
-    events: {},
+    events: {
+        onOpen: [
+            {name: 'target', type: 'Control', isControl: true}
+        ],
+        onClose: [
+            {name: 'target', type: 'Control', isControl: true}
+        ],
+        onBeforeClose: [
+            {name: 'target', type: 'Control', isControl: true}
+        ],
+    },
     dataSchema: {
         type: 'object',
         properties: {
