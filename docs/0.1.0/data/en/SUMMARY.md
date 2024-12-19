@@ -67,3 +67,4 @@
     * [Media Player](designs/consuming/samples/mediaPlayer/README.md)
   * [Checkout](designs/checkout/README.md)
     * [Payment](designs/checkout/samples/payment/README.md)
+    * [Checkout](designs/checkout/samples/checkout/README.md)
