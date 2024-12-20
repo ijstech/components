@@ -1,7 +1,9 @@
 import { Control, customElements, ControlElement, Container, IBackground, IBorder, Background, Border, SpaceValue, ISpace } from '@ijstech/base';
 import * as Styles from "@ijstech/style";
-import { popoverMainContentStyle, getNoBackdropStyle, getOverlayStyle, getAbsoluteWrapperStyle } from './style/popover.css';
+import { popoverMainContentStyle, getNoBackdropStyle, getOverlayStyle, getAbsoluteWrapperStyle, popoverArrowStyle } from './style/popover.css';
 import { GroupType, TriggerType } from '@ijstech/types';
+
+const Theme = Styles.Theme.currentTheme;
 
 const showEvent = new Event('show');
 export type popoverPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
@@ -13,6 +15,7 @@ export interface PopoverElement extends ControlElement {
     closeOnScrollChildFixed?: boolean;
     item?: Control;
     trigger?: TriggerType;
+    isArrowShown?: boolean;
     onOpen?: eventCallback;
     onClose?: eventCallback;
 }
@@ -27,6 +30,7 @@ declare global {
 const DEFAULT_VALUES = {
     placement: 'center',
     closeOnScrollChildFixed: false,
+    isArrowShown: false
 }
 
 @customElements('i-popover', {
@@ -76,6 +80,7 @@ export class Popover extends Container {
     private _placement: popoverPlacementType;
     private _wrapperPositionAt: PopoverPositionType;
     private _trigger: TriggerType;
+    private _isArrowShown: boolean;
     private insideClick: boolean;
     private boundHandlePopoverMouseDown = this.handlePopoverMouseDown.bind(this);
     private boundHandlePopoverMouseUp = this.handlePopoverMouseUp.bind(this);
@@ -122,6 +127,9 @@ export class Popover extends Container {
         return this._placement;
     }
     set placement(value: popoverPlacementType) {
+        if (this.popoverDiv) {
+            this.popoverDiv.classList.remove(`is-${this._placement}`);
+        }
         this._placement = value;
     }
 
@@ -142,19 +150,55 @@ export class Popover extends Container {
         this._wrapperPositionAt = value;
     }
 
+    get isSmallScreen() {
+        return screen.width <= 1024;
+      }
+
     get parent() {
         return super.parent;
     }
     set parent(value: Control | undefined) {
+        if (super.parent) {
+            super.parent.onmouseover = null
+            super.parent.onmouseleave = null
+        }
         super.parent = value;
-        if (value && this.trigger === 'hover') {
+        this.handleHoverEvent(value);
+    }
+
+    set linkTo(value: Control) {
+        if (super.linkTo) {
+            super.linkTo.onmouseover = null
+            super.linkTo.onmouseleave = null
+        }
+        this._linkTo = value;
+        this.handleHoverEvent(value);
+    }
+    get linkTo() {
+        return this._linkTo;
+    }
+
+    get isArrowShown(): boolean {
+        return this._isArrowShown ?? false;
+    }
+    set isArrowShown(value: boolean) {
+        this._isArrowShown = value ?? false;
+        if (value) {
+            this.popoverDiv.classList.add(popoverArrowStyle);
+        } else {
+            this.popoverDiv.classList.remove(popoverArrowStyle);
+        }
+    }
+
+    private handleHoverEvent(target?: Control) {
+        if (target && this.trigger === 'hover') {
             if (this._designMode) return;
-            value.onmouseover = (event: MouseEvent) => {
+            target.onmouseover = (event: MouseEvent) => {
                 event.stopImmediatePropagation();
                 event.preventDefault();
                 this.visible = true;
             }
-            value.onmouseleave = (event: MouseEvent) => {
+            target.onmouseleave = (event: MouseEvent) => {
                 event.stopImmediatePropagation();
                 event.preventDefault();
                 this.visible = false;
@@ -260,8 +304,10 @@ export class Popover extends Container {
     }
 
     protected _handleOnShow(event: Event) {
-        if (this.placement && this.enabled)
+        if (this.placement && this.enabled) {
             this.positionPopoverRelativeToParent(this.placement)
+            this.popoverDiv.classList.add(`is-${this.placement}`);
+        }
         if (this.enabled && this._onOpen) {
             event.preventDefault();
             this._onOpen(this)
@@ -306,6 +352,7 @@ export class Popover extends Container {
         } else {
             this._background.setBackgroundStyle(value);
         }
+        this.style.setProperty("--tooltips-arrow-background", value.color || Theme.background.modal);
     }
     get width(): number | string {
         return <any>(!isNaN(<any>this._width) ? this._width : this.offsetWidth)
@@ -389,6 +436,8 @@ export class Popover extends Container {
 
             super.init();
 
+            const linkTo = this.getAttribute('linkTo', true);
+            if (linkTo) this.linkTo = linkTo;
             const maxWidth = this.getAttribute('maxWidth', true);
             if (maxWidth !== undefined) this.setPropertyValue('maxWidth', this.maxWidth);
             const minHeight = this.getAttribute('minHeight', true);
@@ -411,6 +460,7 @@ export class Popover extends Container {
             }
             const noBackdropStyle = getNoBackdropStyle();
             this.setTargetStyle(this.wrapperDiv, 'showBackdrop', noBackdropStyle);
+            this.isArrowShown = this.getAttribute('isArrowShown', true, DEFAULT_VALUES.isArrowShown);
         }
     }
 
