@@ -1,7 +1,7 @@
 import { Control, customElements, ControlElement, Container, IBackground, IBorder, Background, Border, SpaceValue, ISpace } from '@ijstech/base';
 import * as Styles from "@ijstech/style";
 import { popoverMainContentStyle, getNoBackdropStyle, getOverlayStyle, getAbsoluteWrapperStyle } from './style/popover.css';
-import { GroupType } from '@ijstech/types';
+import { GroupType, TriggerType } from '@ijstech/types';
 
 const showEvent = new Event('show');
 export type popoverPlacementType = 'center' | 'bottom' | 'bottomLeft' | 'bottomRight' | 'top' | 'topLeft' | 'topRight' | 'rightTop' | 'left' | 'right';
@@ -12,6 +12,7 @@ export interface PopoverElement extends ControlElement {
     placement?: popoverPlacementType;
     closeOnScrollChildFixed?: boolean;
     item?: Control;
+    trigger?: TriggerType;
     onOpen?: eventCallback;
     onClose?: eventCallback;
 }
@@ -74,6 +75,7 @@ export class Popover extends Container {
 
     private _placement: popoverPlacementType;
     private _wrapperPositionAt: PopoverPositionType;
+    private _trigger: TriggerType;
     private insideClick: boolean;
     private boundHandlePopoverMouseDown = this.handlePopoverMouseDown.bind(this);
     private boundHandlePopoverMouseUp = this.handlePopoverMouseUp.bind(this);
@@ -138,6 +140,26 @@ export class Popover extends Container {
     }
     set position(value: PopoverPositionType) {
         this._wrapperPositionAt = value;
+    }
+
+    get parent() {
+        return super.parent;
+    }
+    set parent(value: Control | undefined) {
+        super.parent = value;
+        if (value && this.trigger === 'hover') {
+            if (this._designMode) return;
+            value.onmouseover = (event: MouseEvent) => {
+                event.stopImmediatePropagation();
+                event.preventDefault();
+                this.visible = true;
+            }
+            value.onmouseleave = (event: MouseEvent) => {
+                event.stopImmediatePropagation();
+                event.preventDefault();
+                this.visible = false;
+            }
+        }
     }
 
     _handleClick(event: MouseEvent) {
@@ -314,6 +336,14 @@ export class Popover extends Container {
         else
             this._padding.update(value);
     }
+
+    get trigger(): TriggerType {
+        return this._trigger;
+    }
+    set trigger(value: TriggerType) {
+        this._trigger = value;
+    }
+
     protected removeTargetStyle(target: HTMLElement, propertyName: string){
         let style = this.propertyClassMap[propertyName];
         if (style) target.classList.remove(style);
@@ -331,6 +361,7 @@ export class Popover extends Container {
             if (this.options?.onClose)
                 this.onClose = this.options.onClose;
             this.placement = this.getAttribute('placement', true);
+            this.trigger = this.getAttribute('trigger', true);
             this.wrapperDiv = this.createElement('div', this);
 
             this.popoverDiv = this.createElement('div', this.wrapperDiv);      
