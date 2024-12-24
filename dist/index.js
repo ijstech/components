@@ -21161,6 +21161,13 @@ define("@ijstech/layout/grid.ts", ["require", "exports", "@ijstech/base", "@ijst
             this._autoFillInHoles = value;
             this.style.gridAutoFlow = this._autoFillInHoles ? 'dense' : 'row';
         }
+        get autoFlow() {
+            return this._autoFlow;
+        }
+        set autoFlow(value) {
+            this._autoFlow = value;
+            this.style.gridAutoFlow = value;
+        }
         get mediaQueries() {
             return this._mediaQueries;
         }
@@ -21195,6 +21202,7 @@ define("@ijstech/layout/grid.ts", ["require", "exports", "@ijstech/base", "@ijst
             this.setAttributeToProperty('verticalAlignment');
             this.setAttributeToProperty('columnsPerRow');
             this.setAttributeToProperty('autoFillInHoles');
+            this.setAttributeToProperty('autoFlow');
             this.setAttributeToProperty('autoColumnSize');
             this.setAttributeToProperty('autoRowSize');
             this.setAttributeToProperty('mediaQueries');
@@ -26947,6 +26955,7 @@ define("@ijstech/progress/progress.ts", ["require", "exports", "@ijstech/base", 
             this._wrapperElm.classList.add('i-progress--line');
             this._barElm = this.createElement('div', this._wrapperElm);
             this._barElm.classList.add('i-progress_wrapbar');
+            this._barElm.style.gridArea = 'bar';
             this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.stroke}"></div>`;
         }
         renderCircle() {
@@ -27002,12 +27011,14 @@ define("@ijstech/progress/progress.ts", ["require", "exports", "@ijstech/base", 
                         this._wrapperElm.classList.add('i-progress--grid');
                         this._startElm = this.createElement('div', this._wrapperElm);
                         this._startElm.classList.add('i-progress_item', 'i-progress_item-start');
+                        this._endElm.style.gridArea = 'start';
                         this.onRenderStart(this._startElm);
                     }
                     if (typeof this.onRenderEnd === 'function') {
                         this._wrapperElm.classList.add('i-progress--grid');
                         this._endElm = this.createElement('div', this._wrapperElm);
                         this._endElm.classList.add('i-progress_item', 'i-progress_item-end');
+                        this._endElm.style.gridArea = 'end';
                         this.onRenderEnd(this._endElm);
                     }
                 }
@@ -29112,10 +29123,10 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                     font: { color: style_1.Theme.ThemeVars.colors.secondary.contrastText, transform: 'capitalize' },
                     background: { color: style_1.Theme.ThemeVars.colors.secondary.main },
                     onClick: () => {
+                        this.closeModal();
                         if (typeof this.onClose === 'function') {
                             this.onClose();
                         }
-                        this.closeModal();
                     },
                 });
                 new button_1.Button(hStack, {
@@ -29146,10 +29157,10 @@ define("@ijstech/alert/alert.ts", ["require", "exports", "@ijstech/base", "@ijst
                     caption: "$close",
                     font: { color: style_1.Theme.ThemeVars.colors.primary.contrastText, transform: 'capitalize' },
                     onClick: () => {
+                        this.closeModal();
                         if (typeof this.onClose === 'function') {
                             this.onClose();
                         }
-                        this.closeModal();
                     },
                 });
             }

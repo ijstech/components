@@ -21,9 +21,11 @@ export type IGridLayoutMediaQuery = IMediaQuery<IGridLayoutMediaQueryProps>;
 export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
 export type GridLayoutJustifyContentType = "start"|"center"|"end"|"space-between"|"space-around"|"space-evenly";
 export type GridLayoutVerticalAlignmentType = "stretch" | "start" | "end" | "center" | "baseline";
+export type GridLayoutAutoFlowType = "row" | "column" | "dense" | "initial" | "inherit" | "unset";
 export interface GridLayoutElement extends ControlElement {
     autoColumnSize?: string;
     autoFillInHoles?: boolean;
+    autoFlow?: GridLayoutAutoFlowType;
     autoRowSize?: string;
     columnsPerRow?: number;
     gap?: IGap;
@@ -135,6 +137,7 @@ export class GridLayout extends Container {
     private _horizontalAlignment: GridLayoutHorizontalAlignmentType;
     private _verticalAlignment: GridLayoutVerticalAlignmentType;
     private _autoFillInHoles: boolean;
+    private _autoFlow: GridLayoutAutoFlowType;
     private _mediaQueries: IGridLayoutMediaQuery[];
     private _styleClassMap: {[key: string]: string} = {};
     private _justifyContent: GridLayoutJustifyContentType;
@@ -290,7 +293,14 @@ export class GridLayout extends Container {
     set autoFillInHoles(value: boolean){
         this._autoFillInHoles = value;
         this.style.gridAutoFlow = this._autoFillInHoles ? 'dense' : 'row';
-    }    
+    }
+    get autoFlow(){
+        return this._autoFlow;
+    }
+    set autoFlow(value: GridLayoutAutoFlowType){
+        this._autoFlow = value;
+        this.style.gridAutoFlow = value;
+    }
     get mediaQueries(){
         return this._mediaQueries;
     }
@@ -324,6 +334,7 @@ export class GridLayout extends Container {
         this.setAttributeToProperty('verticalAlignment');
         this.setAttributeToProperty('columnsPerRow');
         this.setAttributeToProperty('autoFillInHoles');
+        this.setAttributeToProperty('autoFlow');
         this.setAttributeToProperty('autoColumnSize');
         this.setAttributeToProperty('autoRowSize');
         this.setAttributeToProperty('mediaQueries');

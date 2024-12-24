@@ -22647,9 +22647,11 @@ declare module "@ijstech/layout/grid.ts" {
     export type GridLayoutHorizontalAlignmentType = "stretch" | "start" | "end" | "center";
     export type GridLayoutJustifyContentType = "start" | "center" | "end" | "space-between" | "space-around" | "space-evenly";
     export type GridLayoutVerticalAlignmentType = "stretch" | "start" | "end" | "center" | "baseline";
+    export type GridLayoutAutoFlowType = "row" | "column" | "dense" | "initial" | "inherit" | "unset";
     export interface GridLayoutElement extends ControlElement {
         autoColumnSize?: string;
         autoFillInHoles?: boolean;
+        autoFlow?: GridLayoutAutoFlowType;
         autoRowSize?: string;
         columnsPerRow?: number;
         gap?: IGap;
@@ -22674,6 +22676,7 @@ declare module "@ijstech/layout/grid.ts" {
         private _horizontalAlignment;
         private _verticalAlignment;
         private _autoFillInHoles;
+        private _autoFlow;
         private _mediaQueries;
         private _styleClassMap;
         private _justifyContent;
@@ -22703,6 +22706,8 @@ declare module "@ijstech/layout/grid.ts" {
         set verticalAlignment(value: GridLayoutVerticalAlignmentType);
         get autoFillInHoles(): boolean;
         set autoFillInHoles(value: boolean);
+        get autoFlow(): GridLayoutAutoFlowType;
+        set autoFlow(value: GridLayoutAutoFlowType);
         get mediaQueries(): IGridLayoutMediaQuery[];
         set mediaQueries(value: IGridLayoutMediaQuery[]);
         protected setAttributeToProperty<P extends keyof GridLayout>(propertyName: P): void;

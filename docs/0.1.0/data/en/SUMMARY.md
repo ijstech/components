@@ -68,3 +68,5 @@
   * [Checkout](designs/checkout/README.md)
     * [Payment](designs/checkout/samples/payment/README.md)
     * [Checkout](designs/checkout/samples/checkout/README.md)
+  * [Exploring](designs/exploring/README.md)
+    * [Products](designs/exploring/samples/products/README.md)
