@@ -124,7 +124,25 @@ export class PaymentModel {
         'Kitchen',
         'Pool',
         'Spa'
-      ]
+      ],
+      quality: {
+        cleanliness: {
+          score: 9,
+          description: 'Clean and tidy'
+        },
+        location: {
+          score: 9,
+          description: 'Located in the heart of the city'
+        },
+        value: {
+          score: 9,
+          description: 'High value'
+        },
+        service: {
+          score: 9,
+          description: 'Good service'
+        }
+      }
     }
   }
 

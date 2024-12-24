@@ -354,6 +354,7 @@ export class Progress extends Control {
         this._wrapperElm.classList.add('i-progress--line');
         this._barElm = this.createElement('div', this._wrapperElm);
         this._barElm.classList.add('i-progress_wrapbar');
+        this._barElm.style.gridArea = 'bar';
         this._barElm.innerHTML = `<div class="i-progress_bar"></div><div class="i-progress_overlay" style="background-color:${this.stroke}"></div>`;
     }
 
@@ -418,12 +419,14 @@ export class Progress extends Control {
                     this._wrapperElm.classList.add('i-progress--grid');
                     this._startElm = this.createElement('div', this._wrapperElm);
                     this._startElm.classList.add('i-progress_item', 'i-progress_item-start');
+                    this._endElm.style.gridArea = 'start';
                     this.onRenderStart(this._startElm as Control);
                 }
                 if (typeof this.onRenderEnd === 'function') {
                     this._wrapperElm.classList.add('i-progress--grid');
                     this._endElm = this.createElement('div', this._wrapperElm);
                     this._endElm.classList.add('i-progress_item', 'i-progress_item-end');
+                    this._endElm.style.gridArea = 'end';
                     this.onRenderEnd(this._endElm as Control);
                 }
             }

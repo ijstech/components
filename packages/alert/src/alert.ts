@@ -320,10 +320,10 @@ export class Alert extends Control {
         font: { color: Theme.ThemeVars.colors.secondary.contrastText, transform: 'capitalize' },
         background: { color: Theme.ThemeVars.colors.secondary.main },
         onClick: () => {
+          this.closeModal();
           if (typeof this.onClose === 'function') {
             this.onClose();
           }
-          this.closeModal();
         },
       });
       new Button(hStack, {
@@ -353,10 +353,10 @@ export class Alert extends Control {
         caption: "$close",
         font: { color: Theme.ThemeVars.colors.primary.contrastText, transform: 'capitalize' },
         onClick: () => {
+          this.closeModal();
           if (typeof this.onClose === 'function') {
             this.onClose();
           }
-          this.closeModal();
         },
       });
     }
