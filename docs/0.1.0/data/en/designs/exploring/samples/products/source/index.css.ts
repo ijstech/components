@@ -31,34 +31,20 @@ export const customTopProductsStyle = Styles.style({
 })
 
 export const afterBlurStyle = Styles.style({
-  $nest: {
-    '&:after': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      width: 20,
-      height: '100%',
-      background: Theme.background.main,
-      filter: 'opacity(0.5)',
-      backdropFilter: 'blur(9999px)'
-    }
-  }
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  width: 100,
+  height: '100%',
+  background: 'linear-gradient(270deg, #181e3e, #181e3e, #181e3e80, #181e3e)'
 })
 export const beforeBlurStyle = Styles.style({
-  $nest: {
-    '&:before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: 20,
-      height: '100%',
-      background: Theme.background.main,
-      filter: 'opacity(0.5)',
-      backdropFilter: 'blur(9999px)'
-    }
-  }
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: 100,
+  height: '100%',
+  background: 'linear-gradient(270deg, #181e3e, #181e3e, #181e3e80, #181e3e)'
 })
 
 export const buttonHoveredStyle = Styles.style({

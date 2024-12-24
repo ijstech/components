@@ -1,7 +1,7 @@
-import { Module, Styles, HStack, CardLayout, GridLayout, Panel, Control } from '@ijstech/components';
+import { Module, Styles, HStack, GridLayout, Panel, Control } from '@ijstech/components';
 import { ProductModel } from './model';
 import { Filter, IOption } from './components/index';
-import { afterBlurStyle, beforeBlurStyle, customImageStyle, customTopProductsStyle, buttonHoveredStyle, closeIconStyle } from './index.css';
+import { afterBlurStyle, beforeBlurStyle, customImageStyle, customTopProductsStyle, buttonHoveredStyle } from './index.css';
 
 const Theme = Styles.Theme.ThemeVars;
 
@@ -21,11 +21,13 @@ export default class Products extends Module {
   private leftIcon: Panel;
   private rightIcon: Panel;
   private pnlFilterWrap: Panel;
+  private leftBlur: Panel;
+  private rightBlur: Panel;
 
   private scaleFilter() {
     const hasOverflow = this.pnlFilter.scrollWidth > this.pnlFilter.clientWidth;
     if (hasOverflow) {
-      this.pnlFilter.classList.add(afterBlurStyle);
+      this.rightBlur.visible = true;
       this.leftIcon.visible = false;
       this.rightIcon.visible = true;
     }
@@ -37,30 +39,29 @@ export default class Products extends Module {
     if (hasOverflow) {
       this.leftIcon.visible = false;
       this.rightIcon.visible = true;
-      this.pnlFilter.classList.add(afterBlurStyle);
+      this.rightBlur.visible = false;
       this.pnlFilter.scrollLeft -= this.pnlFilter.clientWidth;
       if (this.pnlFilter.scrollLeft < 0) this.pnlFilter.scrollLeft = 0;
       if (this.pnlFilter.scrollLeft === 0) {
-        this.pnlFilterWrap.classList.remove(beforeBlurStyle);
+        this.leftBlur.visible = false;
       } else {
-        this.pnlFilterWrap.classList.add(beforeBlurStyle);
+        this.leftBlur.visible = true;
       }
     }
   }
 
   private onClickRightIcon() {
     const hasOverflow = this.pnlFilter.scrollWidth > this.pnlFilter.clientWidth;
-    this.pnlFilter.classList.remove(afterBlurStyle);
+    this.leftBlur.visible = false;
     if (hasOverflow) {
       this.leftIcon.visible = true;
       this.rightIcon.visible = false;
-      this.pnlFilterWrap.classList.add(beforeBlurStyle);
       this.pnlFilter.scrollLeft += this.pnlFilter.clientWidth;
       if (this.pnlFilter.scrollLeft > this.pnlFilter.scrollWidth) this.pnlFilter.scrollLeft = this.pnlFilter.scrollWidth;
       if (this.pnlFilter.scrollLeft === this.pnlFilter.scrollWidth) {
-        this.pnlFilterWrap.classList.remove(beforeBlurStyle);
+        this.rightBlur.visible = false;
       } else {
-        this.pnlFilterWrap.classList.add(beforeBlurStyle);
+        this.rightBlur.visible = true;
       }
     }
   }
@@ -288,7 +289,7 @@ export default class Products extends Module {
 
                 <i-label
                   caption={`(${product.reviews})`}
-                  font={{ "size": "12px", "weight": "400" }}
+                  font={{ "size": "16px", "weight": "400" }}
                 >
                 </i-label>
               </i-hstack>
@@ -421,6 +422,7 @@ export default class Products extends Module {
         position='relative'
         id='pnlFilterWrap'
       >
+        <i-panel id="leftBlur" class={beforeBlurStyle} visible={false}></i-panel>
         <i-panel
           id='leftIcon'
           cursor='pointer'
@@ -470,6 +472,7 @@ export default class Products extends Module {
             >
             </i-hstack>
           </i-hstack>
+          <i-panel id="rightBlur" class={afterBlurStyle} visible={false}></i-panel>
           <i-panel
             id='rightIcon'
             cursor='pointer'
@@ -557,6 +560,7 @@ export default class Products extends Module {
       </i-hstack>
       <i-grid-layout
         id='pnlPicked'
+        class={customTopProductsStyle}
         width='100%'
         gap={{ "column": 16, "row": 16 }}
         padding={{ "bottom": 16 }}
