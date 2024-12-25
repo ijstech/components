@@ -22256,6 +22256,7 @@ declare module "@ijstech/radio/radio.ts" {
         set captionWidth(value: number | string);
         set font(value: IFont);
         get font(): IFont;
+        add(item: Control): Control;
         _handleClick(event: MouseEvent): boolean;
         protected init(): void;
         static create(options?: RadioElement, parent?: Control): Promise<Radio>;

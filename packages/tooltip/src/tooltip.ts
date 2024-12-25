@@ -41,7 +41,8 @@ export class Tooltip extends Control implements ITooltipImpl {
     this.popperClass = options?.popperClass || 'tooltip-content'
     this.placement = options?.placement || 'top'
     this.trigger = options?.trigger || 'hover'
-    this.color = options?.color || 'rgba(0,0,0,.75)'
+    // this.color = options?.color || 'rgba(0,0,0,.75)'
+    if (options?.color) this.color = options.color
     if (options?.maxWidth) this.maxWidth = options.maxWidth
   }
 
@@ -149,7 +150,6 @@ export class Tooltip extends Control implements ITooltipImpl {
   set color(value: string) {
     this._color = value;
     if (this.tooltipElm && value) {
-      this.tooltipElm.style.backgroundColor = this.color;
       this.tooltipElm.style.setProperty("--tooltips-arrow-background", this.color);
     }
   }

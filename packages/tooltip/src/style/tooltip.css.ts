@@ -1,7 +1,7 @@
 import * as Styles from "@ijstech/style";
 let Theme = Styles.Theme.ThemeVars;
 
-const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))"
 
 Styles.cssRule("body", {
   $nest: {
@@ -9,15 +9,17 @@ Styles.cssRule("body", {
       position: "absolute",
       display: "inline-block",
       fontFamily: Theme.typography.fontFamily,
-      backgroundColor: "rgba(97, 97, 97, 0.92)",
+      backgroundColor: Theme.background.modal,
       borderRadius: "4px",
-      color: "rgb(255, 255, 255)",
+      color: Theme.text.primary,
       padding: "4px 8px",
       fontSize: "0.6875rem",
       maxWidth: "300px",
       overflowWrap: "break-word",
       fontWeight: 500,
       zIndex: 9999,
+      border: `1px solid ${Theme.divider}`,
+      boxShadow: Theme.shadows[1]
     },
     '.ii-tooltip-top::after': {
       content: "''",

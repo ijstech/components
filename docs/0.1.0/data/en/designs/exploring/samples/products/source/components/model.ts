@@ -42,6 +42,11 @@ export class FilterModel {
     this._data = value;
   }
 
+  setValue(prop: string, value: any) {
+    if (prop in this._data)
+      this._data[prop] = value;
+  }
+
   getFilters() {
     return [
       {

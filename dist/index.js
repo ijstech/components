@@ -16487,6 +16487,8 @@ define("@ijstech/image/image.ts", ["require", "exports", "@ijstech/base", "@ijst
             return this._url;
         }
         set url(value) {
+            if (value?.startsWith('this.'))
+                return;
             this._url = value;
             if (!this.imageElm)
                 this.imageElm = this.createElement('img', this);
@@ -18731,7 +18733,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             if (typeof value !== 'string')
                 value = String(value);
             this._caption = value || '';
-            // this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
             this.captionSpanElm.textContent = this.caption;
@@ -18767,6 +18768,11 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
                 weight: this.captionSpanElm.style.fontWeight,
                 shadow: this.captionSpanElm.style.textShadow
             };
+        }
+        add(item) {
+            item.parent = this.labelElm;
+            this.labelElm.appendChild(item);
+            return item;
         }
         _handleClick(event) {
             if (this._designMode) {
@@ -18824,7 +18830,26 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
     };
     Radio = __decorate([
-        (0, base_1.customElements)('i-radio')
+        (0, base_1.customElements)('i-radio', {
+            icon: 'check-circle',
+            className: 'Radio',
+            group: types_1.GroupType.FIELDS,
+            props: {
+                value: {
+                    type: 'string',
+                    default: ''
+                },
+            },
+            events: {},
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    value: {
+                        type: 'string'
+                    }
+                }
+            }
+        })
     ], Radio);
     exports.Radio = Radio;
     let RadioGroup = class RadioGroup extends base_1.Control {
@@ -18870,8 +18895,16 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
         }
         renderUI() {
-            this.clearInnerHTML();
-            this._group = [];
+            const newGroup = [];
+            for (const radio of this._group) {
+                if (radio.tag === 'added') {
+                    newGroup.push(radio);
+                }
+                else {
+                    radio.remove();
+                }
+            }
+            this._group = newGroup;
             if (!this.name)
                 this.name = new Date().getTime().toString();
             this.radioItems.forEach((item) => {
@@ -18911,6 +18944,8 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
                 this.name = new Date().getTime().toString();
             }
             const elm = new Radio(this, options);
+            elm.tag = 'added';
+            options.tag = 'added';
             this.appendItem(elm);
             this._radioItems.push(options);
             return elm;
@@ -25034,22 +25069,24 @@ define("@ijstech/tooltip/style/tooltip.css.ts", ["require", "exports", "@ijstech
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     let Theme = Styles.Theme.ThemeVars;
-    const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+    const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))";
     Styles.cssRule("body", {
         $nest: {
             ".ii-tooltip": {
                 position: "absolute",
                 display: "inline-block",
                 fontFamily: Theme.typography.fontFamily,
-                backgroundColor: "rgba(97, 97, 97, 0.92)",
+                backgroundColor: Theme.background.modal,
                 borderRadius: "4px",
-                color: "rgb(255, 255, 255)",
+                color: Theme.text.primary,
                 padding: "4px 8px",
                 fontSize: "0.6875rem",
                 maxWidth: "300px",
                 overflowWrap: "break-word",
                 fontWeight: 500,
                 zIndex: 9999,
+                border: `1px solid ${Theme.divider}`,
+                boxShadow: Theme.shadows[1]
             },
             '.ii-tooltip-top::after': {
                 content: "''",
@@ -25202,7 +25239,9 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
             this.popperClass = options?.popperClass || 'tooltip-content';
             this.placement = options?.placement || 'top';
             this.trigger = options?.trigger || 'hover';
-            this.color = options?.color || 'rgba(0,0,0,.75)';
+            // this.color = options?.color || 'rgba(0,0,0,.75)'
+            if (options?.color)
+                this.color = options.color;
             if (options?.maxWidth)
                 this.maxWidth = options.maxWidth;
         }
@@ -25304,7 +25343,6 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         set color(value) {
             this._color = value;
             if (this.tooltipElm && value) {
-                this.tooltipElm.style.backgroundColor = this.color;
                 this.tooltipElm.style.setProperty("--tooltips-arrow-background", this.color);
             }
         }
@@ -36634,7 +36672,7 @@ define("@ijstech/popover/style/popover.css.ts", ["require", "exports", "@ijstech
         left: '0',
         top: '0'
     });
-    const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+    const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))";
     exports.popoverArrowStyle = Styles.style({
         position: 'relative',
         $nest: {
