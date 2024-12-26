@@ -1,5 +1,4 @@
 import { Styles, Module, CarouselSlider, FormatUtils, ControlElement, customElements, Container } from "@ijstech/components";
-import { customStyles } from "./index.css";
 import { DataModel } from "./model";
 const Theme = Styles.Theme.ThemeVars;
 
@@ -66,6 +65,7 @@ export default class Home extends Module {
       </i-vstack>
       items.push({
         name: '',
+        width: '150px',
         controls: [itemEl]
       })
     }
@@ -119,7 +119,6 @@ export default class Home extends Module {
             indicators={false}
             slidesToShow={1}
             swipe={true}
-            class={customStyles}
             background={{ color: Theme.colors.primary.main }}
           >
           </i-carousel-slider>

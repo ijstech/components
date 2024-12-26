@@ -1,43 +1,39 @@
-import { observable } from "@ijstech/components";
+import { FormatUtils } from "@ijstech/components";
+
+export function formatNumber(value: number) {
+  return FormatUtils.formatNumber(value, { decimalFigures: 2 }) + 'đ'
+}
+
 export class DataModel {
-  @observable()
-  private _shop: any = {
+  public shop: any = {
     name: '',
     id: ''
   };
-  private _product: any = {
+  public product: any = {
     name: '',
     id: ''
   }
-  private _shipping: any = {}
+  public shippingOptions = [
+    { "value": "1", "label": "Standard Shipping" },
+    { "value": "2", "label": "Express" }
+  ];
+  public shippingInfo: any = {};
 
-  constructor() {}
-
-  get shop() {
-    return this._shop;
+  constructor() {
+    this.shop = this.fetchShop();
+    this.product = this.fetchProduct();
+    this.shippingInfo = {
+      fee: '1,000đ',
+      to: 'Vietnam',
+      itemsTotal: '10,000đ',
+      subTotal: '8,000đ',
+      discount: '2,000đ',
+      total: '9,000đ'
+    }
   }
 
-  set shop(value) {
-    this._shop = value;
-  }
-
-  get product() {
-    return this._product;
-  }
-
-  set product(value) {
-    this._product = value;
-  }
-
-  get shipping() {
-    return this._shipping;
-  }
-  set shipping(value: any) {
-    this._shipping = value;
-  }
-
-  fetchShop(shopId: string) {
-    this.shop = {
+  fetchShop(shopId?: string) {
+    return {
       "id": '123',
       "name": "RozaliaCrafts",
       "description": "Tea Favors, Bath Salts, Mint to be favor, Almond Favors",
@@ -47,23 +43,19 @@ export class DataModel {
   }
 
   fetchProduct() {
-    this._product = {
+    return {
       picture: 'https://i.etsystatic.com/23712985/r/il/c7a5f7/2419940834/il_794xN.2419940834_isyp.jpg',
       name: '10 Loose Leaf Tea Sampler Gift Set, Birthday Day Gift Box, Gift for Her, Mom, Sister, Herbal Tea, Tea Lover Gift, Coworker, Christmas, Xmas',
       description: 'Tea Favors, Bath Salts, Mint to be favor, Almond Favors',
       link: "https://www.etsy.com/listing/827166796/10-loose-leaf-tea-sampler-gift-set",
-      price: 10,
+      price: '8,000đ',
       rating: 4.5,
       brand: 'RozaliaCrafts',
       category: 'Favors',
       tags: ['tea', 'favors', 'bath salts', 'mint', 'almond'],
-      discount: 20,
-    }
-  }
-
-  getShippingInfo() {
-    this.shipping = {
-      fee: 1
+      type: 'Box Options: With Kraft Box',
+      discount: '20% off',
+      originalPrice: '10,000đ'
     }
   }
 }

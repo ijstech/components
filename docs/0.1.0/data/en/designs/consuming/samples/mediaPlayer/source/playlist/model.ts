@@ -2,14 +2,19 @@ export class DataModel {
   private _playList: any[] = [];
   private _artist: any = {};
 
+  public lastestRelease = {
+    track: 'Remember the times',
+    album: 'Single 2020'
+  }
+
   constructor() {}
 
   get playList() {
-    return this._playList;
+    return this._playList || [];
   }
 
   set playList(value: any[]) {
-    this._playList = value;
+    this._playList = value || [];
   }
 
   get artist() {
@@ -20,8 +25,8 @@ export class DataModel {
     this._artist = value;
   }
 
-  fetchArtist() {
-    this._artist = {
+  fetchArtist = () => {
+   return {
       "external_urls": {
         "spotify": "https://open.spotify.com/artist/3fMbdgg4jU18AjLCKBhRSm"
       },
@@ -59,8 +64,8 @@ export class DataModel {
     }
   }
 
-  fetchPlaylist() {
-    this._playList = [
+  fetchPlaylist = () => {
+    return [
       {
         "id": "ethereum/0x8427e46826a520b1264B55f31fCB5DDFDc31E349/way-of-the-dao",
         "platformInternalId": "Way Of The DAO",

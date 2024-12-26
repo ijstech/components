@@ -23420,6 +23420,7 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         private timeout;
         private _parentI18n;
         private tooltipElm;
+        private tooltipArrowElm;
         constructor(parent: Control, parentI18n?: I18n);
         private initData;
         private positionAt;

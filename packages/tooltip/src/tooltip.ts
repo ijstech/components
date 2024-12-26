@@ -19,6 +19,7 @@ export class Tooltip extends Control implements ITooltipImpl {
   private _parentI18n: I18n;
 
   private tooltipElm: HTMLElement;
+  private tooltipArrowElm: HTMLElement;
 
   constructor(parent: Control, parentI18n?: I18n) {
     super(parent);
@@ -241,6 +242,8 @@ export class Tooltip extends Control implements ITooltipImpl {
   private renderTooltip() {
     this.tooltipElm = document.createElement("div");
     this.tooltipElm.classList.add("ii-tooltip");
+    this.tooltipArrowElm = document.createElement("div");
+    this.tooltipArrowElm.classList.add("ii-tooltip-arrow");
 
     this.createLabels(this.content, this.tooltipElm);
 
@@ -270,6 +273,7 @@ export class Tooltip extends Control implements ITooltipImpl {
       parent.appendChild(label);
       elements.push(label);
     });
+    parent.appendChild(this.tooltipArrowElm);
     return elements;
   }
 

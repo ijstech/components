@@ -239,7 +239,7 @@ export class CarouselSlider extends Control {
     const options = {name: '', controls: [control]};
     this.items.push(options);
     const carouselItem = new CarouselItem(this, options);
-    carouselItem.style.width = (100 / this.slidesToShow) + "%";
+    carouselItem.width = (100 / this.slidesToShow) + "%";
     this._slider.push(carouselItem);
     this.sliderListElm.appendChild(carouselItem);
     if (this.isArrow) {
@@ -412,8 +412,10 @@ export class CarouselSlider extends Control {
     const min = this.slidesToShow * this.activeSlide;
     const max = this.slidesToShow * (this.activeSlide + 1);
     for (let index = 0; index < items.length; index++) {
-      const carouselItem = new CarouselItem(this, items[index]);
-      carouselItem.style.width = (100 / this.slidesToShow) + "%";
+      const itemData = items[index];
+      const carouselItem = new CarouselItem(this, itemData);
+      if (itemData.width) carouselItem.width = itemData.width;
+      else carouselItem.width = (100 / this.slidesToShow) + "%";
       if (index >= min && index < max) carouselItem.classList.add('is-actived');
       list.push(carouselItem);
       this._slider = list;

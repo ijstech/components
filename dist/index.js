@@ -25070,6 +25070,7 @@ define("@ijstech/tooltip/style/tooltip.css.ts", ["require", "exports", "@ijstech
     Object.defineProperty(exports, "__esModule", { value: true });
     let Theme = Styles.Theme.ThemeVars;
     const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))";
+    const borderColor = "var(--divider)";
     Styles.cssRule("body", {
         $nest: {
             ".ii-tooltip": {
@@ -25086,127 +25087,162 @@ define("@ijstech/tooltip/style/tooltip.css.ts", ["require", "exports", "@ijstech
                 fontWeight: 500,
                 zIndex: 9999,
                 border: `1px solid ${Theme.divider}`,
-                boxShadow: Theme.shadows[1]
+                filter: `drop-shadow(0px 6px 6px rgba(0, 0, 0, 0.5))`
             },
-            '.ii-tooltip-top::after': {
+            '.ii-tooltip-arrow': {
+                position: "absolute",
+                borderWidth: "7px",
+                borderStyle: "solid",
+                borderColor: `transparent transparent ${borderColor} transparent`,
+            },
+            '.ii-tooltip-arrow::after': {
                 content: "''",
                 position: "absolute",
+                top: 2,
+                left: 0,
+                transform: 'translate(-50%, -50%)',
+                borderWidth: "5px",
+                borderStyle: "solid",
+                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+            },
+            '.ii-tooltip-top .ii-tooltip-arrow': {
                 top: "100%",
                 left: "50%",
-                marginLeft: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                transform: 'translateX(-50%)',
+                borderColor: `${borderColor} transparent transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        top: -2,
+                        borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-topLeft::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-topLeft .ii-tooltip-arrow': {
                 top: "100%",
-                left: "0%",
-                marginLeft: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                left: "10px",
+                borderColor: `${borderColor} transparent transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        top: -2,
+                        borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-topRight::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-topRight .ii-tooltip-arrow': {
                 top: "100%",
-                right: "0%",
-                marginRight: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                right: "10px",
+                borderColor: `${borderColor} transparent transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        top: -2,
+                        borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-left::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-left .ii-tooltip-arrow': {
                 top: "50%",
                 left: "100%",
                 marginTop: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                borderColor: `transparent transparent transparent ${borderColor}`,
+                $nest: {
+                    '&::after': {
+                        left: -2,
+                        top: 0,
+                        borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                    }
+                }
             },
-            '.ii-tooltip-leftTop::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-leftTop .ii-tooltip-arrow': {
                 top: "0%",
                 left: "100%",
                 marginTop: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                borderColor: `transparent transparent transparent ${borderColor}`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                    }
+                }
             },
-            '.ii-tooltip-leftBottom::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-leftBottom .ii-tooltip-arrow': {
                 bottom: "0%",
                 left: "100%",
                 marginBottom: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                borderColor: `transparent transparent transparent ${borderColor}`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                    }
+                }
             },
-            '.ii-tooltip-right::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-right .ii-tooltip-arrow': {
                 top: "50%",
                 right: "100%",
                 marginTop: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                borderColor: `transparent ${borderColor} transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        left: 2,
+                        top: 0,
+                        borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-rightTop::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-rightTop .ii-tooltip-arrow': {
                 top: "0%",
                 right: "100%",
                 marginTop: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                borderColor: `transparent ${borderColor} transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        left: 2,
+                        top: 0,
+                        borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-rightBottom::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-rightBottom .ii-tooltip-arrow': {
                 bottom: "0%",
                 right: "100%",
                 marginBottom: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                borderColor: `transparent ${borderColor} transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        left: 2,
+                        top: 0,
+                        borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-bottom::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-bottom .ii-tooltip-arrow': {
                 bottom: "100%",
                 left: "50%",
-                marginLeft: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                transform: 'translateX(-50%)',
+                borderColor: `transparent transparent ${borderColor} transparent`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-bottomLeft::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-bottomLeft .ii-tooltip-arrow': {
                 bottom: "100%",
-                left: "0%",
-                marginLeft: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                left: "10px",
+                borderColor: `transparent transparent ${borderColor} transparent`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-bottomRight::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-bottomRight .ii-tooltip-arrow': {
                 bottom: "100%",
-                right: "0%",
-                marginRight: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                right: "10px",
+                borderColor: `transparent transparent ${borderColor} transparent`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                    }
+                }
             }
         },
     });
@@ -25425,6 +25461,8 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         renderTooltip() {
             this.tooltipElm = document.createElement("div");
             this.tooltipElm.classList.add("ii-tooltip");
+            this.tooltipArrowElm = document.createElement("div");
+            this.tooltipArrowElm.classList.add("ii-tooltip-arrow");
             this.createLabels(this.content, this.tooltipElm);
             this.tooltipElm.classList.add(this.popperClass);
             this.tooltipElm.classList.add(`ii-tooltip-${this.placement}`);
@@ -25452,6 +25490,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 parent.appendChild(label);
                 elements.push(label);
             });
+            parent.appendChild(this.tooltipArrowElm);
             return elements;
         }
         initEvents(source) {
@@ -38912,7 +38951,7 @@ define("@ijstech/carousel/carousel.ts", ["require", "exports", "@ijstech/base", 
             const options = { name: '', controls: [control] };
             this.items.push(options);
             const carouselItem = new CarouselItem(this, options);
-            carouselItem.style.width = (100 / this.slidesToShow) + "%";
+            carouselItem.width = (100 / this.slidesToShow) + "%";
             this._slider.push(carouselItem);
             this.sliderListElm.appendChild(carouselItem);
             if (this.isArrow) {
@@ -39081,8 +39120,12 @@ define("@ijstech/carousel/carousel.ts", ["require", "exports", "@ijstech/base", 
             const min = this.slidesToShow * this.activeSlide;
             const max = this.slidesToShow * (this.activeSlide + 1);
             for (let index = 0; index < items.length; index++) {
-                const carouselItem = new CarouselItem(this, items[index]);
-                carouselItem.style.width = (100 / this.slidesToShow) + "%";
+                const itemData = items[index];
+                const carouselItem = new CarouselItem(this, itemData);
+                if (itemData.width)
+                    carouselItem.width = itemData.width;
+                else
+                    carouselItem.width = (100 / this.slidesToShow) + "%";
                 if (index >= min && index < max)
                     carouselItem.classList.add('is-actived');
                 list.push(carouselItem);
