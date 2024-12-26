@@ -105,6 +105,7 @@ export class Image extends Control {
     }
 
     set url(value: string) {
+        if (value?.startsWith('this.')) return;
         this._url = value;
         if (!this.imageElm)
             this.imageElm = <HTMLImageElement>this.createElement('img', this);

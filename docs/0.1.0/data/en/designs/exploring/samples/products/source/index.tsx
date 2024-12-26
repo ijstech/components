@@ -1,16 +1,14 @@
-import { Module, Styles, HStack, CardLayout, GridLayout, Panel, Control } from '@ijstech/components';
+import { Module, Styles, HStack, GridLayout, Panel, Control, FormatUtils } from '@ijstech/components';
 import { ProductModel } from './model';
 import { Filter, IOption } from './components/index';
-import { afterBlurStyle, beforeBlurStyle, customImageStyle, customTopProductsStyle, buttonHoveredStyle, closeIconStyle } from './index.css';
+import { afterBlurStyle, beforeBlurStyle, customImageStyle, customTopProductsStyle, buttonHoveredStyle, customButtonStyle, shadowHoveredStyle } from './index.css';
 
 const Theme = Styles.Theme.ThemeVars;
 
 export default class Products extends Module {
   private model: ProductModel;
 
-  private filteredData: { [key: string]: any } = {
-    itemType: ''
-  };
+  private itemType: string[] = [];
 
 
   private pnlOptions: HStack;
@@ -20,12 +18,21 @@ export default class Products extends Module {
   private pnlFilter: Panel;
   private leftIcon: Panel;
   private rightIcon: Panel;
-  private pnlFilterWrap: Panel;
+  private leftBlur: Panel;
+  private rightBlur: Panel;
+
+  private formatNumber(value: number | string) {
+    return FormatUtils.formatNumber(value, { shortScale: true });
+  }
 
   private scaleFilter() {
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      return;
+    }
+
     const hasOverflow = this.pnlFilter.scrollWidth > this.pnlFilter.clientWidth;
     if (hasOverflow) {
-      this.pnlFilter.classList.add(afterBlurStyle);
+      this.rightBlur.visible = true;
       this.leftIcon.visible = false;
       this.rightIcon.visible = true;
     }
@@ -33,35 +40,42 @@ export default class Products extends Module {
   }
 
   private onClickLeftIcon() {
-    const hasOverflow = this.pnlFilter.scrollWidth > this.pnlFilter.clientWidth;
+    const scrollWidth = this.pnlFilter.scrollWidth;
+    const clientWidth = this.pnlFilter.clientWidth;
+
+    const hasOverflow = scrollWidth > clientWidth;
+
+    this.rightBlur.visible = hasOverflow;
+    this.rightIcon.visible = hasOverflow;
+
+
     if (hasOverflow) {
-      this.leftIcon.visible = false;
-      this.rightIcon.visible = true;
-      this.pnlFilter.classList.add(afterBlurStyle);
-      this.pnlFilter.scrollLeft -= this.pnlFilter.clientWidth;
+      this.pnlFilter.scrollLeft -= clientWidth;
+
       if (this.pnlFilter.scrollLeft < 0) this.pnlFilter.scrollLeft = 0;
-      if (this.pnlFilter.scrollLeft === 0) {
-        this.pnlFilterWrap.classList.remove(beforeBlurStyle);
-      } else {
-        this.pnlFilterWrap.classList.add(beforeBlurStyle);
-      }
+
+      const isStart = this.pnlFilter.scrollLeft === 0;
+      this.leftBlur.visible = !isStart;
+      this.leftIcon.visible = !isStart;
     }
   }
 
   private onClickRightIcon() {
-    const hasOverflow = this.pnlFilter.scrollWidth > this.pnlFilter.clientWidth;
-    this.pnlFilter.classList.remove(afterBlurStyle);
+    const scrollWidth = this.pnlFilter.scrollWidth;
+    const clientWidth = this.pnlFilter.clientWidth;
+
+    const hasOverflow = scrollWidth > clientWidth;
+    this.leftBlur.visible = hasOverflow;
+    this.leftIcon.visible = hasOverflow;
+
+
     if (hasOverflow) {
-      this.leftIcon.visible = true;
-      this.rightIcon.visible = false;
-      this.pnlFilterWrap.classList.add(beforeBlurStyle);
-      this.pnlFilter.scrollLeft += this.pnlFilter.clientWidth;
-      if (this.pnlFilter.scrollLeft > this.pnlFilter.scrollWidth) this.pnlFilter.scrollLeft = this.pnlFilter.scrollWidth;
-      if (this.pnlFilter.scrollLeft === this.pnlFilter.scrollWidth) {
-        this.pnlFilterWrap.classList.remove(beforeBlurStyle);
-      } else {
-        this.pnlFilterWrap.classList.add(beforeBlurStyle);
-      }
+      this.pnlFilter.scrollLeft += clientWidth;
+      if (this.pnlFilter.scrollLeft > scrollWidth) this.pnlFilter.scrollLeft = scrollWidth;
+      const isEnd = this.pnlFilter.scrollLeft + clientWidth >= scrollWidth;
+
+      this.rightBlur.visible = !isEnd;
+      this.rightIcon.visible = !isEnd;
     }
   }
 
@@ -136,7 +150,7 @@ export default class Products extends Module {
                 >
                 </i-icon>
                 <i-label
-                  caption={`(${product.reviews || 0})`}
+                  caption={`(${this.formatNumber(product.reviews || 0)})`}
                   font={{ "size": "12px", "weight": "400" }}
                 >
                 </i-label>
@@ -174,13 +188,6 @@ export default class Products extends Module {
                 visible={!!product?.discount}
               ></i-label>
             </i-panel>
-
-            {/* <i-label
-              caption='Free shipping'
-              font={{ "size": "12px" }}
-              opacity='0.7'
-            >
-            </i-label> */}
           </i-vstack>
           <i-hstack
             width='100%'
@@ -188,9 +195,11 @@ export default class Products extends Module {
             <i-button
               padding={{ "top": "8px", "right": "10px", "bottom": "8px", "left": "10px" }}
               caption='Add to cart'
-              border={{ "radius": "24px" }}
+              border={{ "radius": "24px", "width": "2px", "style": "solid", "color": "var(--divider)" }}
+              background={{ "color": "transparent" }}
               icon={{ "width": 12, "height": 12, "fill": "var(--text-primary)", "name": "plus" }}
               font={{ "size": "13px", "weight": "500" }}
+              class={shadowHoveredStyle}
             >
             </i-button>
             <i-button
@@ -201,6 +210,7 @@ export default class Products extends Module {
               border={{ "width": 0 }}
               boxShadow='none'
               font={{ "size": "13px", "weight": "500" }}
+              class={customButtonStyle}
             >
             </i-button>
           </i-hstack>
@@ -218,6 +228,7 @@ export default class Products extends Module {
         <i-vstack
           position='relative'
           gap={16}
+          width="100%"
           cursor="pointer"
           class="picked-card"
           onClick={() => {
@@ -232,7 +243,8 @@ export default class Products extends Module {
             border={{ radius: '50%' }}
             fill={Theme.background.modal}
             padding={{ top: 8, left: 8, right: 8, bottom: 8 }}
-            top={9999}
+            top={100}
+            visible={false}
             right={10}
             zIndex={10}
             boxShadow={Theme.shadows[0]}
@@ -287,8 +299,8 @@ export default class Products extends Module {
                 </i-hstack>
 
                 <i-label
-                  caption={`(${product.reviews})`}
-                  font={{ "size": "12px", "weight": "400" }}
+                  caption={`(${this.formatNumber(product.reviews || 0)})`}
+                  font={{ "size": "16px", "weight": "400" }}
                 >
                 </i-label>
               </i-hstack>
@@ -363,16 +375,17 @@ export default class Products extends Module {
 
   private onSelectOption(target: Control, option: IOption) {
     const value = option.value;
-    if (this.filteredData['itemType'] === value) {
+    const findedIndex = this.itemType.findIndex(item => item === value);
+    if (findedIndex > -1) {
       target.background = { color: 'transparent' };
       target.font = { color: Theme.text.primary, size: '13px', weight: 600 };
       const closeIcon = target.querySelector('i-icon') as Control;
       if (closeIcon) closeIcon.visible = false;
-      this.filteredData['itemType'] = '';
+      this.itemType.splice(findedIndex, 1);
     } else {
       target.background = { color: Theme.colors.primary.main };
       target.font = { color: Theme.colors.primary.dark, size: '13px', weight: 600 };
-      this.filteredData['itemType'] = value;
+      this.itemType.push(value);
       const closeIcon = target.querySelector('i-icon') as Control;
       if (closeIcon) closeIcon.visible = true;
     }
@@ -381,6 +394,8 @@ export default class Products extends Module {
   private showFilter() {
     if (!this.filterEl) {
       this.filterEl = new Filter(undefined, {
+        onChanged: this.onFilterChanged.bind(this),
+        onClose: this.onCloseFilter.bind(this)
       });
     }
     this.filterEl.openModal({
@@ -388,11 +403,30 @@ export default class Products extends Module {
       height: '100dvh',
       popupPlacement: 'left',
       overflow: "hidden",
-      // class: closeIconStyle
+      closeIcon: null,
+      mediaQueries: [
+        {
+          maxWidth: '767px',
+          properties: {
+            width: '100dvw',
+            border: { radius: 0 }
+          }
+        }
+      ]
     })
   }
 
-  private handleFilter() {}
+  private onFilterChanged(type: string, value: any) {
+    // TODO: render options
+    console.log(this.filterEl.data);
+    if (type === 'reset') {
+      this.renderOptions();
+    }
+  }
+
+  private onCloseFilter() {
+    this.filterEl.closeModal();
+  }
 
   init() {
     super.init();
@@ -415,12 +449,17 @@ export default class Products extends Module {
         width='100%'
         gap={16}
         alignItems='center'
-        justifyContent='center'
+        horizontalAlignment='space-between'
         padding={{ "top": 8 }}
         overflow='hidden'
         position='relative'
-        id='pnlFilterWrap'
       >
+        <i-panel
+          id='leftBlur'
+          class={beforeBlurStyle}
+          visible={false}
+        >
+        </i-panel>
         <i-panel
           id='leftIcon'
           cursor='pointer'
@@ -439,15 +478,15 @@ export default class Products extends Module {
           </i-icon>
         </i-panel>
         <i-hstack
-          id='pnlFilter'
           alignItems='center'
           maxWidth='70%'
-          overflow='hidden'
           position='relative'
         >
           <i-hstack
+            id='pnlFilter'
             alignItems='center'
             maxWidth='100%'
+            overflow='hidden'
             gap={12}
           >
             <i-button
@@ -461,15 +500,37 @@ export default class Products extends Module {
               background={{ "color": "transparent" }}
               stack={{ "shrink": "0" }}
               onClick={this.showFilter}
+              mediaQueries={[{ "maxWidth": "480px", "properties": { "visible": false } }]}
+            >
+            </i-button>
+            <i-button
+              visible={false}
+              icon={{ "name": "sliders-h", "width": 13, "height": 13 }}
+              minHeight={36}
+              border={{ "radius": "24px", "width": "2px", "style": "solid", "color": "var(--divider)" }}
+              padding={{ "top": "9px", "right": "15px", "bottom": "9px", "left": "15px" }}
+              boxShadow='none'
+              font={{ "size": "12px", "weight": "600" }}
+              background={{ "color": "transparent" }}
+              stack={{ "shrink": "0" }}
+              onClick={this.showFilter}
+              mediaQueries={[{ "maxWidth": "480px", "properties": { "visible": true } }]}
             >
             </i-button>
             <i-hstack
               id='pnlOptions'
               gap={12}
               alignItems='center'
+              mediaQueries={[{ "maxWidth": "480px", "properties": { "visible": false } }]}
             >
             </i-hstack>
           </i-hstack>
+          <i-panel
+            id='rightBlur'
+            class={afterBlurStyle}
+            visible={false}
+          >
+          </i-panel>
           <i-panel
             id='rightIcon'
             cursor='pointer'
@@ -495,7 +556,8 @@ export default class Products extends Module {
           gap={12}
           stack={{ "basis": "30%", "shrink": "0" }}
           alignItems='center'
-          justifyContent="end"
+          justifyContent='end'
+          mediaQueries={[{ "maxWidth": "480px", "properties": { "stack": { "basis": "auto", "shrink": "1" } } }]}
         >
           <i-hstack
             gap={4}
@@ -557,12 +619,14 @@ export default class Products extends Module {
       </i-hstack>
       <i-grid-layout
         id='pnlPicked'
+        class={customTopProductsStyle}
         width='100%'
-        gap={{ "column": 16, "row": 16 }}
+        gap={{ "row": "16px", "column": "16px" }}
         padding={{ "bottom": 16 }}
         templateColumns={["repeat(6, minmax(0, 1fr))"]}
+        autoFillInHoles={true}
         border={{ "bottom": { "width": "1px", "style": "solid", "color": "var(--divider)" } }}
-        mediaQueries={[{ "maxWidth": "767px", "properties": { "templateColumns": ["1fr"], "templateRows": ["auto"] } }]}
+        mediaQueries={[{ "maxWidth": "767px", "properties": { "templateColumns": ["1fr"], "templateRows": ["auto"] } }, { "minWidth": "768px", "maxWidth": "1024px", "properties": { "templateColumns": ["repeat(3, minmax(0, 1fr))"] } }]}
       >
       </i-grid-layout>
       <i-grid-layout
@@ -570,10 +634,11 @@ export default class Products extends Module {
         width='100%'
         templateColumns={["repeat(4, minmax(0, 1fr))"]}
         templateRows={["auto"]}
+        autoFillInHoles={true}
         gap={{ "row": "16px", "column": "16px" }}
-        mediaQueries={[{ "maxWidth": "767px", "properties": { "templateColumns": ["1fr"], "templateRows": ["auto"] } }]}
+        mediaQueries={[{ "maxWidth": "767px", "properties": { "templateColumns": ["1fr"], "templateRows": ["auto"] } }, { "minWidth": "768px", "maxWidth": "1024px", "properties": { "templateColumns": ["repeat(2, minmax(0, 1fr))"] } }]}
       >
       </i-grid-layout>
     </i-vstack>
   }
-} 
+}

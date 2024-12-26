@@ -1,4 +1,4 @@
-import { Styles, Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils } from "@ijstech/components";
+import { Styles, Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils, observable } from "@ijstech/components";
 const Theme = Styles.Theme.ThemeVars;
 import { DataModel } from "./model";
 import Player from "../player/index";
@@ -18,7 +18,8 @@ declare global {
 
 @customElements('media-player-playlist')
 export default class Playlist extends Module {
-  private model: DataModel;
+  @observable()
+  private model: DataModel = new DataModel();
 
   private playlistWrapper: VStack;
   private pnlPlaylist: VStack;
@@ -38,10 +39,10 @@ export default class Playlist extends Module {
   }
 
   get tracks() {
-    return this.model.playList;
+    return this.model.playList || [];
   }
   set tracks(value: any[]) {
-    this.model.playList = value;
+    this.model.playList = value || [];
     this.renderPlaylist();
   }
 
@@ -121,9 +122,9 @@ export default class Playlist extends Module {
 
   init() {
     super.init();
-    this.model = new DataModel();
-    this.model.fetchPlaylist();
-    this.model.fetchArtist();
+    this.tracks = this.model.fetchPlaylist();
+    this.artist = this.model.fetchArtist();
+
     const tracks = this.getAttribute('tracks', true);
     if (tracks) this.tracks = tracks;
     const artist = this.getAttribute('artist', true);
@@ -214,19 +215,17 @@ export default class Playlist extends Module {
             >
             </i-label>
             <i-label
-              caption='Remember the times'
+              caption={this.model.lastestRelease?.track}
               font={{ "size": "14px", "weight": 700 }}
             >
             </i-label>
             <i-label
-              caption='Single 2020'
+              caption={this.model.lastestRelease?.album}
               opacity={0.5}
               font={{ "size": "12px" }}
             >
             </i-label>
           </i-vstack>
-          <i-image                >
-          </i-image>
         </i-hstack>
         <i-vstack
           gap={8}

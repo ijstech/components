@@ -27,7 +27,26 @@ declare global {
     }
 }
 
-@customElements('i-radio')
+@customElements('i-radio', {
+    icon: 'check-circle',
+    className: 'Radio',
+    group: GroupType.FIELDS,
+    props: {
+        value: {
+            type: 'string',
+            default: ''
+        },
+    },
+    events: {},
+    dataSchema: {
+        type: 'object',
+        properties: {
+            value: {
+                type: 'string'
+            }
+        }
+    }
+})
 export class Radio extends Control {
     private _value: string;
     private _caption: string;
@@ -66,7 +85,6 @@ export class Radio extends Control {
     set caption(value: string) {
         if (typeof value !== 'string') value = String(value);
         this._caption = value || '';
-        // this.captionSpanElm.style.display = !value ? 'none' : '';
         if (!this.captionSpanElm) return;
         this.captionSpanElm.textContent = this.caption;
     }
@@ -100,7 +118,13 @@ export class Radio extends Control {
             weight: this.captionSpanElm.style.fontWeight,
             shadow: this.captionSpanElm.style.textShadow
         }
-      }
+    }
+
+    add(item: Control) {
+        item.parent = this.labelElm as any;
+        this.labelElm.appendChild(item);
+        return item;
+    }
 
     _handleClick(event: MouseEvent): boolean {
         if (this._designMode) {
@@ -255,8 +279,15 @@ export class RadioGroup extends Control {
     }
 
     private renderUI() {
-        this.clearInnerHTML();
-        this._group= [];
+        const newGroup: Radio[] = [];
+        for (const radio of this._group) {
+            if (radio.tag === 'added') {
+                newGroup.push(radio);
+            } else {
+                radio.remove();
+            }
+        }
+        this._group= newGroup;
         if (!this.name) this.name = new Date().getTime().toString();
         this.radioItems.forEach((item: RadioElement) => {
             const elm = new Radio(this, item);
@@ -299,6 +330,8 @@ export class RadioGroup extends Control {
             this.name = new Date().getTime().toString();
         }
         const elm = new Radio(this, options);
+        elm.tag = 'added';
+        options.tag = 'added';
         this.appendItem(elm);
         this._radioItems.push(options);
         return elm;

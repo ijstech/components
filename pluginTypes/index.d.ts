@@ -22256,6 +22256,7 @@ declare module "@ijstech/radio/radio.ts" {
         set captionWidth(value: number | string);
         set font(value: IFont);
         get font(): IFont;
+        add(item: Control): Control;
         _handleClick(event: MouseEvent): boolean;
         protected init(): void;
         static create(options?: RadioElement, parent?: Control): Promise<Radio>;
@@ -23419,6 +23420,7 @@ declare module "@ijstech/tooltip/tooltip.ts" {
         private timeout;
         private _parentI18n;
         private tooltipElm;
+        private tooltipArrowElm;
         constructor(parent: Control, parentI18n?: I18n);
         private initData;
         private positionAt;

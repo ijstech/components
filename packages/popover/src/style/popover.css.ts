@@ -74,7 +74,7 @@ Styles.cssRule('i-popover', {
     top: '0'
 })
 
-const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))";
 
 export const popoverArrowStyle = Styles.style({
     position: 'relative',

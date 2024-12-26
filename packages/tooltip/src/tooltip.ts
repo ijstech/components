@@ -19,6 +19,7 @@ export class Tooltip extends Control implements ITooltipImpl {
   private _parentI18n: I18n;
 
   private tooltipElm: HTMLElement;
+  private tooltipArrowElm: HTMLElement;
 
   constructor(parent: Control, parentI18n?: I18n) {
     super(parent);
@@ -41,7 +42,8 @@ export class Tooltip extends Control implements ITooltipImpl {
     this.popperClass = options?.popperClass || 'tooltip-content'
     this.placement = options?.placement || 'top'
     this.trigger = options?.trigger || 'hover'
-    this.color = options?.color || 'rgba(0,0,0,.75)'
+    // this.color = options?.color || 'rgba(0,0,0,.75)'
+    if (options?.color) this.color = options.color
     if (options?.maxWidth) this.maxWidth = options.maxWidth
   }
 
@@ -149,7 +151,6 @@ export class Tooltip extends Control implements ITooltipImpl {
   set color(value: string) {
     this._color = value;
     if (this.tooltipElm && value) {
-      this.tooltipElm.style.backgroundColor = this.color;
       this.tooltipElm.style.setProperty("--tooltips-arrow-background", this.color);
     }
   }
@@ -241,6 +242,8 @@ export class Tooltip extends Control implements ITooltipImpl {
   private renderTooltip() {
     this.tooltipElm = document.createElement("div");
     this.tooltipElm.classList.add("ii-tooltip");
+    this.tooltipArrowElm = document.createElement("div");
+    this.tooltipArrowElm.classList.add("ii-tooltip-arrow");
 
     this.createLabels(this.content, this.tooltipElm);
 
@@ -270,6 +273,7 @@ export class Tooltip extends Control implements ITooltipImpl {
       parent.appendChild(label);
       elements.push(label);
     });
+    parent.appendChild(this.tooltipArrowElm);
     return elements;
   }
 

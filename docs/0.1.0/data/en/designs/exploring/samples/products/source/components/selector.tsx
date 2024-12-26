@@ -1,4 +1,4 @@
-import { Container, Module, customElements, ControlElement, Styles, observable, Panel, RadioGroup } from '@ijstech/components';
+import { Container, Module, customElements, ControlElement, Styles, observable, Panel, RadioGroup, Checkbox } from '@ijstech/components';
 const Theme = Styles.Theme.ThemeVars;
 
 export interface SelectorElement extends ControlElement {
@@ -69,7 +69,7 @@ export default class Selector extends Module {
           width='100%'
           tag={this.data.key}
           selectedValue={this.selectedValue}
-          onChanged={this.handleChanged}
+          onChanged={this.handleRadioChanged}
         >
           {options.map(option => {
             return <i-radio
@@ -89,20 +89,36 @@ export default class Selector extends Module {
           <i-checkbox
             caption={option.label}
             checked={selected && selected.includes(option.value)}
+            tag={option.value}
+            onChanged={this.handleCheckboxChanged}
           />
         )
       }
     }
   }
 
-  private handleChanged(target: RadioGroup) {
+  private handleRadioChanged(target: RadioGroup) {
     const value = target.selectedValue;
     if (typeof this.onChange === 'function') this.onChange(this.data.key, value)
+  }
+
+  private handleCheckboxChanged(target: Checkbox) {
+    const value = target.tag;
+    const selectedValues = this.selectedValue || [];
+    const findedIndex = selectedValues.findIndex(item => item === value);
+    if (findedIndex > -1) {
+      selectedValues.splice(findedIndex, 1);
+    } else {
+      selectedValues.push(value);
+    }
+    if (typeof this.onChange === 'function') this.onChange(this.data.key, selectedValues);
   }
 
   init() {
     super.init();
     this.onChange = this.getAttribute('onChange', true) || this.onChange;
+    this.handleCheckboxChanged = this.handleCheckboxChanged.bind(this);
+    this.handleRadioChanged = this.handleRadioChanged.bind(this);
     this.selectedValue = this.getAttribute('selectedValue', true);
     const data = this.getAttribute('data', true);
     if (data) this.data = data;

@@ -16487,6 +16487,8 @@ define("@ijstech/image/image.ts", ["require", "exports", "@ijstech/base", "@ijst
             return this._url;
         }
         set url(value) {
+            if (value?.startsWith('this.'))
+                return;
             this._url = value;
             if (!this.imageElm)
                 this.imageElm = this.createElement('img', this);
@@ -18731,7 +18733,6 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             if (typeof value !== 'string')
                 value = String(value);
             this._caption = value || '';
-            // this.captionSpanElm.style.display = !value ? 'none' : '';
             if (!this.captionSpanElm)
                 return;
             this.captionSpanElm.textContent = this.caption;
@@ -18767,6 +18768,11 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
                 weight: this.captionSpanElm.style.fontWeight,
                 shadow: this.captionSpanElm.style.textShadow
             };
+        }
+        add(item) {
+            item.parent = this.labelElm;
+            this.labelElm.appendChild(item);
+            return item;
         }
         _handleClick(event) {
             if (this._designMode) {
@@ -18824,7 +18830,26 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
         }
     };
     Radio = __decorate([
-        (0, base_1.customElements)('i-radio')
+        (0, base_1.customElements)('i-radio', {
+            icon: 'check-circle',
+            className: 'Radio',
+            group: types_1.GroupType.FIELDS,
+            props: {
+                value: {
+                    type: 'string',
+                    default: ''
+                },
+            },
+            events: {},
+            dataSchema: {
+                type: 'object',
+                properties: {
+                    value: {
+                        type: 'string'
+                    }
+                }
+            }
+        })
     ], Radio);
     exports.Radio = Radio;
     let RadioGroup = class RadioGroup extends base_1.Control {
@@ -18870,8 +18895,16 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
             }
         }
         renderUI() {
-            this.clearInnerHTML();
-            this._group = [];
+            const newGroup = [];
+            for (const radio of this._group) {
+                if (radio.tag === 'added') {
+                    newGroup.push(radio);
+                }
+                else {
+                    radio.remove();
+                }
+            }
+            this._group = newGroup;
             if (!this.name)
                 this.name = new Date().getTime().toString();
             this.radioItems.forEach((item) => {
@@ -18911,6 +18944,8 @@ define("@ijstech/radio/radio.ts", ["require", "exports", "@ijstech/base", "@ijst
                 this.name = new Date().getTime().toString();
             }
             const elm = new Radio(this, options);
+            elm.tag = 'added';
+            options.tag = 'added';
             this.appendItem(elm);
             this._radioItems.push(options);
             return elm;
@@ -25034,142 +25069,180 @@ define("@ijstech/tooltip/style/tooltip.css.ts", ["require", "exports", "@ijstech
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     let Theme = Styles.Theme.ThemeVars;
-    const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+    const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))";
+    const borderColor = "var(--divider)";
     Styles.cssRule("body", {
         $nest: {
             ".ii-tooltip": {
                 position: "absolute",
                 display: "inline-block",
                 fontFamily: Theme.typography.fontFamily,
-                backgroundColor: "rgba(97, 97, 97, 0.92)",
+                backgroundColor: Theme.background.modal,
                 borderRadius: "4px",
-                color: "rgb(255, 255, 255)",
+                color: Theme.text.primary,
                 padding: "4px 8px",
                 fontSize: "0.6875rem",
                 maxWidth: "300px",
                 overflowWrap: "break-word",
                 fontWeight: 500,
                 zIndex: 9999,
+                border: `1px solid ${Theme.divider}`,
+                filter: `drop-shadow(0px 6px 6px rgba(0, 0, 0, 0.5))`
             },
-            '.ii-tooltip-top::after': {
+            '.ii-tooltip-arrow': {
+                position: "absolute",
+                borderWidth: "7px",
+                borderStyle: "solid",
+                borderColor: `transparent transparent ${borderColor} transparent`,
+            },
+            '.ii-tooltip-arrow::after': {
                 content: "''",
                 position: "absolute",
+                top: 2,
+                left: 0,
+                transform: 'translate(-50%, -50%)',
+                borderWidth: "5px",
+                borderStyle: "solid",
+                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+            },
+            '.ii-tooltip-top .ii-tooltip-arrow': {
                 top: "100%",
                 left: "50%",
-                marginLeft: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                transform: 'translateX(-50%)',
+                borderColor: `${borderColor} transparent transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        top: -2,
+                        borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-topLeft::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-topLeft .ii-tooltip-arrow': {
                 top: "100%",
-                left: "0%",
-                marginLeft: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                left: "10px",
+                borderColor: `${borderColor} transparent transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        top: -2,
+                        borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-topRight::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-topRight .ii-tooltip-arrow': {
                 top: "100%",
-                right: "0%",
-                marginRight: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                right: "10px",
+                borderColor: `${borderColor} transparent transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        top: -2,
+                        borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-left::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-left .ii-tooltip-arrow': {
                 top: "50%",
                 left: "100%",
                 marginTop: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                borderColor: `transparent transparent transparent ${borderColor}`,
+                $nest: {
+                    '&::after': {
+                        left: -2,
+                        top: 0,
+                        borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                    }
+                }
             },
-            '.ii-tooltip-leftTop::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-leftTop .ii-tooltip-arrow': {
                 top: "0%",
                 left: "100%",
                 marginTop: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                borderColor: `transparent transparent transparent ${borderColor}`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                    }
+                }
             },
-            '.ii-tooltip-leftBottom::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-leftBottom .ii-tooltip-arrow': {
                 bottom: "0%",
                 left: "100%",
                 marginBottom: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                borderColor: `transparent transparent transparent ${borderColor}`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+                    }
+                }
             },
-            '.ii-tooltip-right::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-right .ii-tooltip-arrow': {
                 top: "50%",
                 right: "100%",
                 marginTop: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                borderColor: `transparent ${borderColor} transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        left: 2,
+                        top: 0,
+                        borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-rightTop::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-rightTop .ii-tooltip-arrow': {
                 top: "0%",
                 right: "100%",
                 marginTop: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                borderColor: `transparent ${borderColor} transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        left: 2,
+                        top: 0,
+                        borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-rightBottom::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-rightBottom .ii-tooltip-arrow': {
                 bottom: "0%",
                 right: "100%",
                 marginBottom: "5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                borderColor: `transparent ${borderColor} transparent transparent`,
+                $nest: {
+                    '&::after': {
+                        left: 2,
+                        top: 0,
+                        borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-bottom::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-bottom .ii-tooltip-arrow': {
                 bottom: "100%",
                 left: "50%",
-                marginLeft: "-5px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                transform: 'translateX(-50%)',
+                borderColor: `transparent transparent ${borderColor} transparent`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-bottomLeft::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-bottomLeft .ii-tooltip-arrow': {
                 bottom: "100%",
-                left: "0%",
-                marginLeft: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                left: "10px",
+                borderColor: `transparent transparent ${borderColor} transparent`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                    }
+                }
             },
-            '.ii-tooltip-bottomRight::after': {
-                content: "''",
-                position: "absolute",
+            '.ii-tooltip-bottomRight .ii-tooltip-arrow': {
                 bottom: "100%",
-                right: "0%",
-                marginRight: "12px",
-                borderWidth: "5px",
-                borderStyle: "solid",
-                borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                right: "10px",
+                borderColor: `transparent transparent ${borderColor} transparent`,
+                $nest: {
+                    '&::after': {
+                        borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+                    }
+                }
             }
         },
     });
@@ -25202,7 +25275,9 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
             this.popperClass = options?.popperClass || 'tooltip-content';
             this.placement = options?.placement || 'top';
             this.trigger = options?.trigger || 'hover';
-            this.color = options?.color || 'rgba(0,0,0,.75)';
+            // this.color = options?.color || 'rgba(0,0,0,.75)'
+            if (options?.color)
+                this.color = options.color;
             if (options?.maxWidth)
                 this.maxWidth = options.maxWidth;
         }
@@ -25304,7 +25379,6 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         set color(value) {
             this._color = value;
             if (this.tooltipElm && value) {
-                this.tooltipElm.style.backgroundColor = this.color;
                 this.tooltipElm.style.setProperty("--tooltips-arrow-background", this.color);
             }
         }
@@ -25387,6 +25461,8 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
         renderTooltip() {
             this.tooltipElm = document.createElement("div");
             this.tooltipElm.classList.add("ii-tooltip");
+            this.tooltipArrowElm = document.createElement("div");
+            this.tooltipArrowElm.classList.add("ii-tooltip-arrow");
             this.createLabels(this.content, this.tooltipElm);
             this.tooltipElm.classList.add(this.popperClass);
             this.tooltipElm.classList.add(`ii-tooltip-${this.placement}`);
@@ -25414,6 +25490,7 @@ define("@ijstech/tooltip/tooltip.ts", ["require", "exports", "@ijstech/base", "@
                 parent.appendChild(label);
                 elements.push(label);
             });
+            parent.appendChild(this.tooltipArrowElm);
             return elements;
         }
         initEvents(source) {
@@ -36634,7 +36711,7 @@ define("@ijstech/popover/style/popover.css.ts", ["require", "exports", "@ijstech
         left: '0',
         top: '0'
     });
-    const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+    const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))";
     exports.popoverArrowStyle = Styles.style({
         position: 'relative',
         $nest: {
@@ -38874,7 +38951,7 @@ define("@ijstech/carousel/carousel.ts", ["require", "exports", "@ijstech/base", 
             const options = { name: '', controls: [control] };
             this.items.push(options);
             const carouselItem = new CarouselItem(this, options);
-            carouselItem.style.width = (100 / this.slidesToShow) + "%";
+            carouselItem.width = (100 / this.slidesToShow) + "%";
             this._slider.push(carouselItem);
             this.sliderListElm.appendChild(carouselItem);
             if (this.isArrow) {
@@ -39043,8 +39120,12 @@ define("@ijstech/carousel/carousel.ts", ["require", "exports", "@ijstech/base", 
             const min = this.slidesToShow * this.activeSlide;
             const max = this.slidesToShow * (this.activeSlide + 1);
             for (let index = 0; index < items.length; index++) {
-                const carouselItem = new CarouselItem(this, items[index]);
-                carouselItem.style.width = (100 / this.slidesToShow) + "%";
+                const itemData = items[index];
+                const carouselItem = new CarouselItem(this, itemData);
+                if (itemData.width)
+                    carouselItem.width = itemData.width;
+                else
+                    carouselItem.width = (100 / this.slidesToShow) + "%";
                 if (index >= min && index < max)
                     carouselItem.classList.add('is-actived');
                 list.push(carouselItem);

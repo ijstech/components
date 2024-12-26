@@ -1,7 +1,8 @@
 import * as Styles from "@ijstech/style";
 let Theme = Styles.Theme.ThemeVars;
 
-const arrowBackgroundColor = "var(--tooltips-arrow-background, rgba(97, 97, 97, 0.92))";
+const arrowBackgroundColor = "var(--tooltips-arrow-background, var(--background-modal))"
+const borderColor = "var(--divider)"
 
 Styles.cssRule("body", {
   $nest: {
@@ -9,135 +10,172 @@ Styles.cssRule("body", {
       position: "absolute",
       display: "inline-block",
       fontFamily: Theme.typography.fontFamily,
-      backgroundColor: "rgba(97, 97, 97, 0.92)",
+      backgroundColor: Theme.background.modal,
       borderRadius: "4px",
-      color: "rgb(255, 255, 255)",
+      color: Theme.text.primary,
       padding: "4px 8px",
       fontSize: "0.6875rem",
       maxWidth: "300px",
       overflowWrap: "break-word",
       fontWeight: 500,
       zIndex: 9999,
+      border: `1px solid ${Theme.divider}`,
+      filter: `drop-shadow(0px 6px 6px rgba(0, 0, 0, 0.5))`
     },
-    '.ii-tooltip-top::after': {
+    '.ii-tooltip-arrow': {
+      position: "absolute",
+      borderWidth: "7px",
+      borderStyle: "solid",
+      borderColor: `transparent transparent ${borderColor} transparent`,
+    },
+    '.ii-tooltip-arrow::after': {
       content: "''",
       position: "absolute",
+      top: 2,
+      left: 0,
+      transform: 'translate(-50%, -50%)',
+      borderWidth: "5px",
+      borderStyle: "solid",
+      borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+    },
+    '.ii-tooltip-top .ii-tooltip-arrow': {
       top: "100%",
       left: "50%",
-      marginLeft: "-5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+      transform: 'translateX(-50%)',
+      borderColor: `${borderColor} transparent transparent transparent`,
+      $nest: {
+        '&::after': {
+          top: -2,
+          borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+        }
+      }
     },
-    '.ii-tooltip-topLeft::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-topLeft .ii-tooltip-arrow': {
       top: "100%",
-      left: "0%",
-      marginLeft: "12px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+      left: "10px",
+      borderColor: `${borderColor} transparent transparent transparent`,
+      $nest: {
+        '&::after': {
+          top: -2,
+          borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+        }
+      }
     },
-    '.ii-tooltip-topRight::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-topRight .ii-tooltip-arrow': {
       top: "100%",
-      right: "0%",
-      marginRight: "12px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+      right: "10px",
+      borderColor: `${borderColor} transparent transparent transparent`,
+      $nest: {
+        '&::after': {
+          top: -2,
+          borderColor: `${arrowBackgroundColor} transparent transparent transparent`,
+        }
+      }
     },
-    '.ii-tooltip-left::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-left .ii-tooltip-arrow': {
       top: "50%",
       left: "100%",
       marginTop: "-5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+      borderColor: `transparent transparent transparent ${borderColor}`,
+      $nest: {
+        '&::after': {
+          left: -2,
+          top: 0,
+          borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+        }
+      }
     },
-    '.ii-tooltip-leftTop::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-leftTop .ii-tooltip-arrow': {
       top: "0%",
       left: "100%",
       marginTop: "5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+      borderColor: `transparent transparent transparent ${borderColor}`,
+      $nest: {
+        '&::after': {
+          borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+        }
+      }
     },
-    '.ii-tooltip-leftBottom::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-leftBottom .ii-tooltip-arrow': {
       bottom: "0%",
       left: "100%",
       marginBottom: "5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+      borderColor: `transparent transparent transparent ${borderColor}`,
+      $nest: {
+        '&::after': {
+          borderColor: `transparent transparent transparent ${arrowBackgroundColor}`,
+        }
+      }
     },
-    '.ii-tooltip-right::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-right .ii-tooltip-arrow': {
       top: "50%",
       right: "100%",
       marginTop: "-5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+      borderColor: `transparent ${borderColor} transparent transparent`,
+      $nest: {
+        '&::after': {
+          left: 2,
+          top: 0,
+          borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+        }
+      }
     },
-    '.ii-tooltip-rightTop::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-rightTop .ii-tooltip-arrow': {
       top: "0%",
       right: "100%",
       marginTop: "5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+      borderColor: `transparent ${borderColor} transparent transparent`,
+      $nest: {
+        '&::after': {
+          left: 2,
+          top: 0,
+          borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+        }
+      }
     },
-    '.ii-tooltip-rightBottom::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-rightBottom .ii-tooltip-arrow': {
       bottom: "0%",
       right: "100%",
       marginBottom: "5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+      borderColor: `transparent ${borderColor} transparent transparent`,
+      $nest: {
+        '&::after': {
+          left: 2,
+          top: 0,
+          borderColor: `transparent ${arrowBackgroundColor} transparent transparent`,
+        }
+      }
     },
-    '.ii-tooltip-bottom::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-bottom .ii-tooltip-arrow': {
       bottom: "100%",
       left: "50%",
-      marginLeft: "-5px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+      transform: 'translateX(-50%)',
+      borderColor: `transparent transparent ${borderColor} transparent`,
+      $nest: {
+        '&::after': {
+          borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+        }
+      }
     },
-    '.ii-tooltip-bottomLeft::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-bottomLeft .ii-tooltip-arrow': {
       bottom: "100%",
-      left: "0%",
-      marginLeft: "12px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+      left: "10px",
+      borderColor: `transparent transparent ${borderColor} transparent`,
+      $nest: {
+        '&::after': {
+          borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+        }
+      }
     },
-    '.ii-tooltip-bottomRight::after': {
-      content: "''",
-      position: "absolute",
+    '.ii-tooltip-bottomRight .ii-tooltip-arrow': {
       bottom: "100%",
-      right: "0%",
-      marginRight: "12px",
-      borderWidth: "5px",
-      borderStyle: "solid",
-      borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+      right: "10px",
+      borderColor: `transparent transparent ${borderColor} transparent`,
+      $nest: {
+        '&::after': {
+          borderColor: `transparent transparent ${arrowBackgroundColor} transparent`,
+        }
+      }
     }
   },
 });
