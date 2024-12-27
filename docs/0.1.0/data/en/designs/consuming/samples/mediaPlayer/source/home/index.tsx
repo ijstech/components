@@ -1,5 +1,6 @@
 import { Styles, Module, CarouselSlider, FormatUtils, ControlElement, customElements, Container } from "@ijstech/components";
 import { DataModel } from "./model";
+import { IArtist } from "../types";
 const Theme = Styles.Theme.ThemeVars;
 
 declare global {
@@ -10,8 +11,9 @@ declare global {
   }
 }
 
+type onOpenCallback = (artist: IArtist) => void;
 interface HomeElement extends ControlElement {
-  onOpen?: (artist: any) => void;
+  onOpen?: onOpenCallback;
 }
 
 @customElements('media-player-home')
@@ -19,7 +21,7 @@ export default class Home extends Module {
   private model: DataModel;
   private startSlider: CarouselSlider;
 
-  onOpen: (artist: any) => void;
+  onOpen: onOpenCallback;
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
@@ -36,7 +38,6 @@ export default class Home extends Module {
   }
 
   private renderStartSlider() {
-    this.model.fetchArtists();
     const items = [];
     for (const artist of this.model.artists) {
       const itemEl = <i-vstack

@@ -113,6 +113,8 @@ const
 			const oPath = options.path;
 			const tempArr: any[] = [];
 			result = changes.filter((change:any) => {
+				const isValidPath = (change.path || []).every((path: any) => typeof path === 'string');
+				if (!isValidPath) return false;
 				if (change.path.join('.').startsWith(oPath) && change.type == 'insert')
 					tempArr.push(change);
 				return change.path.join('.') === oPath;

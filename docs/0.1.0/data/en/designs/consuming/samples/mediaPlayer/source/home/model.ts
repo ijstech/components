@@ -1,24 +1,28 @@
-export class DataModel {
-  private _artists: any[] = [];
+import { IArtist } from "../types";
 
-  constructor() {}
+export class DataModel {
+  private _artists: IArtist[] = [];
+
+  constructor() {
+    this._artists = this.fetchArtists();
+  }
 
   get artists() {
     return this._artists;
   }
 
-  set artists(value: any[]) {
+  set artists(value: IArtist[]) {
     this._artists = value;
   }
 
-  fetchArtists() {
-    this._artists = [
+  fetchArtists(): IArtist[] {
+    return [
       {
         "external_urls": {
           "spotify": "https://open.spotify.com/artist/3fMbdgg4jU18AjLCKBhRSm"
         },
         "followers": {
-          "href": null,
+          "href": '',
           "total": 33777613
         },
         "genres": [
@@ -54,7 +58,7 @@ export class DataModel {
           "spotify": "https://open.spotify.com/artist/06HL4z0CvFAxyc27GXpf02"
         },
         "followers": {
-          "href": null,
+          "href": '',
           "total": 128001442
         },
         "genres": [
@@ -89,7 +93,7 @@ export class DataModel {
           "spotify": "https://open.spotify.com/artist/0du5cEVh5yTK9QJze8zA0C"
         },
         "followers": {
-          "href": null,
+          "href": '',
           "total": 63889217
         },
         "genres": [

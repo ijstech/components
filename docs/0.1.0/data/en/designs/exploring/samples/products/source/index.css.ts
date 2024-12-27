@@ -80,3 +80,24 @@ export const shadowHoveredStyle = Styles.style({
     }
   }
 })
+
+export const productListStyle = Styles.style({
+  $nest: {
+    '> .repeater-container': {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+      gridAutoFlow: 'dense',
+      gridTemplateRows: 'auto',
+      columnGap: 16,
+      rowGap: 16,
+      $nest: {
+        '@media screen and (max-width: 767px)': {
+          gridTemplateColumns: '1fr',
+        },
+        '@media screen and (min-width: 768px) and (max-width: 1024px)': {
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        }
+      }
+    }
+  }
+})

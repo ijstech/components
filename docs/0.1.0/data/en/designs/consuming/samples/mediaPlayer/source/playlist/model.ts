@@ -1,6 +1,17 @@
+import { IArtist, ITrack } from "../types";
+
 export class DataModel {
-  private _playList: any[] = [];
-  private _artist: any = {};
+  private _playList: ITrack[] = [];
+  private _artist: IArtist = {
+    genres: [],
+    href: "",
+    id: "",
+    images: [],
+    name: "",
+    popularity: 0,
+    type: "",
+    uri: ""
+  };
 
   public lastestRelease = {
     track: 'Remember the times',
@@ -13,7 +24,7 @@ export class DataModel {
     return this._playList || [];
   }
 
-  set playList(value: any[]) {
+  set playList(value: ITrack[]) {
     this._playList = value || [];
   }
 
@@ -25,7 +36,7 @@ export class DataModel {
     this._artist = value;
   }
 
-  fetchArtist = () => {
+  fetchArtist = (): IArtist => {
    return {
       "external_urls": {
         "spotify": "https://open.spotify.com/artist/3fMbdgg4jU18AjLCKBhRSm"
@@ -64,11 +75,10 @@ export class DataModel {
     }
   }
 
-  fetchPlaylist = () => {
+  fetchPlaylist = (): ITrack[] => {
     return [
       {
         "id": "ethereum/0x8427e46826a520b1264B55f31fCB5DDFDc31E349/way-of-the-dao",
-        "platformInternalId": "Way Of The DAO",
         "title": "Way Of The DAO",
         "slug": "way-of-the-dao-1654292532000",
         "createdAtTime": "2022-06-03T21:42:12+00:00",
@@ -80,13 +90,11 @@ export class DataModel {
         "lossyArtworkIpfsHash": "bafybeih7263ymuee7mkaapkm2aqfmcw5f2zphr4bn4y5yewlmx5noweifq//9968.png",
         "artistId": "$0x8427e46826a520b1264B55f31fCB5DDFDc31E349",
         artist: 'Chaos',
-        "artistBySupportingArtist": null,
         "duration": "191.14",
         "chorusStart": "51.82"
       },
       {
         "id": "ethereum/0x8427e46826a520b1264B55f31fCB5DDFDc31E349/bonsai",
-        "platformInternalId": "Bonsai",
         "title": "Bonsai",
         "slug": "bonsai-1654174830000",
         "createdAtTime": "2022-06-02T13:00:30+00:00",
@@ -98,7 +106,6 @@ export class DataModel {
         "lossyArtworkIpfsHash": "bafybeih7263ymuee7mkaapkm2aqfmcw5f2zphr4bn4y5yewlmx5noweifq//371.png",
         "artistId": "$0x8427e46826a520b1264B55f31fCB5DDFDc31E349",
         artist: "Chaos",
-        "artistBySupportingArtist": null,
         "duration": "172.93",
         "chorusStart": "116.65"
       }

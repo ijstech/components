@@ -10375,6 +10375,9 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
             const oPath = options.path;
             const tempArr = [];
             result = changes.filter((change) => {
+                const isValidPath = (change.path || []).every((path) => typeof path === 'string');
+                if (!isValidPath)
+                    return false;
                 if (change.path.join('.').startsWith(oPath) && change.type == 'insert')
                     tempArr.push(change);
                 return change.path.join('.') === oPath;
@@ -45741,6 +45744,7 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
         }
         set data(value) {
             this._data = value;
+            console.log(this._data);
             this.count = value.length;
             this.cloneItems();
         }
@@ -45782,6 +45786,7 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
             if (this._designMode)
                 return;
             this.wrapper.innerHTML = '';
+            console.log(this.count);
             if (!this.templateEl.content || !this.count)
                 return;
             for (let i = 0; i < this.count; i++) {
@@ -45789,7 +45794,7 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
                 this.wrapper.appendChild(clone);
                 const newControl = this.wrapper.lastElementChild;
                 this.foreachNode(this.templateEl.content.firstChild, newControl);
-                if ('setData' in newControl) {
+                if (newControl && 'setData' in newControl) {
                     newControl.setData(this._data[i]);
                 }
                 if (typeof this.onRender === 'function')

@@ -47,6 +47,10 @@ export class FilterModel {
       this._data[prop] = value;
   }
 
+  setValues(values: { [key: string]: any }) {
+    Object.assign(this._data, values);
+  }
+
   getFilters() {
     return [
       {
