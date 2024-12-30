@@ -17,12 +17,12 @@ interface ISelectorData {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'products-filter--selector': SelectorElement;
+      'i-product-filter--selector': SelectorElement;
     }
   }
 }
 
-@customElements('products-filter--selector')
+@customElements('i-product-filter--selector')
 export default class Selector extends Module {
   private pnlOptions: Panel;
 

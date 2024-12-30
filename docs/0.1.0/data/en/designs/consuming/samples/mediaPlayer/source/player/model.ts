@@ -1,11 +1,32 @@
+import { ITrack } from "../types";
+
 export class DataModel {
+  private _track: ITrack = {
+    id: "",
+    title: "",
+    lossyAudioUrl: "",
+    slug: "",
+    createdAtTime: "",
+    platformId: "",
+    websiteUrl: "",
+    lossyAudioIpfsHash: "",
+    lossyArtworkIpfsHash: "",
+    artistId: ""
+  };
 
   constructor() {}
 
-  getTrack() {
+  get track() {
+    return this._track;
+  }
+
+  set track(value: ITrack) {
+    this._track = value;
+  }
+
+  getTrack(): ITrack {
     return {
       "id": "ethereum/0x8427e46826a520b1264B55f31fCB5DDFDc31E349/way-of-the-dao",
-      "platformInternalId": "Way Of The DAO",
       "title": "Way Of The DAO",
       "slug": "way-of-the-dao-1654292532000",
       "createdAtTime": "2022-06-03T21:42:12+00:00",
@@ -17,7 +38,6 @@ export class DataModel {
       "lossyArtworkIpfsHash": "bafybeih7263ymuee7mkaapkm2aqfmcw5f2zphr4bn4y5yewlmx5noweifq//9968.png",
       "artistId": "$0x8427e46826a520b1264B55f31fCB5DDFDc31E349",
       "artist": 'Chaos',
-      "artistBySupportingArtist": null,
       "duration": "191.14",
       "chorusStart": "51.82"
     }

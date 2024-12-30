@@ -4,6 +4,7 @@ const Theme = Styles.Theme.ThemeVars;
 
 export default class Payment extends Module {
   private model: DataModel;
+
   render() {
     return <i-panel
       width='100%'

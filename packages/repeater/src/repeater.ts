@@ -120,7 +120,7 @@ export class Repeater extends Container {
       this.wrapper.appendChild(clone);
       const newControl = this.wrapper.lastElementChild as Control;
       this.foreachNode(this.templateEl.content.firstChild as Control, newControl);
-      if ('setData' in newControl) {        
+      if (newControl && 'setData' in newControl) {
         (newControl as any).setData(this._data[i]);
       }
       if (typeof this.onRender === 'function') this.onRender(this.wrapper as Control, i);

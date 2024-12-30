@@ -1,11 +1,12 @@
-import { Styles, Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils, observable } from "@ijstech/components";
+import { Styles, Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils } from "@ijstech/components";
 const Theme = Styles.Theme.ThemeVars;
 import { DataModel } from "./model";
 import Player from "../player/index";
+import { IArtist, ITrack } from "../types";
 
 interface PlaylistElement extends ControlElement {
-  artist?: any;
-  tracks?: any[];
+  artist?: IArtist;
+  tracks?: ITrack[];
 }
 
 declare global {
@@ -18,7 +19,6 @@ declare global {
 
 @customElements('media-player-playlist')
 export default class Playlist extends Module {
-  @observable()
   private model: DataModel = new DataModel();
 
   private playlistWrapper: VStack;
@@ -41,7 +41,7 @@ export default class Playlist extends Module {
   get tracks() {
     return this.model.playList || [];
   }
-  set tracks(value: any[]) {
+  set tracks(value: ITrack[]) {
     this.model.playList = value || [];
     this.renderPlaylist();
   }
@@ -49,7 +49,7 @@ export default class Playlist extends Module {
   get artist() {
     return this.model.artist;
   }
-  set artist(value: any) {
+  set artist(value: IArtist) {
     this.model.artist = value;
   }
 
@@ -114,10 +114,24 @@ export default class Playlist extends Module {
     this.renderPlaylist();
   }
 
-  private onTrackClick(target: Control, track: any) {
+  private onTrackClick(target: Control, track: ITrack) {
     this.playlistWrapper.visible = false;
     this.player.visible = true;
     this.player.setData({ track });
+  }
+
+  private handleOnNext() {
+    const trackIndex = this.tracks.findIndex(track => this.player?.track?.id && track.id === this.player.track.id);
+    const maxIndex = this.tracks.length;
+    const nextIndex = (((trackIndex + 1) % maxIndex) + maxIndex) % maxIndex;
+    this.player.onPlay(this.tracks[nextIndex]);
+  }
+
+  private handleOnPrev() {
+    const trackIndex = this.tracks.findIndex(track => this.player?.track?.id && track.id === this.player.track.id);
+    const maxIndex = this.tracks.length;
+    const prev = (((trackIndex + -1) % maxIndex) + maxIndex) % maxIndex;
+    this.player.onPlay(this.tracks[prev]);
   }
 
   init() {
@@ -250,6 +264,8 @@ export default class Playlist extends Module {
         width='100%'
         height='100%'
         visible={false}
+        onNext={this.handleOnNext}
+        onPrev={this.handleOnPrev}
       />
     </i-panel>
   }

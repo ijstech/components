@@ -1,25 +1,10 @@
-import { Module } from '@ijstech/components';
-export interface IProduct {
-  name: string;
-  image: string;
-  price: string;
-  reviews: number | null;
-  seller: string;
-  original_price?: string;
-  discount?: string;
-  rating: number | null;
-  format?: string;
-  link?: string;
-  isAvailable?: boolean;
-}
+import { IProduct, IProductFilter } from './types';
 
 export class ProductModel {
   private _products: IProduct[];
 
-  private module: Module;
-
-  constructor(module: Module) {
-    this.module = module;
+  constructor() {
+    this._products = this.fetchProducts();
   }
 
   get products() {
@@ -30,8 +15,8 @@ export class ProductModel {
     this._products = value;
   }
 
-  fetchProducts() {
-    this._products = [
+  fetchProducts(): IProduct[] {
+    return [
       {
         "name": "Watch Me",
         "price": "946,950₫",
@@ -40,7 +25,9 @@ export class ProductModel {
         "seller": "Etsy seller",
         "format": "Digital Download",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
-        "link": "https://example.com/product/watch-me"
+        "link": "https://example.com/product/watch-me",
+        "location": "vn",
+        "material": ["solid_yellow_gold"]
       },
       {
         "name": "Cute Cartoon Cat Apple Watch Wallpaper",
@@ -50,7 +37,9 @@ export class ProductModel {
         "seller": "Etsy seller",
         "format": "Digital Download",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
-        "link": "https://example.com/product/cute-cartoon-cat-apple-watch-wallpaper"
+        "link": "https://example.com/product/cute-cartoon-cat-apple-watch-wallpaper",
+        "location": "vn",
+        "material": ["solid_white_gold"]
       },
       {
         "name": "Anime Apple Watch Wallpaper Landscape",
@@ -60,7 +49,8 @@ export class ProductModel {
         "seller": "Etsy seller",
         "format": "Digital Download",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
-        "link": "https://example.com/product/anime-apple-watch-wallpaper-landscape"
+        "link": "https://example.com/product/anime-apple-watch-wallpaper-landscape",
+        "material": ["solid_white_gold"]
       },
       {
         "name": "6 Christmas Watch Faces, Watch Wallpapers",
@@ -70,12 +60,13 @@ export class ProductModel {
         "seller": "Etsy seller",
         "format": "Digital Download",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
-        "link": "https://example.com/product/6-christmas-watch-faces-watch-wallpapers"
+        "link": "https://example.com/product/6-christmas-watch-faces-watch-wallpapers",
+        material: ["solid_white_gold"]
       },
       {
         "name": "Watch Box SVG 3mm",
         "price": "68,966₫",
-        "original_price": "92,042₫",
+        "originalPrice": "92,042₫",
         "discount": "25% off",
         "rating": 4.8,
         "reviews": 259,
@@ -87,7 +78,7 @@ export class ProductModel {
       {
         "name": "Snowman Apple Watch Wallpaper",
         "price": "194,695₫",
-        "original_price": "389,056₫",
+        "originalPrice": "389,056₫",
         "discount": "50% off",
         "rating": 5.0,
         "reviews": 5,
@@ -99,7 +90,7 @@ export class ProductModel {
       {
         "name": "Christmas Santa Apple Watch Wallpaper",
         "price": "40,872₫",
-        "original_price": "58,388₫",
+        "originalPrice": "58,388₫",
         "discount": "30% off",
         "rating": 4.9,
         "reviews": 122,
@@ -111,7 +102,7 @@ export class ProductModel {
       {
         "name": "Aesthetic Apple Watch Design Set",
         "price": "53,581₫",
-        "original_price": "89,125₫",
+        "originalPrice": "89,125₫",
         "discount": "40% off",
         "rating": 4.8,
         "reviews": 213,
@@ -128,7 +119,7 @@ export class ProductModel {
       {
         "name": "iPhone screensaver and Watch",
         "price": "79,667₫",
-        "original_price": "122,667₫",
+        "originalPrice": "122,667₫",
         "discount": "35% off",
         "rating": 4.5,
         "reviews": 791,
@@ -139,7 +130,7 @@ export class ProductModel {
       {
         "name": "Snowman Apple Watch Wallpaper",
         "price": "194,695₫",
-        "original_price": "389,056₫",
+        "originalPrice": "389,056₫",
         "discount": "50% off",
         "rating": 4.8,
         "reviews": 5,
@@ -149,7 +140,7 @@ export class ProductModel {
       {
         "name": "12 Vintage Wristwatch Patent Prints",
         "price": "386,104₫",
-        "original_price": "429,155₫",
+        "originalPrice": "429,155₫",
         "discount": "10% off",
         "rating": 4.7,
         "reviews": 178,
@@ -159,7 +150,7 @@ export class ProductModel {
       {
         "name": "Green Eucalyptus Wallpaper for Apple Watch",
         "price": "63,667₫",
-        "original_price": "98,000₫",
+        "originalPrice": "98,000₫",
         "discount": "35% off",
         "rating": 4.5,
         "reviews": 791,
@@ -169,7 +160,7 @@ export class ProductModel {
       {
         "name": "Watch Box SVG 3mm",
         "price": "68,966₫",
-        "original_price": "92,042₫",
+        "originalPrice": "92,042₫",
         "discount": "25% off",
         "rating": 4.6,
         "reviews": 259,
@@ -179,7 +170,7 @@ export class ProductModel {
       {
         "name": "Dried Flowers Minimal Apple Watch",
         "price": "63,667₫",
-        "original_price": "98,000₫",
+        "originalPrice": "98,000₫",
         "discount": "35% off",
         "rating": 4.5,
         "reviews": 791,
@@ -198,5 +189,51 @@ export class ProductModel {
       { label: "Accepts Etsy gift cards", value: "accepts_gift_cards" },
       { label: "Can be gift-wrapped", value: "gift_wrapped" }
     ];
+  }
+
+  filteredProducts(filter: IProductFilter) {
+    const products = this._products;
+    let filteredProducts = JSON.parse(JSON.stringify(products));
+    // if (filter.itemType) {
+    //   filteredProducts = products.filter(product => product.itemType === filter.itemType);
+    // }
+
+    if (filter.location !== 'all') {
+      filteredProducts = filteredProducts.filter(product => product.location === filter.location);
+    }
+
+    // if (filter.itemFormat) {
+    //   filteredProducts = filteredProducts.filter(product => product.itemFormat === filter.itemFormat);
+    // }
+
+    // if (filter.estyBest) {
+    //   filteredProducts = filteredProducts.filter(product => product.estyBest.includes(filter.estyBest));
+    // }
+
+    // if (filter.offer) {
+    //   filteredProducts = filteredProducts.filter(product => product.offer.includes(filter.offer));
+    // }
+
+    if (filter.material?.length) {
+      filteredProducts = filteredProducts.filter(product => product.material?.some(material => filter.material?.includes(material)));
+    }
+
+    const getPrice = (price: string) => {
+      return Number(price.replace(/[^\d.-]/g, ''));
+    }
+
+    if (filter.price === 'custom' && filter.min !== undefined) {
+      filteredProducts = filteredProducts.filter(product => getPrice(product.price) >= Number(filter.min));
+    }
+
+    if (filter.price === 'custom' && filter.max !== undefined) {
+      filteredProducts = filteredProducts.filter(product => getPrice(product.price) <= Number(filter.max));
+    }
+
+    if (filter.location === 'custom' && filter.customLocation) {
+      filteredProducts = filteredProducts.filter(product => product.location === filter.customLocation);
+    }
+
+    return filteredProducts;
   }
 }
