@@ -45744,7 +45744,6 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
         }
         set data(value) {
             this._data = value;
-            console.log(this._data);
             this.count = value.length;
             this.cloneItems();
         }
@@ -45786,7 +45785,6 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
             if (this._designMode)
                 return;
             this.wrapper.innerHTML = '';
-            console.log(this.count);
             if (!this.templateEl.content || !this.count)
                 return;
             for (let i = 0; i < this.count; i++) {
