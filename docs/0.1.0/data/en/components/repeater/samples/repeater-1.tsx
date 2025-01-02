@@ -43,10 +43,15 @@ export class RepeaterTest extends Module {
   }
 
   render() {
-    <i-panel id={'wrapper'} padding={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+    return <i-panel
+      id={'wrapper'}
+      padding={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
       <i-repeater
         id="repeater"
         data={this.dataList}
+        layout="horizontal"
+        gap={10}
         onRender={this.onRender}
       >
         <i-hstack gap={'1rem'} verticalAlignment='center' justifyContent='space-between' padding={{ top: '0.5rem', bottom: '0.5rem' }}>

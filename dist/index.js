@@ -45713,14 +45713,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 define("@ijstech/repeater/style/repeater.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    let Theme = Styles.Theme.ThemeVars;
     Styles.cssRule('i-repeater', {
         display: 'block',
         width: '100%',
         $nest: {
             '.repeater-container': {
-                display: 'flex',
-                flexDirection: 'column'
+                display: 'flex'
             }
         }
     });
@@ -45729,17 +45727,23 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Repeater = void 0;
-    const DEFAULT_COUNT = 0;
+    const DEFAULT_VALUES = {
+        layout: 'vertical',
+        count: 0,
+        gap: 0
+    };
+    const layoutOptions = ['horizontal', 'vertical'];
     let Repeater = class Repeater extends base_1.Container {
         constructor(parent, options) {
             super(parent, options);
             this._data = [];
+            this._layout = 'vertical';
         }
         get count() {
-            return this._count ?? DEFAULT_COUNT;
+            return this._count ?? DEFAULT_VALUES.count;
         }
         set count(value) {
-            this._count = value ?? DEFAULT_COUNT;
+            this._count = value ?? DEFAULT_VALUES.count;
             this.cloneItems();
         }
         set data(value) {
@@ -45749,6 +45753,30 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
         }
         get data() {
             return this._data;
+        }
+        get layout() {
+            return this._layout;
+        }
+        set layout(value) {
+            this._layout = value;
+            if (this.wrapper) {
+                this.wrapper.style.flexDirection = value === 'horizontal' ? 'row' : 'column';
+            }
+        }
+        get gap() {
+            return this._gap;
+        }
+        set gap(value) {
+            if (!this.wrapper)
+                return;
+            this._gap = value || 'initial';
+            const num = +this._gap;
+            if (!isNaN(num)) {
+                this.wrapper.style.gap = this._gap + 'px';
+            }
+            else {
+                this.wrapper.style.gap = `${this._gap}`;
+            }
         }
         foreachNode(node, clonedNode) {
             if (!node)
@@ -45829,11 +45857,13 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
                     childNodes.push(el);
                 }
                 this.onRender = this.getAttribute("onRender", true) || this.onRender;
-                const count = this.getAttribute("count", true, DEFAULT_COUNT);
+                const count = this.getAttribute("count", true, DEFAULT_VALUES.count);
                 const data = this.getAttribute("data", true);
                 super.init();
                 this.wrapper = this.createElement("div", this);
                 this.wrapper.classList.add("repeater-container");
+                this.layout = this.getAttribute("layout", true, DEFAULT_VALUES.layout);
+                this.gap = this.getAttribute("gap", true, DEFAULT_VALUES.gap);
                 this.templateEl = this.createElement("template", this);
                 this.pnlPanel = new layout_1.Panel(undefined, {});
                 if (childNodes?.length) {
@@ -45857,7 +45887,7 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
         }
     };
     __decorate([
-        (0, base_1.observable)('_data', true)
+        (0, base_1.observable)('data', true)
     ], Repeater.prototype, "_data", void 0);
     Repeater = __decorate([
         (0, base_1.customElements)("i-repeater", {
@@ -45867,7 +45897,15 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
             props: {
                 count: {
                     type: 'number',
-                    default: DEFAULT_COUNT
+                    default: DEFAULT_VALUES.count
+                },
+                layout: {
+                    type: 'string',
+                    default: DEFAULT_VALUES.layout,
+                    values: layoutOptions
+                },
+                gap: {
+                    type: 'number'
                 }
             },
             events: {
@@ -45881,7 +45919,15 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
                 properties: {
                     count: {
                         type: 'number',
-                        default: DEFAULT_COUNT
+                        default: DEFAULT_VALUES.count
+                    },
+                    layout: {
+                        type: 'string',
+                        default: DEFAULT_VALUES.layout,
+                        enum: layoutOptions
+                    },
+                    gap: {
+                        type: 'number'
                     }
                 }
             }

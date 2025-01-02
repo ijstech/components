@@ -4,11 +4,14 @@ import './style/repeater.css'
 import { GroupType } from '@ijstech/types';
 
 type onRenderCallback = (parent: Control, index: number) => void;
+type LayoutType = 'horizontal' | 'vertical';
 
 export interface RepeaterElement extends ControlElement {
   onRender?: onRenderCallback;
   data?: any[];
   count?: number;
+  layout?: LayoutType;
+  gap?: number | string;
 }
 declare global {
   namespace JSX {
@@ -18,7 +21,12 @@ declare global {
   }
 }
 
-const DEFAULT_COUNT = 0;
+const DEFAULT_VALUES = {
+  layout: 'vertical',
+  count: 0,
+  gap: 0
+}
+const layoutOptions = ['horizontal', 'vertical'];
 
 @customElements("i-repeater", {
   icon: 'clone',
@@ -27,7 +35,15 @@ const DEFAULT_COUNT = 0;
   props: {
     count: {
       type: 'number',
-      default: DEFAULT_COUNT
+      default: DEFAULT_VALUES.count
+    },
+    layout: {
+      type: 'string',
+      default: DEFAULT_VALUES.layout,
+      values: layoutOptions
+    },
+    gap: {
+      type: 'number'
     }
   },
   events: {
@@ -41,15 +57,25 @@ const DEFAULT_COUNT = 0;
     properties: {
       count: {
         type: 'number',
-        default: DEFAULT_COUNT
+        default: DEFAULT_VALUES.count
+      },
+      layout: {
+        type: 'string',
+        default: DEFAULT_VALUES.layout,
+        enum: layoutOptions
+      },
+      gap: {
+        type: 'number'
       }
     }
   }
 })
 export class Repeater extends Container {
-  @observable('_data', true)
+  @observable('data', true)
   private _data: any[] = [];
   private _count: number;
+  private _layout: LayoutType = 'vertical';
+  private _gap: number|string;
 
   private wrapper: HTMLElement;
   private pnlPanel: Panel;
@@ -62,11 +88,10 @@ export class Repeater extends Container {
   }
 
   get count(): number {
-    return this._count ?? DEFAULT_COUNT;
+    return this._count ?? DEFAULT_VALUES.count;
   }
-
   set count(value: number) {
-    this._count = value ?? DEFAULT_COUNT;
+    this._count = value ?? DEFAULT_VALUES.count;
     this.cloneItems();
   }
 
@@ -78,6 +103,31 @@ export class Repeater extends Container {
   get data() {
     return this._data;
   }
+
+  get layout(): LayoutType {
+    return this._layout;
+  }
+  set layout(value: LayoutType) {
+    this._layout = value;
+    if (this.wrapper) {
+      this.wrapper.style.flexDirection = value === 'horizontal' ? 'row' : 'column';
+    }
+  }
+
+  get gap(): number|string {
+    return this._gap;
+  }
+  set gap(value: number|string) {
+    if (!this.wrapper) return;
+    this._gap = value || 'initial';
+    const num = +this._gap;
+    if (!isNaN(num)) {
+      this.wrapper.style.gap = this._gap + 'px';
+    }
+    else {
+      this.wrapper.style.gap = `${this._gap}`;
+    }
+  } 
 
   private foreachNode(node: Control, clonedNode?: Control) {
     if (!node) return;
@@ -159,11 +209,13 @@ export class Repeater extends Container {
         childNodes.push(el);
       }
       this.onRender = this.getAttribute("onRender", true) || this.onRender;
-      const count = this.getAttribute("count", true, DEFAULT_COUNT);
+      const count = this.getAttribute("count", true, DEFAULT_VALUES.count);
       const data = this.getAttribute("data", true);
       super.init();
       this.wrapper = this.createElement("div", this);
       this.wrapper.classList.add("repeater-container");
+      this.layout = this.getAttribute("layout", true, DEFAULT_VALUES.layout);
+      this.gap = this.getAttribute("gap", true, DEFAULT_VALUES.gap);
       this.templateEl = this.createElement("template", this) as HTMLTemplateElement;
       this.pnlPanel = new Panel(undefined, {});
       if (childNodes?.length) {

@@ -159,7 +159,7 @@ export class Module extends Container implements IModule{
             let elm = this.$renderElms[i].elm;
             let options = this.$renderElms[i].options;
             for (let prop in options){
-                let value = options[prop];
+                let value = options[prop];  
                 if (value?.__target){
                     let target = value.__target;
                     let paths = value.__path;
