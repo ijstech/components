@@ -7,11 +7,12 @@ import {
   observable
 } from '@ijstech/components'
 import Product from '../productItem/index'
-import { IProduct } from '../types';
-import { productListStyle } from '../index.css';
+import { IProduct, ProductType } from '../types';
+import { customTopProductsStyle, productListStyle } from '../index.css';
 
 export interface ProductListElement extends ControlElement {
   data?: IProduct[];
+  type?: ProductType;
 }
 
 declare global {
@@ -26,33 +27,45 @@ declare global {
 export default class ProductList extends Module {
   private listRepeater: Repeater;
 
-  // @observable('data', true) // TODO: fix this
+  @observable('data', true)
   private _data: IProduct[] = [];
+  private _type: ProductType = 'all';
 
   set data(value: IProduct[]) {
     this._data = value || [];
-    this.listRepeater.data = this._data;
   }
 
   get data() {
     return this._data || [];
   }
 
-  constructor(parent?: Container, options?: any) {
-    super(parent, options)
-    this.onRenderItem = this.onRenderItem.bind(this);
+  get type() {
+    return this._type || 'all';
   }
 
-  onRenderItem(parent: Control, index: number) {
+  set type(value: ProductType) {
+    this._type = value || 'all';
+    this.classList.remove(productListStyle, customTopProductsStyle);
+    this.classList.add(this.type === 'all' ? productListStyle : customTopProductsStyle);
+  }
+
+  constructor(parent?: Container, options?: any) {
+    super(parent, options);
+  }
+
+  private onRenderItem(parent: Control, index: number) {
     const childEl = parent.children?.[index]?.firstChild as Product;
     const data = this.data[index];
     if (childEl && data) {
-      childEl.setData(data);
+      childEl.setData({ product: data, type: this.type });
     }
   };
 
   async init() {
+    const type = this.getAttribute('type', true, 'all');
+    if (type) this.type = type;
     super.init()
+    this.onRenderItem = this.onRenderItem.bind(this);
 
     await this.listRepeater.ready();
     const item = document.createElement('i-product') as Product;
@@ -67,8 +80,8 @@ export default class ProductList extends Module {
       id="listRepeater"
       position='relative'
       width='100%'
-      // data={this.data}
-      class={productListStyle}
+      data={this.data}
+      gap={16}
       onRender={this.onRenderItem}
     >
     </i-repeater>

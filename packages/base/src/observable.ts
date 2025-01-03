@@ -798,6 +798,7 @@ export function observable(propName?: string, isArray?: boolean) {
 	// 	}); 
 	// }
 }
+
 export function initObservables(target: any){
 	let observables = target['$observableProps'];
 	target['$observables'] = target['$observables'] || {};
@@ -807,6 +808,7 @@ export function initObservables(target: any){
 		let val = isArray ? Observe([]): Observe({});
 		let isObject = false;
 		target['$observables'][propName] = val;
+
 		const getter = function() {			
 			if (isObject)
 				return val
@@ -814,10 +816,25 @@ export function initObservables(target: any){
 				return val.value;
 			}
 		};
+
 		const setter = function(newVal: any) {
 			if (typeof(newVal) == 'object'){
 				isObject = true;
-				Object.assign(val, newVal)
+				if (Array.isArray(newVal) && isArray){
+					if (val.length === 0 && newVal.length > 0){
+						Object.assign(val, newVal);
+						return;
+					}
+					if (val.length > 0 && newVal.length === 0){
+						return;
+					}
+					if (val.length > 0 && newVal.length > 0){
+						val.splice(0, val.length, ...newVal);
+						return;
+					}
+				} else {
+					Object.assign(val, newVal);
+				}
 			}
 			else{
 				isObject = false;
@@ -830,6 +847,7 @@ export function initObservables(target: any){
 		}); 
 	}	
 }
+
 export function Observables(target: any, propertyName?: string) {		
 	let result = target['$observables'] || {};	
 	if (propertyName){

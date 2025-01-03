@@ -1,16 +1,15 @@
-import { Container, Module, customElements, ControlElement, Styles, observable, Label } from '@ijstech/components';
-import { IProduct } from '../types';
+import { Container, Module, customElements, ControlElement, Styles, Panel } from '@ijstech/components';
+import { IProduct, ProductType } from '../types';
 import { ProductModel } from './model';
 import { customButtonStyle, customImageStyle, shadowHoveredStyle } from '../index.css';
 import { formatNumber } from '../ultils';
 const Theme = Styles.Theme.ThemeVars;
 
 type onItemClickedCallback = (product: IProduct) => void;
-type ProductType = 'top' | 'all';
 
 export interface ProductElement extends ControlElement {
   product?: IProduct;
-  type?: string;
+  type?: ProductType;
   onItemClicked?: onItemClickedCallback;
 }
 
@@ -22,57 +21,57 @@ declare global {
   }
 }
 
+const DEFAULT_TYPE = 'all';
+
+interface IProductItem {
+  product?: IProduct;
+  type?: ProductType;
+}
+
 @customElements('i-product')
 export default class Product extends Module {
-  private lblReviews: Label;
-  private lblDiscount: Label;
-  private lblRating: Label;
+  private pnlProductItem: Panel;
 
   private model: ProductModel; // TODO: fix this
 
-  @observable('product')
-  private _product: IProduct = {
-    name: '',
-    image: '',
-    price: '',
-    reviews: 0,
-    seller: '',
-    rating: 0
-  };
-  private _type: ProductType = 'all';
+  private _data: IProductItem = {};
 
   onItemClicked: onItemClickedCallback;
 
   get product() {
-    return this._product;
+    return this._data.product;
   }
 
   set product(value: IProduct) {
-    this._product = value;
+    this._data.product = value;
   }
 
   get type() {
-    return this._type;
+    return this._data.type || DEFAULT_TYPE;
   }
 
   set type(value: ProductType) {
-    this._type = value;
+    this._data.type = value || DEFAULT_TYPE;
   }
 
-  setData(data: IProduct) {
-    this.product = data;
-    this.renderProduct();
+  get isAllType() {
+    return this.type === DEFAULT_TYPE;
+  }
+
+  setData(data: IProductItem) {
+    this._data = data;
+    this.renderUI();
   }
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
   }
 
-  private renderProduct() {
-    this.lblReviews.caption = `(${formatNumber(this.product.reviews || 0)})`;
-    this.lblDiscount.caption = `(${this.product.discount})`;
-    this.lblDiscount.visible = !!this.product?.discount;
-    this.lblRating.caption = `${this.product.rating || ''}`;
+  private renderUI() {
+    if (this.isAllType)
+      this.renderAllType();
+    else
+      this.renderTopType();
   }
 
   private handleItemClick() {
@@ -81,36 +80,20 @@ export default class Product extends Module {
     if (typeof this.onItemClicked === 'function') this.onItemClicked(this.product);
   }
 
-  init() {
-    super.init();
-    this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
-    this.model = new ProductModel();
-    const product = this.getAttribute('product', true);
-    this.type = this.getAttribute('type', true, 'all');
-    if (product) this.setData(product);
-  }
-
-  render() {
-    return <i-vstack
-      position='relative'
-      width='100%'
-      gap={16}
-      overflow="hidden"
-      justifyContent='space-between'
-      cursor="pointer"
-      onClick={this.handleItemClick}
-    >
-      <i-panel
+  private renderAllType() {
+    this.pnlProductItem.clearInnerHTML();
+    this.pnlProductItem.append(
+       <i-panel
         width='100%'
       >
         <i-image
-          url={this.product.image}
+          url={this.product?.image}
           display='block'
           width='100%'
           class={customImageStyle}
         >
         </i-image>
-      </i-panel>
+      </i-panel>,
       <i-vstack
         width='100%'
         overflow="hidden"
@@ -122,7 +105,8 @@ export default class Product extends Module {
           font={{ "size": "13px", "weight": "500" }}
         >
         </i-label>
-        <i-hstack
+        <i-stack
+          id="pnlName"
           alignItems='center'
           justifyContent="space-between"
           stack={{ grow: '1' }}
@@ -143,7 +127,7 @@ export default class Product extends Module {
             <i-label
               id="lblRating"
               visible={!!this.product.rating}
-              caption=""
+              caption={`${this.product.rating || ''}`}
               font={{ "size": "13px", "weight": "500" }}
             >
             </i-label>
@@ -157,12 +141,12 @@ export default class Product extends Module {
             </i-icon>
             <i-label
               id="lblReviews"
-              caption=""
+              caption={`(${formatNumber(this.product.reviews || 0)})`}
               font={{ "size": "12px", "weight": "400" }}
             >
             </i-label>
           </i-hstack>
-        </i-hstack>
+        </i-stack>
         <i-label
           caption={this.product.seller}
           font={{ "size": "13px" }}
@@ -188,14 +172,15 @@ export default class Product extends Module {
           </i-label>
           <i-label
             id="lblDiscount"
-            caption=""
+            caption={`(${this.product.discount})`}
             padding={{ left: 4 }}
             font={{ "size": "13px", "weight": "400" }}
             display="inline"
+            visible={!!this.product.discount}
             opacity='0.7'
           ></i-label>
         </i-panel>
-      </i-vstack>
+      </i-vstack>,
       <i-hstack
         width='100%'
       >
@@ -221,6 +206,124 @@ export default class Product extends Module {
         >
         </i-button>
       </i-hstack>
+    )
+  }
+
+  private renderTopType() {
+    this.pnlProductItem.clearInnerHTML();
+    const stars = this.product?.rating ? new Array(Math.ceil(this.product.rating)).fill(1) : []
+    this.pnlProductItem.append(
+      <i-icon
+        name='heart'
+        width={30}
+        height={30}
+        border={{ radius: '50%' }}
+        fill={Theme.background.modal}
+        padding={{ top: 8, left: 8, right: 8, bottom: 8 }}
+        top={100}
+        visible={false}
+        right={10}
+        zIndex={10}
+        boxShadow={Theme.shadows[0]}
+        background={{ color: '#fff' }}
+        class='love-icon'
+      ></i-icon>,
+      <i-panel width='100%'>
+        <i-image
+          url={this.product?.image}
+          display='block'
+          width='100%'
+          overflow='hidden'
+        ></i-image>
+      </i-panel>,
+      <i-vstack width='100%' gap={6}>
+        <i-label
+          caption={this.product.name}
+          font={{ size: '13px', weight: '500' }}
+          textOverflow='ellipsis'
+        ></i-label>
+        <i-hstack
+          width='100%'
+          alignItems='center'
+          justifyContent='space-between'
+        >
+          <i-hstack alignItems='center' gap='4px'>
+            <i-hstack alignItems='center'>
+              {stars.map((item) => {
+                return (
+                  <i-icon
+                    width='12px'
+                    height='12px'
+                    name='star'
+                    fill={Theme.text.primary}
+                    image={{ width: 12, height: 12 }}
+                  ></i-icon>
+                )
+              })}
+            </i-hstack>
+
+            <i-label
+              caption={`(${formatNumber(this.product.reviews || 0)})`}
+              font={{ size: '16px', weight: '400' }}
+            ></i-label>
+          </i-hstack>
+        </i-hstack>
+        <i-label
+          caption={this.product.price}
+          font={{ size: '16px', weight: '500' }}
+        ></i-label>
+        <i-panel display='inline' margin={{ top: -3 }}>
+          <i-label
+            display='inline'
+            caption={this.product.originalPrice}
+            font={{
+              size: '13px',
+              weight: '400',
+              color: Theme.colors.success.main,
+            }}
+            textDecoration='line-through'
+          ></i-label>
+          <i-label
+            display='inline'
+            caption={`(${this.product.discount})`}
+            padding={{ left: 4 }}
+            font={{
+              size: '13px',
+              weight: '400',
+              color: Theme.colors.success.main,
+            }}
+          ></i-label>
+        </i-panel>
+        <i-label
+          caption={this.product.seller}
+          font={{ size: '13px' }}
+          opacity='0.7'
+        ></i-label>
+      </i-vstack>
+    );
+  }
+
+  init() {
+    super.init();
+    this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
+    this.model = new ProductModel();
+    const product = this.getAttribute('product', true);
+    const type = this.getAttribute('type', true);
+    if (product || type) this.setData({ product, type });
+  }
+
+  render() {
+    return <i-vstack
+      id="pnlProductItem"
+      position='relative'
+      width='100%'
+      gap={16}
+      overflow="hidden"
+      justifyContent='space-between'
+      cursor="pointer"
+      class='picked-card'
+      onClick={this.handleItemClick}
+    >
     </i-vstack>
   }
 }

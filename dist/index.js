@@ -10948,7 +10948,22 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
             const setter = function (newVal) {
                 if (typeof (newVal) == 'object') {
                     isObject = true;
-                    Object.assign(val, newVal);
+                    if (Array.isArray(newVal) && isArray) {
+                        if (val.length === 0 && newVal.length > 0) {
+                            Object.assign(val, newVal);
+                            return;
+                        }
+                        if (val.length > 0 && newVal.length === 0) {
+                            return;
+                        }
+                        if (val.length > 0 && newVal.length > 0) {
+                            val.splice(0, val.length, ...newVal);
+                            return;
+                        }
+                    }
+                    else {
+                        Object.assign(val, newVal);
+                    }
                 }
                 else {
                     isObject = false;

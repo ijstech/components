@@ -35,3 +35,5 @@ export interface IOption {
   label: string;
   value: any;
 }
+
+export type ProductType = 'top' | 'all';
