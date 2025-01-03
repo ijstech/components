@@ -14,35 +14,29 @@ A products component
 ```typescript(source/index.tsx)
 import {
   Module,
-  Styles,
-  HStack,
-  GridLayout,
+  Repeater,
   Panel,
-  Control
+  Control,
+  observable
 } from '@ijstech/components'
-import { afterBlurStyle, beforeBlurStyle, buttonHoveredStyle, customTopProductsStyle } from './index.css'
+import { afterBlurStyle, beforeBlurStyle, buttonHoveredStyle, customOptionStyle } from './index.css'
 import { ProductModel } from './model'
 import ProductFilter from './productFilter/index'
 import ProductList from './productList/index'
+import ProductOption from './productOption/index'
 import { IOption } from './types'
-import { formatNumber } from './ultils'
-
-const Theme = Styles.Theme.ThemeVars
 
 export default class Products extends Module {
-  private model: ProductModel
+  @observable()
+  private model: ProductModel = new ProductModel();
 
-  private itemType: string[] = []
-
-  private pnlOptions: HStack
-  private pnlPicked: GridLayout
+  private optionsRepeater: Repeater;
   private filterEl: ProductFilter
   private pnlFilter: Panel
   private leftIcon: Panel
   private rightIcon: Panel
   private leftBlur: Panel
   private rightBlur: Panel
-  private productList: ProductList
 
   private scaleFilter() {
     if (window.matchMedia('(max-width: 480px)').matches) {
@@ -97,172 +91,6 @@ export default class Products extends Module {
     }
   }
 
-  private renderMostPicked() {
-    const products = this.model.getTopProducts()
-    this.pnlPicked.clearInnerHTML()
-    for (const product of products) {
-      const stars = new Array(Math.ceil(product.rating)).fill(1)
-      this.pnlPicked.appendChild(
-        <i-vstack
-          position='relative'
-          gap={16}
-          width='100%'
-          cursor='pointer'
-          class='picked-card'
-          onClick={() => {
-            if (!product.link) return
-            window.open(product.link, '_blank')
-          }}
-        >
-          <i-icon
-            name='heart'
-            width={30}
-            height={30}
-            border={{ radius: '50%' }}
-            fill={Theme.background.modal}
-            padding={{ top: 8, left: 8, right: 8, bottom: 8 }}
-            top={100}
-            visible={false}
-            right={10}
-            zIndex={10}
-            boxShadow={Theme.shadows[0]}
-            background={{ color: '#fff' }}
-            class='love-icon'
-          ></i-icon>
-          <i-panel width='100%'>
-            <i-image
-              url={product.image}
-              display='block'
-              width='100%'
-              overflow='hidden'
-            ></i-image>
-          </i-panel>
-          <i-vstack width='100%' gap={6}>
-            <i-label
-              caption={product.name}
-              font={{ size: '13px', weight: '500' }}
-              textOverflow='ellipsis'
-            ></i-label>
-            <i-hstack
-              width='100%'
-              alignItems='center'
-              justifyContent='space-between'
-            >
-              <i-hstack alignItems='center' gap='4px'>
-                <i-hstack alignItems='center'>
-                  {stars.map((item) => {
-                    return (
-                      <i-icon
-                        width='12px'
-                        height='12px'
-                        name='star'
-                        fill={Theme.text.primary}
-                        image={{ width: 12, height: 12 }}
-                      ></i-icon>
-                    )
-                  })}
-                </i-hstack>
-
-                <i-label
-                  caption={`(${formatNumber(product.reviews || 0)})`}
-                  font={{ size: '16px', weight: '400' }}
-                ></i-label>
-              </i-hstack>
-            </i-hstack>
-            <i-label
-              caption={product.price}
-              font={{ size: '16px', weight: '500' }}
-            ></i-label>
-            <i-panel display='inline' margin={{ top: -3 }}>
-              <i-label
-                display='inline'
-                caption={product.originalPrice}
-                font={{
-                  size: '13px',
-                  weight: '400',
-                  color: Theme.colors.success.main,
-                }}
-                textDecoration='line-through'
-              ></i-label>
-              <i-label
-                display='inline'
-                caption={`(${product.discount})`}
-                padding={{ left: 4 }}
-                font={{
-                  size: '13px',
-                  weight: '400',
-                  color: Theme.colors.success.main,
-                }}
-              ></i-label>
-            </i-panel>
-            <i-label
-              caption={product.seller}
-              font={{ size: '13px' }}
-              opacity='0.7'
-            ></i-label>
-          </i-vstack>
-        </i-vstack>
-      )
-    }
-  }
-
-  private renderOptions() {
-    this.pnlOptions.clearInnerHTML()
-    const options = this.model.getOptions()
-    for (const option of options) {
-      this.pnlOptions.appendChild(
-        <i-hstack
-          alignItems='center'
-          minWidth='36px'
-          gap={8}
-          minHeight='36px'
-          padding={{ top: '9px', right: '15px', bottom: '9px', left: '15px' }}
-          border={{ radius: '24px', width: '1px', color: Theme.divider }}
-          cursor='pointer'
-          stack={{ shrink: '0' }}
-          onClick={(target: Control) => this.onSelectOption(target, option)}
-        >
-          <i-label
-            caption={option.label}
-            font={{ size: '12px', weight: '500' }}
-          ></i-label>
-          <i-icon
-            width='12px'
-            height='12px'
-            name='times'
-            visible={false}
-            cursor='pointer'
-            onClick={(target: Control) =>
-              this.onSelectOption(target.parent, option)
-            }
-          ></i-icon>
-        </i-hstack>
-      )
-    }
-  }
-
-  private onSelectOption(target: Control, option: IOption) {
-    const value = option.value
-    const findedIndex = this.itemType.findIndex((item) => item === value)
-    if (findedIndex > -1) {
-      target.background = { color: 'transparent' }
-      target.font = { color: Theme.text.primary, size: '13px', weight: 600 }
-      const closeIcon = target.querySelector('i-icon') as Control
-      if (closeIcon) closeIcon.visible = false
-      this.itemType.splice(findedIndex, 1)
-    } else {
-      target.background = { color: Theme.colors.primary.main }
-      target.font = {
-        color: Theme.colors.primary.dark,
-        size: '13px',
-        weight: 600,
-      }
-      this.itemType.push(value)
-      const closeIcon = target.querySelector('i-icon') as Control
-      if (closeIcon) closeIcon.visible = true
-    }
-  }
-
   private showFilter() {
     if (!this.filterEl) {
       this.filterEl = new ProductFilter(undefined, {
@@ -289,27 +117,65 @@ export default class Products extends Module {
   }
 
   private onFilterChanged(type: string) {
-    // TODO: render options
-    if (type === 'reset') {
-      this.renderOptions()
-    }
-    const filteredData = this.model.filteredProducts(this.filterEl.data);
-    this.productList.data = filteredData;
+    const options = this.model.getOptions();
 
-    return filteredData?.length;
+    if (this.filterEl.data && type !== 'reset') {
+      const values = Object.values(this.filterEl.data);
+      let flattenValues: any[] = [];
+
+      for (const value of values) {
+        if (Array.isArray(value)) {
+          flattenValues = flattenValues.concat(value);
+        } else if (value !== undefined && value !== null) {
+          flattenValues.push(value);
+        }
+      }
+
+      for (const value of flattenValues) {
+        const findedOption = options.find(option => option.value === value?.value);
+        if (findedOption) findedOption.selected = true;
+        else if (value?.value) {
+          options.unshift({
+            value: value?.value,
+            label: value?.label,
+            selected: true
+          })
+        }
+      }
+    }
+
+    this.model.options = options;
+    this.model.filteredProducts = this.model.handlFilter(this.filterEl.data);
+
+    return this.model?.filteredProducts?.length || 0;
   }
 
   private onCloseFilter() {
     this.filterEl.closeModal()
   }
 
-  init() {
+  private onSelectOption(target: Control, option: IOption) {
+    this.filterEl.updateData(option);
+  }
+
+  private onRenderOption(parent: Control, index: number) {
+    const childEl = parent.children?.[index]?.firstChild as ProductOption;
+    const data = this.model.options?.[index];
+    if (childEl && data) {
+      childEl.setData({ label: data.label, value: data.value, selected: data.selected });
+      childEl.onSelectOption = this.onSelectOption.bind(this)
+    }
+  };
+
+  async init() {
     super.init()
-    this.model = new ProductModel()
-    this.renderOptions()
-    this.renderMostPicked()
-    this.productList.data = this.model.products;
-    this.scaleFilter()
+    this.model.topProducts = this.model.getTopProducts();
+    this.model.filteredProducts = this.model.handlFilter(this.filterEl?.data);
+
+    const optionEl = document.createElement('i-product-option') as ProductOption;
+    this.optionsRepeater.add(optionEl);
+    this.model.options = this.model.getOptions();
+    this.scaleFilter();
   }
 
   render() {
@@ -366,13 +232,13 @@ export default class Products extends Module {
                   radius: '24px',
                   width: '2px',
                   style: 'solid',
-                  color: 'var(--divider)',
+                  color: 'var(--divider)'
                 }}
                 padding={{
                   top: '9px',
                   right: '15px',
                   bottom: '9px',
-                  left: '15px',
+                  left: '15px'
                 }}
                 boxShadow='none'
                 font={{ size: '12px', weight: '600' }}
@@ -380,7 +246,7 @@ export default class Products extends Module {
                 stack={{ shrink: '0' }}
                 onClick={this.showFilter}
                 mediaQueries={[
-                  { maxWidth: '480px', properties: { visible: false } },
+                  { maxWidth: '480px', properties: { visible: false } }
                 ]}
               ></i-button>
               <i-button
@@ -391,13 +257,13 @@ export default class Products extends Module {
                   radius: '24px',
                   width: '2px',
                   style: 'solid',
-                  color: 'var(--divider)',
+                  color: 'var(--divider)'
                 }}
                 padding={{
                   top: '9px',
                   right: '15px',
                   bottom: '9px',
-                  left: '15px',
+                  left: '15px'
                 }}
                 boxShadow='none'
                 font={{ size: '12px', weight: '600' }}
@@ -405,17 +271,21 @@ export default class Products extends Module {
                 stack={{ shrink: '0' }}
                 onClick={this.showFilter}
                 mediaQueries={[
-                  { maxWidth: '480px', properties: { visible: true } },
+                  { maxWidth: '480px', properties: { visible: true } }
                 ]}
               ></i-button>
-              <i-hstack
-                id='pnlOptions'
+              <i-repeater
+                id="optionsRepeater"
                 gap={12}
-                alignItems='center'
+                layout="horizontal"
+                data={this.model.options}
                 mediaQueries={[
-                  { maxWidth: '480px', properties: { visible: false } },
+                  { maxWidth: '480px', properties: { visible: false } }
                 ]}
-              ></i-hstack>
+                class={customOptionStyle}
+                onRender={this.onRenderOption}
+              >
+              </i-repeater>
             </i-hstack>
             <i-panel
               id='rightBlur'
@@ -450,8 +320,8 @@ export default class Products extends Module {
             mediaQueries={[
               {
                 maxWidth: '480px',
-                properties: { stack: { basis: 'auto', shrink: '1' } },
-              },
+                properties: { stack: { basis: 'auto', shrink: '1' } }
+              }
             ]}
           >
             <i-hstack gap={4} verticalAlignment='center'>
@@ -474,7 +344,7 @@ export default class Products extends Module {
                 top: '9px',
                 right: '15px',
                 bottom: '9px',
-                left: '15px',
+                left: '15px'
               }}
               caption='Most relevant'
               stack={{ shrink: '0' }}
@@ -485,7 +355,7 @@ export default class Products extends Module {
                 width: 12,
                 height: 12,
                 fill: 'var(--text-primary)',
-                name: 'caret-down',
+                name: 'caret-down'
               }}
               font={{ size: '12px', weight: '600' }}
               class={buttonHoveredStyle}
@@ -512,39 +382,24 @@ export default class Products extends Module {
               radius: '24px',
               width: '2px',
               style: 'solid',
-              color: 'var(--divider)',
+              color: 'var(--divider)'
             }}
             background={{ color: 'transparent' }}
             font={{ color: 'var(--text-primary)' }}
             boxShadow='none'
           ></i-button>
         </i-hstack>
-        <i-grid-layout
-          id='pnlPicked'
-          class={customTopProductsStyle}
+        <i-product-list
+          id="topList"
+          display='block'
           width='100%'
-          gap={{ row: '16px', column: '16px' }}
-          padding={{ bottom: 16 }}
-          templateColumns={['repeat(6, minmax(0, 1fr))']}
-          autoFillInHoles={true}
-          border={{
-            bottom: { width: '1px', style: 'solid', color: 'var(--divider)' },
-          }}
-          mediaQueries={[
-            {
-              maxWidth: '767px',
-              properties: { templateColumns: ['1fr'], templateRows: ['auto'] },
-            },
-            {
-              minWidth: '768px',
-              maxWidth: '1024px',
-              properties: { templateColumns: ['repeat(3, minmax(0, 1fr))'] },
-            },
-          ]}
-        ></i-grid-layout>
+          data={this.model.topProducts}
+          type="top"
+        ></i-product-list>
         <i-product-list
           id="productList"
           display='block'
+          data={this.model.filteredProducts}
           width='100%'
         ></i-product-list>
       </i-vstack>

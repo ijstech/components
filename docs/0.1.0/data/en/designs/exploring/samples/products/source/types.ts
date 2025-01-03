@@ -34,6 +34,8 @@ export interface IProductList {
 export interface IOption {
   label: string;
   value: any;
+  selected?: boolean;
+  group?: string;
 }
 
 export type ProductType = 'top' | 'all';

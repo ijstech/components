@@ -96,12 +96,12 @@ export class Repeater extends Container {
   }
 
   set data(value: any[]) {
-    this._data = value;
-    this.count = value.length;
+    this._data = value || [];
+    this.count = value?.length || 0;
     this.cloneItems();
   }
   get data() {
-    return this._data;
+    return this._data || [];
   }
 
   get layout(): LayoutType {

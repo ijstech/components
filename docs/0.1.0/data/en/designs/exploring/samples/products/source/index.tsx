@@ -1,9 +1,9 @@
 import {
   Module,
-  Styles,
   Repeater,
   Panel,
-  Control
+  Control,
+  observable
 } from '@ijstech/components'
 import { afterBlurStyle, beforeBlurStyle, buttonHoveredStyle, customOptionStyle } from './index.css'
 import { ProductModel } from './model'
@@ -12,12 +12,9 @@ import ProductList from './productList/index'
 import ProductOption from './productOption/index'
 import { IOption } from './types'
 
-const Theme = Styles.Theme.ThemeVars
-
 export default class Products extends Module {
-  private model: ProductModel
-
-  private itemType: string[] = []
+  @observable()
+  private model: ProductModel = new ProductModel();
 
   private optionsRepeater: Repeater;
   private filterEl: ProductFilter
@@ -26,8 +23,6 @@ export default class Products extends Module {
   private rightIcon: Panel
   private leftBlur: Panel
   private rightBlur: Panel
-  private productList: ProductList
-  private topList: ProductList
 
   private scaleFilter() {
     if (window.matchMedia('(max-width: 480px)').matches) {
@@ -82,28 +77,6 @@ export default class Products extends Module {
     }
   }
 
-  private onSelectOption(target: Control, option: IOption) {
-    const value = option.value
-    const findedIndex = this.itemType.findIndex((item) => item === value)
-    if (findedIndex > -1) {
-      target.background = { color: 'transparent' }
-      target.font = { color: Theme.text.primary, size: '13px', weight: 600 }
-      const closeIcon = target.querySelector('i-icon') as Control
-      if (closeIcon) closeIcon.visible = false
-      this.itemType.splice(findedIndex, 1)
-    } else {
-      target.background = { color: Theme.colors.primary.main }
-      target.font = {
-        color: Theme.colors.primary.dark,
-        size: '13px',
-        weight: 600,
-      }
-      this.itemType.push(value)
-      const closeIcon = target.querySelector('i-icon') as Control
-      if (closeIcon) closeIcon.visible = true
-    }
-  }
-
   private showFilter() {
     if (!this.filterEl) {
       this.filterEl = new ProductFilter(undefined, {
@@ -130,40 +103,67 @@ export default class Products extends Module {
   }
 
   private onFilterChanged(type: string) {
-    // TODO: render options
-    if (type === 'reset') {
-      // this.renderOptions()
-    }
-    const filteredData = this.model.filteredProducts(this.filterEl.data);
-    this.productList.data = filteredData;
+    const options = this.model.getOptions();
 
-    return filteredData?.length;
+    if (this.filterEl.data && type !== 'reset') {
+      const values = Object.values(this.filterEl.data);
+      let flattenValues: any[] = [];
+
+      for (const value of values) {
+        if (Array.isArray(value)) {
+          flattenValues = flattenValues.concat(value);
+        } else if (value !== undefined && value !== null) {
+          flattenValues.push(value);
+        }
+      }
+
+      for (const value of flattenValues) {
+        const findedOption = options.find(option => option.value === value?.value);
+        if (findedOption) findedOption.selected = true;
+        else if (value?.value) {
+          options.unshift({
+            value: value?.value,
+            label: value?.label,
+            group: value?.group,
+            selected: true
+          })
+        }
+      }
+    }
+
+    this.model.options = options;
+    this.model.filteredProducts = this.model.handlFilter(this.filterEl.data);
+
+    return this.model?.filteredProducts?.length || 0;
   }
 
   private onCloseFilter() {
     this.filterEl.closeModal()
   }
 
+  private onSelectOption(target: Control, option: IOption) {
+    this.filterEl.updateData(option);
+  }
+
   private onRenderOption(parent: Control, index: number) {
     const childEl = parent.children?.[index]?.firstChild as ProductOption;
-    const data = this.model.getOptions()[index];
+    const data = this.model.options?.[index];
+
     if (childEl && data) {
-      childEl.setData({ label: data.label, value: data.value });
-      childEl.onSelectOption = this.onSelectOption.bind(this);
+      childEl.setData(data);
+      childEl.onSelectOption = this.onSelectOption.bind(this)
     }
   };
 
   async init() {
     super.init()
-    this.onRenderOption = this.onRenderOption.bind(this);
-    this.model = new ProductModel()
-    this.topList.data = this.model.getTopProducts();
-    this.productList.data = this.model.products;
-    this.scaleFilter()
+    this.model.topProducts = this.model.getTopProducts();
+    this.model.filteredProducts = this.model.handlFilter(this.filterEl?.data);
 
     const optionEl = document.createElement('i-product-option') as ProductOption;
     this.optionsRepeater.add(optionEl);
-    this.optionsRepeater.data = this.model.getOptions();
+    this.model.options = this.model.getOptions();
+    this.scaleFilter();
   }
 
   render() {
@@ -266,7 +266,7 @@ export default class Products extends Module {
                 id="optionsRepeater"
                 gap={12}
                 layout="horizontal"
-                display="block"
+                data={this.model.options}
                 mediaQueries={[
                   { maxWidth: '480px', properties: { visible: false } }
                 ]}
@@ -381,11 +381,13 @@ export default class Products extends Module {
           id="topList"
           display='block'
           width='100%'
+          data={this.model.topProducts}
           type="top"
         ></i-product-list>
         <i-product-list
           id="productList"
           display='block'
+          data={this.model.filteredProducts}
           width='100%'
         ></i-product-list>
       </i-vstack>

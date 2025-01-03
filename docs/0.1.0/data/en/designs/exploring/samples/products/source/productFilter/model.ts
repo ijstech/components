@@ -5,32 +5,32 @@ export interface IOption {
 
 export class FilterModel {
   private _data: { [key: string]: any } = {
-    itemType: '',
+    itemType: null,
     location: 'all',
-    itemFormat: '',
+    itemFormat: null,
     estyBest: [],
     offer: [],
     material: [],
     price: 'all',
     min: undefined,
     max: undefined,
-    customLocation: ''
+    customLocation: null
   };
 
   constructor() { }
 
   reset() {
     this._data = {
-      itemType: '',
+      itemType: null,
       location: 'all',
-      itemFormat: '',
+      itemFormat: null,
       estyBest: [],
       offer: [],
       material: [],
       price: 'all',
       min: undefined,
       max: undefined,
-      customLocation: ''
+      customLocation: null
     }
   }
 
@@ -142,11 +142,11 @@ export class FilterModel {
     return [
       {
         label: 'Free shipping',
-        value: 'free-shiping'
+        value: 'free_shipping'
       },
       {
         label: 'On-sale',
-        value: 'on-sale'
+        value: 'on_sale'
       }
     ]
   }
@@ -154,11 +154,11 @@ export class FilterModel {
   get estyBest() {
     return [
       {
-        value: 'pick',
+        value: 'etsys_picks',
         label: "Etsy's Picks"
       },
       {
-        value: 'seller',
+        value: 'star_seller',
         label: 'Star Seller'
       }
     ]

@@ -10954,6 +10954,7 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
                             return;
                         }
                         if (val.length > 0 && newVal.length === 0) {
+                            val.length = 0;
                             return;
                         }
                         if (val.length > 0 && newVal.length > 0) {
@@ -45762,12 +45763,12 @@ define("@ijstech/repeater/repeater.ts", ["require", "exports", "@ijstech/base", 
             this.cloneItems();
         }
         set data(value) {
-            this._data = value;
-            this.count = value.length;
+            this._data = value || [];
+            this.count = value?.length || 0;
             this.cloneItems();
         }
         get data() {
-            return this._data;
+            return this._data || [];
         }
         get layout() {
             return this._layout;
