@@ -10,10 +10,16 @@ Inherited from `Control`
 
 ## Properties
 
-| Name  | Description                           | Type   | Default |
-| ----- | ------------------------------------- | ------ | ------- |
-| count | Define the number of items to display | number | 0       |
-| data  | Define the items to display           | any[]  | []      |
+| Name   | Description                           | Type                      | Default    |
+| ------ | ------------------------------------- | ------------------------- | ---------- |
+| count  | Define the number of items to display | number                    | 0          |
+| layout | Define the layout of items            | [LayoutType](#layouttype) | `vertical` |
+| gap    | Define the gap of items               | number \| string          | 0          |
+| data   | Define the items to display           | any[]                     | []         |
+
+### LayoutType
+
+`vertical` \| `horizontal`
 
 ## Events
 
@@ -23,6 +29,8 @@ Inherited from `Control`
 | Signature    | onRender(parent: Control, index: number) |
 
 ## Sample Code
+
+### Property
 
 ```typescript(samples/repeater-1.tsx)
 onRender(parent: Control, index: number) {
@@ -49,10 +57,15 @@ init() {
 }
 
 render() {
-  <i-panel id={'wrapper'} padding={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+  return <i-panel
+    id={'wrapper'}
+    padding={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
     <i-repeater
       id="repeater"
       data={this.dataList}
+      layout="horizontal"
+      gap={10}
       onRender={this.onRender}
     >
       <i-hstack gap={'1rem'} verticalAlignment='center' justifyContent='space-between' padding={{ top: '0.5rem', bottom: '0.5rem' }}>
@@ -66,6 +79,8 @@ render() {
   </i-panel>
 }
 ```
+
+### Event
 ```typescript(samples/repeater-2.tsx)
 onRender(parent: Control, index: number) {
   const item = parent.children[index]

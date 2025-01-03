@@ -25932,10 +25932,13 @@ declare module "@ijstech/repeater/repeater.ts" {
     import { Control, ControlElement, Container } from '@ijstech/base';
     import "@ijstech/repeater/style/repeater.css.ts";
     type onRenderCallback = (parent: Control, index: number) => void;
+    type LayoutType = 'horizontal' | 'vertical';
     export interface RepeaterElement extends ControlElement {
         onRender?: onRenderCallback;
         data?: any[];
         count?: number;
+        layout?: LayoutType;
+        gap?: number | string;
     }
     global {
         namespace JSX {
@@ -25947,6 +25950,8 @@ declare module "@ijstech/repeater/repeater.ts" {
     export class Repeater extends Container {
         private _data;
         private _count;
+        private _layout;
+        private _gap;
         private wrapper;
         private pnlPanel;
         private templateEl;
@@ -25956,6 +25961,10 @@ declare module "@ijstech/repeater/repeater.ts" {
         set count(value: number);
         set data(value: any[]);
         get data(): any[];
+        get layout(): LayoutType;
+        set layout(value: LayoutType);
+        get gap(): number | string;
+        set gap(value: number | string);
         private foreachNode;
         private isEmpty;
         private cloneItems;
