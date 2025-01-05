@@ -1,21 +1,48 @@
-import { IProduct, IProductFilter } from './types';
+import { IOption, IProduct, IProductFilter } from './types';
 
 export class ProductModel {
-  private _products: IProduct[];
+  private _products: IProduct[] = [];
+  private _filteredProducts: IProduct[] = [];
+  private _topProducts: IProduct[] = [];
+  private _options: IOption[] = [];
 
   constructor() {
     this._products = this.fetchProducts();
   }
 
   get products() {
-    return this._products;
+    return this._products || [];
   }
 
   set products(value: IProduct[]) {
-    this._products = value;
+    this._products = value || [];
   }
 
-  fetchProducts(): IProduct[] {
+  get filteredProducts() {
+    return this._filteredProducts || [];
+  }
+
+  set filteredProducts(value: IProduct[]) {
+    this._filteredProducts = value || [];
+  }
+
+  get topProducts() {
+    return this._topProducts || [];
+  }
+
+  set topProducts(value: IProduct[]) {
+    this._topProducts = value || [];
+  }
+
+  get options() {
+    return this._options || [];
+  }
+
+  set options(value: IOption[]) {
+    this._options = value || [];
+  }
+
+  fetchProducts = (): IProduct[] => {
     return [
       {
         "name": "Watch Me",
@@ -114,7 +141,7 @@ export class ProductModel {
     ]
   }
 
-  getTopProducts() {
+  getTopProducts = (): IProduct[] => {
     return [
       {
         "name": "iPhone screensaver and Watch",
@@ -180,20 +207,22 @@ export class ProductModel {
     ]
   }
 
-  getOptions() {
+  getOptions = (): IOption[] => {
     return [
       { label: "Vintage", value: "vintage" },
-      { label: "Star Seller", value: "star_seller" },
-      { label: "Etsy's Picks", value: "etsys_picks" },
-      { label: "On sale", value: "on_sale" },
+      { label: "Star Seller", value: "star_seller", group: 'estyBest' },
+      { label: "Etsy's Picks", value: "etsys_picks", group: 'estyBest' },
+      { label: "On sale", value: "on_sale", group: 'offer' },
       { label: "Accepts Etsy gift cards", value: "accepts_gift_cards" },
       { label: "Can be gift-wrapped", value: "gift_wrapped" }
     ];
   }
 
-  filteredProducts(filter: IProductFilter) {
+  handlFilter = (filter: IProductFilter): IProduct[] => {
     const products = this._products;
     let filteredProducts = JSON.parse(JSON.stringify(products));
+
+    if (!filter) return filteredProducts;
     // if (filter.itemType) {
     //   filteredProducts = products.filter(product => product.itemType === filter.itemType);
     // }

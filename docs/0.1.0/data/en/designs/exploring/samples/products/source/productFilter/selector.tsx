@@ -89,7 +89,7 @@ export default class Selector extends Module {
           <i-checkbox
             caption={option.label}
             checked={selected && selected.includes(option.value)}
-            tag={option.value}
+            tag={option}
             onChanged={this.handleCheckboxChanged}
           />
         )
@@ -99,17 +99,18 @@ export default class Selector extends Module {
 
   private handleRadioChanged(target: RadioGroup) {
     const value = target.selectedValue;
-    if (typeof this.onChange === 'function') this.onChange(this.data.key, value)
+    const label = this.data.options.find(item => item.value === value)?.label;
+    if (typeof this.onChange === 'function') this.onChange(this.data.key, { value, label, group: this.data.key })
   }
 
   private handleCheckboxChanged(target: Checkbox) {
-    const value = target.tag;
+    const option = target.tag;
     const selectedValues = this.selectedValue || [];
-    const findedIndex = selectedValues.findIndex(item => item === value);
+    const findedIndex = selectedValues.findIndex(item => item.value === option.value);
     if (findedIndex > -1) {
       selectedValues.splice(findedIndex, 1);
     } else {
-      selectedValues.push(value);
+      selectedValues.push({ ...option, group: this.data.key });
     }
     if (typeof this.onChange === 'function') this.onChange(this.data.key, selectedValues);
   }

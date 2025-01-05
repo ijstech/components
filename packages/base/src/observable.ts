@@ -826,6 +826,7 @@ export function initObservables(target: any){
 						return;
 					}
 					if (val.length > 0 && newVal.length === 0){
+						val.length = 0;
 						return;
 					}
 					if (val.length > 0 && newVal.length > 0){

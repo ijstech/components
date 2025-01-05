@@ -15,6 +15,7 @@ import {
 import { FilterModel } from './model'
 import Selector from './selector'
 import { buttonHoveredStyle } from '../index.css'
+import { IOption } from '../types'
 
 const Theme = Styles.Theme.ThemeVars
 
@@ -48,6 +49,31 @@ export default class ProductFilter extends Module {
 
   get data() {
     return this.model.data
+  }
+
+  updateData(option: IOption) {
+    const group = option.group;
+    if (group) {
+      const filters = this.model.getFilters();
+      const isRadio = filters.find(item => item.key === group)?.isRadio;
+      if (isRadio) {
+        this.model.data[group] = option.selected ? option : undefined;
+      } else {
+        const value = this.model.data[group];
+        if (option.selected) {
+          if (!value) this.model.data[group] = [option];
+          else if (value.findIndex(item => item.value === option.value) === -1) {
+            value.push(option);
+          }
+        } else if (value) {
+          const findedIndex = value.findIndex(item => item.value === option.value);
+          if (findedIndex > -1) {
+            value.splice(findedIndex, 1);
+          }
+        }
+      }
+      this.renderSelectors();
+    }
   }
 
   private repeatCategory: Repeater
