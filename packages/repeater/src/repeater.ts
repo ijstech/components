@@ -1,5 +1,5 @@
 import { Control, customElements, ControlElement, Container, observable } from '@ijstech/base';
-import { Panel } from '@ijstech/layout';
+import { Panel, StackAlignItemsType, StackJustifyContentType } from '@ijstech/layout';
 import './style/repeater.css'
 import { GroupType } from '@ijstech/types';
 
@@ -12,6 +12,8 @@ export interface RepeaterElement extends ControlElement {
   count?: number;
   layout?: LayoutType;
   gap?: number | string;
+  justifyContent?: StackJustifyContentType;
+  alignItems?: StackAlignItemsType;
 }
 declare global {
   namespace JSX {
@@ -44,7 +46,9 @@ const layoutOptions = ['horizontal', 'vertical'];
     },
     gap: {
       type: 'number'
-    }
+    },
+    justifyContent: {type: 'string', default: ''},
+    alignItems: {type: 'string', default: ''}
   },
   events: {
     onRender: [
@@ -76,9 +80,10 @@ export class Repeater extends Container {
   private _count: number;
   private _layout: LayoutType = 'vertical';
   private _gap: number|string;
+  private _justifyContent: StackJustifyContentType;
+  private _alignItems: StackAlignItemsType;
 
   private wrapper: HTMLElement;
-  private pnlPanel: Panel;
   private templateEl: HTMLTemplateElement;
 
   public onRender: onRenderCallback;
@@ -109,8 +114,9 @@ export class Repeater extends Container {
   }
   set layout(value: LayoutType) {
     this._layout = value;
+    const direction = value === 'horizontal' ? 'row' : 'column'
     if (this.wrapper) {
-      this.wrapper.style.flexDirection = value === 'horizontal' ? 'row' : 'column';
+      this.wrapper.style.flexDirection = direction;
     }
   }
 
@@ -128,6 +134,26 @@ export class Repeater extends Container {
       this.wrapper.style.gap = `${this._gap}`;
     }
   } 
+
+  get justifyContent(): StackJustifyContentType {
+    return this._justifyContent;
+  }
+  set justifyContent(value: StackJustifyContentType) {
+    this._justifyContent = value || 'start';
+    if (this.wrapper) {
+      this.wrapper.style.justifyContent = this._justifyContent;
+    }
+  }
+
+  get alignItems(): StackAlignItemsType {
+    return this._alignItems;
+  }
+  set alignItems(value: StackAlignItemsType) {
+    this._alignItems = value || 'stretch';
+    if (this.wrapper) {
+      this.wrapper.style.alignItems = this._alignItems;
+    }
+  }
 
   private foreachNode(node: Control, clonedNode?: Control) {
     if (!node) return;
@@ -178,16 +204,16 @@ export class Repeater extends Container {
   }
 
   add(item: Control) {
-    if (!this.pnlPanel) {
-      this.pnlPanel = new Panel(undefined, {});
-    }
-    this.pnlPanel.appendChild(item);
+    // if (!this.pnlPanel) {
+    //   this.pnlPanel = new Panel(undefined, {});
+    // }
+    // this.pnlPanel.appendChild(item);
     if (this._designMode) {
       this.wrapper.innerHTML = '';
-      this.wrapper.append(this.pnlPanel);
+      this.wrapper.append(item);
     } else {
       this.templateEl.innerHTML = '';
-      this.templateEl.content.append(this.pnlPanel);
+      this.templateEl.content.append(item);
     }
     this.cloneItems();
     return item;
@@ -216,16 +242,24 @@ export class Repeater extends Container {
       this.wrapper.classList.add("repeater-container");
       this.layout = this.getAttribute("layout", true, DEFAULT_VALUES.layout);
       this.gap = this.getAttribute("gap", true, DEFAULT_VALUES.gap);
+      this.justifyContent = this.getAttribute("justifyContent", true);
+      this.alignItems = this.getAttribute("alignItems", true);
       this.templateEl = this.createElement("template", this) as HTMLTemplateElement;
-      this.pnlPanel = new Panel(undefined, {});
+
       if (childNodes?.length) {
-        for (let i = 0; i < childNodes.length; i++) {
-          this.pnlPanel.appendChild(childNodes[i]);
+        let templateEl = childNodes[0];
+
+        if (childNodes.length > 1) {
+          templateEl = new Panel(undefined, {});
+          for (let i = 0; i < childNodes.length; i++) {
+            templateEl.appendChild(childNodes[i]);
+          }
         }
+        
         if (this._designMode) {
-          this.wrapper.append(this.pnlPanel);
+          this.wrapper.append(templateEl);
         } else {
-          this.templateEl.content.append(this.pnlPanel);
+          this.templateEl.content.append(templateEl);
         }
       }
       this.count = data?.length || count;

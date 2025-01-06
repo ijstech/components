@@ -1,9 +1,19 @@
-import { Styles, Module } from "@ijstech/components";
-import { DataModel } from "./model";
+import { Styles, Module, ControlElement, customElements } from "@ijstech/components";
 const Theme = Styles.Theme.ThemeVars;
 
-export default class Payment extends Module {
-  private model: DataModel;
+
+interface PaymentMainElement extends ControlElement {}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'i-payment': PaymentMainElement;
+    }
+  }
+}
+
+@customElements('i-payment')
+export default class PaymentMain extends Module {
 
   render() {
     return <i-panel
@@ -110,6 +120,7 @@ export default class Payment extends Module {
                 width='20px'
                 height='20px'
                 name='credit-card'
+                fill={Theme.input.fontColor}
               >
               </i-icon>
               <i-input
@@ -192,6 +203,7 @@ export default class Payment extends Module {
                 width='20px'
                 height='20px'
                 name='user'
+                fill={Theme.input.fontColor}
               >
               </i-icon>
               <i-input
@@ -235,6 +247,7 @@ export default class Payment extends Module {
                 width='20px'
                 height='20px'
                 name='phone'
+                fill={Theme.input.fontColor}
               >
               </i-icon>
               <i-input
@@ -278,6 +291,7 @@ export default class Payment extends Module {
                 width='20px'
                 height='20px'
                 name='envelope'
+                fill={Theme.input.fontColor}
               >
               </i-icon>
               <i-input

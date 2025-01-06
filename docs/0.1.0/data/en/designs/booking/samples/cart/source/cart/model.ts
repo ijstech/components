@@ -1,23 +1,62 @@
 import { FormatUtils } from "@ijstech/components";
+import { IProduct, IShop, IOption, IShippingInfo } from "../types";
 
 export function formatNumber(value: number) {
   return FormatUtils.formatNumber(value, { decimalFigures: 2 }) + 'đ'
 }
 
+export function shippingOptions() {
+  return [
+    { "value": "1", "label": "Standard Shipping" },
+    { "value": "2", "label": "Express" }
+  ]
+}
+
+export function getPayments() {
+  return [
+    {
+      value: '1',
+      images: [
+        'https://www.svgrepo.com/show/508730/visa-classic.svg',
+        'https://www.svgrepo.com/show/508703/mastercard.svg'
+      ]
+    },
+    {
+      value: '2',
+      images: [
+        'https://www.svgrepo.com/show/452222/google-pay.svg'
+      ]
+    }
+  ]
+}
+
 export class DataModel {
-  public shop: any = {
+  public shop: IShop = {
     name: '',
     id: ''
   };
-  public product: any = {
+  public product: IProduct = {
     name: '',
-    id: ''
+    picture: "",
+    description: "",
+    link: "",
+    price: "",
+    rating: 0,
+    brand: "",
+    category: "",
+    tags: [],
+    type: "",
+    discount: "",
+    originalPrice: ""
   }
-  public shippingOptions = [
-    { "value": "1", "label": "Standard Shipping" },
-    { "value": "2", "label": "Express" }
-  ];
-  public shippingInfo: any = {};
+  public shippingInfo: IShippingInfo = {
+    fee: "",
+    to: "",
+    itemsTotal: "",
+    subTotal: "",
+    discount: "",
+    total: ""
+  };
 
   constructor() {
     this.shop = this.fetchShop();
@@ -32,7 +71,7 @@ export class DataModel {
     }
   }
 
-  fetchShop(shopId?: string) {
+  fetchShop(shopId?: string): IShop {
     return {
       "id": '123',
       "name": "RozaliaCrafts",
@@ -42,7 +81,7 @@ export class DataModel {
     }
   }
 
-  fetchProduct() {
+  fetchProduct(): IProduct {
     return {
       picture: 'https://i.etsystatic.com/23712985/r/il/c7a5f7/2419940834/il_794xN.2419940834_isyp.jpg',
       name: '10 Loose Leaf Tea Sampler Gift Set, Birthday Day Gift Box, Gift for Her, Mom, Sister, Herbal Tea, Tea Lover Gift, Coworker, Christmas, Xmas',

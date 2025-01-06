@@ -93,7 +93,7 @@ export default class ProductFilter extends Module {
   private onRenderCategories(parent: Control, index: number) {
     const data = this.model?.categories?.[index]
     if (!data) return
-    const el = parent.children?.[index]?.firstChild as Label
+    const el = parent.children?.[index] as Label
     if (el) {
       el.caption = data.label
       el.link.href = `/${data.value}`

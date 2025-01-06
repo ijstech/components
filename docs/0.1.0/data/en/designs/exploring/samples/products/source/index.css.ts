@@ -121,9 +121,6 @@ export const customOptionStyle = Styles.style({
   $nest: {
     '.repeater-container': {
       overflow: 'visible'
-    },
-    '.repeater-container > i-panel': {
-      flexShrink: 0
     }
   }
 })

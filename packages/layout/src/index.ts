@@ -5,7 +5,9 @@ export {
   VStackElement, 
   HStack, 
   HStackElement,
-  IStackMediaQuery
+  IStackMediaQuery,
+  StackAlignItemsType,
+  StackJustifyContentType
 } from './stack';
 export {Panel, PanelElement} from './panel';
 export {
