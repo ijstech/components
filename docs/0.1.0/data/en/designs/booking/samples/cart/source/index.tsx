@@ -1,15 +1,3 @@
-# Cart
-
-## Description
-A cart component
-
-## Screen
-
-![Cart](screenshots/cart.png)
-
-## Source Code
-
-```typescript(source/index.tsx)
 import {  Module, Container, customModule } from "@ijstech/components";
 import CartMain from "./cart/index";
 
@@ -30,4 +18,3 @@ export default class Cart extends Module {
     </i-panel>
   }
 }
-```

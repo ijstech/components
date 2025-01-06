@@ -146,7 +146,7 @@ export default class Products extends Module {
   }
 
   private onRenderOption(parent: Control, index: number) {
-    const childEl = parent.children?.[index]?.firstChild as ProductOption;
+    const childEl = parent.children?.[index] as ProductOption;
     const data = this.model.options?.[index];
 
     if (childEl && data) {
@@ -161,6 +161,7 @@ export default class Products extends Module {
     this.model.filteredProducts = this.model.handlFilter(this.filterEl?.data);
 
     const optionEl = document.createElement('i-product-option') as ProductOption;
+    optionEl.stack = {shrink: '0'};
     this.optionsRepeater.add(optionEl);
     this.model.options = this.model.getOptions();
     this.scaleFilter();

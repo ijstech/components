@@ -1,6 +1,5 @@
 import { Container, Module, customElements, ControlElement, Styles, Panel } from '@ijstech/components';
 import { IProduct, ProductType } from '../types';
-import { ProductModel } from './model';
 import { customButtonStyle, customImageStyle, shadowHoveredStyle } from '../index.css';
 import { formatNumber } from '../ultils';
 const Theme = Styles.Theme.ThemeVars;
@@ -31,8 +30,6 @@ interface IProductItem {
 @customElements('i-product')
 export default class Product extends Module {
   private pnlProductItem: Panel;
-
-  private model: ProductModel; // TODO: fix this
 
   private _data: IProductItem = {};
 
@@ -100,7 +97,7 @@ export default class Product extends Module {
         gap={4}
       >
         <i-label
-          visible={this.product.isAvailable}
+          visible={this.product?.isAvailable}
           caption='Materials available'
           font={{ "size": "13px", "weight": "500" }}
         >
@@ -113,7 +110,7 @@ export default class Product extends Module {
           overflow="hidden"
         >
           <i-label
-            caption={this.product.name}
+            caption={this.product?.name}
             font={{ "size": "13px", "weight": "500" }}
             maxWidth="60%"
             textOverflow="ellipsis"
@@ -126,8 +123,8 @@ export default class Product extends Module {
           >
             <i-label
               id="lblRating"
-              visible={!!this.product.rating}
-              caption={`${this.product.rating || ''}`}
+              visible={!!this.product?.rating}
+              caption={`${this.product?.rating || ''}`}
               font={{ "size": "13px", "weight": "500" }}
             >
             </i-label>
@@ -141,27 +138,27 @@ export default class Product extends Module {
             </i-icon>
             <i-label
               id="lblReviews"
-              caption={`(${formatNumber(this.product.reviews || 0)})`}
+              caption={`(${formatNumber(this.product?.reviews || 0)})`}
               font={{ "size": "12px", "weight": "400" }}
             >
             </i-label>
           </i-hstack>
         </i-stack>
         <i-label
-          caption={this.product.seller}
+          caption={this.product?.seller}
           font={{ "size": "13px" }}
           opacity='0.7'
         >
         </i-label>
         <i-panel display="inline">
           <i-label
-            caption={this.product.price}
+            caption={this.product?.price}
             font={{ "size": "16px", "weight": "500", color: Theme.colors.success.main }}
             display="inline"
           >
           </i-label>
           <i-label
-            caption={this.product.originalPrice}
+            caption={this.product?.originalPrice}
             padding={{ left: 4 }}
             font={{ "size": "13px", "weight": "400" }}
             textDecoration="line-through"
@@ -172,11 +169,11 @@ export default class Product extends Module {
           </i-label>
           <i-label
             id="lblDiscount"
-            caption={`(${this.product.discount})`}
+            caption={`(${this.product?.discount})`}
             padding={{ left: 4 }}
             font={{ "size": "13px", "weight": "400" }}
             display="inline"
-            visible={!!this.product.discount}
+            visible={!!this.product?.discount}
             opacity='0.7'
           ></i-label>
         </i-panel>
@@ -238,7 +235,7 @@ export default class Product extends Module {
       </i-panel>,
       <i-vstack width='100%' gap={6}>
         <i-label
-          caption={this.product.name}
+          caption={this.product?.name}
           font={{ size: '13px', weight: '500' }}
           textOverflow='ellipsis'
         ></i-label>
@@ -263,19 +260,19 @@ export default class Product extends Module {
             </i-hstack>
 
             <i-label
-              caption={`(${formatNumber(this.product.reviews || 0)})`}
+              caption={`(${formatNumber(this.product?.reviews || 0)})`}
               font={{ size: '16px', weight: '400' }}
             ></i-label>
           </i-hstack>
         </i-hstack>
         <i-label
-          caption={this.product.price}
+          caption={this.product?.price}
           font={{ size: '16px', weight: '500' }}
         ></i-label>
         <i-panel display='inline' margin={{ top: -3 }}>
           <i-label
             display='inline'
-            caption={this.product.originalPrice}
+            caption={this.product?.originalPrice}
             font={{
               size: '13px',
               weight: '400',
@@ -285,7 +282,7 @@ export default class Product extends Module {
           ></i-label>
           <i-label
             display='inline'
-            caption={`(${this.product.discount})`}
+            caption={`(${this.product?.discount})`}
             padding={{ left: 4 }}
             font={{
               size: '13px',
@@ -295,7 +292,7 @@ export default class Product extends Module {
           ></i-label>
         </i-panel>
         <i-label
-          caption={this.product.seller}
+          caption={this.product?.seller}
           font={{ size: '13px' }}
           opacity='0.7'
         ></i-label>
@@ -306,7 +303,6 @@ export default class Product extends Module {
   init() {
     super.init();
     this.onItemClicked = this.getAttribute('onItemClicked', true) || this.onItemClicked;
-    this.model = new ProductModel();
     const product = this.getAttribute('product', true);
     const type = this.getAttribute('type', true);
     if (product || type) this.setData({ product, type });

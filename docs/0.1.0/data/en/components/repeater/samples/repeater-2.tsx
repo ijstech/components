@@ -9,9 +9,9 @@ export default class IObservableExample extends Module {
   }
 
   onRender(parent: Control, index: number) {
-    const item = parent.children[index]
-    const inputElm = item.querySelector('i-input') as Input;
-    inputElm.value = this._data.tags[index];
+    const inputElm = parent.children[index] as Input;
+    if (inputElm)
+      inputElm.value = this._data.tags[index];
   }
 
   render() {

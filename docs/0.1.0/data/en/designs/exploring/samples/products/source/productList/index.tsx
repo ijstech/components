@@ -54,7 +54,7 @@ export default class ProductList extends Module {
   }
 
   private onRenderItem(parent: Control, index: number) {
-    const childEl = parent.children?.[index]?.firstChild as Product;
+    const childEl = parent.children?.[index] as Product;
     const data = this.data[index];
     if (childEl && data) {
       childEl.setData({ product: data, type: this.type });

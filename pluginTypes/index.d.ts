@@ -22756,7 +22756,7 @@ declare module "@ijstech/layout/card.ts" {
 }
 /// <amd-module name="@ijstech/layout" />
 declare module "@ijstech/layout" {
-    export { StackDirectionType, StackLayout, VStack, VStackElement, HStack, HStackElement, IStackMediaQuery } from "@ijstech/layout/stack.ts";
+    export { StackDirectionType, StackLayout, VStack, VStackElement, HStack, HStackElement, IStackMediaQuery, StackAlignItemsType, StackJustifyContentType } from "@ijstech/layout/stack.ts";
     export { Panel, PanelElement } from "@ijstech/layout/panel.ts";
     export { CardLayout, CardLayoutElement } from "@ijstech/layout/card.ts";
     export { IGridLayoutMediaQuery, GridLayout, GridLayoutElement } from "@ijstech/layout/grid.ts";
@@ -25930,6 +25930,7 @@ declare module "@ijstech/repeater/style/repeater.css.ts" { }
 /// <amd-module name="@ijstech/repeater/repeater.ts" />
 declare module "@ijstech/repeater/repeater.ts" {
     import { Control, ControlElement, Container } from '@ijstech/base';
+    import { StackAlignItemsType, StackJustifyContentType } from '@ijstech/layout';
     import "@ijstech/repeater/style/repeater.css.ts";
     type onRenderCallback = (parent: Control, index: number) => void;
     type LayoutType = 'horizontal' | 'vertical';
@@ -25939,6 +25940,8 @@ declare module "@ijstech/repeater/repeater.ts" {
         count?: number;
         layout?: LayoutType;
         gap?: number | string;
+        justifyContent?: StackJustifyContentType;
+        alignItems?: StackAlignItemsType;
     }
     global {
         namespace JSX {
@@ -25952,8 +25955,9 @@ declare module "@ijstech/repeater/repeater.ts" {
         private _count;
         private _layout;
         private _gap;
+        private _justifyContent;
+        private _alignItems;
         private wrapper;
-        private pnlPanel;
         private templateEl;
         onRender: onRenderCallback;
         constructor(parent?: Control, options?: any);
@@ -25965,6 +25969,10 @@ declare module "@ijstech/repeater/repeater.ts" {
         set layout(value: LayoutType);
         get gap(): number | string;
         set gap(value: number | string);
+        get justifyContent(): StackJustifyContentType;
+        set justifyContent(value: StackJustifyContentType);
+        get alignItems(): StackAlignItemsType;
+        set alignItems(value: StackAlignItemsType);
         private foreachNode;
         private isEmpty;
         private cloneItems;

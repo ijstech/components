@@ -1,17 +1,5 @@
-# Details
-
-## Description
-A booking details component
-
-## Screen
-
-![Detail](screenshots/details.png)
-
-## Source Code
-
-```typescript(source/index.tsx)
 import {  Module, Container, customModule } from "@ijstech/components";
-import DetailsMain from "./details";
+import DetailsMain from "./details/index";
 
 @customModule
 export default class Details extends Module {
@@ -30,4 +18,3 @@ export default class Details extends Module {
     </i-panel>
   }
 }
-```

@@ -1,22 +1,69 @@
-import { Styles, Module, Container, RadioGroup, observable } from "@ijstech/components";
-import { DataModel } from "./model";
+import { ControlElement, Styles, Module, Container, observable, customElements, Panel } from "@ijstech/components";
 import { customStyles } from './index.css';
+import { DataModel, getPayments, shippingOptions } from "./model";
 const Theme = Styles.Theme.ThemeVars;
 
-export default class Cart extends Module {
+interface CartMainElement extends ControlElement {
+}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'i-cart': CartMainElement;
+    }
+  }
+}
+
+@customElements('i-cart')
+export default class CartMain extends Module {
+  private pnlPayments: Panel;
+
   @observable()
   private model: DataModel = new DataModel();
-
-  private payGroup: RadioGroup;
 
   constructor(parent?: Container, options?: any) {
     super(parent, options);
   }
 
-  private onPayChanged() { }
+  private renderPayments() {
+    const payments = getPayments();
+    this.pnlPayments.clearInnerHTML();
+    this.pnlPayments.appendChild(
+      <i-radio-group
+        id='payGroup'
+        width='100%'
+        class={customStyles}
+      >
+        {payments.map((payment) => {
+          return (
+            <i-radio
+              value={payment.value}
+            >
+              <i-hstack
+                verticalAlignment='center'
+                gap='4px'
+                margin={{ "right": 4 }}
+              >
+                {payment.images.map((image) => {
+                  return (
+                    <i-image
+                      url={image}
+                      width={48}
+                    >
+                    </i-image>
+                  )
+                })}
+              </i-hstack>
+            </i-radio>
+          )
+        })}
+      </i-radio-group>
+    )
+  }
 
   init() {
     super.init();
+    this.renderPayments();
   }
 
   render() {
@@ -246,9 +293,8 @@ export default class Cart extends Module {
                 border={{ "radius": 24 }}
                 background={{ "color": Theme.input.background }}
                 font={{ color: Theme.input.fontColor }}
-                items={this.model.shippingOptions}
+                items={shippingOptions()}
                 icon={{ "width": 16, "height": 16, "fill": Theme.input.fontColor, "name": "caret-down" }}
-                value='1'
               >
               </i-combo-box>
             </i-panel>
@@ -265,46 +311,10 @@ export default class Cart extends Module {
           >
           </i-label>
           <i-vstack
+            id="pnlPayments"
             width='100%'
             gap={8}
           >
-            <i-radio-group
-              id='payGroup'
-              width='100%'
-              class={customStyles}
-              onChanged={this.onPayChanged}
-            >
-              <i-radio
-                value='1'
-              >
-                <i-hstack
-                  verticalAlignment='center'
-                  gap='4px'
-                  margin={{ "right": 4 }}
-                >
-                  <i-image
-                    url='https://www.svgrepo.com/show/508730/visa-classic.svg'
-                    width={48}
-                  >
-                  </i-image>
-                  <i-image
-                    url='https://www.svgrepo.com/show/508703/mastercard.svg'
-                    width={48}
-                  >
-                  </i-image>
-                </i-hstack>
-              </i-radio>
-              <i-radio
-                value='2'
-              >
-                <i-image
-                  url='https://www.svgrepo.com/show/452222/google-pay.svg'
-                  width={48}
-                  display='inline-block'
-                >
-                </i-image>
-              </i-radio>
-            </i-radio-group>
           </i-vstack>
           <i-hstack
             width='100%'
@@ -357,7 +367,7 @@ export default class Cart extends Module {
             >
             </i-label>
             <i-label
-              caption={this.model.shippingInfo?.subtotal}
+              caption={this.model.shippingInfo?.subTotal}
               font={{ "size": "16px", "weight": "400" }}
             >
             </i-label>

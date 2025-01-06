@@ -1,15 +1,3 @@
-# Payment
-
-## Description
-A payment component
-
-## Screen
-
-![Payment](screenshots/payment.png)
-
-## Source Code
-
-```typescript(source/index.tsx)
 import {  Module, Container, customModule } from "@ijstech/components";
 import PaymentMain from "./payment/index";
 
@@ -30,4 +18,3 @@ export default class Payment extends Module {
     </i-panel>
   }
 }
-```
