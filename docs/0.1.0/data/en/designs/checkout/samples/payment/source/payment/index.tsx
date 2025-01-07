@@ -1,4 +1,5 @@
-import { Styles, Module, ControlElement, customElements } from "@ijstech/components";
+import { Styles, Module, ControlElement, customElements, observable } from "@ijstech/components";
+import { DataModel } from "./model";
 const Theme = Styles.Theme.ThemeVars;
 
 
@@ -14,6 +15,12 @@ declare global {
 
 @customElements('i-payment')
 export default class PaymentMain extends Module {
+  @observable()
+  private model: DataModel = new DataModel();
+
+  init() {
+    super.init();
+  }
 
   render() {
     return <i-panel
@@ -21,12 +28,10 @@ export default class PaymentMain extends Module {
       minHeight='100%'
     >
       <i-hstack
-        position='relative'
         width='100%'
         padding={{ "top": "8px", "right": "16px", "bottom": "8px", "left": "16px" }}
       >
         <i-icon
-          position='relative'
           name='times'
           width={16}
           height={16}
@@ -35,13 +40,11 @@ export default class PaymentMain extends Module {
         >
         </i-icon>
         <i-hstack
-          position='relative'
           width='100%'
           stack={{ "basis": "0%", "shrink": "1", "grow": "1" }}
           justifyContent='center'
         >
           <i-label
-            position='relative'
             caption='Checkout'
           >
           </i-label>
@@ -59,7 +62,7 @@ export default class PaymentMain extends Module {
           <i-image
             width='100px'
             display='inline-block'
-            url='https://d4ov6iqsvotvt.cloudfront.net/uploads/show/poster_image/5654/medium_1620213561-gore-vidal-s-the-best-man.jpg'
+            url={this.model.data?.image}
           >
           </i-image>
         </i-panel>
@@ -68,20 +71,30 @@ export default class PaymentMain extends Module {
           width='100%'
         >
           <i-label
-            caption="Gore Vidal's The Best Man"
+            caption={this.model.data?.name}
             font={{ "size": "16px", "weight": "600" }}
           >
           </i-label>
           <i-label
-            caption='Wednesday, October 14, 2021'
+            caption={this.model.data?.publishedAt}
             font={{ "size": "12px" }}
           >
           </i-label>
-          <i-label
-            caption='1 ticket . Contribute what you can'
-            font={{ "size": "14px" }}
-          >
-          </i-label>
+          <i-panel display="inline">
+            <i-label
+              caption={this.model.data?.quantity}
+              font={{ "size": "14px" }}
+              display="inline"
+            >
+            </i-label>
+            <i-label
+              caption='ticket. Contribute what you can'
+              font={{ "size": "14px" }}
+              padding={{ "left": 4 }}
+              display="inline"
+            >
+            </i-label>
+          </i-panel>
         </i-vstack>
       </i-hstack>
       <i-vstack
@@ -191,7 +204,6 @@ export default class PaymentMain extends Module {
             padding={{ "right": "8px", "left": "8px" }}
           >
             <i-hstack
-              position='relative'
               width='100%'
               gap='4px'
               verticalAlignment='center'
@@ -199,7 +211,6 @@ export default class PaymentMain extends Module {
               alignItems='center'
             >
               <i-icon
-                position='relative'
                 width='20px'
                 height='20px'
                 name='user'
@@ -207,7 +218,6 @@ export default class PaymentMain extends Module {
               >
               </i-icon>
               <i-input
-                position='relative'
                 width='100%'
                 height='100%'
                 background={{ "color": "transparent" }}
@@ -220,7 +230,6 @@ export default class PaymentMain extends Module {
             <i-label
               visible={false}
               font={{ "color": "var(--colors-error-main)" }}
-              position='relative'
               maxWidth='30%'
               overflowWrap='break-word'
             >
@@ -235,7 +244,6 @@ export default class PaymentMain extends Module {
             padding={{ "right": "8px", "left": "8px" }}
           >
             <i-hstack
-              position='relative'
               width='100%'
               gap='4px'
               verticalAlignment='center'
@@ -243,7 +251,6 @@ export default class PaymentMain extends Module {
               alignItems='center'
             >
               <i-icon
-                position='relative'
                 width='20px'
                 height='20px'
                 name='phone'
@@ -251,7 +258,6 @@ export default class PaymentMain extends Module {
               >
               </i-icon>
               <i-input
-                position='relative'
                 width='100%'
                 height='100%'
                 background={{ "color": "transparent" }}
@@ -264,7 +270,6 @@ export default class PaymentMain extends Module {
             <i-label
               visible={false}
               font={{ "color": "var(--colors-error-main)" }}
-              position='relative'
               maxWidth='30%'
               overflowWrap='break-word'
             >
@@ -279,7 +284,6 @@ export default class PaymentMain extends Module {
             padding={{ "right": "8px", "left": "8px" }}
           >
             <i-hstack
-              position='relative'
               width='100%'
               gap='4px'
               verticalAlignment='center'
@@ -287,7 +291,6 @@ export default class PaymentMain extends Module {
               alignItems='center'
             >
               <i-icon
-                position='relative'
                 width='20px'
                 height='20px'
                 name='envelope'
@@ -295,7 +298,6 @@ export default class PaymentMain extends Module {
               >
               </i-icon>
               <i-input
-                position='relative'
                 width='100%'
                 height='100%'
                 background={{ "color": "transparent" }}
@@ -308,7 +310,6 @@ export default class PaymentMain extends Module {
             <i-label
               visible={false}
               font={{ "color": "var(--colors-error-main)" }}
-              position='relative'
               maxWidth='30%'
               overflowWrap='break-word'
             >

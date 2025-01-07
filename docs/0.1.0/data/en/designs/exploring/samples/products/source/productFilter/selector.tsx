@@ -68,7 +68,7 @@ export default class Selector extends Module {
         <i-radio-group
           width='100%'
           tag={this.data.key}
-          selectedValue={this.selectedValue}
+          selectedValue={this.selectedValue?.value}
           onChanged={this.handleRadioChanged}
         >
           {options.map(option => {
@@ -85,10 +85,11 @@ export default class Selector extends Module {
       const selected = this.selectedValue ? typeof this.selectedValue === 'string' ? [this.selectedValue] : this.selectedValue : [];
       for (let i = 0; i < options.length; i++) {
         const option = options[i];
+        const isSelected = selected?.findIndex(item => item.value === option.value) > -1;
         this.pnlOptions.appendChild(
           <i-checkbox
             caption={option.label}
-            checked={selected && selected.includes(option.value)}
+            checked={isSelected}
             tag={option}
             onChanged={this.handleCheckboxChanged}
           />
