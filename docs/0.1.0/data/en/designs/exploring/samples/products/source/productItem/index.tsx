@@ -87,6 +87,8 @@ export default class Product extends Module {
           url={this.product?.image}
           display='block'
           width='100%'
+          border={{ radius: 3 }}
+          boxShadow={Theme.shadows[0]}
           class={customImageStyle}
         >
         </i-image>
@@ -100,6 +102,7 @@ export default class Product extends Module {
           visible={this.product?.isAvailable}
           caption='Materials available'
           font={{ "size": "13px", "weight": "500" }}
+          opacity={0.5}
         >
         </i-label>
         <i-stack
@@ -177,6 +180,13 @@ export default class Product extends Module {
             opacity='0.7'
           ></i-label>
         </i-panel>
+        <i-hstack verticalAlignment="center" gap={4} visible={this.product?.format === 'digital'}>
+          <i-icon name="cloud-download-alt" width={14} height={14} fill={Theme.colors.primary.main} />
+          <i-label
+            caption={this.product?.format === 'digital' ? 'Digital Download' : ''}
+            font={{ size: '12px', bold: true }}
+          ></i-label>
+        </i-hstack>
       </i-vstack>,
       <i-hstack
         width='100%'
@@ -231,6 +241,8 @@ export default class Product extends Module {
           display='block'
           width='100%'
           overflow='hidden'
+          border={{ radius: 3 }}
+          boxShadow={Theme.shadows[0]}
         ></i-image>
       </i-panel>,
       <i-vstack width='100%' gap={6}>
@@ -291,6 +303,13 @@ export default class Product extends Module {
             }}
           ></i-label>
         </i-panel>
+        <i-hstack verticalAlignment="center" gap={4} visible={this.product?.format === 'digital'}>
+          <i-icon name="cloud-download-alt" width={14} height={14} fill={Theme.colors.primary.main} />
+          <i-label
+            caption={this.product?.format === 'digital' ? 'Digital Download' : ''}
+            font={{ size: '12px', bold: true }}
+          ></i-label>
+        </i-hstack>
         <i-label
           caption={this.product?.seller}
           font={{ size: '13px' }}

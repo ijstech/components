@@ -1,30 +1,23 @@
 import {
-  Control,
-  Repeater,
   Module,
-  customElements,
+  Control,
   ControlElement,
-  Label,
   Panel,
-  Styles,
-  RadioGroup,
-  ComboBox,
-  Input,
-  Button
+  customElements,
+  Repeater,
+  observable
 } from '@ijstech/components'
-import { FilterModel } from './model'
-import Selector from './selector'
-import { buttonHoveredStyle } from '../index.css'
-import { IOption } from '../types'
+import ProductFilterModal from './filter'
+import ProductOption from '../productOption/index'
+import { IOption, IProductFilter } from '../types';
+import { afterBlurStyle, beforeBlurStyle, customOptionStyle } from './index.css'
+import { buttonHoveredStyle } from '../index.css';
 
-const Theme = Styles.Theme.ThemeVars
-
-type onChangedCallback = (type: string) => number
-type onCloseCallback = () => void
+type onChangedCallback = (data: IProductFilter) => number
 
 interface ProductFilterElement extends ControlElement {
+  data?: IOption[];
   onChanged?: onChangedCallback
-  onClose?: onCloseCallback
 }
 
 declare global {
@@ -37,387 +30,361 @@ declare global {
 
 @customElements('i-product-filter')
 export default class ProductFilter extends Module {
-  private btnShowResults: Button;
+  private pnlFilter: Panel
+  private filterEl: ProductFilterModal
+  private optionsRepeater: Repeater;
+  private leftIcon: Panel
+  private rightIcon: Panel
+  private leftBlur: Panel
+  private rightBlur: Panel
 
-  private model: FilterModel
+  @observable('_data', true)
+  private _data: IOption[] = [];
 
-  private inputMin: Input
-  private inputMax: Input
+  private initialOptions: IOption[] = [];
 
   onChanged?: onChangedCallback
-  onClose?: onCloseCallback
 
   get data() {
-    return this.model.data
+    return this._data || [];
   }
 
-  updateData(option: IOption) {
-    const group = option.group;
-    if (group) {
-      const filters = this.model.getFilters();
-      const isRadio = filters.find(item => item.key === group)?.isRadio;
-      if (isRadio) {
-        this.model.data[group] = option.selected ? option : undefined;
-      } else {
-        const value = this.model.data[group];
-        if (option.selected) {
-          if (!value) this.model.data[group] = [option];
-          else if (value.findIndex(item => item.value === option.value) === -1) {
-            value.push(option);
-          }
-        } else if (value) {
-          const findedIndex = value.findIndex(item => item.value === option.value);
-          if (findedIndex > -1) {
-            value.splice(findedIndex, 1);
-          }
+  set data(value) {
+    this._data = JSON.parse(JSON.stringify(value || []));
+    this.initialOptions = JSON.parse(JSON.stringify(value || []));
+    this.scaleFilter();
+  }
+
+  get filteredData() {
+    return this.filterEl?.data;
+  }
+
+  private scaleFilter() {
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      return
+    }
+
+    const hasOverflow = this.pnlFilter.scrollWidth > this.pnlFilter.clientWidth
+    if (hasOverflow) {
+      this.rightBlur.visible = true
+      this.leftIcon.visible = false
+      this.rightIcon.visible = true
+    }
+    this.pnlFilter.scrollLeft = 0
+  }
+
+  private onClickLeftIcon() {
+    const scrollWidth = this.pnlFilter.scrollWidth
+    const clientWidth = this.pnlFilter.clientWidth
+
+    const hasOverflow = scrollWidth > clientWidth
+
+    this.rightBlur.visible = hasOverflow
+    this.rightIcon.visible = hasOverflow
+
+    if (hasOverflow) {
+      this.pnlFilter.scrollLeft -= clientWidth
+
+      if (this.pnlFilter.scrollLeft < 0) this.pnlFilter.scrollLeft = 0
+
+      const isStart = this.pnlFilter.scrollLeft === 0
+      this.leftBlur.visible = !isStart
+      this.leftIcon.visible = !isStart
+    }
+  }
+
+  private onClickRightIcon() {
+    const scrollWidth = this.pnlFilter.scrollWidth
+    const clientWidth = this.pnlFilter.clientWidth
+
+    const hasOverflow = scrollWidth > clientWidth
+    this.leftBlur.visible = hasOverflow
+    this.leftIcon.visible = hasOverflow
+
+    if (hasOverflow) {
+      this.pnlFilter.scrollLeft += clientWidth
+      if (this.pnlFilter.scrollLeft > scrollWidth)
+        this.pnlFilter.scrollLeft = scrollWidth
+      const isEnd = this.pnlFilter.scrollLeft + clientWidth >= scrollWidth
+
+      this.rightBlur.visible = !isEnd
+      this.rightIcon.visible = !isEnd
+    }
+  }
+
+  private showFilter() {
+    if (!this.filterEl) {
+      this.filterEl = new ProductFilterModal(undefined, {
+        onChanged: this.onFilterChanged.bind(this),
+        onClose: this.onCloseFilter.bind(this),
+      })
+    }
+    this.filterEl.openModal({
+      width: '50dvw',
+      height: '100dvh',
+      popupPlacement: 'left',
+      overflow: 'hidden',
+      closeIcon: null,
+      mediaQueries: [
+        {
+          maxWidth: '767px',
+          properties: {
+            width: '100dvw',
+            border: { radius: 0 },
+          },
+        },
+      ],
+    })
+  }
+
+  private onFilterChanged(type: string) {
+    const newOptions = JSON.parse(JSON.stringify(this.initialOptions || []));
+
+    if (this.filterEl.data && type !== 'reset') {
+      const values = Object.values(this.filterEl.data);
+      let flattenValues: any[] = [];
+
+      for (const value of values) {
+        if (Array.isArray(value)) {
+          flattenValues = flattenValues.concat(value);
+        } else if (value !== undefined && value !== null) {
+          flattenValues.push(value);
         }
       }
-      this.renderSelectors();
-    }
-  }
 
-  private repeatCategory: Repeater
-  private lblShowCateMore: Label
-  private pnlLocation: Panel
-  private pnlPrices: Panel
-  private pnlSelectors: Panel
-
-  private renderUI() {
-    this.repeatCategory.count = 5
-    this.lblShowCateMore.visible = this.model.categories?.length > 5
-    this.renderLocation()
-    this.renderPrice()
-    this.renderSelectors()
-  }
-
-  private onRenderCategories(parent: Control, index: number) {
-    const data = this.model?.categories?.[index]
-    if (!data) return
-    const el = parent.children?.[index] as Label
-    if (el) {
-      el.caption = data.label
-      el.link.href = `/${data.value}`
-      el.link.target = '_blank'
-    }
-  }
-
-  private onToggleCate(target: Label) {
-    if (target.caption === 'Show more') {
-      target.caption = 'Show less'
-      this.repeatCategory.count = this.model.categories?.length
-    } else {
-      target.caption = 'Show more'
-      this.repeatCategory.count = 5
-    }
-  }
-
-  private renderLocation() {
-    const options = this.model.locations
-    this.pnlLocation.clearInnerHTML()
-    this.pnlLocation.appendChild(
-      <i-radio-group
-        width='100%'
-        selectedValue={this.data.location}
-        onChanged={(target: RadioGroup) =>
-          this.onRadioChanged(target, 'location')
+      for (const value of flattenValues) {
+        const findedIndex = newOptions.findIndex(option => option.value === value?.value);
+        if (findedIndex > -1) {
+          newOptions[findedIndex].selected = true;
         }
-      >
-        {options.map((option) => {
-          if (option.value === 'custom') {
-            return (
-              <i-radio value={option.value}>
-                <i-vstack gap={4}>
-                  <i-label caption={option.label} font={{ size: '13px' }} />
-                  <i-combo-box
-                    height={36}
-                    border={{
-                      radius: 6,
-                      width: '1px',
-                      style: 'solid',
-                      color: Theme.divider,
-                    }}
-                    placeholder='Enter location'
-                    font={{ size: '13px' }}
-                    items={[]}
-                    onChanged={this.onCustomLocationChanged}
-                  ></i-combo-box>
-                </i-vstack>
-              </i-radio>
-            )
-          }
-          return (
-            <i-radio
-              value={option.value}
-              caption={option.label}
-              font={{ size: '13px' }}
-            ></i-radio>
-          )
-        })}
-      </i-radio-group>
-    )
-  }
-
-  private onRadioChanged(target: RadioGroup, type: string) {
-    const value = target.selectedValue
-    this.onSelectorChanged(type, value)
-  }
-
-  private onCustomLocationChanged(target: ComboBox) {
-    this.onSelectorChanged('customLocation', target.value)
-  }
-
-  private renderPrice() {
-    const options = this.model.prices
-    this.pnlPrices.clearInnerHTML()
-    this.pnlPrices.appendChild(
-      <i-radio-group
-        position='relative'
-        width='100%'
-        selectedValue={this.data.price}
-        onChanged={(target: RadioGroup) => this.onRadioChanged(target, 'price')}
-      >
-        {options.map((option) => {
-          if (option.value === 'custom') {
-            return (
-              <i-radio value={option.value}>
-                <i-vstack gap={4} maxWidth='69%' overflow='hidden'>
-                  <i-label caption={option.label} font={{ size: '13px' }} />
-                  <i-hstack
-                    verticalAlignment='center'
-                    gap={4}
-                    overflow='hidden'
-                    maxWidth='100%'
-                  >
-                    <i-input
-                      id='inputMin'
-                      height={36}
-                      border={{
-                        radius: 6,
-                        width: '1px',
-                        style: 'solid',
-                        color: Theme.divider,
-                      }}
-                      placeholder='Min'
-                      width='auto'
-                      font={{ size: '13px' }}
-                      inputType='number'
-                      value={this.data.min ?? ''}
-                      tag={'min'}
-                    ></i-input>
-                    <i-label font={{ size: '13px' }} caption='to'></i-label>
-                    <i-input
-                      id='inputMax'
-                      height={36}
-                      width='auto'
-                      border={{
-                        radius: 6,
-                        width: '1px',
-                        style: 'solid',
-                        color: Theme.divider,
-                      }}
-                      placeholder='Max'
-                      font={{ size: '13px' }}
-                      inputType='number'
-                      value={this.data.max ?? ''}
-                      tag={'max'}
-                    ></i-input>
-                    <i-button
-                      border={{ radius: 24 }}
-                      background={{ color: 'transparent' }}
-                      caption='Apply'
-                      font={{
-                        color: Theme.text.primary,
-                        size: '13px',
-                        weight: 500,
-                      }}
-                      boxShadow='none'
-                      height={36}
-                      padding={{ left: 9, right: 9 }}
-                      class={buttonHoveredStyle}
-                      onClick={this.handleApply}
-                    ></i-button>
-                  </i-hstack>
-                </i-vstack>
-              </i-radio>
-            )
-          }
-          return (
-            <i-radio
-              value={option.value}
-              caption={option.label}
-              font={{ size: '13px' }}
-            ></i-radio>
-          )
-        })}
-      </i-radio-group>
-    )
-  }
-
-  private handleValidate() {
-    const min = this.inputMin.value
-    const max = this.inputMax.value
-    return Number(min) <= Number(max)
-  }
-
-  private handleApply() {
-    const isAvalid = this.handleValidate()
-    if (!isAvalid) {
-      this.inputMax.value = undefined
+        else if (value?.value) {
+          newOptions.unshift({
+            value: value?.value,
+            label: value?.label,
+            group: value?.group,
+            selected: true
+          })
+        }
+      }
     }
-    this.model.setValues({ min: this.inputMin.value, max: this.inputMax.value })
+
+    this._data = newOptions;
+
     if (typeof this.onChanged === 'function') {
-      const count = this.onChanged('price')
-      this.btnShowResults.caption = `Show results (${count})`
+      return this.onChanged(this.filterEl?.data);
     }
   }
 
-  private renderSelectors() {
-    this.pnlSelectors.clearInnerHTML()
-    const filters = this.model.getFilters()
-    for (let filter of filters) {
-      this.pnlSelectors.appendChild(
-        <i-product-filter--selector
-          display='block'
-          width='100%'
-          data={filter}
-          selectedValue={this.data[filter.key]}
-          onChange={this.onSelectorChanged}
-        />
-      )
+  private onCloseFilter() {
+    this.filterEl?.closeModal()
+  }
+
+  private onSelectOption(target: Control, option: IOption) {
+    this.filterEl?.updateData(option);
+  }
+
+  private onRenderOption(parent: Control, index: number) {
+    const childEl = parent.children?.[index] as ProductOption;
+    const data = this.data?.[index];
+
+    if (childEl && data) {
+      childEl.setData(data);
+      childEl.onSelectOption = this.onSelectOption.bind(this)
     }
-  }
+  };
 
-  private onSelectorChanged(type: string, value: any) {
-    this.model.setValue(type, value)
-    if (typeof this.onChanged === 'function') {
-      const count = this.onChanged(type)
-      this.btnShowResults.caption = `Show results (${count})`
-    }
-  }
-
-  private onReset() {
-    this.model.reset()
-    this.renderUI()
-    if (typeof this.onChanged === 'function') {
-      const count = this.onChanged('reset')
-      this.btnShowResults.caption = `Show results (${count})`
-    }
-  }
-
-  private handleClose() {
-    if (typeof this.onClose === 'function') this.onClose()
-  }
-
-  init() {
+  async init() {
     super.init()
-    this.onChanged = this.getAttribute('onChanged', true) || this.onChanged
-    this.onClose = this.getAttribute('onClose', true) || this.onClose
-    this.onSelectorChanged = this.onSelectorChanged.bind(this)
-    this.handleValidate = this.handleValidate.bind(this)
-    this.handleApply = this.handleApply.bind(this)
-    this.model = new FilterModel()
-    this.renderUI()
+    this.onChanged = this.getAttribute('onChanged', true) || this.onChanged;
+    const options = this.getAttribute('options', true);
+    if (options) {
+      this.options = options;
+    }
+
+    const optionEl = document.createElement('i-product-option') as ProductOption;
+    optionEl.stack = { shrink: '0' };
+    this.optionsRepeater.add(optionEl);
+    this.scaleFilter();
   }
 
   render() {
     return (
-      <i-vstack width='100%' height='100%' gap={18}>
+      <i-hstack
+        width='100%'
+        gap={16}
+        alignItems='center'
+        horizontalAlignment='space-between'
+        padding={{ top: 8 }}
+        overflow='hidden'
+        position='relative'
+      >
+        <i-panel
+          id='leftBlur'
+          class={beforeBlurStyle}
+          visible={false}
+        ></i-panel>
+        <i-panel
+          id='leftIcon'
+          cursor='pointer'
+          visible={false}
+          left={0}
+          zIndex={10}
+          onClick={this.onClickLeftIcon}
+        >
+          <i-icon
+            name='angle-left'
+            width={20}
+            height={20}
+            fill='var(--text-primary)'
+            cursor='pointer'
+          ></i-icon>
+        </i-panel>
+        <i-hstack alignItems='center' maxWidth='70%' position='relative'>
+          <i-hstack
+            id='pnlFilter'
+            alignItems='center'
+            maxWidth='100%'
+            overflow='hidden'
+            gap={12}
+          >
+            <i-button
+              icon={{ name: 'sliders-h', width: 13, height: 13 }}
+              caption='All Filters'
+              minHeight={36}
+              border={{
+                radius: '24px',
+                width: '2px',
+                style: 'solid',
+                color: 'var(--divider)'
+              }}
+              padding={{
+                top: '9px',
+                right: '15px',
+                bottom: '9px',
+                left: '15px'
+              }}
+              boxShadow='none'
+              font={{ size: '12px', weight: '600' }}
+              background={{ color: 'transparent' }}
+              stack={{ shrink: '0' }}
+              onClick={this.showFilter}
+              mediaQueries={[
+                { maxWidth: '480px', properties: { visible: false } }
+              ]}
+            ></i-button>
+            <i-button
+              visible={false}
+              icon={{ name: 'sliders-h', width: 13, height: 13 }}
+              minHeight={36}
+              border={{
+                radius: '24px',
+                width: '2px',
+                style: 'solid',
+                color: 'var(--divider)'
+              }}
+              padding={{
+                top: '9px',
+                right: '15px',
+                bottom: '9px',
+                left: '15px'
+              }}
+              boxShadow='none'
+              font={{ size: '12px', weight: '600' }}
+              background={{ color: 'transparent' }}
+              stack={{ shrink: '0' }}
+              onClick={this.showFilter}
+              mediaQueries={[
+                { maxWidth: '480px', properties: { visible: true } }
+              ]}
+            ></i-button>
+            <i-repeater
+              id="optionsRepeater"
+              gap={12}
+              layout="horizontal"
+              data={this._data}
+              mediaQueries={[
+                { maxWidth: '480px', properties: { visible: false } }
+              ]}
+              class={customOptionStyle}
+              onRender={this.onRenderOption}
+            >
+            </i-repeater>
+          </i-hstack>
+          <i-panel
+            id='rightBlur'
+            class={afterBlurStyle}
+            visible={false}
+          ></i-panel>
+          <i-panel
+            id='rightIcon'
+            cursor='pointer'
+            visible={false}
+            right={0}
+            top={10}
+            zIndex={10}
+            onClick={this.onClickRightIcon}
+          >
+            <i-icon
+              name='angle-right'
+              width={20}
+              height={20}
+              fill='var(--text-primary)'
+              cursor='pointer'
+            ></i-icon>
+          </i-panel>
+        </i-hstack>
         <i-hstack
           position='relative'
           width='100%'
-          gap={8}
+          gap={12}
+          stack={{ basis: '30%', shrink: '0' }}
           alignItems='center'
-          justifyContent='space-between'
-          margin={{ bottom: 6 }}
-          stack={{ shrink: '0' }}
+          justifyContent='end'
+          mediaQueries={[
+            {
+              maxWidth: '480px',
+              properties: { stack: { basis: 'auto', shrink: '1' } }
+            }
+          ]}
         >
-          <i-label
-            position='relative'
-            caption='Filters'
-            font={{ size: '19px', weight: '500' }}
-          ></i-label>
+          <i-hstack gap={4} verticalAlignment='center'>
+            <i-label
+              caption='153 results, with ads'
+              font={{ size: '12px', weight: 300 }}
+              display='inline'
+            ></i-label>
+            <i-icon
+              name='question-circle'
+              width={12}
+              height={12}
+              tooltip={{ content: 'Content' }}
+              padding={{ left: 4 }}
+              stack={{ shrink: '0' }}
+            ></i-icon>
+          </i-hstack>
           <i-button
-            padding={{ top: '8px', right: '10px', bottom: '8px', left: '10px' }}
-            caption='Reset'
+            padding={{
+              top: '9px',
+              right: '15px',
+              bottom: '9px',
+              left: '15px'
+            }}
+            caption='Most relevant'
+            stack={{ shrink: '0' }}
             border={{ radius: '24px' }}
-            font={{ size: '12px', weight: '500' }}
-            class={buttonHoveredStyle}
-            onClick={this.onReset}
-          ></i-button>
-        </i-hstack>
-        <i-vstack stack={{ grow: '1' }} overflow={{ y: 'auto' }} gap='18px'>
-          <i-vstack position='relative' width='100%' gap={4}>
-            <i-label
-              position='relative'
-              caption='Categories'
-              font={{ size: '13px', weight: '600' }}
-            ></i-label>
-            <i-label
-              position='relative'
-              caption='All Categories'
-              font={{ size: '13px', weight: '500' }}
-            ></i-label>
-            <i-vstack position='relative' width='100%' gap={4}>
-              <i-repeater
-                id='repeatCategory'
-                position='relative'
-                width='100%'
-                display='block'
-                count={3}
-                onRender={this.onRenderCategories}
-              >
-                <i-label
-                  position='relative'
-                  caption='Home & Living'
-                  link={{ href: '#', target: '_blank' }}
-                  font={{ size: '13px' }}
-                ></i-label>
-              </i-repeater>
-              <i-label
-                id='lblShowCateMore'
-                position='relative'
-                caption='Show more'
-                textDecoration='underline'
-                cursor='pointer'
-                font={{ size: '13px' }}
-                onClick={this.onToggleCate}
-              ></i-label>
-            </i-vstack>
-          </i-vstack>
-          <i-vstack gap='4px'>
-            <i-label
-              position='relative'
-              caption='Shop location'
-              font={{ size: '13px', weight: '600' }}
-            ></i-label>
-            <i-vstack id='pnlLocation' gap={4}></i-vstack>
-          </i-vstack>
-          <i-vstack gap='4px'>
-            <i-label
-              position='relative'
-              caption='Price'
-              font={{ size: '13px', weight: '600' }}
-            ></i-label>
-            <i-vstack id='pnlPrices' gap={4}></i-vstack>
-          </i-vstack>
-          <i-vstack id='pnlSelectors' gap={18} />
-        </i-vstack>
-        <i-hstack
-          stack={{ shrink: '0' }}
-          height={60}
-          padding={{ top: 8, bottom: 12 }}
-        >
-          <i-button
-            id="btnShowResults"
-            caption='Show results (0 item)'
-            border={{ radius: '24px' }}
-            width='100%'
-            padding={{ top: '9px', right: '15px', bottom: '9px', left: '15px' }}
+            boxShadow='none'
+            background={{ color: 'transparent' }}
+            rightIcon={{
+              width: 12,
+              height: 12,
+              fill: 'var(--text-primary)',
+              name: 'caret-down'
+            }}
             font={{ size: '12px', weight: '600' }}
-            onClick={this.handleClose}
+            class={buttonHoveredStyle}
           ></i-button>
         </i-hstack>
-      </i-vstack>
+      </i-hstack>
     )
   }
 }

@@ -50,7 +50,7 @@ export class ProductModel {
         "rating": null,
         "reviews": null,
         "seller": "Etsy seller",
-        "format": "Digital Download",
+        "format": "digital",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/watch-me",
         "location": "vn",
@@ -62,7 +62,7 @@ export class ProductModel {
         "rating": 4.3,
         "reviews": 6,
         "seller": "Etsy seller",
-        "format": "Digital Download",
+        "format": "digital",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/cute-cartoon-cat-apple-watch-wallpaper",
         "location": "vn",
@@ -74,7 +74,7 @@ export class ProductModel {
         "rating": 5.0,
         "reviews": 30,
         "seller": "Etsy seller",
-        "format": "Digital Download",
+        "format": "digital",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/anime-apple-watch-wallpaper-landscape",
         "material": ["solid_white_gold"]
@@ -85,7 +85,7 @@ export class ProductModel {
         "rating": 5.0,
         "reviews": 514,
         "seller": "Etsy seller",
-        "format": "Digital Download",
+        "format": "digital",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/6-christmas-watch-faces-watch-wallpapers",
         material: ["solid_white_gold"]
@@ -98,7 +98,7 @@ export class ProductModel {
         "rating": 4.8,
         "reviews": 259,
         "seller": "Olgouhadesign",
-        "format": "Digital Download",
+        "format": "physical",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/watch-box-svg-3mm"
       },
@@ -110,7 +110,8 @@ export class ProductModel {
         "rating": 5.0,
         "reviews": 5,
         "seller": "PixelPeeledDesigns",
-        "format": "Digital Download",
+        "format": "digital",
+        "freeShipping": true,
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/snowman-apple-watch-wallpaper"
       },
@@ -122,7 +123,7 @@ export class ProductModel {
         "rating": 4.9,
         "reviews": 122,
         "seller": "BenCreativeMedia",
-        "format": "Digital Download",
+        "format": "digital",
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/christmas-santa-apple-watch-wallpaper"
       },
@@ -134,7 +135,8 @@ export class ProductModel {
         "rating": 4.8,
         "reviews": 213,
         "seller": "FunkyScreen",
-        "format": "Digital Download",
+        "format": "digital",
+        "freeShipping": true,
         "image": "https://i.etsystatic.com/46493468/c/1904/1904/95/56/il/6b8ec0/5691822639/il_600x600.5691822639_o6i0.jpg",
         "link": "https://example.com/product/aesthetic-apple-watch-design-set"
       }
@@ -223,28 +225,33 @@ export class ProductModel {
     let filteredProducts = JSON.parse(JSON.stringify(products));
 
     if (!filter) return filteredProducts;
-    // if (filter.itemType) {
-    //   filteredProducts = products.filter(product => product.itemType === filter.itemType);
-    // }
 
     if (filter.location !== 'all') {
       filteredProducts = filteredProducts.filter(product => product.location === filter.location);
     }
 
-    // if (filter.itemFormat) {
-    //   filteredProducts = filteredProducts.filter(product => product.itemFormat === filter.itemFormat);
-    // }
+    if (filter.itemFormat) {
+      console.log('format', filter.itemFormat)
+      filteredProducts = filteredProducts.filter(product => product.format === filter.itemFormat);
+    }
 
     // if (filter.estyBest) {
     //   filteredProducts = filteredProducts.filter(product => product.estyBest.includes(filter.estyBest));
     // }
 
-    // if (filter.offer) {
-    //   filteredProducts = filteredProducts.filter(product => product.offer.includes(filter.offer));
-    // }
+    if (filter.offer?.length) {
+      const hasOnSale = filter.offer.find(item => item.value === 'on_sale');
+      if (hasOnSale) {
+        filteredProducts = filteredProducts.filter(product => !!product.discount);
+      }
+      const isFreeShipping = filter.offer.find(item => item.value === 'free_shipping');
+      if (isFreeShipping) {
+        filteredProducts = filteredProducts.filter(product => !!product.isFreeShipping);
+      }
+    }
 
     if (filter.material?.length) {
-      filteredProducts = filteredProducts.filter(product => product.material?.some(material => filter.material?.includes(material)));
+      filteredProducts = filteredProducts.filter(product => product.material?.some(material => filter.material?.find(item => item.value === material)));
     }
 
     const getPrice = (price: string) => {

@@ -44,7 +44,7 @@ export default class ProductOption extends Module {
   }
 
   private updateUI() {
-    const isSelected = this._data.selected;
+    const isSelected = this._data?.selected ?? false;
     if (isSelected) {
       this.pnlOption.background = { color: Theme.colors.primary.main };
       this.pnlOption.font = { color: Theme.colors.primary.dark, size: '13px', weight: 600 };

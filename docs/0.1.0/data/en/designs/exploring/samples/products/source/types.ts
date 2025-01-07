@@ -12,15 +12,16 @@ export interface IProduct {
   isAvailable?: boolean;
   location?: string;
   material?: string[];
+  freeShipping?: boolean;
 }
 
 export interface IProductFilter {
   itemType?: string;
   location?: string;
   itemFormat?: string;
-  estyBest?: string[];
-  offer?: string[];
-  material?: string[];
+  estyBest?: IOption[];
+  offer?: IOption[];
+  material?: IOption[];
   price?: string;
   min?: number;
   max?: number;
