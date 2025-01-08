@@ -10366,6 +10366,8 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
         Object.defineProperties(source, propertiesBluePrint);
         source[oMetaKey] = oMeta;
         return source;
+    }, hasNestedProperty = (obj, path) => {
+        return path.split('.').reduce((acc, key) => acc && key in acc ? acc[key] : undefined, obj) !== undefined;
     }, filterChanges = (options, changes) => {
         if (!options) {
             return changes;
@@ -10373,18 +10375,39 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
         let result = changes;
         if (options.path) {
             const oPath = options.path;
-            const tempArr = [];
-            result = changes.filter((change) => {
+            let newResult = [];
+            // result = changes.filter((change:any) => {
+            // 	const isValidPath = (change.path || []).every((path: any) => typeof path === 'string');
+            // 	if (!isValidPath) return false;
+            // 	if (change.path.join('.').startsWith(oPath) && change.type == 'insert')
+            // 		tempArr.push(change);
+            // 	return change.path.join('.') === oPath;
+            // });
+            for (const change of changes) {
                 const isValidPath = (change.path || []).every((path) => typeof path === 'string');
                 if (!isValidPath)
-                    return false;
-                if (change.path.join('.').startsWith(oPath) && change.type == 'insert')
-                    tempArr.push(change);
-                return change.path.join('.') === oPath;
-            });
-            if (result.length === 0) {
-                result = tempArr;
+                    continue;
+                const changePath = change.path.join('.');
+                if (changePath === oPath) {
+                    newResult.push(change);
+                }
+                else if (oPath.startsWith(changePath)) {
+                    let newPath = oPath.replace(changePath, '');
+                    if (newPath.startsWith('.'))
+                        newPath = newPath.slice(1);
+                    if (newPath && typeof change.value === 'object' && hasNestedProperty(change.value, newPath)) {
+                        const newChange = new Change(change.type, [...change.path, newPath], change.value?.[newPath], change.oldValue?.[newPath], change.object);
+                        newResult.push(newChange);
+                    }
+                }
+                else if (changePath.startsWith(oPath) && change.type === 'insert') {
+                    console.log('changePath', changePath, oPath);
+                }
             }
+            result = newResult;
+            // if (result.length === 0) {
+            // 	result = tempArr;
+            // }
         }
         else if (options.pathsOf) {
             const oPathsOf = options.pathsOf;
@@ -24812,7 +24835,7 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
             return getObservable(target[path], paths);
     }
     function bindObservable(elm, prop) {
-        return function (changes) {
+        const fn = function (changes) {
             const changeData = changes[0];
             const type = changeData.type;
             if (Array.isArray(changeData.object)) {
@@ -24820,10 +24843,10 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
                     elm[prop] = changeData.object;
                 }
                 else if (changeData.path?.length) {
-                    let newArray = elm[prop];
+                    let newArray = [...elm[prop]];
                     if (type === 'delete') {
                         newArray[changeData.path[0]] = undefined;
-                        newArray = newArray.filter(Boolean);
+                        newArray = newArray.filter((item) => item !== undefined);
                     }
                     else if (type === 'insert' || type === 'update') {
                         newArray[changeData.path[0]] = changeData.value;
@@ -24832,9 +24855,15 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
                 }
             }
             else {
-                elm[prop] = changeData.value;
+                if ('value' in changeData) {
+                    elm[prop] = changeData.value;
+                }
+                else {
+                    console.warn('Unhandled change type or missing value:', changeData);
+                }
             }
         };
+        return fn;
     }
     let Module = Module_1 = class Module extends base_1.Container {
         // static updateLocale(): void {

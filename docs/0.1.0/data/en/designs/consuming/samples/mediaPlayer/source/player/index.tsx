@@ -9,7 +9,8 @@ import {
   Range,
   Panel,
   moment,
-  Image
+  Image,
+  observable
 } from '@ijstech/components';
 const Theme = Styles.Theme.ThemeVars;
 import { DataModel } from './model';
@@ -39,14 +40,12 @@ declare global {
 export default class Player extends Module {
   private player: HTMLAudioElement;
   private iconPlay: Icon;
-  private imgTrack: Image;
-  private lblTrack: Label;
-  private lblArtist: Label;
   private pnlRange: Panel;
   private trackRange: Range;
   private lblStart: Label;
   private lblEnd: Label;
 
+  @observable()
   private model: DataModel = new DataModel();
   private isPlaying: boolean = false;
 
@@ -68,6 +67,7 @@ export default class Player extends Module {
   }
   set track(value: ITrack) {
     this.model.track = value;
+    console.log(this.model.track)
     this.renderTrack();
   }
 
@@ -119,9 +119,6 @@ export default class Player extends Module {
       onChanged={this.onRangeChanged.bind(this)}
     ></i-range>
     this.pnlRange.appendChild(this.trackRange);
-    this.imgTrack.url = this.track?.lossyArtworkUrl || '';
-    this.lblArtist.caption = this.track?.artist || '';
-    this.lblTrack.caption = this.track?.title || '';
     this.lblEnd.caption = moment(duration * 1000).format('mm:ss');
   }
 
@@ -186,7 +183,7 @@ export default class Player extends Module {
             height="auto"
             top={0}
             left={0}
-            url={this.track?.lossyArtworkUrl || ''}
+            url={this.model.track?.lossyArtworkUrl}
           ></i-image>
         </i-panel>
         <i-hstack
@@ -216,7 +213,7 @@ export default class Player extends Module {
           <i-vstack gap="0.25rem" class="text-center">
             <i-label
               id="lblTrack"
-              caption={this.model.track?.title || ''}
+              caption={this.model.track?.title}
               font={{ weight: 600, size: 'clamp(1rem, 0.95rem + 0.25vw, 1.25rem)' }}
               lineHeight={'1.375rem'}
               maxWidth={'100%'}
@@ -224,7 +221,7 @@ export default class Player extends Module {
             ></i-label>
             <i-label
               id="lblArtist"
-              caption={this.track?.artist || ''}
+              caption={this.model.track?.artist}
               font={{ size: 'clamp(0.75rem, 0.7rem + 0.25vw, 1rem)' }}
             ></i-label>
           </i-vstack>

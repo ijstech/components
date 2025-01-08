@@ -231,7 +231,6 @@ export class ProductModel {
     }
 
     if (filter.itemFormat) {
-      console.log('format', filter.itemFormat)
       filteredProducts = filteredProducts.filter(product => product.format === filter.itemFormat);
     }
 
