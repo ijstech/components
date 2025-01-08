@@ -103,6 +103,9 @@ const
 		source[oMetaKey] = oMeta;
 		return source;
 	},
+	hasNestedProperty = (obj: any, path: string) => {
+    return path.split('.').reduce((acc, key) => acc && key in acc ? acc[key] : undefined, obj) !== undefined;
+	},
 	filterChanges = (options:any, changes:any) => {
 		if (!options) {
 			return changes;
@@ -111,17 +114,45 @@ const
 		let result = changes;
 		if (options.path) {
 			const oPath = options.path;
-			const tempArr: any[] = [];
-			result = changes.filter((change:any) => {
+			let newResult = [];
+
+			// result = changes.filter((change:any) => {
+			// 	const isValidPath = (change.path || []).every((path: any) => typeof path === 'string');
+			// 	if (!isValidPath) return false;
+
+			// 	if (change.path.join('.').startsWith(oPath) && change.type == 'insert')
+			// 		tempArr.push(change);
+
+			// 	return change.path.join('.') === oPath;
+			// });
+
+			for (const change of changes) {
 				const isValidPath = (change.path || []).every((path: any) => typeof path === 'string');
-				if (!isValidPath) return false;
-				if (change.path.join('.').startsWith(oPath) && change.type == 'insert')
-					tempArr.push(change);
-				return change.path.join('.') === oPath;
-			});
-			if (result.length === 0) {
-				result = tempArr;
+				if (!isValidPath) continue;
+
+				const changePath = change.path.join('.');
+
+				if (changePath === oPath) {
+					newResult.push(change);
+				}
+				else if (oPath.startsWith(changePath)) {
+					let newPath = oPath.replace(changePath, '');
+					if (newPath.startsWith('.')) newPath = newPath.slice(1);
+					if (newPath && typeof change.value === 'object' && hasNestedProperty(change.value, newPath)) {
+						const newChange = new Change(change.type, [...change.path, newPath], change.value?.[newPath], change.oldValue?.[newPath], change.object);
+						newResult.push(newChange);
+					}
+				}
+				else if (changePath.startsWith(oPath) && change.type === 'insert') {
+					console.log('changePath', changePath, oPath)
+				}
 			}
+
+			result = newResult;
+
+			// if (result.length === 0) {
+			// 	result = tempArr;
+			// }
 		} else if (options.pathsOf) {
 			const oPathsOf = options.pathsOf;
 			const oPathsOfStr = oPathsOf.join('.');
@@ -623,6 +654,7 @@ class OMetaBase {
 			const changes = oldValue === undefined
 				? [new Change(INSERT, [key], newValue, undefined, this.proxy)]
 				: [new Change(UPDATE, [key], newValue, oldValue, this.proxy)];
+
 			callObservers(this, changes);
 		}
 
@@ -842,6 +874,7 @@ export function initObservables(target: any){
 				val.value = newVal
 			}
 		};
+
 		Object.defineProperty(target, propertyName, {
 			get: getter,
 			set: setter

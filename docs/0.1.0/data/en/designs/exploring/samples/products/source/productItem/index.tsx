@@ -56,8 +56,10 @@ export default class Product extends Module {
   }
 
   setData(data: IProductItem) {
-    this._data = data;
-    this.renderUI();
+    if (data) {
+      this._data = data;
+      this.renderUI();
+    }
   }
 
   constructor(parent?: Container, options?: any) {

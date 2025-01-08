@@ -1,7 +1,7 @@
-import { Styles, Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils } from "@ijstech/components";
-const Theme = Styles.Theme.ThemeVars;
+import { Module, VStack, Control, customElements, ControlElement, Container, Label, FormatUtils, observable, Repeater } from "@ijstech/components";
 import { DataModel } from "./model";
 import Player from "../player/index";
+import PlaylistTrack from "./track";
 import { IArtist, ITrack } from "../types";
 
 interface PlaylistElement extends ControlElement {
@@ -19,12 +19,12 @@ declare global {
 
 @customElements('media-player-playlist')
 export default class Playlist extends Module {
+  @observable()
   private model: DataModel = new DataModel();
 
   private playlistWrapper: VStack;
-  private pnlPlaylist: VStack;
+  private playlistRepeater: Repeater;
   private pnlInfo: VStack;
-  private lblArtist: Label;
   private lblSubscribe: Label;
   private player: Player;
 
@@ -43,7 +43,6 @@ export default class Playlist extends Module {
   }
   set tracks(value: ITrack[]) {
     this.model.playList = value || [];
-    this.renderPlaylist();
   }
 
   get artist() {
@@ -53,71 +52,15 @@ export default class Playlist extends Module {
     this.model.artist = value;
   }
 
-  private renderPlaylist() {
-    this.pnlPlaylist.clearInnerHTML();
-    const playlist = [...this.tracks];
-    for (let i = 0; i < playlist.length; i++) {
-      const track = playlist[i];
-      const pnlTrack = (
-        <i-hstack
-          verticalAlignment='center'
-          horizontalAlignment='space-between'
-          gap={'0.75rem'}
-          height={'3.313rem'}
-          border={{ radius: '0.5rem' }}
-          margin={{ top: '0.25rem', bottom: '0.25rem' }}
-          padding={{ left: '1rem', right: '1rem', top: '0.5rem', bottom: '0.5rem' }}
-          background={{ color: Theme.action.hoverBackground }}
-          cursor='pointer'
-          onClick={(target: Control) => this.onTrackClick(target, track)}
-        >
-          <i-hstack verticalAlignment='center' gap={'0.75rem'} height={'100%'}>
-            <i-image
-              url={track.lossyArtworkUrl || ''}
-              stack={{ shrink: '0' }}
-              width={'2.5rem'} height={'2.5rem'}
-              objectFit={'cover'}
-            ></i-image>
-            <i-vstack gap="0.25rem" verticalAlignment='center'>
-              <i-label
-                caption={track.title || ''}
-                font={{ size: '1rem' }}
-                wordBreak='break-all'
-                lineClamp={1}
-              ></i-label>
-              <i-label
-                caption={track.artist || ''}
-                font={{ size: '0.875rem', color: Theme.text.secondary }}
-                textOverflow='ellipsis'
-              ></i-label>
-            </i-vstack>
-          </i-hstack>
-          <i-panel hover={{ opacity: 0.5 }}>
-            <i-icon name="ellipsis-v" width={'1rem'} height={'1rem'} fill={Theme.text.primary}></i-icon>
-          </i-panel>
-        </i-hstack>
-      )
-      this.pnlPlaylist.appendChild(pnlTrack);
-    }
-  }
-
   private formatNumber(num: number) {
     return FormatUtils.formatNumber(num, { shortScale: true, decimalFigures: 0 });
   }
 
   private renderUI() {
-    this.lblArtist.caption = this.artist?.name || '';
     const num = this.formatNumber(this.artist?.followers?.total || 0);
     this.lblSubscribe.caption = `Subscribe ${num}`;
     const img = this.artist?.images?.[0]?.url || '';
     this.pnlInfo.background = { color: `linear-gradient(to bottom, rgba(0, 0, 0, 0.3), var(--background-default)), url(${img}) no-repeat center center/cover` }
-    this.renderPlaylist();
-  }
-
-  private onTrackClick(target: Control, track: ITrack) {
-    this.playlistWrapper.visible = false;
-    this.player.visible = true;
-    this.player.setData({ track });
   }
 
   private handleOnNext() {
@@ -134,6 +77,21 @@ export default class Playlist extends Module {
     this.player.onPlay(this.tracks[prev]);
   }
 
+  private handleRender(target: Control, index: number) {
+    const el = target.children?.[index] as PlaylistTrack;
+    const data = this.model.playList?.[index];
+    if (el && data) {
+      el.setData(data);
+      el.onItemClick = this.onTrackClick.bind(this);
+    }
+  }
+
+  private onTrackClick(track: ITrack) {
+    this.playlistWrapper.visible = false;
+    this.player.visible = true;
+    this.player.setData({ track });
+  }
+
   init() {
     super.init();
     this.tracks = this.model.fetchPlaylist();
@@ -143,6 +101,9 @@ export default class Playlist extends Module {
     if (tracks) this.tracks = tracks;
     const artist = this.getAttribute('artist', true);
     if (artist) this.artist = artist;
+
+    const trackEl = document.createElement('media-player-playlist--track') as PlaylistTrack;
+    this.playlistRepeater.add(trackEl);
     this.renderUI();
   }
 
@@ -173,6 +134,7 @@ export default class Playlist extends Module {
             position='relative'
             font={{ "size": "1.5rem", "weight": 700 }}
             lineHeight='1.5'
+            caption={this.model.artist?.name}
           >
           </i-label>
           <i-label
@@ -251,11 +213,13 @@ export default class Playlist extends Module {
             font={{ "weight": 600, "size": "1rem" }}
           >
           </i-label>
-          <i-vstack
-            id='pnlPlaylist'
-            margin={{ "top": "0.75rem" }}
+          <i-repeater
+            id="playlistRepeater"
+            data={this.model.playList}
+            margin={{ top: '0.75rem' }}
+            onRender={this.handleRender}
           >
-          </i-vstack>
+          </i-repeater>
         </i-vstack>
       </i-vstack>
       <media-player-player

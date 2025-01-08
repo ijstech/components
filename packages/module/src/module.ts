@@ -81,29 +81,37 @@ declare global {
         }
     }
 }
-function bindObservable(elm: any, prop: string): any{
-    return function(changes: any){
+
+function bindObservable(elm: any, prop: string): any {
+    const fn = function (changes: any) {
         const changeData = changes[0];
         const type = changeData.type;
+
         if (Array.isArray(changeData.object)) {
             if (type === 'shuffle' || type === 'reverse' || changeData.path?.length > 1) {
                 elm[prop] = changeData.object;
-            }
-            else if (changeData.path?.length) {
-                let newArray = elm[prop]
+            } else if (changeData.path?.length) {
+                let newArray = [...elm[prop]];
                 if (type === 'delete') {
                     newArray[changeData.path[0]] = undefined;
-                    newArray = newArray.filter(Boolean);
+                    newArray = newArray.filter((item) => item !== undefined);
                 } else if (type === 'insert' || type === 'update') {
                     newArray[changeData.path[0]] = changeData.value;
                 }
                 elm[prop] = newArray;
             }
         } else {
-            elm[prop] = changeData.value;
+            if ('value' in changeData) {
+                elm[prop] = changeData.value;
+            } else {
+                console.warn('Unhandled change type or missing value:', changeData);
+            }
         }
-    }
+    };
+
+    return fn;
 }
+
 export interface IOpenModalOptions{
     title?: string;
     showBackdrop?: boolean;
