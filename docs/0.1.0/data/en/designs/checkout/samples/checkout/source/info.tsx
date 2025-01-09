@@ -1,4 +1,5 @@
 import { Styles, Module, customElements, ControlElement, Container, observable } from "@ijstech/components";
+import { IInformation } from "./types";
 const Theme = Styles.Theme.ThemeVars;
 
 interface CheckoutInfoElement extends ControlElement {
@@ -17,10 +18,11 @@ declare global {
 @customElements('checkout-info')
 export default class Information extends Module {
   @observable('data')
-  private _data: any = {
+  private _data: IInformation = {
     name: '',
     phone: '',
-    email: ''
+    email: '',
+    address: ""
   };
 
   onClose: () => void;
@@ -38,7 +40,7 @@ export default class Information extends Module {
   get data() {
     return this._data;
   }
-  set data(value: any) {
+  set data(value: IInformation) {
     this._data = value;
   }
 
