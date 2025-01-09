@@ -139,7 +139,14 @@ const
 					let newPath = oPath.replace(changePath, '');
 					if (newPath.startsWith('.')) newPath = newPath.slice(1);
 					if (newPath && typeof change.value === 'object' && hasNestedProperty(change.value, newPath)) {
-						const newChange = new Change(change.type, [...change.path, newPath], change.value?.[newPath], change.oldValue?.[newPath], change.object);
+						const splittedPath = newPath.split('.');
+						let newVal = change.value?.[splittedPath[0]];
+						let oldVal = change.oldVal?.[splittedPath[0]];
+						for (let i = 1; i < splittedPath.length; i++) {
+							newVal = newVal?.[splittedPath[i]];
+							oldVal = oldVal?.[splittedPath[i]];
+						}
+						const newChange = new Change(change.type, [...change.path, newPath], newVal, oldVal, change.object);
 						newResult.push(newChange);
 					}
 				}
@@ -285,6 +292,7 @@ const
 		const pushResult = Reflect.apply(target.push, target, pushContent);
 
 		const changes = [];
+		console.log('pushResult', pushResult);
 		for (let i = initialLength, j = target.length; i < j; i++) {
 			changes[i - initialLength] = new Change(INSERT, [i], target[i], undefined, this);
 		}

@@ -1,12 +1,7 @@
-import { Module } from "@ijstech/components";
-export interface IPaymentOption {
-  id: string;
-  name: string;
-  img: string;
-}
+import { IBooking, IInformation, IPaymentOption, IRoom } from "../types";
 
 export class PaymentModel {
-  private tag: any = {
+  public tag: any = {
     light: {},
     dark: {
       '--text-primary': '#333',
@@ -28,8 +23,7 @@ export class PaymentModel {
       '--text-secondary': '#727272'
     }
   }
-  private _module: Module;
-  private _payments: IPaymentOption[] = [
+  public payments: IPaymentOption[] = [
     {
       id: '1',
       name: 'Credit Card',
@@ -56,61 +50,40 @@ export class PaymentModel {
       img: 'https://static.travala.com/resources/images/checkout/web3-wallet.svg',
     }
   ]
-  private _information: any;
-  private _room: any = {
-    name: ''
+  public information: IInformation;
+  public room: IRoom = {
+    id: '',
+    hotel: {
+      name: '',
+      stars: 0,
+      address: '',
+      point: 0,
+      reviewers: 0,
+      image: ''
+    },
+    type: ''
   };
-  private _booking: any;
+  public booking: IBooking;
 
-  constructor(module: Module) {
-    this._module = module;
-  }
+  constructor() {}
 
-  get payments() {
-    return this._payments;
+  getPayment = (id: string) => {
+    return this.payments.find(p => p.id === id);
   }
 
-  get information() {
-    return this._information || {
-      "name": 'John Doe',
-      "phone": "(123) 456-7890",
-      "email": "user@example.com",
-      "address": "123 Main St, Anytown, USA",
-    };
-  }
-  set information(value: any) {
-    this._information = value;
-  }
-
-  get room() {
-    return this._room;
-  }
-  set room(value: any) {
-    this._room = value;
-  }
-
-  get booking() {
-    return this._booking;
-  }
-  set booking(value: any) {
-    this._booking = value;
-  }
-
-  getPayment(id: string) {
-    return this._payments.find(p => p.id === id);
-  }
-
-  fetchRoom() {
-    this._room = {
+  fetchRoom = (): IRoom => {
+    return {
       id: '1',
       hotel: {
         name: 'Canary Dalat Hotel',
         stars: 3,
         address: '82 Tran Quang Khai Street',
         point: 9.2,
-        reviewers: 9
+        reviewers: 9,
+        image: 'https://i.travelapi.com/lodging/42000000/41900000/41899600/41899529/59cd236e_z.jpg'
       },
       type: 'Deluxe Triple Room',
+      description: '2 Queen Beds and 1 Large Twin Bed',
       nonSmoking: true,
       includesBreakfast: true,
       amenities: [
@@ -146,11 +119,11 @@ export class PaymentModel {
     }
   }
 
-  fetchBooking() {
-    this._booking = {
+  fetchBooking = (): IBooking => {
+    return {
       id: '1',
       checkin: '2024-12-01',
-      checkout: '2024-12-02',
+      checkout: '2024-12-04',
       room: '1',
       guest: {
         name: 'John Doe',
@@ -161,8 +134,16 @@ export class PaymentModel {
     }
   }
 
-  getHotelStatus() {
-    const point = this.room?.hotel?.point || 0;
+  fetchInfo = () => {
+    return {
+      "name": 'John Doe',
+      "phone": "(123) 456-7890",
+      "email": "user@example.com",
+      "address": "123 Main St, Anytown, USA",
+    }
+  }
+
+  getHotelStatus = (point: number) => {
     if (point < 5) {
       return 'Not Good';
     } else if (point >= 5 && point < 8) {
@@ -171,19 +152,6 @@ export class PaymentModel {
       return 'Excellent';
     } else {
       return 'Wonderfull';
-    }
-  }
-
-  private updateStyle(name: string, value: any) {
-    value ? this._module.style.setProperty(name, value) : this._module.style.removeProperty(name);
-  }
-
-  updateTheme() {
-    const themeVar = document.body.style.getPropertyValue('--theme') || 'dark';
-    const data = this.tag[themeVar];
-    if (!data) return;
-    for (const key in data) {
-      this.updateStyle(key, data[key]);
     }
   }
 }

@@ -1,7 +1,8 @@
-import { Styles, Module, RadioGroup, Panel, observable, VStack, HStack, Icon, Popover, Label, Control, ControlElement, customElements } from "@ijstech/components";
+import { Styles, Module, RadioGroup, Panel, observable, VStack, HStack, Icon, Popover, Label, Control, ControlElement, customElements, moment } from "@ijstech/components";
 import { customRadioStyles, customListItemStyled } from "./index.css";
-import { PaymentModel, IPaymentOption } from "./model";
+import { PaymentModel } from "./model";
 import Information from "../info";
+import { IPaymentOption } from "../types";
 const Theme = Styles.Theme.ThemeVars;
 
 interface CheckoutMainElement extends ControlElement {}
@@ -16,7 +17,8 @@ declare global {
 
 @customElements('i-checkout')
 export default class CheckoutMain extends Module {
-  private model: PaymentModel;
+  @observable()
+  private model: PaymentModel = new PaymentModel();
   @observable('selectedPayment')
   private selectedPayment: IPaymentOption = {
     id: '',
@@ -38,15 +40,21 @@ export default class CheckoutMain extends Module {
   private pnlRoomStar: Panel;
   private lblHotelState: Label;
   private lblHotelReviewers: Label;
-  private lblHotelAddress: Label;
-  private lblHotelName: Label;
   private lblHotelPoint: Label;
   private facilatyPopover: Popover;
   private pnlFacilaty: Panel;
-  private pnlQuality: Panel
+  private pnlQuality: Panel;
+  private lblCheckIn: Label;
+  private lblCheckOut: Label;
+  private lblNights: Label;
 
   get room() {
     return this.model.room;
+  }
+
+  private formatDate(date: string) {
+    if (!date) return '';
+    return moment(date).format('DD MMM YYYY');
   }
 
   private onPaymentMethodChanged(target: RadioGroup) {
@@ -159,18 +167,12 @@ export default class CheckoutMain extends Module {
       }
     }
     this.lblHotelReviewers.caption = `${this.room?.hotel?.reviewers || 0} reviews`;
-    this.lblHotelState.caption = this.model.getHotelStatus();
-    this.lblHotelName.caption = this.room?.hotel?.name || '';
-    this.lblHotelAddress.caption = this.room?.hotel?.address || '';
-    this.lblHotelPoint.caption = this.room?.hotel?.point || 0;
-  }
-
-  private onRenderStart(target: Control) {
-    target.appendChild(<i-label caption="Cleanlinesss" font={{ size: '12px' }}></i-label>)
-  }
-
-  private onRenderEnd(target: Control) {
-    target.appendChild(<i-label caption="9.6/10" font={{ size: '12px' }}></i-label>)
+    this.lblHotelState.caption = this.model.getHotelStatus(this.room?.hotel?.point || 0);
+    this.lblHotelPoint.caption = `${this.room?.hotel?.point || 0}`;
+    this.lblCheckIn.caption = this.formatDate(this.model.booking?.checkin || '');
+    this.lblCheckOut.caption = this.formatDate(this.model.booking?.checkout || '');
+    const nights = moment(this.model.booking?.checkout || '').diff(moment(this.model.booking?.checkin || ''), 'days');
+    this.lblNights.caption = `${nights} nights`;
   }
 
   private renderQuality() {
@@ -178,7 +180,6 @@ export default class CheckoutMain extends Module {
     const keys = this.room.quality ? Object.keys(this.room.quality) : [];
     for (const key of keys) {
       const percent = Number(this.room?.quality?.[key]?.score || 0) * 100 / 10;
-      console.log(percent)
       this.pnlQuality.appendChild(
         <i-vstack
           verticalAlignment="center"
@@ -204,18 +205,31 @@ export default class CheckoutMain extends Module {
     }
   }
 
+  private updateStyle(name: string, value: any) {
+    value ? this.style.setProperty(name, value) : this.style.removeProperty(name);
+  }
+
+  private updateTheme = () => {
+    const themeVar = document.body.style.getPropertyValue('--theme') || 'dark';
+    const data = this.model.tag[themeVar];
+    if (!data) return;
+    for (const key in data) {
+      this.updateStyle(key, data[key]);
+    }
+  }
+
   init() {
     super.init();
     this.onPaymentMethodChanged = this.onPaymentMethodChanged.bind(this);
-    this.model = new PaymentModel(this);
-    this.model.updateTheme();
+    this.updateTheme();
     this.renderPaymentMethods();
     this.pnlPolicy.classList.add(customListItemStyled);
     this.policyPopover.linkTo = this.policyIcon;
     this.infoPopover.linkTo = this.infoIcon;
     this.facilatyPopover.linkTo = this.pnlFacilaty;
-    this.model.fetchRoom();
-    this.model.fetchBooking();
+    this.model.room = this.model.fetchRoom();
+    this.model.booking = this.model.fetchBooking();
+    this.model.information = this.model.fetchInfo();
     this.renderRoom();
     this.renderQuality();
   }
@@ -753,7 +767,7 @@ export default class CheckoutMain extends Module {
                   border={{ "radius": "10px" }}
                 >
                   <i-image
-                    url='https://i.travelapi.com/lodging/42000000/41900000/41899600/41899529/59cd236e_z.jpg'
+                    url={this.model.room?.hotel?.image || ''}
                     width='100%'
                     height='100%'
                   >
@@ -770,6 +784,7 @@ export default class CheckoutMain extends Module {
                       id='lblHotelName'
                       font={{ "size": "15px", "weight": 600 }}
                       display='inline'
+                      caption={this.model.room?.hotel?.name || ''}
                     >
                     </i-label>
                     <i-panel
@@ -792,6 +807,7 @@ export default class CheckoutMain extends Module {
                     <i-label
                       id='lblHotelAddress'
                       font={{ "size": "12px", "weight": 600 }}
+                      caption={this.model.room?.hotel?.address || ''}
                     >
                     </i-label>
                   </i-hstack>
@@ -876,7 +892,7 @@ export default class CheckoutMain extends Module {
               >
               </i-label>
               <i-label
-                caption='28 Dec 2024'
+                id="lblCheckIn"
                 font={{ "size": "15px", "weight": 600 }}
               >
               </i-label>
@@ -903,7 +919,7 @@ export default class CheckoutMain extends Module {
               >
               </i-label>
               <i-label
-                caption='31 Dec 2024'
+                id="lblCheckOut"
                 font={{ "size": "15px", "weight": 600 }}
               >
               </i-label>
@@ -926,7 +942,8 @@ export default class CheckoutMain extends Module {
               >
               </i-icon>
               <i-label
-                caption='3 nights'
+                id="lblNights"
+                caption=''
               >
               </i-label>
             </i-hstack>
@@ -937,13 +954,24 @@ export default class CheckoutMain extends Module {
             background={{ "color": "var(--background-main)" }}
             border={{ "radius": "0 0 4px 4px" }}
           >
-            <i-label
-              caption='1 room: Family Loft'
-              font={{ "size": "15px", "weight": "600" }}
-            >
-            </i-label>
+            <i-panel display='inline'>
+              <i-label
+                caption='1 room: '
+                font={{ "size": "15px", "weight": "600" }}
+                display='inline'
+              >
+              </i-label>
+              <i-label
+                caption={this.model.room?.type}
+                font={{ "size": "15px", "weight": "600" }}
+                display='inline'
+                padding={{ "left": 4 }}
+              >
+              </i-label>
+            </i-panel>
             <i-panel
               width='100%'
+              visible={!!this.model.room?.includesBreakfast}
             >
               <i-label
                 caption='Breakfast Included, '
@@ -951,7 +979,7 @@ export default class CheckoutMain extends Module {
               >
               </i-label>
               <i-label
-                caption='2 Queen Beds and 1 Large Twin Bed'
+                caption={this.model.room?.description}
                 font={{ "size": "15px" }}
               >
               </i-label>
