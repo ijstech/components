@@ -1,5 +1,5 @@
 import { Styles, Module, RadioGroup, Panel, observable, VStack, HStack, Icon, Popover, Label, Control, ControlElement, customElements, moment } from "@ijstech/components";
-import { customRadioStyles, customListItemStyled } from "./index.css";
+import { customRadioStyles, customListItemStyled, whitespaceStyled } from "./index.css";
 import { PaymentModel } from "./model";
 import Information from "../info";
 import { IPaymentOption } from "../types";
@@ -789,6 +789,7 @@ export default class CheckoutMain extends Module {
                     </i-label>
                     <i-panel
                       id='pnlRoomStar'
+                      class={whitespaceStyled}
                       display='inline'
                       padding={{ "left": 4 }}
                     >

@@ -1,26 +1,55 @@
-import { IProduct } from "./types";
+import { IInvoice } from "./types";
 
 export class DataModel {
-  public data: IProduct = {
+  public data: IInvoice = {
     id: "",
-    image: '',
-    name: ""
+    status: "",
+    createdAt: "",
+    payment: undefined,
+    invoiceId: "",
+    orderId: "",
+    customerEmail: "",
+    shippingAddress: "",
+    billingAddress: "",
+    shippingMethod: "",
+    items: [],
+    discount: 0
   };
 
   constructor() {
-    this.data = this.getPayment();
+    this.data = this.getData();
   }
 
-  getPayment = () => {
+  getData = () => {
     return {
-      id: '1',
-      image: 'https://d4ov6iqsvotvt.cloudfront.net/uploads/show/poster_image/5654/medium_1620213561-gore-vidal-s-the-best-man.jpg',
-      name: 'Gore Vidal - The Best Man',
-      publishedAt: 'Wednesday, October 14, 2021',
-      price: '$19.99',
-      reviews: null,
-      seller: 'Amazon',
-      quantity: '1'
+      id: "1",
+      status: "",
+      createdAt: "",
+      payment: {
+        id: "1",
+        name: "Bitcoin",
+        description: "Bitcoin",
+        icon: "https://cdn.bitrefill.com/primg/i1w48h48/viettel-mobile-vietnam.webp",
+        price: 0.00000887,
+        currency: "BTC",
+        address: "bc1qxk3vu9hmu4y2w97qs9gy29yj6azvve9ae9wpsr"
+      },
+      invoiceId: "4742c94e-b1b4-4750-949b-2d862467e461",
+      orderId: "",
+      customerEmail: "",
+      shippingAddress: "",
+      billingAddress: "",
+      shippingMethod: "",
+      items: [
+        {
+          id: "1",
+          name: "Viettel Mobile Vietnam",
+          price: 20000,
+          description: "20000.00 VND value",
+          image: "https://cdn.bitrefill.com/primg/i1w48h48/viettel-mobile-vietnam.webp"
+        }
+      ],
+      discount: 0
     }
   }
 }

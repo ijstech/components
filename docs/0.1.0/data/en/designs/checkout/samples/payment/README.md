@@ -5,7 +5,7 @@ A payment component
 
 ## Screen
 
-![Payment](screenshots/payment.png)
+![Payment](screenshots/payment_2.png)
 
 ## Source Code
 
