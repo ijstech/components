@@ -24,3 +24,7 @@ export const customListItemStyled = Styles.style({
     }
   }
 });
+
+export const whitespaceStyled = Styles.style({
+  whiteSpace: 'nowrap'
+});
