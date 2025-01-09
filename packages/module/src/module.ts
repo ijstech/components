@@ -91,10 +91,10 @@ function bindObservable(elm: any, prop: string): any {
             if (type === 'shuffle' || type === 'reverse' || changeData.path?.length > 1) {
                 elm[prop] = changeData.object;
             } else if (changeData.path?.length) {
-                let newArray = [...elm[prop]];
+                let newArray = elm[prop];
                 if (type === 'delete') {
                     newArray[changeData.path[0]] = undefined;
-                    newArray = newArray.filter((item) => item !== undefined);
+                    newArray = newArray.filter((item: any) => item !== undefined);
                 } else if (type === 'insert' || type === 'update') {
                     newArray[changeData.path[0]] = changeData.value;
                 }

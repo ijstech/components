@@ -292,6 +292,7 @@ const
 		const pushResult = Reflect.apply(target.push, target, pushContent);
 
 		const changes = [];
+		console.log('pushResult', pushResult);
 		for (let i = initialLength, j = target.length; i < j; i++) {
 			changes[i - initialLength] = new Change(INSERT, [i], target[i], undefined, this);
 		}

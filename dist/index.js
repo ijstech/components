@@ -10396,7 +10396,14 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
                     if (newPath.startsWith('.'))
                         newPath = newPath.slice(1);
                     if (newPath && typeof change.value === 'object' && hasNestedProperty(change.value, newPath)) {
-                        const newChange = new Change(change.type, [...change.path, newPath], change.value?.[newPath], change.oldValue?.[newPath], change.object);
+                        const splittedPath = newPath.split('.');
+                        let newVal = change.value?.[splittedPath[0]];
+                        let oldVal = change.oldVal?.[splittedPath[0]];
+                        for (let i = 1; i < splittedPath.length; i++) {
+                            newVal = newVal?.[splittedPath[i]];
+                            oldVal = oldVal?.[splittedPath[i]];
+                        }
+                        const newChange = new Change(change.type, [...change.path, newPath], newVal, oldVal, change.object);
                         newResult.push(newChange);
                     }
                 }
@@ -10525,6 +10532,7 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
         }
         const pushResult = Reflect.apply(target.push, target, pushContent);
         const changes = [];
+        console.log('pushResult', pushResult);
         for (let i = initialLength, j = target.length; i < j; i++) {
             changes[i - initialLength] = new Change(INSERT, [i], target[i], undefined, this);
         }
@@ -24843,7 +24851,7 @@ define("@ijstech/module/module.ts", ["require", "exports", "@ijstech/base", "@ij
                     elm[prop] = changeData.object;
                 }
                 else if (changeData.path?.length) {
-                    let newArray = [...elm[prop]];
+                    let newArray = elm[prop];
                     if (type === 'delete') {
                         newArray[changeData.path[0]] = undefined;
                         newArray = newArray.filter((item) => item !== undefined);
