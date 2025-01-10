@@ -292,7 +292,6 @@ const
 		const pushResult = Reflect.apply(target.push, target, pushContent);
 
 		const changes = [];
-		console.log('pushResult', pushResult);
 		for (let i = initialLength, j = target.length; i < j; i++) {
 			changes[i - initialLength] = new Change(INSERT, [i], target[i], undefined, this);
 		}
@@ -874,10 +873,22 @@ export function initObservables(target: any){
 						return;
 					}
 				} else {
-					Object.assign(val, newVal);
+					const combinedDescriptors = {
+						...Object.getOwnPropertyDescriptors(newVal),
+						...Object.getOwnPropertyDescriptors(Object.getPrototypeOf(newVal)),
+					};
+
+					const constructor: any = combinedDescriptors?.constructor;
+					const isClassInstance = constructor?.value?.name !== 'Object';
+
+					if (isClassInstance) {
+						Object.defineProperties(val, combinedDescriptors);
+					} else {
+						Object.assign(val, newVal);
+					}
 				}
 			}
-			else{
+			else {
 				isObject = false;
 				val.value = newVal
 			}

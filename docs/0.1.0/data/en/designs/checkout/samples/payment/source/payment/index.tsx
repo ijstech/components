@@ -1,7 +1,6 @@
-import { Styles, Module, ControlElement, customElements, observable } from "@ijstech/components";
+import { Control, Module, ControlElement, customElements, observable, Repeater } from "@ijstech/components";
 import { DataModel } from "./model";
-const Theme = Styles.Theme.ThemeVars;
-
+import PaymentItem from "./item";
 
 interface PaymentMainElement extends ControlElement { }
 
@@ -18,8 +17,14 @@ export default class PaymentMain extends Module {
   @observable()
   private model: DataModel = new DataModel();
 
+  private itemsRepeater: Repeater;
+
   init() {
     super.init();
+
+    const item = document.createElement('i-payment-item') as PaymentItem;
+    this.itemsRepeater.add(item);
+    this.model.data = this.model.getData();
   }
 
   render() {
@@ -58,7 +63,7 @@ export default class PaymentMain extends Module {
               >
               </i-label>
               <i-label
-                caption='abc@gmail.com'
+                caption={this.model.data?.customerEmail}
               >
               </i-label>
             </i-vstack>
@@ -76,7 +81,7 @@ export default class PaymentMain extends Module {
                 gap={8}
               >
                 <i-label
-                  caption='Bitcoin'
+                  caption={this.model.data?.payment?.name || ''}
                 >
                 </i-label>
                 <i-label
@@ -95,7 +100,7 @@ export default class PaymentMain extends Module {
               >
               </i-label>
               <i-label
-                caption='758fe9b5-5626-416d-abda-0d5ca29ec442'
+                caption={this.model.data?.invoiceId || ''}
                 wordBreak='break-all'
               >
               </i-label>
@@ -104,42 +109,16 @@ export default class PaymentMain extends Module {
               height={1}
               width='100%'
               background={{ "color": "var(--divider)" }}
-              margin={{ "top": 16, "bottom": 16 }}
+              margin={{ "top": 16 }}
             >
             </i-panel>
-            <i-hstack
-              position='relative'
-              width='100%'
-              gap={16}
-              alignItems='center'
+            <i-repeater
+              id='itemsRepeater'
+              data={this.model.data?.items || []}
+              gap={8}
             >
-              <i-image
-                url='https://cdn.bitrefill.com/primg/i1w48h48/viettel-mobile-vietnam.webp'
-                display='block'
-                width='48px'
-                height='48px'
-                objectFit='cover'
-                stack={{ "shrink": "0" }}
-                border={{ "width": "1px", "style": "solid", "color": "var(--divider)" }}
-              >
-              </i-image>
-              <i-vstack
-                position='relative'
-                width='100%'
-                gap={5}
-              >
-                <i-label
-                  caption='Viettel Mobile Vietnam'
-                  font={{ "weight": "600" }}
-                >
-                </i-label>
-                <i-label
-                  caption='20000.00 VND value'
-                  font={{ "color": "var(--text-secondary)" }}
-                >
-                </i-label>
-              </i-vstack>
-            </i-hstack>
+              <i-payment-item></i-payment-item>
+            </i-repeater>
             <i-hstack
               position='relative'
               width='100%'
@@ -153,10 +132,21 @@ export default class PaymentMain extends Module {
                 caption='Total'
               >
               </i-label>
-              <i-label
-                caption='0.00000884 BTC'
+              <i-panel
+                display="inline"
               >
-              </i-label>
+                <i-label
+                  caption={this.model.data?.payment?.price || ''}
+                  display="inline"
+                >
+                </i-label>
+                <i-label
+                  caption={this.model.data?.payment?.currency || ''}
+                  display="inline"
+                  padding={{ left: 4 }}
+                >
+                </i-label>
+              </i-panel>
             </i-hstack>
           </i-vstack>
         </i-vstack>
@@ -189,20 +179,28 @@ export default class PaymentMain extends Module {
             position='relative'
             width='100%'
             justifyContent='center'
+            margin={{ "top": 16 }}
           >
-            <i-image
-              url='https://placehold.co/600x400?text=No+Image'
-              display='block'
+            <i-panel
+              padding={{ "top": "16px", "right": "16px", "bottom": "16px", "left": "16px" }}
               width='276px'
               height='276px'
-              margin={{ "top": "16px" }}
             >
-            </i-image>
+              <i-image
+                url='https://placehold.co/276x276?text=No+Image'
+                display='block'
+                width='100%'
+                height='100%'
+                border={{ "radius": "8px" }}
+              >
+              </i-image>
+            </i-panel>
           </i-hstack>
           <i-vstack
             position='relative'
             width='100%'
             gap={12}
+            margin={{ "top": 16 }}
           >
             <i-label
               caption='Payment details'
@@ -228,7 +226,7 @@ export default class PaymentMain extends Module {
                   gap={16}
                 >
                   <i-label
-                    caption='bc1qxk3vu9hmu4y2w97qs9gy29yj6azvve9ae9wpsr'
+                    caption={this.model.data?.payment?.address}
                     font={{ "size": "18px" }}
                     wordBreak='break-all'
                   >
@@ -256,11 +254,23 @@ export default class PaymentMain extends Module {
                   verticalAlignment='center'
                   gap={16}
                 >
-                  <i-label
-                    caption='0.00000883 BTC'
-                    font={{ "size": "18px" }}
+                  <i-panel
+                    display="inline"
                   >
-                  </i-label>
+                    <i-label
+                      caption={this.model.data?.payment?.price || ''}
+                      font={{ "size": "18px" }}
+                      display="inline"
+                    >
+                    </i-label>
+                    <i-label
+                      caption={this.model.data?.payment?.currency || ''}
+                      display="inline"
+                      font={{ "size": "18px" }}
+                      padding={{ left: 4 }}
+                    >
+                    </i-label>
+                  </i-panel>
                   <i-button
                     caption='Copy'
                     rightIcon={{ "width": 12, "height": 12, "fill": "var(--text-primary)", "name": "copy" }}
