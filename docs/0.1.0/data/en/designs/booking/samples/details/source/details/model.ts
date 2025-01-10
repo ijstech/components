@@ -1,7 +1,4 @@
-interface IOption {
-  name: string;
-  id: string;
-}
+import { IOption } from "../types";
 
 export class DataModel {
   private _lengths: IOption[] = [];
@@ -48,7 +45,7 @@ export class DataModel {
     this._times = value;
   }
 
-  public getLengths() {
+  getLengths(): IOption[] {
     return [
       { id: '1', name: '60 min' },
       { id: '2', name: '90 min' },
@@ -56,7 +53,7 @@ export class DataModel {
     ]
   }
 
-  public getPreferences() {
+  getPreferences(): IOption[] {
     return [
       { id: '1', name: 'Female' },
       { id: '2', name: 'Either' },
@@ -64,7 +61,7 @@ export class DataModel {
     ]
   }
 
-  public getDates() {
+  getDates(): string[] {
     return [
       'Thu Oct 14',
       'Fri Oct 15',
@@ -72,7 +69,7 @@ export class DataModel {
     ]
   }
 
-  public getTimes() {
+  getTimes(): string[] {
     return [
       '11:00 AM',
       '12:00 PM',

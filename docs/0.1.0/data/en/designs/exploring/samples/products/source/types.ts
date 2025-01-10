@@ -1,4 +1,4 @@
-export interface IProduct {
+interface IProduct {
   name: string;
   image: string;
   price: string;
@@ -15,7 +15,7 @@ export interface IProduct {
   freeShipping?: boolean;
 }
 
-export interface IProductFilter {
+interface IProductFilter {
   itemType?: string;
   location?: string;
   itemFormat?: string;
@@ -28,15 +28,31 @@ export interface IProductFilter {
   customLocation?: string;
 }
 
-export interface IProductList {
+interface IProductList {
   products: IProduct[];
 }
 
-export interface IOption {
+interface IOption {
   label: string;
   value: any;
   selected?: boolean;
   group?: string;
 }
 
-export type ProductType = 'top' | 'all';
+interface IFilter {
+  title: string;
+  key: string;
+  options: IOption[];
+  isRadio?: boolean;
+}
+
+type ProductType = 'top' | 'all';
+
+export {
+  IProduct,
+  IProductFilter,
+  IProductList,
+  IOption,
+  ProductType,
+  IFilter
+}

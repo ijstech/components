@@ -1,4 +1,4 @@
-export interface IArtist {
+interface IArtist {
   external_urls?: {
     spotify: string;
   };
@@ -16,7 +16,7 @@ export interface IArtist {
   uri: string;
 }
 
-export interface ITrack {
+interface ITrack {
   id: string;
   title: string;
   lossyAudioUrl: string;
@@ -34,3 +34,7 @@ export interface ITrack {
   artistId: string;
 }
 
+export {
+  IArtist,
+  ITrack
+}

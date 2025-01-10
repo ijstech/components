@@ -36,13 +36,13 @@ export class DataModel {
     this._artist = value;
   }
 
-  fetchArtist = (): IArtist => {
+  fetchArtist(): IArtist {
    return {
       "external_urls": {
         "spotify": "https://open.spotify.com/artist/3fMbdgg4jU18AjLCKBhRSm"
       },
       "followers": {
-        "href": null,
+        "href": '',
         "total": 33777613
       },
       "genres": [
@@ -75,7 +75,7 @@ export class DataModel {
     }
   }
 
-  fetchPlaylist = (): ITrack[] => {
+  fetchPlaylist(): ITrack[] {
     return [
       {
         "id": "ethereum/0x8427e46826a520b1264B55f31fCB5DDFDc31E349/way-of-the-dao",

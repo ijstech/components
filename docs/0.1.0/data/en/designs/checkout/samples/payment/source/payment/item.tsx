@@ -1,5 +1,5 @@
 import { observable, Module, ControlElement, customElements } from "@ijstech/components";
-import { IInvoiceItem } from "./types";
+import { IInvoiceItem } from "../types";
 
 interface PaymentItemElement extends ControlElement { }
 
