@@ -3,7 +3,7 @@ interface IPayment {
   name: string;
   description: string;
   icon: string;
-  price: number;
+  price: string;
   currency: string;
   address: string;
 }
@@ -27,7 +27,7 @@ interface IInvoiceItem {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: string;
   image: string;
 }
 

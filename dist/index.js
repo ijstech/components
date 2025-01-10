@@ -10532,7 +10532,6 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
         }
         const pushResult = Reflect.apply(target.push, target, pushContent);
         const changes = [];
-        console.log('pushResult', pushResult);
         for (let i = initialLength, j = target.length; i < j; i++) {
             changes[i - initialLength] = new Change(INSERT, [i], target[i], undefined, this);
         }
@@ -10994,7 +10993,18 @@ define("@ijstech/base/observable.ts", ["require", "exports"], function (require,
                         }
                     }
                     else {
-                        Object.assign(val, newVal);
+                        const combinedDescriptors = {
+                            ...Object.getOwnPropertyDescriptors(newVal),
+                            ...Object.getOwnPropertyDescriptors(Object.getPrototypeOf(newVal)),
+                        };
+                        const constructor = combinedDescriptors?.constructor;
+                        const isClassInstance = constructor?.value?.name !== 'Object';
+                        if (isClassInstance) {
+                            Object.defineProperties(val, combinedDescriptors);
+                        }
+                        else {
+                            Object.assign(val, newVal);
+                        }
                     }
                 }
                 else {
