@@ -1,7 +1,4 @@
-export interface IOption {
-  label: string;
-  value: any;
-}
+import { IOption, IFilter } from "../types";
 
 export class FilterModel {
   private _data: { [key: string]: any } = {
@@ -51,7 +48,7 @@ export class FilterModel {
     Object.assign(this._data, values);
   }
 
-  getFilters() {
+  getFilters(): IFilter[] {
     return [
       {
         title: 'Item format',
@@ -80,7 +77,7 @@ export class FilterModel {
     ]
   }
 
-  get categories() {
+  get categories(): IOption[] {
     return [
       { label: "Home & Living", value: "1" },
       { label: "Art & Collectibles", value: "2" },
@@ -100,7 +97,7 @@ export class FilterModel {
     ];
   }
 
-  get locations() {
+  get locations(): IOption[] {
     return [
       {
         label: 'Anywhere',
@@ -117,7 +114,7 @@ export class FilterModel {
     ]
   }
 
-  get prices() {
+  get prices(): IOption[] {
     return [
       {
         label: 'Any price',
@@ -130,7 +127,7 @@ export class FilterModel {
     ]
   }
 
-  get itemFormats() {
+  get itemFormats(): IOption[] {
     return [
       { label: 'All', value: 'all' },
       { label: 'Physical items', value: 'physical' },
@@ -138,7 +135,7 @@ export class FilterModel {
     ]
   }
 
-  get offers() {
+  get offers(): IOption[] {
     return [
       {
         label: 'Free shipping',
@@ -151,7 +148,7 @@ export class FilterModel {
     ]
   }
 
-  get estyBest() {
+  get estyBest(): IOption[] {
     return [
       {
         value: 'etsys_picks',
@@ -164,7 +161,7 @@ export class FilterModel {
     ]
   }
 
-  get materials() {
+  get materials(): IOption[] {
     return [
       {
         "label": "Solid yellow gold",

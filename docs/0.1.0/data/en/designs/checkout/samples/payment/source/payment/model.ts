@@ -1,4 +1,4 @@
-import { IInvoice } from "./types";
+import { IInvoice } from "../types";
 
 export class DataModel {
   private _data: IInvoice = {
@@ -26,7 +26,7 @@ export class DataModel {
 
   constructor() {}
 
-  getData() {
+  getData(): IInvoice {
     return {
       id: "1",
       status: "",

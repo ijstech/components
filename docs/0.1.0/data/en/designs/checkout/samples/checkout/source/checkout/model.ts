@@ -67,11 +67,11 @@ export class PaymentModel {
 
   constructor() {}
 
-  getPayment = (id: string) => {
+  getPayment(id: string): IPaymentOption|undefined {
     return this.payments.find(p => p.id === id);
   }
 
-  fetchRoom = (): IRoom => {
+  fetchRoom(): IRoom {
     return {
       id: '1',
       hotel: {
@@ -119,7 +119,7 @@ export class PaymentModel {
     }
   }
 
-  fetchBooking = (): IBooking => {
+  fetchBooking(): IBooking {
     return {
       id: '1',
       checkin: '2024-12-01',
@@ -134,7 +134,7 @@ export class PaymentModel {
     }
   }
 
-  fetchInfo = () => {
+  fetchInfo(): IInformation {
     return {
       "name": 'John Doe',
       "phone": "(123) 456-7890",
@@ -143,7 +143,7 @@ export class PaymentModel {
     }
   }
 
-  getHotelStatus = (point: number) => {
+  getHotelStatus(point: number): string {
     if (point < 5) {
       return 'Not Good';
     } else if (point >= 5 && point < 8) {
