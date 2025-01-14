@@ -43309,7 +43309,92 @@ define("@ijstech/form/types/index.ts", ["require", "exports"], function (require
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });
-define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstech/tab", "@ijstech/input", "@ijstech/layout", "@ijstech/datepicker", "@ijstech/combo-box", "@ijstech/checkbox", "@ijstech/radio", "@ijstech/label", "@ijstech/upload", "@ijstech/icon", "@ijstech/button", "@ijstech/form/styles/index.css.ts", "@ijstech/style", "@ijstech/moment", "@ijstech/ipfs", "@ijstech/form/styles/index.css.ts"], function (require, exports, base_1, tab_1, input_1, layout_1, datepicker_1, combo_box_1, checkbox_1, radio_1, label_1, upload_1, icon_1, button_1, Styles, style_1, moment_1, ipfs_1) {
+define("@ijstech/form/translations.json.ts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    ///<amd-module name='@ijstech/form/translations.json.ts'/> 
+    exports.default = {
+        "en": {
+            "is_not_an_instance_of_the_class/constructor_name": "is not an instance of the class/constructor {{name}}",
+            "invalid_schema/property_definition_name": "Invalid schema/property definition {{name}}",
+            "is_a_readonly_field_it_can_not_be_changed": "is a readonly field, it can not be changed",
+            "is_missing_and_it_is_required": "is missing and it is required",
+            "disallowed_value_was_matched": "disallowed value was matched",
+            "There_must_be_a_minimum_of_number_in_the_array": "There must be a minimum of {{number}} in the array",
+            "There_must_be_a_maximum_of_number_in_the_array": "There must be a maximum of {{number}} in the array",
+            "does_not_match_the_regex_pattern_name": "does not match the regex pattern {{name}}",
+            "may_only_be_length_characters_long": "may only be {{length}} characters long",
+            "must_be_at_least_length_characters_long": "must be at least {{length}} characters long",
+            "must_have_a_minimum_value_of_number": "must have a minimum value of {{number}}",
+            "must_have_a_maximum_value_of_number": "must have a maximum value of {{number}}",
+            "does_not_have_a_value_in_the_enumeration_enumer": "does not have a value in the enumeration {{enumer}}",
+            "may_only_have_number_digits_of_decimal_places": "may only have {{number}} digits of decimal places",
+            "is_not_a_valid_wallet_address": "is not a valid wallet address",
+            "is_not_a_valid_cid": "is not a valid cid",
+            "is_not_a_valid_version_0_cid": "is not a valid version 0 cid",
+            "is_not_a_valid_version_1_cid": "is not a valid version 1 cid",
+            "is_not_a_valid_uuid": "is not a valid uuid",
+            "is_not_a_valid_URL": "is not a valid URL",
+            "this": "This",
+            "confirm": "Confirm",
+            "clear": "Clear",
+            "add": "Add",
+        },
+        "zh-hant": {
+            "is_not_an_instance_of_the_class/constructor_name": "不是類別/構造函數 {{name}} 的實例",
+            "invalid_schema/property_definition_name": "無效的架構/屬性定義 {{name}}",
+            "is_a_readonly_field_it_can_not_be_changed": "是唯讀欄位，無法更改",
+            "is_missing_and_it_is_required": "缺少且是必填項目",
+            "disallowed_value_was_matched": "匹配到不允許的值",
+            "There_must_be_a_minimum_of_number_in_the_array": "陣列中必須至少有 {{number}} 個元素",
+            "There_must_be_a_maximum_of_number_in_the_array": "陣列中最多只能有 {{number}} 個元素",
+            "does_not_match_the_regex_pattern_name": "不符合正則表達式模式 {{name}}",
+            "may_only_be_length_characters_long": "只能是 {{length}} 個字符長",
+            "must_be_at_least_length_characters_long": "必須至少是 {{length}} 個字符長",
+            "must_have_a_minimum_value_of_number": "必須具有最小值 {{number}}",
+            "must_have_a_maximum_value_of_number": "必須具有最大值 {{number}}",
+            "does_not_have_a_value_in_the_enumeration_enumer": "在枚舉 {{enumer}} 中沒有對應的值",
+            "may_only_have_number_digits_of_decimal_places": "只能有 {{number}} 位小數",
+            "is_not_a_valid_wallet_address": "不是有效的錢包地址",
+            "is_not_a_valid_cid": "不是有效的 cid",
+            "is_not_a_valid_version_0_cid": "不是有效的版本 0 cid",
+            "is_not_a_valid_version_1_cid": "不是有效的版本 1 cid",
+            "is_not_a_valid_uuid": "不是有效的 UUID",
+            "is_not_a_valid_URL": "不是有效的 URL",
+            "this": "這個",
+            "confirm": "確認",
+            "clear": "清除",
+            "add": "新增",
+        },
+        "vi": {
+            "is_not_an_instance_of_the_class/constructor_name": "không phải là một thể hiện của lớp/hàm tạo {{name}}",
+            "invalid_schema/property_definition_name": "Định nghĩa sơ đồ/thuộc tính không hợp lệ {{name}}",
+            "is_a_readonly_field_it_can_not_be_changed": "là một trường chỉ đọc, không thể thay đổi",
+            "is_missing_and_it_is_required": "bị thiếu và là bắt buộc",
+            "disallowed_value_was_matched": "khớp với giá trị không được phép",
+            "There_must_be_a_minimum_of_number_in_the_array": "Mảng phải có ít nhất {{number}} phần tử",
+            "There_must_be_a_maximum_of_number_in_the_array": "Mảng phải có tối đa {{number}} phần tử",
+            "does_not_match_the_regex_pattern_name": "không khớp với mẫu regex {{name}}",
+            "may_only_be_length_characters_long": "chỉ có thể dài {{length}} ký tự",
+            "must_be_at_least_length_characters_long": "phải có ít nhất {{length}} ký tự",
+            "must_have_a_minimum_value_of_number": "phải có giá trị tối thiểu là {{number}}",
+            "must_have_a_maximum_value_of_number": "phải có giá trị tối đa là {{number}}",
+            "does_not_have_a_value_in_the_enumeration_enumer": "không có giá trị trong bảng liệt kê {{enumer}}",
+            "may_only_have_number_digits_of_decimal_places": "chỉ có thể có {{number}} chữ số thập phân",
+            "is_not_a_valid_wallet_address": "không phải là một địa chỉ ví hợp lệ",
+            "is_not_a_valid_cid": "không phải là một cid hợp lệ",
+            "is_not_a_valid_version_0_cid": "không phải là một cid phiên bản 0 hợp lệ",
+            "is_not_a_valid_version_1_cid": "không phải là một cid phiên bản 1 hợp lệ",
+            "is_not_a_valid_uuid": "không phải là một UUID hợp lệ",
+            "is_not_a_valid_URL": "không phải là một URL hợp lệ",
+            "this": "Cái này",
+            "confirm": "Xác nhận",
+            "clear": "Xóa",
+            "add": "Thêm",
+        }
+    };
+});
+define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstech/tab", "@ijstech/input", "@ijstech/layout", "@ijstech/datepicker", "@ijstech/combo-box", "@ijstech/checkbox", "@ijstech/radio", "@ijstech/label", "@ijstech/upload", "@ijstech/icon", "@ijstech/button", "@ijstech/form/styles/index.css.ts", "@ijstech/style", "@ijstech/moment", "@ijstech/ipfs", "@ijstech/application", "@ijstech/form/translations.json.ts", "@ijstech/form/styles/index.css.ts"], function (require, exports, base_1, tab_1, input_1, layout_1, datepicker_1, combo_box_1, checkbox_1, radio_1, label_1, upload_1, icon_1, button_1, Styles, style_1, moment_1, ipfs_1, application_1, translations_json_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Form = void 0;
@@ -43425,7 +43510,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                         return;
                     if (err) {
                         lbError.setAttribute('is-visible', '');
-                        lbError.caption = `${caption || ''} ${err.message}`;
+                        lbError.caption = `${this.getTranslatedText(caption || '')} ${this.getTranslatedMessage(err.message)}`;
                         lbError.visible = true;
                     }
                     else {
@@ -43466,7 +43551,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                         }
                         if (error) {
                             error.setAttribute('is-visible', '');
-                            error.caption = `${isNonObject ? 'Item' : (caption || '')} ${errMsg}`;
+                            error.caption = `${isNonObject ? 'Item' : this.getTranslatedText(caption || '')} ${this.getTranslatedMessage(errMsg)}`;
                             error.visible = true;
                         }
                     }
@@ -43484,6 +43569,8 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             };
         }
         init() {
+            this.i18nMessage = new base_1.I18n();
+            this.i18nMessage.init({ ...translations_json_1.default });
             super.init();
             this.classList.add(Styles.formStyle);
             this._jsonSchema = this.getAttribute('jsonSchema', true);
@@ -43960,7 +44047,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             }
             if (error) {
                 lbError.setAttribute('is-visible', '');
-                lbError.caption = `${lbError.getAttribute('array-caption') || 'This '} ${error.message}`;
+                lbError.caption = `${this.getTranslatedText(lbError.getAttribute('array-caption')) || this.getTranslatedMessage('$this')} ${this.getTranslatedMessage(error.message)}`;
                 lbError.visible = true;
             }
             else {
@@ -45368,6 +45455,26 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
             }
             setEnableBtnAdd();
         }
+        updateLocale(i18n) {
+            super.updateLocale(i18n);
+        }
+        getTranslatedMessage(value) {
+            if (!this.i18nMessage)
+                return value;
+            if (value?.startsWith('$')) {
+                this.i18nMessage.get(value);
+            }
+            return value;
+        }
+        getTranslatedText(value) {
+            if (value?.startsWith('$')) {
+                const translated = this.parentModule?.i18n?.get(value) ||
+                    application_1.default.i18n?.get(value) ||
+                    value;
+                return translated;
+            }
+            return value;
+        }
         checkPropertyChange(value, schema, property) {
             return this.validate(value, schema, { changing: property || 'property' });
         }
@@ -45381,6 +45488,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
         validate(instance, schema, options) {
             if (!options)
                 options = {};
+            const i18nMessage = this.i18nMessage;
             var _changing = options.changing;
             function getType(schema) {
                 return schema.type;
@@ -45427,16 +45535,16 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 if ((typeof schema != 'object' || schema instanceof Array) && (path || typeof schema != 'function') && !(schema && getType(schema))) {
                     if (typeof schema == 'function') {
                         if (!(value instanceof schema)) {
-                            addError('is not an instance of the class/constructor ' + schema.name, scope);
+                            addError(i18nMessage.get('$is_not_an_instance_of_the_class/constructor_name', { name: schema.name }), scope);
                         }
                     }
                     else if (schema) {
-                        addError('Invalid schema/property definition ' + schema, scope);
+                        addError(i18nMessage.get('$invalid_schema/property_definition_name', { name: schema }), scope);
                     }
                     return null;
                 }
                 if (_changing && schema.readOnly) {
-                    addError('is a readonly field, it can not be changed', scope);
+                    addError(i18nMessage.get('$is_a_readonly_field_it_can_not_be_changed'), scope);
                 }
                 if (schema.extends) { // if it extends another schema, it must pass that schema as well
                     checkProp(value, schema.extends, path, scope, i);
@@ -45484,7 +45592,7 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 if (isEmptyValue) {
                     if (schema.required && typeof schema.required === 'boolean') {
                         // addError("is missing and it is required", scope + '_' + idxOfArray);
-                        addError('is missing and it is required', scope);
+                        addError(i18nMessage.get('$is_missing_and_it_is_required'), scope);
                     }
                 }
                 else {
@@ -45492,13 +45600,13 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                     if (getType(schema) === 'object' && schema.required instanceof Array) {
                         for (let requiredField of schema.required) {
                             if (value[requiredField] === undefined || value[requiredField] === '' || (value[requiredField] instanceof Array && !value[requiredField].length)) {
-                                addError(`is missing and it is required`, scope + '/properties/' + requiredField, requiredField);
+                                addError(i18nMessage.get('$is_missing_and_it_is_required'), scope + '/properties/' + requiredField, requiredField);
                             }
                         }
                     }
                     errors = errors.concat(checkType(getType(schema), value, scope));
                     if (schema.disallow && !checkType(schema.disallow, value, scope).length) {
-                        addError(' disallowed value was matched', scope);
+                        addError(i18nMessage.get('$disallowed_value_was_matched'), scope);
                     }
                     if (value !== null) {
                         if (value instanceof Array) {
@@ -45518,10 +45626,10 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                                 }
                             }
                             if (schema.minItems && value.length < schema.minItems) {
-                                addError('There must be a minimum of ' + schema.minItems + ' in the array', scope);
+                                addError(i18nMessage.get('$There_must_be_a_minimum_of_number_in_the_array', { number: schema.minItems }), scope);
                             }
                             if (schema.maxItems && value.length > schema.maxItems) {
-                                addError('There must be a maximum of ' + schema.maxItems + ' in the array', scope);
+                                addError(i18nMessage.get('$There_must_be_a_maximum_of_number_in_the_array', { number: schema.maxItems }), scope);
                             }
                         }
                         else if (schema.properties || schema.additionalProperties) {
@@ -45540,21 +45648,21 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                             }
                         }
                         if (schema.pattern && typeof value == 'string' && !value.match(schema.pattern)) {
-                            addError('does not match the regex pattern ' + schema.pattern, scope);
+                            addError(i18nMessage.get('$does_not_match_the_regex_pattern_name', { name: schema.pattern }), scope);
                         }
                         if (schema.maxLength && typeof value == 'string' && value.length > schema.maxLength) {
-                            addError('may only be ' + schema.maxLength + ' characters long', scope);
+                            addError(i18nMessage.get('$may_only_be_length_characters_long', { length: schema.maxLength }), scope);
                         }
                         if (schema.minLength && typeof value == 'string' && value.length < schema.minLength) {
-                            addError('must be at least ' + schema.minLength + ' characters long', scope);
+                            addError(i18nMessage.get('$must_be_at_least_length_characters_long', { length: schema.minLength }), scope);
                         }
                         if (typeof schema.minimum !== 'undefined' && typeof value == typeof schema.minimum &&
                             schema.minimum > value) {
-                            addError('must have a minimum value of ' + schema.minimum, scope);
+                            addError(i18nMessage.get('$must_have_a_minimum_value_of_number', { number: schema.minimum }), scope);
                         }
                         if (typeof schema.maximum !== 'undefined' && typeof value == typeof schema.maximum &&
                             schema.maximum < value) {
-                            addError('must have a maximum value of ' + schema.maximum, scope);
+                            addError(i18nMessage.get('$must_have_a_maximum_value_of_number', { number: schema.maximum }), scope);
                         }
                         if (schema['enum']) {
                             var enumer = schema['enum'];
@@ -45567,44 +45675,44 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                                 }
                             }
                             if (!found) {
-                                addError('does not have a value in the enumeration ' + enumer.join(', '), scope);
+                                addError(i18nMessage.get('$does_not_have_a_value_in_the_enumeration_enumer', { enumer: enumer.join(', ') }), scope);
                             }
                         }
                         if (typeof schema.maxDecimal == 'number' &&
                             (value.toString().match(new RegExp('\\.[0-9]{' + (schema.maxDecimal + 1) + ',}')))) {
-                            addError('may only have ' + schema.maxDecimal + ' digits of decimal places', scope);
+                            addError(i18nMessage.get('$may_only_have_number_digits_of_decimal_places', { number: schema.maxDecimal }), scope);
                         }
                         // Todo: Additional validations
                         if (value !== '') {
                             if (schema.format === 'wallet-address') {
                                 const regex = new RegExp('^((0x[a-fA-F0-9]{40})|([13][a-km-zA-HJ-NP-Z1-9]{25,34})|(X[1-9A-HJ-NP-Za-km-z]{33})|(4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}))$');
                                 if (!regex.test(value))
-                                    addError('is not a valid wallet address', scope);
+                                    addError(i18nMessage.get('$is_not_a_valid_wallet_address'), scope);
                             }
                             else if (schema.format === 'cid') {
                                 const regex = new RegExp('^(Qm[1-9A-HJ-NP-Za-km-z]{44,}|b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$');
                                 if (!regex.test(value))
-                                    addError('is not a valid cid', scope);
+                                    addError(i18nMessage.get('$is_not_a_valid_cid'), scope);
                             }
                             else if (schema.format === 'cid-v0') {
                                 const regex = new RegExp('^(Qm[1-9A-HJ-NP-Za-km-z]{44,})$');
                                 if (!regex.test(value))
-                                    addError('is not a valid version 0 cid', scope);
+                                    addError(i18nMessage.get('$is_not_a_valid_version_0_cid'), scope);
                             }
                             else if (schema.format === 'cid-v1') {
                                 const regex = new RegExp('^(b[A-Za-z2-7]{58,}|B[A-Z2-7]{58,}|z[1-9A-HJ-NP-Za-km-z]{48,}|F[0-9A-F]{50,})$');
                                 if (!regex.test(value))
-                                    addError('is not a valid version 1 cid', scope);
+                                    addError(i18nMessage.get('$is_not_a_valid_version_1_cid'), scope);
                             }
                             else if (schema.format === 'uuid') {
                                 const regex = new RegExp('^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$');
                                 if (!regex.test(value))
-                                    addError('is not a valid uuid', scope);
+                                    addError(i18nMessage.get('$is_not_a_valid_uuid'), scope);
                             }
                             else if (schema.format === 'url') {
                                 const regex = new RegExp('^(https?|ftp)://[a-zA-Z0-9.-]+.[a-zA-Z]{2,}(?:/[^s]*)?$');
                                 if (!regex.test(value))
-                                    addError('is not a valid URL', scope);
+                                    addError(i18nMessage.get('$is_not_a_valid_URL'), scope);
                             }
                         }
                     }

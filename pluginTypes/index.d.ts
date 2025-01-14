@@ -25818,9 +25818,93 @@ declare module "@ijstech/form/types/index.ts" {
         rows?: number;
     }
 }
+/// <amd-module name="@ijstech/form/translations.json.ts" />
+declare module "@ijstech/form/translations.json.ts" {
+    const _default: {
+        en: {
+            "is_not_an_instance_of_the_class/constructor_name": string;
+            "invalid_schema/property_definition_name": string;
+            is_a_readonly_field_it_can_not_be_changed: string;
+            is_missing_and_it_is_required: string;
+            disallowed_value_was_matched: string;
+            There_must_be_a_minimum_of_number_in_the_array: string;
+            There_must_be_a_maximum_of_number_in_the_array: string;
+            does_not_match_the_regex_pattern_name: string;
+            may_only_be_length_characters_long: string;
+            must_be_at_least_length_characters_long: string;
+            must_have_a_minimum_value_of_number: string;
+            must_have_a_maximum_value_of_number: string;
+            does_not_have_a_value_in_the_enumeration_enumer: string;
+            may_only_have_number_digits_of_decimal_places: string;
+            is_not_a_valid_wallet_address: string;
+            is_not_a_valid_cid: string;
+            is_not_a_valid_version_0_cid: string;
+            is_not_a_valid_version_1_cid: string;
+            is_not_a_valid_uuid: string;
+            is_not_a_valid_URL: string;
+            this: string;
+            confirm: string;
+            clear: string;
+            add: string;
+        };
+        "zh-hant": {
+            "is_not_an_instance_of_the_class/constructor_name": string;
+            "invalid_schema/property_definition_name": string;
+            is_a_readonly_field_it_can_not_be_changed: string;
+            is_missing_and_it_is_required: string;
+            disallowed_value_was_matched: string;
+            There_must_be_a_minimum_of_number_in_the_array: string;
+            There_must_be_a_maximum_of_number_in_the_array: string;
+            does_not_match_the_regex_pattern_name: string;
+            may_only_be_length_characters_long: string;
+            must_be_at_least_length_characters_long: string;
+            must_have_a_minimum_value_of_number: string;
+            must_have_a_maximum_value_of_number: string;
+            does_not_have_a_value_in_the_enumeration_enumer: string;
+            may_only_have_number_digits_of_decimal_places: string;
+            is_not_a_valid_wallet_address: string;
+            is_not_a_valid_cid: string;
+            is_not_a_valid_version_0_cid: string;
+            is_not_a_valid_version_1_cid: string;
+            is_not_a_valid_uuid: string;
+            is_not_a_valid_URL: string;
+            this: string;
+            confirm: string;
+            clear: string;
+            add: string;
+        };
+        vi: {
+            "is_not_an_instance_of_the_class/constructor_name": string;
+            "invalid_schema/property_definition_name": string;
+            is_a_readonly_field_it_can_not_be_changed: string;
+            is_missing_and_it_is_required: string;
+            disallowed_value_was_matched: string;
+            There_must_be_a_minimum_of_number_in_the_array: string;
+            There_must_be_a_maximum_of_number_in_the_array: string;
+            does_not_match_the_regex_pattern_name: string;
+            may_only_be_length_characters_long: string;
+            must_be_at_least_length_characters_long: string;
+            must_have_a_minimum_value_of_number: string;
+            must_have_a_maximum_value_of_number: string;
+            does_not_have_a_value_in_the_enumeration_enumer: string;
+            may_only_have_number_digits_of_decimal_places: string;
+            is_not_a_valid_wallet_address: string;
+            is_not_a_valid_cid: string;
+            is_not_a_valid_version_0_cid: string;
+            is_not_a_valid_version_1_cid: string;
+            is_not_a_valid_uuid: string;
+            is_not_a_valid_URL: string;
+            this: string;
+            confirm: string;
+            clear: string;
+            add: string;
+        };
+    };
+    export default _default;
+}
 /// <amd-module name="@ijstech/form/form.ts" />
 declare module "@ijstech/form/form.ts" {
-    import { Control, ControlElement, notifyMouseEventCallback } from '@ijstech/base';
+    import { Control, ControlElement, notifyMouseEventCallback, I18n } from '@ijstech/base';
     import { IDataSchema, IUISchema, ValidationResult } from "@ijstech/form/types/index.ts";
     import "@ijstech/form/styles/index.css.ts";
     export { IDataSchema, IUISchema };
@@ -25872,6 +25956,7 @@ declare module "@ijstech/form/form.ts" {
         private validationData;
         private validationResult;
         private isSubmitted;
+        private i18nMessage;
         constructor(parent?: Control, options?: any);
         protected init(): void;
         set formOptions(options: any);
@@ -25912,6 +25997,9 @@ declare module "@ijstech/form/form.ts" {
         private renderCheckBox;
         private renderList;
         private renderCard;
+        updateLocale(i18n: I18n): void;
+        private getTranslatedMessage;
+        private getTranslatedText;
         private validateOnValueChanged;
         private checkPropertyChange;
         private mustBeValid;
