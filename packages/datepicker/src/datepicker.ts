@@ -318,7 +318,7 @@ export class Datepicker extends Control {
     private _onDatePickerChange = (event: Event) => {
         const pickerValue: string = this.datepickerElm.value;
         if (!pickerValue) {
-            this.inputElm.placeholder = this._placeholder || '';
+            this.inputElm.placeholder = this.placeholder;
             this.inputElm.value = '';
             this.emitChange(event);
             return;
@@ -397,7 +397,7 @@ export class Datepicker extends Control {
     }
 
     private updateValue(value: Moment) {
-        this.inputElm.placeholder = this._placeholder || '';
+        this.inputElm.placeholder = this.placeholder;
         if (value.isValid()) {
             this._value = value;
             this.inputElm.value = value.format(this.formatString);

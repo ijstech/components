@@ -17861,7 +17861,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
             this._onDatePickerChange = (event) => {
                 const pickerValue = this.datepickerElm.value;
                 if (!pickerValue) {
-                    this.inputElm.placeholder = this._placeholder || '';
+                    this.inputElm.placeholder = this.placeholder;
                     this.inputElm.value = '';
                     this.emitChange(event);
                     return;
@@ -18141,7 +18141,7 @@ define("@ijstech/datepicker/datepicker.ts", ["require", "exports", "@ijstech/bas
                 this.onChanged(this, event);
         }
         updateValue(value) {
-            this.inputElm.placeholder = this._placeholder || '';
+            this.inputElm.placeholder = this.placeholder;
             if (value.isValid()) {
                 this._value = value;
                 this.inputElm.value = value.format(this.formatString);
