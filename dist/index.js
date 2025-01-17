@@ -34040,6 +34040,7 @@ define("@ijstech/markdown/markdown.ts", ["require", "exports", "@ijstech/base", 
             if (!this.marked)
                 this.marked = await this.loadLib();
             let renderer = this.getRenderer();
+            this.marked.use({ renderer: new this.marked.Renderer() });
             this.marked.use({
                 renderer
             });
