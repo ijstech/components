@@ -133,6 +133,7 @@ export class Markdown extends Control {
     async load(text: string) {
         if (!this.marked) this.marked = await this.loadLib();
         let renderer = this.getRenderer();
+        this.marked.use({renderer: new this.marked.Renderer()});
         this.marked.use({
             renderer
         });
