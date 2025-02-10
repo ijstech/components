@@ -15153,6 +15153,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
             this.LibHost = '';
             this.packageNames = new Set();
             this.packages = {};
+            this.packageDependencies = {};
             // private _uploadModal: UploadModal;
             this.cidItems = {};
             this.bundleLibs = {};
@@ -15185,7 +15186,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
             ;
         }
         ;
-        calculateElementScconfigPath(packageName) {
+        resolvePackageSCConfigPath(packageName) {
             let options = this._initOptions;
             let rootDir = (options?.rootDir ? options?.rootDir : "");
             if (!rootDir.endsWith('/'))
@@ -15195,7 +15196,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
             return path;
         }
         async calculatePackageModuleDir(packageName, modulePath) {
-            let packageModulePath = await this.calculatePackageModulePath(packageName, modulePath || '*') || '';
+            let packageModulePath = await this.resolvePackageModulePath(packageName, modulePath || '*') || '';
             let currentModuleDir;
             if (packageModulePath.indexOf('://') > 0)
                 currentModuleDir = packageModulePath.split('/').slice(0, -1).join('/');
@@ -15218,7 +15219,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
                     ;
                 }
                 else {
-                    let scconfigPath = this.calculateElementScconfigPath(packageName);
+                    let scconfigPath = this.resolvePackageSCConfigPath(packageName);
                     if (scconfigPath) {
                         let scconfigResponse = await fetch(scconfigPath);
                         if (scconfigResponse.status == 200) {
@@ -15229,7 +15230,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
                                 for (let dependency of scconfig.dependencies) {
                                     if (dependency === '@ijstech/components' || this.packageNames.has(dependency))
                                         continue;
-                                    let packageModulePath = await this.calculatePackageModulePath(dependency, modulePath || '*');
+                                    let packageModulePath = await this.resolvePackageModulePath(dependency, modulePath || '*');
                                     if (!packageModulePath || this.packages[packageModulePath])
                                         continue;
                                     try {
@@ -15629,6 +15630,14 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
             return '';
         }
         ;
+        async getJSONContent(modulePath) {
+            try {
+                return await (await this.fetch(modulePath)).json();
+            }
+            catch (err) { }
+            return;
+        }
+        ;
         async fetchDirectoryInfoByCID(ipfsCid) {
             try {
                 const IPFS_API = `https://ipfs.scom.dev/ipfs/${ipfsCid}`;
@@ -15653,7 +15662,40 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
         //         this.modules[modulePath] = result;
         //     return result;
         // };
-        async calculatePackageModulePath(packageName, modulePath) {
+        async resolvePackageDependencies(packageName, result) {
+            result = result || [];
+            let deps = this.packageDependencies[packageName];
+            if (deps) {
+                for (let i = 0; i < deps.length; i++) {
+                    let p = deps[i];
+                    if (!result.includes(p)) {
+                        result.push(p);
+                    }
+                    ;
+                }
+                ;
+            }
+            else {
+                let scConfigPath = this.resolvePackageSCConfigPath(packageName);
+                let scconfig = await this.getJSONContent(scConfigPath);
+                if (scconfig?.dependencies) {
+                    this.packageDependencies[packageName] = scconfig?.dependencies;
+                    for (let i = 0; i < scconfig.dependencies.length; i++) {
+                        let p = scconfig.dependencies[i];
+                        await this.resolvePackageDependencies(p, result);
+                        if (!result.includes(p))
+                            result.push(p);
+                    }
+                    ;
+                }
+                else
+                    this.packageDependencies[packageName] = [];
+            }
+            ;
+            return result;
+        }
+        ;
+        async resolvePackageModulePath(packageName, modulePath) {
             let options = this._initOptions;
             if (options && options.modules && options.modules[packageName]) {
                 let pack = options.modules[packageName];
@@ -15670,14 +15712,11 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
                 rootDir = rootDir + '/';
             let moduleDir = (options?.moduleDir ? options?.moduleDir + "/" : "modules/");
             let libDir = (options?.libDir ? options?.libDir + "/" : "libs/");
-            if (!modulePath) {
+            if (!modulePath || modulePath == '*') {
                 if (options?.modules?.[packageName])
                     modulePath = rootDir + moduleDir + options?.modules?.[packageName].path + '/index.js';
                 else
-                    return null;
-            }
-            else if (modulePath == '*') {
-                modulePath = rootDir + libDir + packageName + '/index.js';
+                    modulePath = rootDir + libDir + packageName + '/index.js';
             }
             else if (modulePath.startsWith('{LIB}/')) {
                 let libPath = base_2.LibPath || '';
@@ -15689,9 +15728,19 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
         }
         ;
         async loadPackage(packageName, modulePath) {
-            let packageModulePath = await this.calculatePackageModulePath(packageName, modulePath);
+            let packageModulePath = await this.resolvePackageModulePath(packageName, modulePath);
             if (!packageModulePath)
                 return null;
+            if (this.packages[packageModulePath])
+                return this.packages[packageModulePath];
+            let deps = await this.resolvePackageDependencies(packageName);
+            for (let i = 0; i < deps.length; i++) {
+                let p = deps[i];
+                if (!base_2.RequireJS.defined(p) && !this.packageNames.has(p)) {
+                    await this.loadPackage(p);
+                }
+            }
+            ;
             try {
                 let m = window['require'](packageName);
                 if (m) {
@@ -15912,7 +15961,9 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
         }
         ;
         async init(scconfigPath, customData) {
-            let scconfig = JSON.parse(await this.getContent(scconfigPath));
+            let scconfig = await this.getJSONContent(scconfigPath);
+            if (!scconfig)
+                return null;
             if (!scconfig.rootDir) {
                 if (scconfigPath.indexOf('/') > 0) {
                     let rootDir = scconfigPath.split('/').slice(0, -1).join('/');
@@ -15986,7 +16037,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
                     await this.loadPackages(packages);
                     // for (let p in options.dependencies){
                     //     if (p != options.main){
-                    //         let path = await this.calculatePackageModulePath(p, options.dependencies[p]);
+                    //         let path = await this.resolvePackageModulePath(p, options.dependencies[p]);
                     //         if (path && !this.packages[path]){
                     //             await this.loadPackage(p, options.dependencies[p]);
                     //         };
