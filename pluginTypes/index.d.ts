@@ -21689,6 +21689,7 @@ declare module "@ijstech/application" {
         LibHost: string;
         private packageNames;
         private packages;
+        private packageDependencies;
         _assets: {
             [name: string]: any;
         };
@@ -21711,7 +21712,7 @@ declare module "@ijstech/application" {
         get EventBus(): EventBus;
         static get Instance(): Application;
         assets(name: string): any;
-        private calculateElementScconfigPath;
+        private resolvePackageSCConfigPath;
         private calculatePackageModuleDir;
         createElement(name: string, lazyLoad?: boolean, attributes?: {
             [name: string]: string;
@@ -21734,8 +21735,10 @@ declare module "@ijstech/application" {
         loadScript(modulePath: string, script?: string, forcedSave?: boolean): Promise<boolean>;
         loadScriptWithIntegrity(modulePath: string, integrity?: string, crossorigin?: string): Promise<boolean | HTMLScriptElement>;
         getContent(modulePath: string): Promise<string>;
+        getJSONContent(modulePath: string): Promise<any>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;
-        private calculatePackageModulePath;
+        resolvePackageDependencies(packageName: string, result?: string[]): Promise<string[]>;
+        private resolvePackageModulePath;
         loadPackage(packageName: string, modulePath?: string): Promise<{
             [name: string]: any;
         } | null>;
