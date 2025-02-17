@@ -216,7 +216,7 @@ export class Menu extends Control {
   private async handleUpdateMode(mode: MenuMode) {
     if (this._mode === 'horizontal') {
       if (!this.moreItem) {
-        this.moreItem = await MenuItem.create({ title: '⋯', linkTo: this, level: 0 });
+        this.moreItem = await MenuItem.create({ title: '\u22EF', linkTo: this, level: 0 });
         this.moreItem.classList.add('more-menu-item', 'hide-arrow-icon')
       }
       window.addEventListener('resize', this.handleResize);

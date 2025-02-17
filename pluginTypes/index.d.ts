@@ -24852,7 +24852,7 @@ declare module "@ijstech/pagination/style/pagination.css.ts" { }
 declare module "@ijstech/pagination/pagination.ts" {
     import { Control, ControlElement } from '@ijstech/base';
     import "@ijstech/pagination/style/pagination.css.ts";
-    type notifyCallback = (target: Pagination, lastActivePage: number) => void;
+    type notifyCallback = (target: Pagination, lastActivePage: number, isClicked?: boolean) => void;
     export interface PaginationElement extends ControlElement {
         totalPages?: number;
         currentPage?: number;
@@ -24879,6 +24879,7 @@ declare module "@ijstech/pagination/pagination.ts" {
         private _prevElm;
         private _nextElm;
         private pagerCount;
+        private isClicked;
         onPageChanged: notifyCallback;
         constructor(parent?: Control, options?: any);
         get totalPages(): number;

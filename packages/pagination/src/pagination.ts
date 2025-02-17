@@ -2,7 +2,7 @@ import {Control, customElements, ControlElement} from '@ijstech/base';
 import './style/pagination.css';
 import { GroupType } from '@ijstech/types';
 
-type notifyCallback = (target: Pagination, lastActivePage: number) => void
+type notifyCallback = (target: Pagination, lastActivePage: number, isClicked?: boolean) => void
 export interface PaginationElement extends ControlElement{
     totalPages?: number
     currentPage?: number
@@ -70,6 +70,7 @@ export class Pagination extends Control {
     private _prevElm: HTMLElement;
     private _nextElm: HTMLElement;
     private pagerCount: number = pagerCount;
+    private isClicked: boolean = false;
     public onPageChanged: notifyCallback;
 
     constructor(parent?: Control, options?: any) {        
@@ -93,7 +94,10 @@ export class Pagination extends Control {
         this._curPage = value || defaultCurrentPage;
         const index = value - 1;
         this.pageItems[index] && this.onActiveItem(this.pageItems[index]);
-        if (typeof this.onPageChanged === 'function' && (oldData !== this._curPage)) this.onPageChanged(this, oldData);
+        if (typeof this.onPageChanged === 'function' && (oldData !== this._curPage)) {
+            this.onPageChanged(this, oldData, !!this.isClicked);
+            this.isClicked = false;
+        }
     }
 
     get pageSize(): number {
@@ -124,6 +128,7 @@ export class Pagination extends Control {
     }
     protected _handleOnClickIndex(value: number, event: Event) {
         if (!this.enabled) return;
+        this.isClicked = true;
         this.currentPage = value;
         this.onActiveItem(event.target as HTMLElement);
         this.onDisablePrevNext();
@@ -135,6 +140,7 @@ export class Pagination extends Control {
         } else if (_curPage <= 0) {
             _curPage = 1;
         }
+        this.isClicked = true;
         this.currentPage = _curPage;
         this.onDisablePrevNext();
         this.renderPageItem(this.totalPages);
@@ -142,6 +148,7 @@ export class Pagination extends Control {
     protected _handleOnNext(event: Event) {
         if (!this.enabled || this.currentPage >= this.totalPages) return;
         const nextPage = Number(this._curPage) <= 0 ? 1 : Number(this._curPage) + 1;
+        this.isClicked = true;
         this.currentPage = nextPage;
         this.renderPageItem(this.totalPages);
         this.onDisablePrevNext();
@@ -149,6 +156,7 @@ export class Pagination extends Control {
     protected _handleOnPrev(event: Event) {
         if (!this.enabled || this.currentPage <= 1) return;
         const prevPage = Number(this._curPage) - 1;
+        this.isClicked = true;
         this.currentPage = prevPage;
         this.renderPageItem(this.totalPages);
         this.onDisablePrevNext();

@@ -35110,7 +35110,7 @@ define("@ijstech/menu/menu.ts", ["require", "exports", "@ijstech/base", "@ijstec
         async handleUpdateMode(mode) {
             if (this._mode === 'horizontal') {
                 if (!this.moreItem) {
-                    this.moreItem = await MenuItem.create({ title: '⋯', linkTo: this, level: 0 });
+                    this.moreItem = await MenuItem.create({ title: '\u22EF', linkTo: this, level: 0 });
                     this.moreItem.classList.add('more-menu-item', 'hide-arrow-icon');
                 }
                 window.addEventListener('resize', this.handleResize);
@@ -37591,6 +37591,7 @@ define("@ijstech/pagination/pagination.ts", ["require", "exports", "@ijstech/bas
             this._showNextMore = false;
             this.pageItems = [];
             this.pagerCount = pagerCount;
+            this.isClicked = false;
         }
         get totalPages() {
             return this._totalPages;
@@ -37610,8 +37611,10 @@ define("@ijstech/pagination/pagination.ts", ["require", "exports", "@ijstech/bas
             this._curPage = value || defaultCurrentPage;
             const index = value - 1;
             this.pageItems[index] && this.onActiveItem(this.pageItems[index]);
-            if (typeof this.onPageChanged === 'function' && (oldData !== this._curPage))
-                this.onPageChanged(this, oldData);
+            if (typeof this.onPageChanged === 'function' && (oldData !== this._curPage)) {
+                this.onPageChanged(this, oldData, !!this.isClicked);
+                this.isClicked = false;
+            }
         }
         get pageSize() {
             return this._pageSize || pageSize;
@@ -37641,6 +37644,7 @@ define("@ijstech/pagination/pagination.ts", ["require", "exports", "@ijstech/bas
         _handleOnClickIndex(value, event) {
             if (!this.enabled)
                 return;
+            this.isClicked = true;
             this.currentPage = value;
             this.onActiveItem(event.target);
             this.onDisablePrevNext();
@@ -37653,6 +37657,7 @@ define("@ijstech/pagination/pagination.ts", ["require", "exports", "@ijstech/bas
             else if (_curPage <= 0) {
                 _curPage = 1;
             }
+            this.isClicked = true;
             this.currentPage = _curPage;
             this.onDisablePrevNext();
             this.renderPageItem(this.totalPages);
@@ -37661,6 +37666,7 @@ define("@ijstech/pagination/pagination.ts", ["require", "exports", "@ijstech/bas
             if (!this.enabled || this.currentPage >= this.totalPages)
                 return;
             const nextPage = Number(this._curPage) <= 0 ? 1 : Number(this._curPage) + 1;
+            this.isClicked = true;
             this.currentPage = nextPage;
             this.renderPageItem(this.totalPages);
             this.onDisablePrevNext();
@@ -37669,6 +37675,7 @@ define("@ijstech/pagination/pagination.ts", ["require", "exports", "@ijstech/bas
             if (!this.enabled || this.currentPage <= 1)
                 return;
             const prevPage = Number(this._curPage) - 1;
+            this.isClicked = true;
             this.currentPage = prevPage;
             this.renderPageItem(this.totalPages);
             this.onDisablePrevNext();
