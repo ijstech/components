@@ -22205,6 +22205,12 @@ declare module "@ijstech/range/range.ts" {
         set tooltipVisible(value: boolean);
         get trackColor(): Types.Color;
         set trackColor(value: Types.Color);
+        get min(): number;
+        set min(value: number);
+        get max(): number;
+        set max(value: number);
+        get step(): number;
+        set step(value: number);
         private onSliderChange;
         private onUpdateTooltip;
         protected init(): void;

@@ -18609,6 +18609,24 @@ define("@ijstech/range/range.ts", ["require", "exports", "@ijstech/base", "@ijst
             else
                 this.style.removeProperty('--track-color');
         }
+        get min() {
+            return Number(this.inputElm.min) || 0;
+        }
+        set min(value) {
+            this.inputElm.min = value.toFixed();
+        }
+        get max() {
+            return Number(this.inputElm.max) || 0;
+        }
+        set max(value) {
+            this.inputElm.max = value.toFixed();
+        }
+        get step() {
+            return Number(this.inputElm.step) || 0;
+        }
+        set step(value) {
+            this.inputElm.step = value.toFixed();
+        }
         onSliderChange(event) {
             if (this._designMode) {
                 event.preventDefault();
