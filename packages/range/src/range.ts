@@ -216,6 +216,30 @@ export class Range extends Control {
       this.style.removeProperty('--track-color')
   }
 
+  get min() {
+    return Number(this.inputElm.min) || 0;
+  }
+
+  set min(value: number) {
+    this.inputElm.min = value.toFixed();
+  }
+
+  get max() {
+    return Number(this.inputElm.max) || 0;
+  }
+
+  set max(value: number) {
+    this.inputElm.max = value.toFixed();
+  }
+
+  get step() {
+    return Number(this.inputElm.step) || 0;
+  }
+
+  set step(value: number) {
+    this.inputElm.step = value.toFixed();
+  }
+
   private onSliderChange(event: Event) {
     if (this._designMode) {
       event.preventDefault();
