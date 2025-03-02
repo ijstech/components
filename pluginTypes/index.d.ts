@@ -21733,7 +21733,7 @@ declare module "@ijstech/application" {
         private verifyScript;
         private getScript;
         loadScript(modulePath: string, script?: string, forcedSave?: boolean): Promise<boolean>;
-        loadScriptWithIntegrity(modulePath: string, integrity?: string, crossorigin?: string): Promise<boolean | HTMLScriptElement>;
+        loadScriptWithIntegrity(modulePath: string, integrity?: string, crossorigin?: string): Promise<unknown>;
         getContent(modulePath: string): Promise<string>;
         getJSONContent(modulePath: string): Promise<any>;
         fetchDirectoryInfoByCID(ipfsCid: string): Promise<ICidInfo[]>;

@@ -15594,33 +15594,37 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
         }
         ;
         async loadScriptWithIntegrity(modulePath, integrity = '', crossorigin = 'anonymous') {
-            try {
-                if (this.loadedScripts[modulePath])
-                    return true;
-                let checkedIntegrity = integrity;
-                if (!checkedIntegrity && this._initOptions?.ipfs && typeof (this._initOptions?.ipfs) == 'string') {
-                    try {
-                        const paths = modulePath.split("/");
-                        const cid = await this.getCidItem('/ipfs', this._initOptions.ipfs, paths);
-                        if (cid)
-                            checkedIntegrity = (0, ipfs_1.cidToHash)(cid?.cid);
+            return new Promise(async (resolve, reject) => {
+                try {
+                    if (this.loadedScripts[modulePath])
+                        return true;
+                    let checkedIntegrity = integrity;
+                    if (!checkedIntegrity && this._initOptions?.ipfs && typeof (this._initOptions?.ipfs) == 'string') {
+                        try {
+                            const paths = modulePath.split("/");
+                            const cid = await this.getCidItem('/ipfs', this._initOptions.ipfs, paths);
+                            if (cid)
+                                checkedIntegrity = (0, ipfs_1.cidToHash)(cid?.cid);
+                        }
+                        catch (err) {
+                        }
                     }
-                    catch (err) {
-                    }
+                    ;
+                    const script = document.createElement('script');
+                    script.src = modulePath;
+                    if (checkedIntegrity)
+                        script.integrity = checkedIntegrity;
+                    script.crossOrigin = crossorigin;
+                    script.async = true;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                    this.loadedScripts[modulePath] = true;
                 }
-                ;
-                const script = document.createElement('script');
-                script.src = modulePath;
-                if (checkedIntegrity)
-                    script.integrity = checkedIntegrity;
-                script.crossOrigin = crossorigin;
-                script.async = true;
-                document.head.appendChild(script);
-                this.loadedScripts[modulePath] = true;
-                return script;
-            }
-            catch (err) { }
-            return false;
+                catch (err) {
+                    reject(err);
+                }
+            });
         }
         async getContent(modulePath) {
             try {

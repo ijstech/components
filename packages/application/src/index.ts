@@ -538,29 +538,33 @@ export class Application{
         return false;
     };
     async loadScriptWithIntegrity(modulePath: string, integrity = '', crossorigin = 'anonymous') {
-        try {
-            if (this.loadedScripts[modulePath])
-                return true;
-            let checkedIntegrity = integrity;
-            if (!checkedIntegrity && this._initOptions?.ipfs && typeof(this._initOptions?.ipfs) == 'string'){
-                try{
-                    const paths = modulePath.split("/");
-                    const cid = await this.getCidItem('/ipfs', this._initOptions.ipfs, paths);
-                    if (cid) checkedIntegrity = cidToHash(cid?.cid);
-                }
-                catch(err){
-                }
-            };
-            const script = document.createElement('script');
-            script.src = modulePath;
-            if (checkedIntegrity) script.integrity = checkedIntegrity;
-            script.crossOrigin = crossorigin;
-            script.async = true;
-            document.head.appendChild(script);
-            this.loadedScripts[modulePath] = true;
-            return script;
-        } catch(err) {}
-        return false;
+        return new Promise(async (resolve, reject) => {
+            try {
+                if (this.loadedScripts[modulePath])
+                    return true;
+                let checkedIntegrity = integrity;
+                if (!checkedIntegrity && this._initOptions?.ipfs && typeof(this._initOptions?.ipfs) == 'string'){
+                    try{
+                        const paths = modulePath.split("/");
+                        const cid = await this.getCidItem('/ipfs', this._initOptions.ipfs, paths);
+                        if (cid) checkedIntegrity = cidToHash(cid?.cid);
+                    }
+                    catch(err){
+                    }
+                };
+                const script = document.createElement('script');
+                script.src = modulePath;
+                if (checkedIntegrity) script.integrity = checkedIntegrity;
+                script.crossOrigin = crossorigin;
+                script.async = true;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+                this.loadedScripts[modulePath] = true;
+            } catch(err) {
+                reject(err)
+            }           
+        })
     }
     async getContent(modulePath: string): Promise<string>{
         try{
