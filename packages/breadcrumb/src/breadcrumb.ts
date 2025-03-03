@@ -1,10 +1,13 @@
 import {Container, Control, ControlElement, customElements} from "@ijstech/base";
 import './style/breadcrumb.css';
-import {GridLayout, HStack} from "@ijstech/layout";
+import {HStack} from "@ijstech/layout";
 import {Label} from "@ijstech/label";
 import {Icon} from "@ijstech/icon";
+import * as Styles from '@ijstech/style';
 
-interface IBreadcrumbItem {
+const Theme = Styles.Theme.ThemeVars;
+
+export interface IBreadcrumbItem {
     caption: string;
     data?: any;
 }
@@ -59,18 +62,23 @@ export class Breadcrumb extends Control {
 
     private render() {
         if(!this._wrapper) {
+            const { gap = '5px' } = this.tag;
             this._wrapper = new HStack(undefined, {
                 justifyContent: 'start',
-                alignItems: 'center'
+                alignItems: 'center',
+                gap
             })
         }
         this.clear();
         if(this._breadcrumbItems) {
             for(let i = 0; i < this._breadcrumbItems.length; i++) {
                 const breadcrumbItem = this._breadcrumbItems[i];
+                const color = i === this._breadcrumbItems.length - 1 ? Theme.colors.primary.main : Theme.text.primary;
                 const lbBreadcrumb = new Label(this._wrapper, {
-                    caption: breadcrumbItem.caption
+                    caption: breadcrumbItem.caption,
+                    font: {size: Theme.typography.fontSize, color}
                 });
+
                 if(this._onItemClick !== undefined)
                     this.classList.add('pointer')
                 lbBreadcrumb.onClick = () => {
@@ -80,8 +88,9 @@ export class Breadcrumb extends Control {
                 if(i + 1 < this._breadcrumbItems.length) {
                     new Icon(this._wrapper, {
                         name: 'chevron-right',
-                        width: 18,
-                        height: 18
+                        width: Theme.typography.fontSize,
+                        height: Theme.typography.fontSize,
+                        fill: Theme.text.primary
                     })
                 }
             }

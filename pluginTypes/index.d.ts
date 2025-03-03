@@ -25518,7 +25518,7 @@ declare module "@ijstech/breadcrumb/style/breadcrumb.css.ts" { }
 declare module "@ijstech/breadcrumb/breadcrumb.ts" {
     import { Container, Control, ControlElement } from "@ijstech/base";
     import "@ijstech/breadcrumb/style/breadcrumb.css.ts";
-    interface IBreadcrumbItem {
+    export interface IBreadcrumbItem {
         caption: string;
         data?: any;
     }
@@ -25547,7 +25547,7 @@ declare module "@ijstech/breadcrumb/breadcrumb.ts" {
 }
 /// <amd-module name="@ijstech/breadcrumb" />
 declare module "@ijstech/breadcrumb" {
-    export { Breadcrumb } from "@ijstech/breadcrumb/breadcrumb.ts";
+    export { Breadcrumb, IBreadcrumbItem } from "@ijstech/breadcrumb/breadcrumb.ts";
 }
 /// <amd-module name="@ijstech/form/styles/index.css.ts" />
 declare module "@ijstech/form/styles/index.css.ts" {
@@ -26245,7 +26245,7 @@ declare module "@ijstech/components" {
     export { Video } from '@ijstech/video';
     export { SchemaDesigner } from '@ijstech/schema-designer';
     export { Nav } from '@ijstech/navigator';
-    export { Breadcrumb } from '@ijstech/breadcrumb';
+    export { Breadcrumb, IBreadcrumbItem } from '@ijstech/breadcrumb';
     export { Form, IDataSchema, IUISchema, IFormOptions } from '@ijstech/form';
     export { ColorPicker } from '@ijstech/color';
     export { Repeater } from '@ijstech/repeater';
