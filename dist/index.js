@@ -42944,27 +42944,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 define("@ijstech/breadcrumb/style/breadcrumb.css.ts", ["require", "exports", "@ijstech/style"], function (require, exports, Styles) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const Theme = Styles.Theme.ThemeVars;
     Styles.cssRule('i-breadcrumb', {
         $nest: {
-            'i-label': {
-                padding: 5,
-                margin: '0 5px',
-                color: Theme.colors.primary.main
-            },
             'i-icon': {
-                margin: '0 5px',
-                height: Theme.typography.fontSize,
-                width: Theme.typography.fontSize,
-                fill: Theme.colors.primary.main
+                scale: 0.9
             }
         }
     });
 });
-define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/base", "@ijstech/layout", "@ijstech/label", "@ijstech/icon", "@ijstech/breadcrumb/style/breadcrumb.css.ts"], function (require, exports, base_1, layout_1, label_1, icon_1) {
+define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/base", "@ijstech/layout", "@ijstech/label", "@ijstech/icon", "@ijstech/style", "@ijstech/breadcrumb/style/breadcrumb.css.ts"], function (require, exports, base_1, layout_1, label_1, icon_1, Styles) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Breadcrumb = void 0;
+    const Theme = Styles.Theme.ThemeVars;
     let Breadcrumb = class Breadcrumb extends base_1.Control {
         constructor(parent, options) {
             super(parent, options, {});
@@ -42992,17 +42984,21 @@ define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/bas
         }
         render() {
             if (!this._wrapper) {
+                const { gap = '5px' } = this.tag;
                 this._wrapper = new layout_1.HStack(undefined, {
                     justifyContent: 'start',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    gap
                 });
             }
             this.clear();
             if (this._breadcrumbItems) {
                 for (let i = 0; i < this._breadcrumbItems.length; i++) {
                     const breadcrumbItem = this._breadcrumbItems[i];
+                    const color = i === this._breadcrumbItems.length - 1 ? Theme.colors.primary.main : Theme.text.primary;
                     const lbBreadcrumb = new label_1.Label(this._wrapper, {
-                        caption: breadcrumbItem.caption
+                        caption: breadcrumbItem.caption,
+                        font: { size: Theme.typography.fontSize, color }
                     });
                     if (this._onItemClick !== undefined)
                         this.classList.add('pointer');
@@ -43013,8 +43009,9 @@ define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/bas
                     if (i + 1 < this._breadcrumbItems.length) {
                         new icon_1.Icon(this._wrapper, {
                             name: 'chevron-right',
-                            width: 18,
-                            height: 18
+                            width: Theme.typography.fontSize,
+                            height: Theme.typography.fontSize,
+                            fill: Theme.text.primary
                         });
                     }
                 }

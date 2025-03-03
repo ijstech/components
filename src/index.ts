@@ -51,7 +51,7 @@ export { moment } from '@ijstech/moment';
 export { Video } from '@ijstech/video';
 export { SchemaDesigner } from '@ijstech/schema-designer';
 export {Nav} from '@ijstech/navigator';
-export {Breadcrumb} from '@ijstech/breadcrumb';
+export {Breadcrumb, IBreadcrumbItem} from '@ijstech/breadcrumb';
 export {Form, IDataSchema, IUISchema, IFormOptions} from '@ijstech/form';
 export { ColorPicker } from '@ijstech/color';
 export { Repeater } from '@ijstech/repeater';
