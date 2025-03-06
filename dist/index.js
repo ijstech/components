@@ -42984,7 +42984,7 @@ define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/bas
         }
         render() {
             if (!this._wrapper) {
-                const { gap = '5px' } = this.tag;
+                const { gap = '5px' } = this.tag || {};
                 this._wrapper = new layout_1.HStack(undefined, {
                     justifyContent: 'start',
                     alignItems: 'center',

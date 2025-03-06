@@ -62,7 +62,7 @@ export class Breadcrumb extends Control {
 
     private render() {
         if(!this._wrapper) {
-            const { gap = '5px' } = this.tag;
+            const { gap = '5px' } = this.tag || {};
             this._wrapper = new HStack(undefined, {
                 justifyContent: 'start',
                 alignItems: 'center',
