@@ -346,7 +346,7 @@ export class ComboBox extends Control {
   }
 
   private getTranslatedText(value: string): string {
-    if (value?.startsWith('$')) {
+    if (typeof value === 'string' && value?.startsWith('$')) {
       const translated =
         this.parentModule?.i18n?.get(value) ||
         application.i18n?.get(value) ||
