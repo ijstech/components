@@ -17320,7 +17320,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 this.inputElm.placeholder = this.placeholder;
         }
         getTranslatedText(value) {
-            if (value?.startsWith('$')) {
+            if (typeof value === 'string' && value?.startsWith('$')) {
                 const translated = this.parentModule?.i18n?.get(value) ||
                     application_1.application.i18n?.get(value) ||
                     '';
