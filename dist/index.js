@@ -19510,7 +19510,7 @@ define("@ijstech/modal/modal.ts", ["require", "exports", "@ijstech/base", "@ijst
                     const parentModal = this.parentElement?.closest('i-modal');
                     if (parentModal) {
                         parentModal.wrapperDiv.style.overflow = 'hidden auto';
-                        document.body.style.overflow = 'hidden';
+                        document.body.style.overflow = parentModal.visible ? 'hidden' : 'hidden auto';
                     }
                     else {
                         document.body.style.overflow = 'hidden auto';
