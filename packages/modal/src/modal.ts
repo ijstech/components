@@ -214,7 +214,7 @@ export class Modal extends Container {
                 const parentModal = this.parentElement?.closest('i-modal') as Modal;
                 if (parentModal) {
                     parentModal.wrapperDiv.style.overflow = 'hidden auto'
-                    document.body.style.overflow = 'hidden';
+                    document.body.style.overflow = parentModal.visible ? 'hidden' : 'hidden auto';
                 } else {
                     document.body.style.overflow = 'hidden auto';
                 }
