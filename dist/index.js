@@ -43737,7 +43737,8 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
         setData(scope, value, parentElm, customData) {
             let _control;
             this.setCustomData(scope, value, undefined, customData);
-            if (this._formControls[scope]?.input?.tagName === 'designer-template-areas'.toUpperCase()) {
+            const input = this._formControls[scope]?.input;
+            if (input?.tagName === 'designer-template-areas'.toUpperCase()) {
                 return;
             }
             if (typeof value === 'object') {
@@ -43792,7 +43793,13 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
                                         const fieldName = field.getAttribute('field') || '';
                                         const columnData = rowData[fieldName];
                                         if (field.tagName === 'I-INPUT') {
-                                            field.value = columnData;
+                                            const customScope = field.getAttribute('custom-control');
+                                            if (customScope) {
+                                                this.setCustomData(customScope, columnData, field, rowData);
+                                            }
+                                            else {
+                                                field.value = columnData;
+                                            }
                                         }
                                         else if (field.tagName === 'I-CHECKBOX') {
                                             field.checked = columnData;
