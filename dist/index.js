@@ -42968,9 +42968,12 @@ define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/bas
         }
         init() {
             super.init();
-            this._breadcrumbItems = this.getAttribute('breadcrumbItems', true);
+            const data = this.getAttribute('breadcrumbItems', true);
             this._onItemClick = this.getAttribute('onItemClick', true);
-            this.render();
+            if (data) {
+                this._breadcrumbItems = data;
+                this.render();
+            }
         }
         set breadcrumbItems(breadcrumbItems) {
             this._breadcrumbItems = breadcrumbItems;
