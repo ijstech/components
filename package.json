@@ -1,6 +1,6 @@
 {
     "name": "@ijstech/components",
-    "version": "0.1.160",
+    "version": "0.1.161",
     "main": "dist/index.js",
     "types": "pluginTypes/index.d.ts",
     "license": "BUSL-1.1",
