@@ -7,7 +7,7 @@ import {
 } from "@ijstech/base";
 import { VStack, HStack, Panel } from '@ijstech/layout';
 import { Label } from '@ijstech/label';
-import { Icon } from '@ijstech/icon';
+import { Icon, IconElement } from '@ijstech/icon';
 import { Theme } from '@ijstech/style';
 import { IAccordionItem } from './interface';
 import { customStyles, expandablePanelStyle } from './style/accordion.css';
@@ -16,9 +16,16 @@ import { application } from '@ijstech/application';
 
 type onSelectedFn = (target: AccordionItem) => void;
 export interface AccordionItemElement extends IAccordionItem {
+  icon?: IconElement;
   onSelected?: onSelectedFn;
   onRemoved?: onSelectedFn;
 }
+
+const defaultIcon = {
+    width: 16,
+    height: 16,
+    fill: Theme.ThemeVars.text.primary
+};
 
 declare global {
   namespace JSX {
@@ -61,6 +68,8 @@ export class AccordionItem extends Container {
   private pnlContent: Panel;
   private iconExpand: Icon;
   private iconRemove: Icon;
+  private pnlTitle: HStack;
+  private _icon: Icon;
 
   private _name: string;
   private _defaultExpanded: boolean;
@@ -102,6 +111,24 @@ export class AccordionItem extends Container {
     this._name = value;
     if (this.lbTitle) {
       this.lbTitle.caption = this.name;
+    }
+  }
+
+  get icon(): Icon {
+    if (!this._icon) {
+      this._icon = new Icon(undefined, defaultIcon);
+      if (this.pnlTitle)
+        this.pnlTitle.prepend(this._icon);
+    }
+    return this._icon;
+  }
+  set icon(value: Icon){
+    if (this.pnlTitle) {
+      if (this._icon && this.pnlTitle.contains(this._icon))
+          this.pnlTitle.removeChild(this._icon);
+      this._icon = value;
+      if (this._icon)
+        this.pnlTitle.prepend(this._icon);
     }
   }
 
@@ -158,7 +185,11 @@ export class AccordionItem extends Container {
       class: 'accordion-header'
     });
     hStack.onClick = this.onSelectClick.bind(this);
-    this.lbTitle = new Label(hStack, {
+    this.pnlTitle = new HStack(hStack, {
+      verticalAlignment: 'center',
+      gap: '0.5rem'
+    });
+    this.lbTitle = new Label(this.pnlTitle, {
       caption: this.name,
       class: 'accordion-title',
       lineHeight: 1.3
@@ -228,11 +259,17 @@ export class AccordionItem extends Container {
       const name = this.getAttribute('name', true);
       const defaultExpanded = this.getAttribute('defaultExpanded', true);
       const showRemove = this.getAttribute('showRemove', true, false);
+      let iconAttr = this.getAttribute('icon', true);
       super.init();
       this._name = name;
       this._defaultExpanded = defaultExpanded;
       this._showRemove = showRemove;
       await this.renderUI();
+      if (iconAttr?.name || iconAttr?.image?.url) {
+        iconAttr = { ...defaultIcon, ...iconAttr };
+        const icon = new Icon(undefined, iconAttr);
+        this.icon = icon;
+      }
       const font = this.getAttribute('font', true)
       if (font) this.font = font;
       if (!this.pnlContent.isConnected) await this.pnlContent.ready();

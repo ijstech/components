@@ -1,7 +1,6 @@
 {
     "name": "@ijstech/components",
     "type": "widget",
-    "hash": "sha256-iyK7vRQw/FEAZ+b9T+rWLNaiasSidz6dWRU233RrEHA=",
     "version": "0.1.160",
     "dependencies": []
 }

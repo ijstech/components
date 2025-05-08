@@ -46275,6 +46275,11 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AccordionItem = void 0;
+    const defaultIcon = {
+        width: 16,
+        height: 16,
+        fill: style_1.Theme.ThemeVars.text.primary
+    };
     let AccordionItem = class AccordionItem extends base_1.Container {
         constructor(parent, options) {
             super(parent, options);
@@ -46305,6 +46310,23 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
             this._name = value;
             if (this.lbTitle) {
                 this.lbTitle.caption = this.name;
+            }
+        }
+        get icon() {
+            if (!this._icon) {
+                this._icon = new icon_1.Icon(undefined, defaultIcon);
+                if (this.pnlTitle)
+                    this.pnlTitle.prepend(this._icon);
+            }
+            return this._icon;
+        }
+        set icon(value) {
+            if (this.pnlTitle) {
+                if (this._icon && this.pnlTitle.contains(this._icon))
+                    this.pnlTitle.removeChild(this._icon);
+                this._icon = value;
+                if (this._icon)
+                    this.pnlTitle.prepend(this._icon);
             }
         }
         get defaultExpanded() {
@@ -46355,7 +46377,11 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
                 class: 'accordion-header'
             });
             hStack.onClick = this.onSelectClick.bind(this);
-            this.lbTitle = new label_1.Label(hStack, {
+            this.pnlTitle = new layout_1.HStack(hStack, {
+                verticalAlignment: 'center',
+                gap: '0.5rem'
+            });
+            this.lbTitle = new label_1.Label(this.pnlTitle, {
                 caption: this.name,
                 class: 'accordion-title',
                 lineHeight: 1.3
@@ -46423,11 +46449,17 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
                 const name = this.getAttribute('name', true);
                 const defaultExpanded = this.getAttribute('defaultExpanded', true);
                 const showRemove = this.getAttribute('showRemove', true, false);
+                let iconAttr = this.getAttribute('icon', true);
                 super.init();
                 this._name = name;
                 this._defaultExpanded = defaultExpanded;
                 this._showRemove = showRemove;
                 await this.renderUI();
+                if (iconAttr?.name || iconAttr?.image?.url) {
+                    iconAttr = { ...defaultIcon, ...iconAttr };
+                    const icon = new icon_1.Icon(undefined, iconAttr);
+                    this.icon = icon;
+                }
                 const font = this.getAttribute('font', true);
                 if (font)
                     this.font = font;

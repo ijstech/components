@@ -26106,9 +26106,11 @@ declare module "@ijstech/accordion/style/accordion.css.ts" {
 /// <amd-module name="@ijstech/accordion/accordion-item.ts" />
 declare module "@ijstech/accordion/accordion-item.ts" {
     import { Control, Container, IFont, I18n } from "@ijstech/base";
+    import { Icon, IconElement } from '@ijstech/icon';
     import { IAccordionItem } from "@ijstech/accordion/interface.ts";
     type onSelectedFn = (target: AccordionItem) => void;
     export interface AccordionItemElement extends IAccordionItem {
+        icon?: IconElement;
         onSelected?: onSelectedFn;
         onRemoved?: onSelectedFn;
     }
@@ -26125,6 +26127,8 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         private pnlContent;
         private iconExpand;
         private iconRemove;
+        private pnlTitle;
+        private _icon;
         private _name;
         private _defaultExpanded;
         private _expanded;
@@ -26136,6 +26140,8 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         updateLocale(i18n: I18n): void;
         get name(): string;
         set name(value: string);
+        get icon(): Icon;
+        set icon(value: Icon);
         get defaultExpanded(): boolean;
         set defaultExpanded(value: boolean);
         get expanded(): boolean;
