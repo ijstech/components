@@ -26109,8 +26109,15 @@ declare module "@ijstech/accordion/accordion-item.ts" {
     import { Icon, IconElement } from '@ijstech/icon';
     import { IAccordionItem } from "@ijstech/accordion/interface.ts";
     type onSelectedFn = (target: AccordionItem) => void;
+    interface IBadge {
+        caption: string;
+        color?: string;
+        fontColor?: string;
+        filled?: boolean;
+    }
     export interface AccordionItemElement extends IAccordionItem {
         icon?: IconElement;
+        badge?: IBadge;
         onSelected?: onSelectedFn;
         onRemoved?: onSelectedFn;
     }
@@ -26125,6 +26132,7 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         private pnlAccordionItem;
         private lbTitle;
         private pnlContent;
+        private lblBadge;
         private iconExpand;
         private iconRemove;
         private pnlTitle;
@@ -26133,6 +26141,7 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         private _defaultExpanded;
         private _expanded;
         private _showRemove;
+        private _badge;
         onSelected: onSelectedFn;
         onRemoved: onSelectedFn;
         constructor(parent?: Container, options?: any);
@@ -26148,6 +26157,8 @@ declare module "@ijstech/accordion/accordion-item.ts" {
         set expanded(value: boolean);
         get showRemove(): boolean;
         set showRemove(value: boolean);
+        get badge(): IBadge;
+        set badge(value: IBadge);
         get contentControl(): Control;
         get font(): IFont;
         set font(value: IFont);
