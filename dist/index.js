@@ -46353,6 +46353,21 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
                 this.iconRemove.visible = this._showRemove;
             }
         }
+        get badge() {
+            return this._badge;
+        }
+        set badge(value) {
+            this._badge = value;
+            if (this.lblBadge) {
+                const badgeColor = this._badge?.color || style_1.Theme.ThemeVars.colors.info.main;
+                const defaultFontColor = this._badge?.filled ? style_1.Theme.ThemeVars.colors.info.contrastText : style_1.Theme.ThemeVars.colors.info.main;
+                this.lblBadge.caption = this._badge?.caption || "";
+                this.lblBadge.background = { color: this._badge?.filled ? badgeColor : undefined };
+                this.lblBadge.border = { width: 1, style: 'solid', color: badgeColor, radius: '0.25rem' };
+                this.lblBadge.font = { size: '0.875rem', color: this._badge?.fontColor || defaultFontColor };
+                this.lblBadge.visible = !!this._badge;
+            }
+        }
         get contentControl() {
             return this.pnlContent;
         }
@@ -46389,6 +46404,16 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
             const innerHStack = new layout_1.HStack(hStack, {
                 verticalAlignment: 'center',
                 gap: '0.5rem'
+            });
+            const badgeColor = this._badge?.color || style_1.Theme.ThemeVars.colors.info.main;
+            const defaultFontColor = this._badge?.filled ? style_1.Theme.ThemeVars.colors.info.contrastText : style_1.Theme.ThemeVars.colors.info.main;
+            this.lblBadge = new label_1.Label(innerHStack, {
+                caption: this._badge?.caption || "",
+                background: { color: this._badge?.filled ? badgeColor : undefined },
+                padding: { top: '0.25rem', bottom: '0.25rem', left: '0.5rem', right: '0.5rem' },
+                border: { width: 1, style: 'solid', color: badgeColor, radius: '0.25rem' },
+                font: { size: '0.875rem', color: this._badge?.fontColor || defaultFontColor },
+                visible: !!this._badge
             });
             this.iconExpand = new icon_1.Icon(innerHStack, {
                 name: 'angle-right',
@@ -46449,11 +46474,13 @@ define("@ijstech/accordion/accordion-item.ts", ["require", "exports", "@ijstech/
                 const name = this.getAttribute('name', true);
                 const defaultExpanded = this.getAttribute('defaultExpanded', true);
                 const showRemove = this.getAttribute('showRemove', true, false);
+                const badge = this.getAttribute('badge', true);
                 let iconAttr = this.getAttribute('icon', true);
                 super.init();
                 this._name = name;
                 this._defaultExpanded = defaultExpanded;
                 this._showRemove = showRemove;
+                this._badge = badge;
                 await this.renderUI();
                 if (iconAttr?.name || iconAttr?.image?.url) {
                     iconAttr = { ...defaultIcon, ...iconAttr };

@@ -15,8 +15,15 @@ import { GroupType } from "@ijstech/types";
 import { application } from '@ijstech/application';
 
 type onSelectedFn = (target: AccordionItem) => void;
+interface IBadge {
+  caption: string;
+  color?: string;
+  fontColor?: string;
+  filled?: boolean;
+}
 export interface AccordionItemElement extends IAccordionItem {
   icon?: IconElement;
+  badge?: IBadge;
   onSelected?: onSelectedFn;
   onRemoved?: onSelectedFn;
 }
@@ -66,6 +73,7 @@ export class AccordionItem extends Container {
   private pnlAccordionItem: VStack;
   private lbTitle: Label;
   private pnlContent: Panel;
+  private lblBadge: Label;
   private iconExpand: Icon;
   private iconRemove: Icon;
   private pnlTitle: HStack;
@@ -75,6 +83,7 @@ export class AccordionItem extends Container {
   private _defaultExpanded: boolean;
   private _expanded: boolean;
   private _showRemove: boolean;
+  private _badge: IBadge;
 
   public onSelected: onSelectedFn;
   public onRemoved: onSelectedFn;
@@ -159,6 +168,23 @@ export class AccordionItem extends Container {
     }
   }
 
+  get badge() {
+    return this._badge;
+  }
+
+  set badge(value: IBadge) {
+    this._badge = value;
+    if (this.lblBadge) {
+      const badgeColor = this._badge?.color || Theme.ThemeVars.colors.info.main;
+      const defaultFontColor = this._badge?.filled ? Theme.ThemeVars.colors.info.contrastText : Theme.ThemeVars.colors.info.main;
+      this.lblBadge.caption = this._badge?.caption || "";
+      this.lblBadge.background = { color: this._badge?.filled ? badgeColor : undefined };
+      this.lblBadge.border = { width: 1, style: 'solid', color: badgeColor, radius: '0.25rem' };
+      this.lblBadge.font = { size: '0.875rem', color: this._badge?.fontColor || defaultFontColor };
+      this.lblBadge.visible = !!this._badge;
+    }
+  }
+
   get contentControl() {
     return this.pnlContent as Control;
   }
@@ -198,6 +224,16 @@ export class AccordionItem extends Container {
       verticalAlignment: 'center',
       gap: '0.5rem'
     })
+    const badgeColor = this._badge?.color || Theme.ThemeVars.colors.info.main;
+    const defaultFontColor = this._badge?.filled ? Theme.ThemeVars.colors.info.contrastText : Theme.ThemeVars.colors.info.main;
+    this.lblBadge = new Label(innerHStack, {
+      caption: this._badge?.caption || "",
+      background: { color: this._badge?.filled ? badgeColor : undefined },
+      padding: { top: '0.25rem', bottom: '0.25rem', left: '0.5rem', right: '0.5rem' },
+      border: { width: 1, style: 'solid', color: badgeColor, radius: '0.25rem' },
+      font: { size: '0.875rem', color: this._badge?.fontColor || defaultFontColor },
+      visible: !!this._badge
+    });
     this.iconExpand = new Icon(innerHStack, {
       name: 'angle-right',
       width: 20,
@@ -259,11 +295,13 @@ export class AccordionItem extends Container {
       const name = this.getAttribute('name', true);
       const defaultExpanded = this.getAttribute('defaultExpanded', true);
       const showRemove = this.getAttribute('showRemove', true, false);
+      const badge = this.getAttribute('badge', true);
       let iconAttr = this.getAttribute('icon', true);
       super.init();
       this._name = name;
       this._defaultExpanded = defaultExpanded;
       this._showRemove = showRemove;
+      this._badge = badge;
       await this.renderUI();
       if (iconAttr?.name || iconAttr?.image?.url) {
         iconAttr = { ...defaultIcon, ...iconAttr };
