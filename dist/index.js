@@ -42998,7 +42998,7 @@ define("@ijstech/breadcrumb/breadcrumb.ts", ["require", "exports", "@ijstech/bas
             if (this._breadcrumbItems) {
                 for (let i = 0; i < this._breadcrumbItems.length; i++) {
                     const breadcrumbItem = this._breadcrumbItems[i];
-                    const activedColor = this.tag?.activedColor || Theme.colors.primary.main;
+                    const activedColor = this.tag?.activeColor || Theme.colors.primary.main;
                     const color = i === this._breadcrumbItems.length - 1 ? activedColor : Theme.text.primary;
                     const lbBreadcrumb = new label_1.Label(this._wrapper, {
                         caption: breadcrumbItem.caption,
