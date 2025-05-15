@@ -2014,14 +2014,14 @@ export class Form extends Control {
 
     private getTranslatedMessage(value: string) {
         if (!this.i18nMessage) return value;
-        if (value?.startsWith('$')) {
+        if (typeof value === 'string' && value.startsWith('$')) {
             this.i18nMessage.get(value);
         }
         return value;
     }
 
     private getTranslatedText(value: string) {
-        if (value?.startsWith('$')) {
+        if (typeof value === 'string' && value.startsWith('$')) {
             const translated =
                 this.parentModule?.i18n?.get(value) ||
                 application.i18n?.get(value) ||
