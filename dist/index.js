@@ -21411,7 +21411,7 @@ define("@ijstech/layout/card.ts", ["require", "exports", "@ijstech/base", "@ijst
             return this._cardMinWidth;
         }
         set cardMinWidth(value) {
-            this._cardMinWidth = value;
+            this._cardMinWidth = typeof value == 'number' ? value + 'px' : value;
             this.updateGridTemplateColumns();
         }
         get columnsPerRow() {
