@@ -76,10 +76,11 @@ export class Breadcrumb extends Control {
         if(this._breadcrumbItems) {
             for(let i = 0; i < this._breadcrumbItems.length; i++) {
                 const breadcrumbItem = this._breadcrumbItems[i];
-                const color = i === this._breadcrumbItems.length - 1 ? Theme.colors.primary.main : Theme.text.primary;
+                const activedColor = this.tag?.activeColor || Theme.colors.primary.main;
+                const color = i === this._breadcrumbItems.length - 1 ? activedColor : Theme.text.primary;
                 const lbBreadcrumb = new Label(this._wrapper, {
                     caption: breadcrumbItem.caption,
-                    font: {size: Theme.typography.fontSize, color}
+                    font: this.tag?.font || {size: Theme.typography.fontSize, color}
                 });
 
                 if(this._onItemClick !== undefined)
