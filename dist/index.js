@@ -17320,7 +17320,7 @@ define("@ijstech/combo-box/combo-box.ts", ["require", "exports", "@ijstech/base"
                 this.inputElm.placeholder = this.placeholder;
         }
         getTranslatedText(value) {
-            if (typeof value === 'string' && value?.startsWith('$')) {
+            if (typeof value === 'string' && value.startsWith('$')) {
                 const translated = this.parentModule?.i18n?.get(value) ||
                     application_1.application.i18n?.get(value) ||
                     '';
@@ -45549,13 +45549,13 @@ define("@ijstech/form/form.ts", ["require", "exports", "@ijstech/base", "@ijstec
         getTranslatedMessage(value) {
             if (!this.i18nMessage)
                 return value;
-            if (value?.startsWith('$')) {
+            if (typeof value === 'string' && value.startsWith('$')) {
                 this.i18nMessage.get(value);
             }
             return value;
         }
         getTranslatedText(value) {
-            if (value?.startsWith('$')) {
+            if (typeof value === 'string' && value.startsWith('$')) {
                 const translated = this.parentModule?.i18n?.get(value) ||
                     application_1.default.i18n?.get(value) ||
                     value;
