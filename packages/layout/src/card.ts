@@ -45,7 +45,7 @@ export class CardLayout extends GridLayout {
         return this._cardMinWidth;
     }
     set cardMinWidth(value: number | string){
-        this._cardMinWidth = value;
+        this._cardMinWidth = typeof value == 'number' ? value + 'px' : value;
         this.updateGridTemplateColumns();
     }
     get columnsPerRow(){
