@@ -15969,7 +15969,7 @@ define("@ijstech/application", ["require", "exports", "@ijstech/base", "@ijstech
             if (!scconfig)
                 return null;
             if (!scconfig.rootDir) {
-                if (scconfigPath.indexOf('/') > 0) {
+                if (scconfigPath.indexOf('/') >= 0) {
                     let rootDir = scconfigPath.split('/').slice(0, -1).join('/');
                     let a = document.createElement('a');
                     a.href = rootDir;
