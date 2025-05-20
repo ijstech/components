@@ -1,4 +1,4 @@
-import {Control, customElements, ControlElement, IFont} from '@ijstech/base';
+import {Control, customElements, ControlElement, IFont, notifyMouseEventCallback} from '@ijstech/base';
 import './style/link.css';
 
 type TagertType = '_self' | '_blank' | '_parent' | '_top';
@@ -6,6 +6,7 @@ type TagertType = '_self' | '_blank' | '_parent' | '_top';
 export interface LinkElement extends ControlElement{
     href?: string;
     target?: TagertType;
+    onOpenLink?: notifyMouseEventCallback;
 }
 
 @customElements('i-link')
@@ -13,6 +14,7 @@ export class Link extends Control {
     private _href: string;
     private _target: TagertType;
     private _linkElm: HTMLAnchorElement;
+    public onOpenLink: notifyMouseEventCallback;
 
     constructor(parent?: Control, options?: any) {        
         super(parent, options, {
@@ -47,7 +49,11 @@ export class Link extends Control {
     _handleClick(event: MouseEvent, stopPropagation?: boolean): boolean {
         event.preventDefault();
         if (this._designMode) return false;
-        window.open(this._linkElm.href, this._linkElm.target);
+        if (this.onOpenLink) {
+            this.onOpenLink(this, event);
+        } else {
+            window.open(this._linkElm.href, this._linkElm.target);
+        }
         return super._handleClick(event);
     }
     protected addChildControl(control: Control) {
@@ -70,6 +76,8 @@ export class Link extends Control {
 
             const targetAttr = this.getAttribute('target', true);
             targetAttr && (this._linkElm.target = targetAttr);
+
+            this.onOpenLink = this.getAttribute('onOpenLink', true) || this.onOpenLink;
         }
     }
 

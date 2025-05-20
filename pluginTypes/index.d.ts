@@ -23101,17 +23101,19 @@ declare module "@ijstech/switch" {
 declare module "@ijstech/link/style/link.css.ts" { }
 /// <amd-module name="@ijstech/link/link.ts" />
 declare module "@ijstech/link/link.ts" {
-    import { Control, ControlElement } from '@ijstech/base';
+    import { Control, ControlElement, notifyMouseEventCallback } from '@ijstech/base';
     import "@ijstech/link/style/link.css.ts";
     type TagertType = '_self' | '_blank' | '_parent' | '_top';
     export interface LinkElement extends ControlElement {
         href?: string;
         target?: TagertType;
+        onOpenLink?: notifyMouseEventCallback;
     }
     export class Link extends Control {
         private _href;
         private _target;
         private _linkElm;
+        onOpenLink: notifyMouseEventCallback;
         constructor(parent?: Control, options?: any);
         get href(): string;
         set href(value: string);

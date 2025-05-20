@@ -23727,7 +23727,12 @@ define("@ijstech/link/link.ts", ["require", "exports", "@ijstech/base", "@ijstec
             event.preventDefault();
             if (this._designMode)
                 return false;
-            window.open(this._linkElm.href, this._linkElm.target);
+            if (this.onOpenLink) {
+                this.onOpenLink(this, event);
+            }
+            else {
+                window.open(this._linkElm.href, this._linkElm.target);
+            }
             return super._handleClick(event);
         }
         addChildControl(control) {
@@ -23748,6 +23753,7 @@ define("@ijstech/link/link.ts", ["require", "exports", "@ijstech/base", "@ijstec
                 hrefAttr && (this.href = hrefAttr);
                 const targetAttr = this.getAttribute('target', true);
                 targetAttr && (this._linkElm.target = targetAttr);
+                this.onOpenLink = this.getAttribute('onOpenLink', true) || this.onOpenLink;
             }
         }
         static async create(options, parent) {
