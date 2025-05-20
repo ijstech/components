@@ -75,7 +75,7 @@ export class Link extends Control {
             hrefAttr && (this.href = hrefAttr);
 
             const targetAttr = this.getAttribute('target', true);
-            targetAttr && (this._linkElm.target = targetAttr);
+            targetAttr && (this.target = targetAttr);
 
             this.onOpenLink = this.getAttribute('onOpenLink', true) || this.onOpenLink;
         }
