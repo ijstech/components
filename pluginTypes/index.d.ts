@@ -23384,7 +23384,7 @@ declare module "@ijstech/module/module.ts" {
     }
     export class Module extends Container implements IModule {
         private $renderElms;
-        private $render;
+        protected $render: any;
         private modulesUrlRegex;
         private static _modalMap;
         currentModuleDir: string;
