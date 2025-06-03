@@ -123,7 +123,7 @@ export interface IOpenModalOptions{
 @customElements('i-module')
 export class Module extends Container implements IModule{
     private $renderElms: any[] = [];
-    private $render: any;
+    protected $render: any;
     private modulesUrlRegex: string[];
     private static _modalMap: Record<string, Modal> = {};
     // private static _modules: Record<string, Module> = {};
