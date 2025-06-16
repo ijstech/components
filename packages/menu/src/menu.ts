@@ -240,11 +240,14 @@ export class Menu extends Control {
 
   private onResize() {
     const newWidth = Math.ceil(window.innerWidth);
-    let offsetWidth = Math.ceil(this.menuElm.offsetWidth);
-    let scrollWidth = Math.ceil(this.menuElm.scrollWidth);
+    let offsetWidth = Math.ceil(this.style.display === 'flex' ? this.offsetWidth : this.menuElm.offsetWidth);
+    let scrollWidth = Math.ceil(this.style.display === 'flex' ? this.menuElm.offsetWidth : this.menuElm.scrollWidth);
+    if (this._oldWidth === 0) this._oldWidth = newWidth;
+
     if (this._oldWidth >= newWidth) {
       let i: number = this._items.length - 1;
       const tmpItems: MenuItem[] = [];
+
       while (scrollWidth > offsetWidth && i >= 0) {
         if (!this.menuElm.contains(this.moreItem)) {
           this.menuElm.appendChild(this.moreItem);
@@ -254,8 +257,8 @@ export class Menu extends Control {
         this._items[i].level = 1;
         this.menuElm.removeChild(this._items[i]);
         this._items.splice(i, 1);
-        offsetWidth = Math.ceil(this.menuElm.offsetWidth);
-        scrollWidth = Math.ceil(this.menuElm.scrollWidth);
+        offsetWidth = Math.ceil(this.style.display === 'flex' ? this.offsetWidth : this.menuElm.offsetWidth);
+        scrollWidth = Math.ceil(this.style.display === 'flex' ? this.menuElm.offsetWidth : this.menuElm.scrollWidth);
         i--;
       }
       if (tmpItems.length) {
@@ -266,14 +269,16 @@ export class Menu extends Control {
       let i: number = this.moreItem.items.length - 1 || 0 ;
       let totalItemsWidth = this._items.reduce((prev, curr) => prev + Math.ceil(curr.offsetWidth), 0) + this.moreItem.offsetWidth + this.itemsWidth[0];
       let index = -1;
-      while (totalItemsWidth <= offsetWidth && i >= 0) {
+
+      while (totalItemsWidth <= offsetWidth && i >= 0 && scrollWidth <= offsetWidth) {
+        totalItemsWidth += this.itemsWidth.shift() || 0;
+        if (offsetWidth < totalItemsWidth) break;
         index = i;
         const menuItem = this.moreItem.items[i];
         this.menuElm.insertBefore(menuItem, this.moreItem);
         this._items.push(menuItem);
         menuItem.level = 0;
-        offsetWidth = Math.ceil(this.menuElm.offsetWidth);
-        totalItemsWidth += this.itemsWidth.shift() || 0;
+        offsetWidth = Math.ceil(this.style.display === 'flex' ? this.offsetWidth : this.menuElm.offsetWidth);
         i--;
       }
       if (index != -1) {
