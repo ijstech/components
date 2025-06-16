@@ -23,6 +23,8 @@ export const menuStyle = Styles.style({
   color: Theme.text.primary,
   position: "relative", // For responsive
   // overflow: 'hidden',
+  display: 'block',
+  width: '100%',
   $nest: {
     "*": {
       boxSizing: "border-box",
